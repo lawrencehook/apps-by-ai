@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Function Collapse - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #1a1a1a; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { margin-top: 12px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Wave Function Collapse</h1>
+        <p>Procedural generation using constraint satisfaction. Watch patterns emerge.</p>
+        <div class="control-group">
+            <label>Tileset</label>
+            <select id="tileset">
+                <option value="pipes">Pipes</option>
+                <option value="circuits">Circuits</option>
+                <option value="maze">Maze</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">10</span> steps/frame</label>
+            <input type="range" id="speed" min="1" max="50" value="10">
+        </div>
+        <button id="regenerate">Regenerate</button>
+        <button id="step">Step</button>
+        <div class="status" id="status">Ready</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, cols, rows;
+        let grid = [];
+        let running = false;
+        let speed = 10;
+        let tilesetName = 'pipes';
+        const TILE_SIZE = 20;
+
+        // Tile definitions: each tile has connection types for [top, right, bottom, left]
+        // 0 = no connection, 1 = connection
+        const tilesets = {
+            pipes: {
+                tiles: [
+                    { id: 0, edges: [0,0,0,0], color: '#1a1a2e' }, // Empty
+                    { id: 1, edges: [1,1,0,0], color: '#4a90a4' }, // Corner TL
+                    { id: 2, edges: [0,1,1,0], color: '#4a90a4' }, // Corner TR
+                    { id: 3, edges: [0,0,1,1], color: '#4a90a4' }, // Corner BR
+                    { id: 4, edges: [1,0,0,1], color: '#4a90a4' }, // Corner BL
+                    { id: 5, edges: [1,0,1,0], color: '#6ab4c8' }, // Vertical
+                    { id: 6, edges: [0,1,0,1], color: '#6ab4c8' }, // Horizontal
+                    { id: 7, edges: [1,1,1,1], color: '#8ed4e8' }, // Cross
+                ],
+            },
+            circuits: {
+                tiles: [
+                    { id: 0, edges: [0,0,0,0], color: '#0a0a0f' },
+                    { id: 1, edges: [1,1,0,0], color: '#2a4a2a' },
+                    { id: 2, edges: [0,1,1,0], color: '#2a4a2a' },
+                    { id: 3, edges: [0,0,1,1], color: '#2a4a2a' },
+                    { id: 4, edges: [1,0,0,1], color: '#2a4a2a' },
+                    { id: 5, edges: [1,0,1,0], color: '#3a6a3a' },
+                    { id: 6, edges: [0,1,0,1], color: '#3a6a3a' },
+                    { id: 7, edges: [1,1,1,1], color: '#5a9a5a' },
+                    { id: 8, edges: [1,1,1,0], color: '#4a8a4a' },
+                    { id: 9, edges: [1,1,0,1], color: '#4a8a4a' },
+                    { id: 10, edges: [1,0,1,1], color: '#4a8a4a' },
+                    { id: 11, edges: [0,1,1,1], color: '#4a8a4a' },
+                ],
+            },
+            maze: {
+                tiles: [
+                    { id: 0, edges: [0,0,0,0], color: '#2a2a3a' },
+                    { id: 1, edges: [1,0,1,0], color: '#f0f0f0' },
+                    { id: 2, edges: [0,1,0,1], color: '#f0f0f0' },
+                    { id: 3, edges: [1,1,0,0], color: '#f0f0f0' },
+                    { id: 4, edges: [0,1,1,0], color: '#f0f0f0' },
+                    { id: 5, edges: [0,0,1,1], color: '#f0f0f0' },
+                    { id: 6, edges: [1,0,0,1], color: '#f0f0f0' },
+                ],
+            }
+        };
+
+        function getTileset() {
+            return tilesets[tilesetName];
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cols = Math.floor(width / TILE_SIZE);
+            rows = Math.floor(height / TILE_SIZE);
+            init();
+        }
+
+        function init() {
+            const tileset = getTileset();
+            grid = [];
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid.push({
+                        x, y,
+                        collapsed: false,
+                        options: tileset.tiles.map(t => t.id)
+                    });
+                }
+            }
+            running = true;
+            document.getElementById('status').textContent = 'Running...';
+        }
+
+        function getCell(x, y) {
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return null;
+            return grid[y * cols + x];
+        }
+
+        function entropy(cell) {
+            return cell.options.length;
+        }
+
+        function collapse() {
+            const tileset = getTileset();
+
+            // Find cell with minimum entropy (not collapsed)
+            let minEntropy = Infinity;
+            let candidates = [];
+
+            for (const cell of grid) {
+                if (cell.collapsed) continue;
+                const e = entropy(cell);
+                if (e < minEntropy) {
+                    minEntropy = e;
+                    candidates = [cell];
+                } else if (e === minEntropy) {
+                    candidates.push(cell);
+                }
+            }
+
+            if (candidates.length === 0) {
+                running = false;
+                document.getElementById('status').textContent = 'Complete!';
+                return false;
+            }
+
+            // Pick random cell from candidates
+            const cell = candidates[Math.floor(Math.random() * candidates.length)];
+
+            if (cell.options.length === 0) {
+                // Contradiction - restart
+                init();
+                return true;
+            }
+
+            // Collapse to random option
+            cell.collapsed = true;
+            cell.options = [cell.options[Math.floor(Math.random() * cell.options.length)]];
+
+            // Propagate constraints
+            propagate(cell);
+
+            return true;
+        }
+
+        function propagate(startCell) {
+            const tileset = getTileset();
+            const stack = [startCell];
+
+            while (stack.length > 0) {
+                const cell = stack.pop();
+                const cellTile = tileset.tiles.find(t => t.id === cell.options[0]);
+                if (!cellTile) continue;
+
+                const neighbors = [
+                    { cell: getCell(cell.x, cell.y - 1), dir: 0 }, // Top
+                    { cell: getCell(cell.x + 1, cell.y), dir: 1 }, // Right
+                    { cell: getCell(cell.x, cell.y + 1), dir: 2 }, // Bottom
+                    { cell: getCell(cell.x - 1, cell.y), dir: 3 }, // Left
+                ];
+
+                for (const { cell: neighbor, dir } of neighbors) {
+                    if (!neighbor || neighbor.collapsed) continue;
+
+                    const opposite = (dir + 2) % 4;
+                    const requiredEdge = cellTile.edges[dir];
+
+                    const before = neighbor.options.length;
+                    neighbor.options = neighbor.options.filter(optId => {
+                        const tile = tileset.tiles.find(t => t.id === optId);
+                        return tile && tile.edges[opposite] === requiredEdge;
+                    });
+
+                    if (neighbor.options.length < before && neighbor.options.length > 0) {
+                        stack.push(neighbor);
+                    }
+                }
+            }
+        }
+
+        function render() {
+            const tileset = getTileset();
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, width, height);
+
+            for (const cell of grid) {
+                const x = cell.x * TILE_SIZE;
+                const y = cell.y * TILE_SIZE;
+
+                if (cell.collapsed) {
+                    const tile = tileset.tiles.find(t => t.id === cell.options[0]);
+                    if (tile) {
+                        ctx.fillStyle = tile.color;
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+                        // Draw connections
+                        ctx.fillStyle = tile.color === '#f0f0f0' ? '#2a2a3a' :
+                                       (tile.edges.some(e => e === 1) ? '#fff' : tile.color);
+                        const cx = x + TILE_SIZE / 2;
+                        const cy = y + TILE_SIZE / 2;
+                        const r = TILE_SIZE / 6;
+
+                        if (tile.edges[0]) ctx.fillRect(cx - r, y, r * 2, TILE_SIZE / 2);
+                        if (tile.edges[1]) ctx.fillRect(cx, cy - r, TILE_SIZE / 2, r * 2);
+                        if (tile.edges[2]) ctx.fillRect(cx - r, cy, r * 2, TILE_SIZE / 2);
+                        if (tile.edges[3]) ctx.fillRect(x, cy - r, TILE_SIZE / 2, r * 2);
+
+                        if (tile.edges.some(e => e === 1)) {
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                } else {
+                    // Show entropy as brightness
+                    const e = entropy(cell) / tileset.tiles.length;
+                    ctx.fillStyle = `rgba(50, 50, 80, ${e})`;
+                    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                }
+            }
+        }
+
+        function animate() {
+            if (running) {
+                for (let i = 0; i < speed; i++) {
+                    if (!collapse()) break;
+                }
+            }
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('tileset').addEventListener('change', e => {
+            tilesetName = e.target.value;
+            init();
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('regenerate').addEventListener('click', init);
+        document.getElementById('step').addEventListener('click', () => {
+            running = false;
+            collapse();
+            render();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

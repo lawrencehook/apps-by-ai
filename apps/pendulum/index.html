@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Pendulum - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Double Pendulum</h1>
+        <p>A chaotic system highly sensitive to initial conditions. Tiny changes lead to wildly different outcomes.</p>
+        <div class="control-group">
+            <label>Trail Length: <span id="trailLabel">500</span></label>
+            <input type="range" id="trail" min="50" max="2000" value="500">
+        </div>
+        <div class="control-group">
+            <label>Pendulums: <span id="countLabel">3</span></label>
+            <input type="range" id="count" min="1" max="10" value="3">
+        </div>
+        <button id="reset">Reset</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, cx, cy;
+        let pendulums = [];
+        let trailLength = 500;
+        let numPendulums = 3;
+
+        const g = 1;
+        const len1 = 125;
+        const len2 = 125;
+        const m1 = 10;
+        const m2 = 10;
+
+        class DoublePendulum {
+            constructor(a1, a2, color) {
+                this.a1 = a1;
+                this.a2 = a2;
+                this.a1_v = 0;
+                this.a2_v = 0;
+                this.color = color;
+                this.trail = [];
+            }
+
+            update() {
+                // Double pendulum physics equations
+                const num1 = -g * (2 * m1 + m2) * Math.sin(this.a1);
+                const num2 = -m2 * g * Math.sin(this.a1 - 2 * this.a2);
+                const num3 = -2 * Math.sin(this.a1 - this.a2) * m2;
+                const num4 = this.a2_v * this.a2_v * len2 + this.a1_v * this.a1_v * len1 * Math.cos(this.a1 - this.a2);
+                const den = len1 * (2 * m1 + m2 - m2 * Math.cos(2 * this.a1 - 2 * this.a2));
+                const a1_a = (num1 + num2 + num3 * num4) / den;
+
+                const num5 = 2 * Math.sin(this.a1 - this.a2);
+                const num6 = this.a1_v * this.a1_v * len1 * (m1 + m2);
+                const num7 = g * (m1 + m2) * Math.cos(this.a1);
+                const num8 = this.a2_v * this.a2_v * len2 * m2 * Math.cos(this.a1 - this.a2);
+                const den2 = len2 * (2 * m1 + m2 - m2 * Math.cos(2 * this.a1 - 2 * this.a2));
+                const a2_a = (num5 * (num6 + num7 + num8)) / den2;
+
+                this.a1_v += a1_a;
+                this.a2_v += a2_a;
+                this.a1 += this.a1_v;
+                this.a2 += this.a2_v;
+
+                // Damping
+                this.a1_v *= 0.9999;
+                this.a2_v *= 0.9999;
+
+                // Calculate end positions
+                const x1 = cx + len1 * Math.sin(this.a1);
+                const y1 = cy + len1 * Math.cos(this.a1);
+                const x2 = x1 + len2 * Math.sin(this.a2);
+                const y2 = y1 + len2 * Math.cos(this.a2);
+
+                this.trail.push({ x: x2, y: y2 });
+                if (this.trail.length > trailLength) {
+                    this.trail.shift();
+                }
+
+                return { x1, y1, x2, y2 };
+            }
+
+            draw(pos) {
+                const { x1, y1, x2, y2 } = pos;
+
+                // Draw trail
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Draw arms
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Draw bobs
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(x1, y1, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x2, y2, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw pivot
+                ctx.fillStyle = '#666';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cx = width / 2;
+            cy = height / 2 - 50;
+        }
+
+        function init() {
+            pendulums = [];
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da', '#fcbad3', '#a8d8ea', '#ffaaa5', '#ffd3b6'];
+
+            for (let i = 0; i < numPendulums; i++) {
+                const offset = (i - numPendulums / 2) * 0.001;
+                pendulums.push(new DoublePendulum(
+                    Math.PI / 2 + offset,
+                    Math.PI / 2,
+                    colors[i % colors.length]
+                ));
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (const pendulum of pendulums) {
+                const pos = pendulum.update();
+                pendulum.draw(pos);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('trail').addEventListener('input', e => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailLabel').textContent = trailLength;
+        });
+
+        document.getElementById('count').addEventListener('input', e => {
+            numPendulums = parseInt(e.target.value);
+            document.getElementById('countLabel').textContent = numPendulums;
+            init();
+        });
+
+        document.getElementById('reset').addEventListener('click', init);
+
+        window.addEventListener('resize', resize);
+        resize();
+        init();
+        animate();
+    </script>
+</body>
+</html>

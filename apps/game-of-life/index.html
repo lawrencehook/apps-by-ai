@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Life - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 220px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.2); }
+        button.active { background: rgba(100, 200, 100, 0.3); border-color: rgba(100, 200, 100, 0.5); }
+        .stats { margin-top: 12px; color: #666; font-size: 12px; }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .patterns {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .patterns label { display: block; color: #888; margin-bottom: 6px; font-size: 12px; }
+        select {
+            width: 100%;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Game of Life</h1>
+        <p>Conway's cellular automaton. Click to draw cells. Each cell lives or dies based on its neighbors.</p>
+        <button id="playPause" class="active">Pause</button>
+        <button id="step">Step</button>
+        <button id="clear">Clear</button>
+        <button id="random">Random</button>
+        <div class="patterns">
+            <label>Insert Pattern:</label>
+            <select id="pattern">
+                <option value="none">Click to draw</option>
+                <option value="glider">Glider</option>
+                <option value="lwss">Lightweight Spaceship</option>
+                <option value="pulsar">Pulsar</option>
+                <option value="gosper">Gosper Glider Gun</option>
+            </select>
+        </div>
+        <div class="stats">
+            Generation: <span id="gen">0</span> | Cells: <span id="cells">0</span>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const cellSize = 8;
+        let cols, rows;
+        let grid, nextGrid;
+        let running = true;
+        let generation = 0;
+        let selectedPattern = 'none';
+
+        const patterns = {
+            glider: [[0,1,0],[0,0,1],[1,1,1]],
+            lwss: [[0,1,1,1,1],[1,0,0,0,1],[0,0,0,0,1],[1,0,0,1,0]],
+            pulsar: [
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0]
+            ],
+            gosper: [
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ]
+        };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            cols = Math.floor(canvas.width / cellSize);
+            rows = Math.floor(canvas.height / cellSize);
+            initGrid();
+        }
+
+        function initGrid() {
+            grid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+            nextGrid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+            generation = 0;
+        }
+
+        function randomize() {
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    grid[i][j] = Math.random() > 0.85 ? 1 : 0;
+                }
+            }
+            generation = 0;
+        }
+
+        function countNeighbors(x, y) {
+            let count = 0;
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    let ni = (x + i + cols) % cols;
+                    let nj = (y + j + rows) % rows;
+                    count += grid[ni][nj];
+                }
+            }
+            return count;
+        }
+
+        function step() {
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    let neighbors = countNeighbors(i, j);
+                    if (grid[i][j] === 1) {
+                        nextGrid[i][j] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
+                    } else {
+                        nextGrid[i][j] = (neighbors === 3) ? 1 : 0;
+                    }
+                }
+            }
+            [grid, nextGrid] = [nextGrid, grid];
+            generation++;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let cellCount = 0;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    if (grid[i][j] === 1) {
+                        cellCount++;
+                        ctx.fillStyle = `hsl(${(i + j) % 360}, 60%, 50%)`;
+                        ctx.fillRect(i * cellSize, j * cellSize, cellSize - 1, cellSize - 1);
+                    }
+                }
+            }
+
+            document.getElementById('gen').textContent = generation;
+            document.getElementById('cells').textContent = cellCount;
+        }
+
+        function placePattern(pattern, cx, cy) {
+            const p = patterns[pattern];
+            if (!p) return;
+            const startX = cx - Math.floor(p[0].length / 2);
+            const startY = cy - Math.floor(p.length / 2);
+            for (let y = 0; y < p.length; y++) {
+                for (let x = 0; x < p[y].length; x++) {
+                    let gx = (startX + x + cols) % cols;
+                    let gy = (startY + y + rows) % rows;
+                    grid[gx][gy] = p[y][x];
+                }
+            }
+        }
+
+        function animate() {
+            if (running) step();
+            draw();
+            setTimeout(() => requestAnimationFrame(animate), 50);
+        }
+
+        // Event handlers
+        canvas.addEventListener('mousedown', e => {
+            const x = Math.floor(e.clientX / cellSize);
+            const y = Math.floor(e.clientY / cellSize);
+            if (selectedPattern !== 'none') {
+                placePattern(selectedPattern, x, y);
+            } else {
+                grid[x][y] = grid[x][y] ? 0 : 1;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (e.buttons === 1 && selectedPattern === 'none') {
+                const x = Math.floor(e.clientX / cellSize);
+                const y = Math.floor(e.clientY / cellSize);
+                grid[x][y] = 1;
+            }
+        });
+
+        document.getElementById('playPause').addEventListener('click', e => {
+            running = !running;
+            e.target.textContent = running ? 'Pause' : 'Play';
+            e.target.classList.toggle('active', running);
+        });
+
+        document.getElementById('step').addEventListener('click', () => {
+            if (!running) { step(); draw(); }
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            initGrid();
+        });
+
+        document.getElementById('random').addEventListener('click', randomize);
+
+        document.getElementById('pattern').addEventListener('change', e => {
+            selectedPattern = e.target.value;
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        randomize();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delaunay Triangulation - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Delaunay Triangulation</h1>
+        <p>Click to add points. Maximizes minimum angle of all triangles. No point lies inside any circumcircle.</p>
+        <button id="random">Add Random Points</button>
+        <button id="clear">Clear</button>
+        <button id="toggleCircles">Show Circumcircles</button>
+        <div class="status" id="status">Points: 0 | Triangles: 0</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let points = [];
+        let triangles = [];
+        let showCircumcircles = false;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            triangulate();
+            render();
+        }
+
+        // Bowyer-Watson algorithm for Delaunay triangulation
+        function triangulate() {
+            if (points.length < 3) {
+                triangles = [];
+                return;
+            }
+
+            // Create super triangle
+            const margin = Math.max(width, height) * 10;
+            const superTriangle = [
+                { x: -margin, y: -margin },
+                { x: width / 2, y: height + margin * 2 },
+                { x: width + margin * 2, y: -margin }
+            ];
+
+            triangles = [superTriangle];
+
+            // Add each point
+            for (const point of points) {
+                const badTriangles = [];
+
+                // Find triangles whose circumcircle contains the point
+                for (const tri of triangles) {
+                    if (pointInCircumcircle(point, tri)) {
+                        badTriangles.push(tri);
+                    }
+                }
+
+                // Find the boundary of the polygonal hole
+                const polygon = [];
+                for (const tri of badTriangles) {
+                    for (let i = 0; i < 3; i++) {
+                        const edge = [tri[i], tri[(i + 1) % 3]];
+                        let shared = false;
+                        for (const other of badTriangles) {
+                            if (other === tri) continue;
+                            for (let j = 0; j < 3; j++) {
+                                const otherEdge = [other[j], other[(j + 1) % 3]];
+                                if (edgesEqual(edge, otherEdge)) {
+                                    shared = true;
+                                    break;
+                                }
+                            }
+                            if (shared) break;
+                        }
+                        if (!shared) polygon.push(edge);
+                    }
+                }
+
+                // Remove bad triangles
+                triangles = triangles.filter(t => !badTriangles.includes(t));
+
+                // Create new triangles
+                for (const edge of polygon) {
+                    triangles.push([edge[0], edge[1], point]);
+                }
+            }
+
+            // Remove triangles that share vertices with super triangle
+            triangles = triangles.filter(tri => {
+                for (const p of tri) {
+                    for (const sp of superTriangle) {
+                        if (p.x === sp.x && p.y === sp.y) return false;
+                    }
+                }
+                return true;
+            });
+
+            updateStatus();
+        }
+
+        function edgesEqual(e1, e2) {
+            return (e1[0] === e2[0] && e1[1] === e2[1]) ||
+                   (e1[0] === e2[1] && e1[1] === e2[0]);
+        }
+
+        function pointInCircumcircle(p, tri) {
+            const [a, b, c] = tri;
+            const ax = a.x - p.x, ay = a.y - p.y;
+            const bx = b.x - p.x, by = b.y - p.y;
+            const cx = c.x - p.x, cy = c.y - p.y;
+
+            const det = (ax * ax + ay * ay) * (bx * cy - cx * by) -
+                        (bx * bx + by * by) * (ax * cy - cx * ay) +
+                        (cx * cx + cy * cy) * (ax * by - bx * ay);
+
+            // Check orientation
+            const orient = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+            return orient > 0 ? det > 0 : det < 0;
+        }
+
+        function getCircumcircle(tri) {
+            const [a, b, c] = tri;
+            const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+            if (Math.abs(d) < 0.0001) return null;
+
+            const ux = ((a.x * a.x + a.y * a.y) * (b.y - c.y) +
+                        (b.x * b.x + b.y * b.y) * (c.y - a.y) +
+                        (c.x * c.x + c.y * c.y) * (a.y - b.y)) / d;
+            const uy = ((a.x * a.x + a.y * a.y) * (c.x - b.x) +
+                        (b.x * b.x + b.y * b.y) * (a.x - c.x) +
+                        (c.x * c.x + c.y * c.y) * (b.x - a.x)) / d;
+
+            const r = Math.sqrt((a.x - ux) ** 2 + (a.y - uy) ** 2);
+            return { x: ux, y: uy, r };
+        }
+
+        function updateStatus() {
+            document.getElementById('status').textContent =
+                `Points: ${points.length} | Triangles: ${triangles.length}`;
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw circumcircles
+            if (showCircumcircles) {
+                ctx.strokeStyle = 'rgba(100, 100, 255, 0.2)';
+                ctx.lineWidth = 1;
+                for (const tri of triangles) {
+                    const circle = getCircumcircle(tri);
+                    if (circle) {
+                        ctx.beginPath();
+                        ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw triangles
+            for (const tri of triangles) {
+                const centroidX = (tri[0].x + tri[1].x + tri[2].x) / 3;
+                const centroidY = (tri[0].y + tri[1].y + tri[2].y) / 3;
+                const hue = (centroidX + centroidY) * 0.1 % 360;
+
+                ctx.fillStyle = `hsla(${hue}, 50%, 30%, 0.5)`;
+                ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.moveTo(tri[0].x, tri[0].y);
+                ctx.lineTo(tri[1].x, tri[1].y);
+                ctx.lineTo(tri[2].x, tri[2].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Draw points
+            ctx.fillStyle = '#fff';
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        canvas.addEventListener('click', e => {
+            points.push({ x: e.clientX, y: e.clientY });
+            triangulate();
+            render();
+        });
+
+        document.getElementById('random').addEventListener('click', () => {
+            for (let i = 0; i < 10; i++) {
+                points.push({
+                    x: 100 + Math.random() * (width - 200),
+                    y: 100 + Math.random() * (height - 200)
+                });
+            }
+            triangulate();
+            render();
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            points = [];
+            triangles = [];
+            updateStatus();
+            render();
+        });
+
+        document.getElementById('toggleCircles').addEventListener('click', e => {
+            showCircumcircles = !showCircumcircles;
+            e.target.textContent = showCircumcircles ? 'Hide Circumcircles' : 'Show Circumcircles';
+            render();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Start with some random points
+        for (let i = 0; i < 20; i++) {
+            points.push({
+                x: 100 + Math.random() * (window.innerWidth - 200),
+                y: 100 + Math.random() * (window.innerHeight - 200)
+            });
+        }
+        triangulate();
+        render();
+    </script>
+</body>
+</html>

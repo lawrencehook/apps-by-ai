@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bezier Curves - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .hint { color: #555; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Bezier Curves</h1>
+        <p>Interactive spline editor. Drag control points to shape the curve.</p>
+        <div class="control-group">
+            <label>Animation T: <span id="tLabel">0.50</span></label>
+            <input type="range" id="tSlider" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>Subdivisions: <span id="subLabel">50</span></label>
+            <input type="range" id="subdivisions" min="5" max="200" value="50">
+        </div>
+        <button id="addPoint">Add Point</button>
+        <button id="removePoint">Remove Point</button>
+        <button id="animate">Animate</button>
+        <button id="reset">Reset</button>
+        <div class="hint">Click to add points. Drag to move them. Shows de Casteljau's algorithm.</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let controlPoints = [];
+        let subdivisions = 50;
+        let t = 0.5;
+        let animating = false;
+        let animationDirection = 1;
+        let selectedPoint = null;
+        let isDragging = false;
+
+        const POINT_RADIUS = 10;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function init() {
+            controlPoints = [
+                { x: width * 0.2, y: height * 0.5 },
+                { x: width * 0.35, y: height * 0.2 },
+                { x: width * 0.65, y: height * 0.8 },
+                { x: width * 0.8, y: height * 0.5 }
+            ];
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function lerpPoint(p1, p2, t) {
+            return {
+                x: lerp(p1.x, p2.x, t),
+                y: lerp(p1.y, p2.y, t)
+            };
+        }
+
+        // De Casteljau's algorithm
+        function deCasteljau(points, t) {
+            if (points.length === 1) return points;
+
+            const newPoints = [];
+            for (let i = 0; i < points.length - 1; i++) {
+                newPoints.push(lerpPoint(points[i], points[i + 1], t));
+            }
+
+            return [points, ...deCasteljau(newPoints, t)];
+        }
+
+        function bezierPoint(points, t) {
+            if (points.length === 1) return points[0];
+
+            const newPoints = [];
+            for (let i = 0; i < points.length - 1; i++) {
+                newPoints.push(lerpPoint(points[i], points[i + 1], t));
+            }
+
+            return bezierPoint(newPoints, t);
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            if (controlPoints.length < 2) {
+                requestAnimationFrame(render);
+                return;
+            }
+
+            // Animate t
+            if (animating) {
+                t += 0.005 * animationDirection;
+                if (t >= 1) { t = 1; animationDirection = -1; }
+                if (t <= 0) { t = 0; animationDirection = 1; }
+                document.getElementById('tSlider').value = t;
+                document.getElementById('tLabel').textContent = t.toFixed(2);
+            }
+
+            // Draw the curve
+            ctx.beginPath();
+            for (let i = 0; i <= subdivisions; i++) {
+                const point = bezierPoint(controlPoints, i / subdivisions);
+                if (i === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            }
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw control polygon
+            ctx.beginPath();
+            ctx.moveTo(controlPoints[0].x, controlPoints[0].y);
+            for (let i = 1; i < controlPoints.length; i++) {
+                ctx.lineTo(controlPoints[i].x, controlPoints[i].y);
+            }
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw de Casteljau construction
+            const levels = deCasteljau(controlPoints, t);
+            const colors = ['#ff6b6b', '#ffe66d', '#95e1d3', '#f38181', '#aa96da'];
+
+            for (let level = 1; level < levels.length; level++) {
+                const points = levels[level];
+                const color = colors[(level - 1) % colors.length];
+
+                // Draw lines
+                if (points.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let i = 1; i < points.length; i++) {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                    ctx.strokeStyle = color + '80';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Draw points
+                for (const p of points) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+            }
+
+            // Draw current point on curve
+            const currentPoint = bezierPoint(controlPoints, t);
+            ctx.beginPath();
+            ctx.arc(currentPoint.x, currentPoint.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // Draw control points
+            for (let i = 0; i < controlPoints.length; i++) {
+                const p = controlPoints[i];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POINT_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = selectedPoint === i ? '#ff6b6b' : '#4ecdc4';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px system-ui';
+                ctx.fillText(`P${i}`, p.x - 8, p.y - 15);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function getPointAt(x, y) {
+            for (let i = 0; i < controlPoints.length; i++) {
+                const p = controlPoints[i];
+                const dist = Math.sqrt((x - p.x) ** 2 + (y - p.y) ** 2);
+                if (dist < POINT_RADIUS) return i;
+            }
+            return null;
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const idx = getPointAt(e.clientX, e.clientY);
+            if (idx !== null) {
+                selectedPoint = idx;
+                isDragging = true;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging && selectedPoint !== null) {
+                controlPoints[selectedPoint].x = e.clientX;
+                controlPoints[selectedPoint].y = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('click', e => {
+            if (!isDragging) {
+                const idx = getPointAt(e.clientX, e.clientY);
+                if (idx === null) {
+                    // Add new point
+                    controlPoints.push({ x: e.clientX, y: e.clientY });
+                }
+            }
+        });
+
+        document.getElementById('tSlider').addEventListener('input', e => {
+            t = parseFloat(e.target.value);
+            document.getElementById('tLabel').textContent = t.toFixed(2);
+            animating = false;
+            document.getElementById('animate').textContent = 'Animate';
+        });
+
+        document.getElementById('subdivisions').addEventListener('input', e => {
+            subdivisions = parseInt(e.target.value);
+            document.getElementById('subLabel').textContent = subdivisions;
+        });
+
+        document.getElementById('addPoint').addEventListener('click', () => {
+            controlPoints.push({
+                x: width / 2 + (Math.random() - 0.5) * 200,
+                y: height / 2 + (Math.random() - 0.5) * 200
+            });
+        });
+
+        document.getElementById('removePoint').addEventListener('click', () => {
+            if (controlPoints.length > 2) {
+                controlPoints.pop();
+            }
+        });
+
+        document.getElementById('animate').addEventListener('click', e => {
+            animating = !animating;
+            e.target.textContent = animating ? 'Stop' : 'Animate';
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            init();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        init();
+        render();
+    </script>
+</body>
+</html>

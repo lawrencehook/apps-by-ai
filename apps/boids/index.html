@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boids Flocking - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 240px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; color: #fff; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Boids Flocking</h1>
+        <p>Simulated birds follow three simple rules: separation, alignment, and cohesion. Complex flocking emerges.</p>
+        <div class="control-group">
+            <label>Boids: <span id="countLabel">200</span></label>
+            <input type="range" id="count" min="50" max="500" value="200">
+        </div>
+        <div class="control-group">
+            <label>Separation: <span id="sepLabel">1.5</span></label>
+            <input type="range" id="separation" min="0" max="3" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <label>Alignment: <span id="aliLabel">1.0</span></label>
+            <input type="range" id="alignment" min="0" max="3" step="0.1" value="1.0">
+        </div>
+        <div class="control-group">
+            <label>Cohesion: <span id="cohLabel">1.0</span></label>
+            <input type="range" id="cohesion" min="0" max="3" step="0.1" value="1.0">
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        const config = {
+            count: 200,
+            separation: 1.5,
+            alignment: 1.0,
+            cohesion: 1.0,
+            maxSpeed: 4,
+            maxForce: 0.1,
+            perceptionRadius: 50
+        };
+
+        let boids = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        class Boid {
+            constructor() {
+                this.position = { x: Math.random() * width, y: Math.random() * height };
+                this.velocity = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 };
+                this.acceleration = { x: 0, y: 0 };
+            }
+
+            edges() {
+                if (this.position.x > width) this.position.x = 0;
+                if (this.position.x < 0) this.position.x = width;
+                if (this.position.y > height) this.position.y = 0;
+                if (this.position.y < 0) this.position.y = height;
+            }
+
+            flock(boids) {
+                let separation = { x: 0, y: 0 };
+                let alignment = { x: 0, y: 0 };
+                let cohesion = { x: 0, y: 0 };
+                let sepCount = 0, aliCount = 0, cohCount = 0;
+
+                for (let other of boids) {
+                    let dx = other.position.x - this.position.x;
+                    let dy = other.position.y - this.position.y;
+                    let d = Math.sqrt(dx * dx + dy * dy);
+
+                    if (other !== this && d < config.perceptionRadius) {
+                        // Separation
+                        if (d < 25) {
+                            separation.x -= dx / d;
+                            separation.y -= dy / d;
+                            sepCount++;
+                        }
+                        // Alignment
+                        alignment.x += other.velocity.x;
+                        alignment.y += other.velocity.y;
+                        aliCount++;
+                        // Cohesion
+                        cohesion.x += other.position.x;
+                        cohesion.y += other.position.y;
+                        cohCount++;
+                    }
+                }
+
+                if (sepCount > 0) {
+                    separation.x = (separation.x / sepCount) * config.separation;
+                    separation.y = (separation.y / sepCount) * config.separation;
+                }
+                if (aliCount > 0) {
+                    alignment.x = ((alignment.x / aliCount) - this.velocity.x) * config.alignment * 0.1;
+                    alignment.y = ((alignment.y / aliCount) - this.velocity.y) * config.alignment * 0.1;
+                }
+                if (cohCount > 0) {
+                    cohesion.x = ((cohesion.x / cohCount) - this.position.x) * config.cohesion * 0.01;
+                    cohesion.y = ((cohesion.y / cohCount) - this.position.y) * config.cohesion * 0.01;
+                }
+
+                this.acceleration.x += separation.x + alignment.x + cohesion.x;
+                this.acceleration.y += separation.y + alignment.y + cohesion.y;
+            }
+
+            update() {
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+
+                let speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
+                if (speed > config.maxSpeed) {
+                    this.velocity.x = (this.velocity.x / speed) * config.maxSpeed;
+                    this.velocity.y = (this.velocity.y / speed) * config.maxSpeed;
+                }
+
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+            }
+
+            draw() {
+                const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(-5, 4);
+                ctx.lineTo(-5, -4);
+                ctx.closePath();
+                ctx.fillStyle = `hsl(${(angle * 180 / Math.PI + 180) % 360}, 70%, 60%)`;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createBoids() {
+            boids = [];
+            for (let i = 0; i < config.count; i++) {
+                boids.push(new Boid());
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let boid of boids) {
+                boid.flock(boids);
+                boid.update();
+                boid.edges();
+                boid.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Controls
+        document.getElementById('count').addEventListener('input', e => {
+            config.count = parseInt(e.target.value);
+            document.getElementById('countLabel').textContent = config.count;
+            createBoids();
+        });
+        document.getElementById('separation').addEventListener('input', e => {
+            config.separation = parseFloat(e.target.value);
+            document.getElementById('sepLabel').textContent = config.separation.toFixed(1);
+        });
+        document.getElementById('alignment').addEventListener('input', e => {
+            config.alignment = parseFloat(e.target.value);
+            document.getElementById('aliLabel').textContent = config.alignment.toFixed(1);
+        });
+        document.getElementById('cohesion').addEventListener('input', e => {
+            config.cohesion = parseFloat(e.target.value);
+            document.getElementById('cohLabel').textContent = config.cohesion.toFixed(1);
+        });
+
+        createBoids();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marching Squares - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Marching Squares</h1>
+        <p>Contour line extraction algorithm. Used in topographic maps and medical imaging.</p>
+        <div class="control-group">
+            <label>Field Type</label>
+            <select id="field">
+                <option value="metaballs">Metaballs</option>
+                <option value="waves">Sine Waves</option>
+                <option value="noise">Perlin Noise</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Contour Levels: <span id="levelsLabel">8</span></label>
+            <input type="range" id="levels" min="1" max="20" value="8">
+        </div>
+        <div class="control-group">
+            <label>Resolution: <span id="resLabel">8</span></label>
+            <input type="range" id="resolution" min="4" max="20" value="8">
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let fieldType = 'metaballs';
+        let numLevels = 8;
+        let resolution = 8;
+        let time = 0;
+
+        // Metaballs
+        const balls = [];
+        for (let i = 0; i < 5; i++) {
+            balls.push({
+                x: Math.random() * 800,
+                y: Math.random() * 600,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                r: 50 + Math.random() * 50
+            });
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function noise(x, y) {
+            const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+            return n - Math.floor(n);
+        }
+
+        function smoothNoise(x, y) {
+            const ix = Math.floor(x), iy = Math.floor(y);
+            const fx = x - ix, fy = y - iy;
+            const v1 = noise(ix, iy), v2 = noise(ix + 1, iy);
+            const v3 = noise(ix, iy + 1), v4 = noise(ix + 1, iy + 1);
+            const i1 = v1 * (1 - fx) + v2 * fx;
+            const i2 = v3 * (1 - fx) + v4 * fx;
+            return i1 * (1 - fy) + i2 * fy;
+        }
+
+        function getFieldValue(x, y) {
+            if (fieldType === 'metaballs') {
+                let sum = 0;
+                for (const ball of balls) {
+                    const dx = x - ball.x;
+                    const dy = y - ball.y;
+                    sum += (ball.r * ball.r) / (dx * dx + dy * dy + 1);
+                }
+                return sum;
+            } else if (fieldType === 'waves') {
+                return Math.sin(x * 0.02 + time) * Math.cos(y * 0.02 + time * 0.7) +
+                       Math.sin((x + y) * 0.015 + time * 0.5) * 0.5;
+            } else {
+                let total = 0;
+                let freq = 0.01;
+                let amp = 1;
+                for (let i = 0; i < 4; i++) {
+                    total += smoothNoise(x * freq + time * 0.5, y * freq) * amp;
+                    freq *= 2;
+                    amp *= 0.5;
+                }
+                return total;
+            }
+        }
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function marchingSquares(threshold) {
+            const lines = [];
+            const cols = Math.ceil(width / resolution);
+            const rows = Math.ceil(height / resolution);
+
+            for (let j = 0; j < rows - 1; j++) {
+                for (let i = 0; i < cols - 1; i++) {
+                    const x = i * resolution;
+                    const y = j * resolution;
+
+                    const a = getFieldValue(x, y);
+                    const b = getFieldValue(x + resolution, y);
+                    const c = getFieldValue(x + resolution, y + resolution);
+                    const d = getFieldValue(x, y + resolution);
+
+                    const state = (a > threshold ? 8 : 0) +
+                                  (b > threshold ? 4 : 0) +
+                                  (c > threshold ? 2 : 0) +
+                                  (d > threshold ? 1 : 0);
+
+                    // Interpolated edge points
+                    const top = { x: x + lerp(0, resolution, (threshold - a) / (b - a)), y };
+                    const right = { x: x + resolution, y: y + lerp(0, resolution, (threshold - b) / (c - b)) };
+                    const bottom = { x: x + lerp(0, resolution, (threshold - d) / (c - d)), y: y + resolution };
+                    const left = { x, y: y + lerp(0, resolution, (threshold - a) / (d - a)) };
+
+                    switch (state) {
+                        case 1: case 14: lines.push([left, bottom]); break;
+                        case 2: case 13: lines.push([bottom, right]); break;
+                        case 3: case 12: lines.push([left, right]); break;
+                        case 4: case 11: lines.push([top, right]); break;
+                        case 5: lines.push([left, top], [bottom, right]); break;
+                        case 6: case 9: lines.push([top, bottom]); break;
+                        case 7: case 8: lines.push([left, top]); break;
+                        case 10: lines.push([top, right], [left, bottom]); break;
+                    }
+                }
+            }
+
+            return lines;
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            time += 0.02;
+
+            // Update metaballs
+            for (const ball of balls) {
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                if (ball.x < 0 || ball.x > width) ball.vx *= -1;
+                if (ball.y < 0 || ball.y > height) ball.vy *= -1;
+            }
+
+            // Draw filled regions (optional background)
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            for (let y = 0; y < height; y += 2) {
+                for (let x = 0; x < width; x += 2) {
+                    const v = getFieldValue(x, y);
+                    const idx = (y * width + x) * 4;
+                    const intensity = Math.min(1, Math.max(0, v * 0.3));
+                    data[idx] = intensity * 30;
+                    data[idx + 1] = intensity * 50;
+                    data[idx + 2] = intensity * 80;
+                    data[idx + 3] = 255;
+                    // Fill 2x2 block
+                    for (let dy = 0; dy < 2; dy++) {
+                        for (let dx = 0; dx < 2; dx++) {
+                            const i = ((y + dy) * width + x + dx) * 4;
+                            data[i] = data[idx];
+                            data[i + 1] = data[idx + 1];
+                            data[i + 2] = data[idx + 2];
+                            data[i + 3] = 255;
+                        }
+                    }
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            // Draw contour lines
+            for (let level = 0; level < numLevels; level++) {
+                const threshold = (level + 1) / (numLevels + 1) * 2;
+                const hue = (level / numLevels) * 240;
+                ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`;
+                ctx.lineWidth = 1.5;
+
+                const lines = marchingSquares(threshold);
+                for (const [p1, p2] of lines) {
+                    if (isFinite(p1.x) && isFinite(p1.y) && isFinite(p2.x) && isFinite(p2.y)) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('field').addEventListener('change', e => {
+            fieldType = e.target.value;
+        });
+
+        document.getElementById('levels').addEventListener('input', e => {
+            numLevels = parseInt(e.target.value);
+            document.getElementById('levelsLabel').textContent = numLevels;
+        });
+
+        document.getElementById('resolution').addEventListener('input', e => {
+            resolution = parseInt(e.target.value);
+            document.getElementById('resLabel').textContent = resolution;
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLA - Diffusion Limited Aggregation - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>DLA</h1>
+        <p>Diffusion-Limited Aggregation. Random walkers stick on contact, creating fractal crystal structures.</p>
+        <div class="control-group">
+            <label>Seed Type</label>
+            <select id="seed">
+                <option value="center">Center Point</option>
+                <option value="line">Bottom Line</option>
+                <option value="circle">Circle</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Walkers: <span id="walkersLabel">500</span></label>
+            <input type="range" id="walkers" min="100" max="2000" step="100" value="500">
+        </div>
+        <div class="control-group">
+            <label>Stickiness: <span id="stickyLabel">1.0</span></label>
+            <input type="range" id="sticky" min="0.1" max="1" step="0.1" value="1">
+        </div>
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+        <div class="status" id="status">Particles: 0</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let grid = null;
+        let walkers = [];
+        let numWalkers = 500;
+        let stickiness = 1.0;
+        let seedType = 'center';
+        let paused = false;
+        let particleCount = 0;
+        let maxRadius = 0;
+
+        const SCALE = 2;
+
+        function resize() {
+            width = Math.floor(window.innerWidth / SCALE);
+            height = Math.floor(window.innerHeight / SCALE);
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            init();
+        }
+
+        function init() {
+            grid = new Uint8Array(width * height);
+            walkers = [];
+            particleCount = 0;
+            maxRadius = 10;
+
+            // Create seed
+            if (seedType === 'center') {
+                const cx = Math.floor(width / 2);
+                const cy = Math.floor(height / 2);
+                grid[cy * width + cx] = 1;
+                particleCount = 1;
+            } else if (seedType === 'line') {
+                for (let x = 0; x < width; x++) {
+                    grid[(height - 1) * width + x] = 1;
+                    particleCount++;
+                }
+            } else if (seedType === 'circle') {
+                const cx = Math.floor(width / 2);
+                const cy = Math.floor(height / 2);
+                const r = 30;
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                    const x = Math.floor(cx + Math.cos(angle) * r);
+                    const y = Math.floor(cy + Math.sin(angle) * r);
+                    if (x >= 0 && x < width && y >= 0 && y < height) {
+                        grid[y * width + x] = 1;
+                        particleCount++;
+                    }
+                }
+            }
+
+            // Create walkers
+            for (let i = 0; i < numWalkers; i++) {
+                spawnWalker();
+            }
+
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw initial seed
+            drawGrid();
+        }
+
+        function spawnWalker() {
+            let x, y;
+
+            if (seedType === 'center' || seedType === 'circle') {
+                // Spawn on circle around structure
+                const angle = Math.random() * Math.PI * 2;
+                const r = maxRadius + 20;
+                x = Math.floor(width / 2 + Math.cos(angle) * r);
+                y = Math.floor(height / 2 + Math.sin(angle) * r);
+            } else {
+                // Spawn at top
+                x = Math.floor(Math.random() * width);
+                y = 0;
+            }
+
+            x = Math.max(0, Math.min(width - 1, x));
+            y = Math.max(0, Math.min(height - 1, y));
+
+            walkers.push({ x, y });
+        }
+
+        function hasNeighbor(x, y) {
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                        if (grid[ny * width + nx] === 1) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function drawGrid() {
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    if (grid[y * width + x] === 1) {
+                        // Color based on distance from center
+                        const dx = x - width / 2;
+                        const dy = y - height / 2;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const hue = (dist * 2) % 360;
+
+                        const [r, g, b] = hslToRgb(hue, 70, 60);
+                        data[idx] = r;
+                        data[idx + 1] = g;
+                        data[idx + 2] = b;
+                        data[idx + 3] = 255;
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function hslToRgb(h, s, l) {
+            s /= 100; l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r, g, b;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return [Math.floor((r + m) * 255), Math.floor((g + m) * 255), Math.floor((b + m) * 255)];
+        }
+
+        function update() {
+            let stuck = false;
+
+            for (let i = walkers.length - 1; i >= 0; i--) {
+                const w = walkers[i];
+
+                // Random walk
+                const dir = Math.floor(Math.random() * 4);
+                const dx = [0, 1, 0, -1][dir];
+                const dy = [-1, 0, 1, 0][dir];
+
+                w.x += dx;
+                w.y += dy;
+
+                // Wrap or respawn
+                if (w.x < 0 || w.x >= width || w.y < 0 || w.y >= height) {
+                    walkers.splice(i, 1);
+                    spawnWalker();
+                    continue;
+                }
+
+                // Check if walker should stick
+                if (hasNeighbor(w.x, w.y)) {
+                    if (Math.random() < stickiness) {
+                        grid[w.y * width + w.x] = 1;
+                        particleCount++;
+                        stuck = true;
+
+                        // Update max radius
+                        const dist = Math.sqrt((w.x - width / 2) ** 2 + (w.y - height / 2) ** 2);
+                        maxRadius = Math.max(maxRadius, dist);
+
+                        // Draw the new particle
+                        const hue = (dist * 2) % 360;
+                        const [r, g, b] = hslToRgb(hue, 70, 60);
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(w.x, w.y, 1, 1);
+
+                        walkers.splice(i, 1);
+                        spawnWalker();
+                    }
+                }
+            }
+
+            // Draw walkers (dim)
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+            for (const w of walkers) {
+                ctx.fillRect(w.x, w.y, 1, 1);
+            }
+
+            if (stuck) {
+                document.getElementById('status').textContent = `Particles: ${particleCount.toLocaleString()}`;
+            }
+        }
+
+        function render() {
+            if (!paused) {
+                // Multiple updates per frame for speed
+                for (let i = 0; i < 10; i++) {
+                    update();
+                }
+            }
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('seed').addEventListener('change', e => {
+            seedType = e.target.value;
+            init();
+        });
+
+        document.getElementById('walkers').addEventListener('input', e => {
+            numWalkers = parseInt(e.target.value);
+            document.getElementById('walkersLabel').textContent = numWalkers;
+        });
+
+        document.getElementById('sticky').addEventListener('input', e => {
+            stickiness = parseFloat(e.target.value);
+            document.getElementById('stickyLabel').textContent = stickiness.toFixed(1);
+        });
+
+        document.getElementById('reset').addEventListener('click', init);
+
+        document.getElementById('pause').addEventListener('click', e => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Resume' : 'Pause';
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-System Trees - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(to bottom, #1a1a2e 0%, #0d1117 100%); min-height: 100vh; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 240px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select {
+            width: 100%;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>L-System Trees</h1>
+        <p>Procedurally generated plants using Lindenmayer systems. Simple rules create organic complexity.</p>
+        <div class="control-group">
+            <label>Preset</label>
+            <select id="preset">
+                <option value="tree1">Binary Tree</option>
+                <option value="tree2">Stochastic Tree</option>
+                <option value="bush">Bush</option>
+                <option value="fern">Fern</option>
+                <option value="sierpinski">Sierpinski Triangle</option>
+                <option value="dragon">Dragon Curve</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Iterations: <span id="iterLabel">6</span></label>
+            <input type="range" id="iterations" min="1" max="10" value="6">
+        </div>
+        <div class="control-group">
+            <label>Angle: <span id="angleLabel">25</span>°</label>
+            <input type="range" id="angle" min="5" max="90" value="25">
+        </div>
+        <div class="control-group">
+            <label>Length: <span id="lengthLabel">10</span></label>
+            <input type="range" id="length" min="2" max="30" value="10">
+        </div>
+        <button id="generate">Regenerate</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let iterations = 6;
+        let angle = 25;
+        let length = 10;
+        let currentPreset = 'tree1';
+
+        const presets = {
+            tree1: {
+                axiom: 'X',
+                rules: { 'X': 'F[+X][-X]FX', 'F': 'FF' },
+                angle: 25,
+                startAngle: -90,
+                color: 'tree'
+            },
+            tree2: {
+                axiom: 'X',
+                rules: { 'X': 'F[+X]F[-X]+X', 'F': 'FF' },
+                angle: 20,
+                startAngle: -90,
+                color: 'tree'
+            },
+            bush: {
+                axiom: 'F',
+                rules: { 'F': 'FF+[+F-F-F]-[-F+F+F]' },
+                angle: 22.5,
+                startAngle: -90,
+                color: 'tree'
+            },
+            fern: {
+                axiom: 'X',
+                rules: { 'X': 'F+[[X]-X]-F[-FX]+X', 'F': 'FF' },
+                angle: 25,
+                startAngle: -90,
+                color: 'fern'
+            },
+            sierpinski: {
+                axiom: 'F-G-G',
+                rules: { 'F': 'F-G+F+G-F', 'G': 'GG' },
+                angle: 120,
+                startAngle: 0,
+                color: 'gradient'
+            },
+            dragon: {
+                axiom: 'FX',
+                rules: { 'X': 'X+YF+', 'Y': '-FX-Y' },
+                angle: 90,
+                startAngle: 0,
+                color: 'rainbow'
+            }
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            generate();
+        }
+
+        function generate() {
+            const preset = presets[currentPreset];
+            let sentence = preset.axiom;
+
+            // Apply rules
+            for (let i = 0; i < iterations; i++) {
+                let next = '';
+                for (let char of sentence) {
+                    next += preset.rules[char] || char;
+                }
+                sentence = next;
+
+                // Prevent too long strings
+                if (sentence.length > 500000) break;
+            }
+
+            // Clear and draw
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, width, height);
+
+            draw(sentence, preset);
+        }
+
+        function draw(sentence, preset) {
+            const stack = [];
+            let x = width / 2;
+            let y = height - 50;
+            let currentAngle = preset.startAngle * Math.PI / 180;
+            let len = length;
+            let step = 0;
+            const totalSteps = sentence.replace(/[^FG]/g, '').length;
+
+            // Adjust starting position for some presets
+            if (currentPreset === 'sierpinski') {
+                y = height - 100;
+                x = width / 4;
+            } else if (currentPreset === 'dragon') {
+                x = width / 2;
+                y = height / 2;
+                len = length * 0.7;
+            }
+
+            ctx.lineWidth = currentPreset.includes('tree') || currentPreset === 'bush' || currentPreset === 'fern' ? 1 : 2;
+            ctx.lineCap = 'round';
+
+            for (let char of sentence) {
+                switch (char) {
+                    case 'F':
+                    case 'G':
+                        const newX = x + len * Math.cos(currentAngle);
+                        const newY = y + len * Math.sin(currentAngle);
+
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(newX, newY);
+
+                        // Color based on preset
+                        if (preset.color === 'tree' || preset.color === 'fern') {
+                            const depth = stack.length;
+                            const green = preset.color === 'fern' ?
+                                `hsl(${100 + depth * 5}, 60%, ${30 + depth * 3}%)` :
+                                `hsl(${30 + depth * 10}, ${40 + depth * 5}%, ${20 + depth * 5}%)`;
+                            ctx.strokeStyle = green;
+                            ctx.lineWidth = Math.max(1, 4 - depth * 0.5);
+                        } else if (preset.color === 'rainbow') {
+                            ctx.strokeStyle = `hsl(${(step / totalSteps) * 360}, 70%, 50%)`;
+                        } else {
+                            ctx.strokeStyle = `hsl(${200 + (step / totalSteps) * 60}, 60%, 50%)`;
+                        }
+
+                        ctx.stroke();
+                        x = newX;
+                        y = newY;
+                        step++;
+                        break;
+                    case '+':
+                        currentAngle += angle * Math.PI / 180;
+                        break;
+                    case '-':
+                        currentAngle -= angle * Math.PI / 180;
+                        break;
+                    case '[':
+                        stack.push({ x, y, angle: currentAngle, len });
+                        len *= 0.8;
+                        break;
+                    case ']':
+                        const state = stack.pop();
+                        if (state) {
+                            x = state.x;
+                            y = state.y;
+                            currentAngle = state.angle;
+                            len = state.len;
+                        }
+                        break;
+                }
+            }
+        }
+
+        // Event handlers
+        document.getElementById('preset').addEventListener('change', e => {
+            currentPreset = e.target.value;
+            const preset = presets[currentPreset];
+            angle = preset.angle;
+            document.getElementById('angle').value = angle;
+            document.getElementById('angleLabel').textContent = angle;
+
+            // Adjust iterations for complex presets
+            if (currentPreset === 'dragon') {
+                iterations = Math.min(iterations, 12);
+            } else if (currentPreset === 'sierpinski') {
+                iterations = Math.min(iterations, 8);
+            }
+            document.getElementById('iterations').value = iterations;
+            document.getElementById('iterLabel').textContent = iterations;
+
+            generate();
+        });
+
+        document.getElementById('iterations').addEventListener('input', e => {
+            iterations = parseInt(e.target.value);
+            document.getElementById('iterLabel').textContent = iterations;
+            generate();
+        });
+
+        document.getElementById('angle').addEventListener('input', e => {
+            angle = parseInt(e.target.value);
+            document.getElementById('angleLabel').textContent = angle;
+            generate();
+        });
+
+        document.getElementById('length').addEventListener('input', e => {
+            length = parseInt(e.target.value);
+            document.getElementById('lengthLabel').textContent = length;
+            generate();
+        });
+
+        document.getElementById('generate').addEventListener('click', generate);
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

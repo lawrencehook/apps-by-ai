@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Algorithms - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        .container { display: flex; flex-wrap: wrap; padding: 10px; height: 100vh; }
+        .sorter {
+            flex: 1 1 calc(33.333% - 20px); margin: 10px; min-width: 300px;
+            background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
+        }
+        .sorter h3 { color: #fff; font-size: 14px; margin-bottom: 5px; }
+        .sorter .stats { color: #666; font-size: 11px; margin-bottom: 10px; }
+        .sorter canvas { flex: 1; width: 100%; min-height: 100px; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.9);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 200px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h1>Sorting Algorithms</h1>
+        <p>Watch different algorithms race. Compare their strategies and performance.</p>
+        <div class="control-group">
+            <label>Array Size: <span id="sizeLabel">50</span></label>
+            <input type="range" id="size" min="20" max="200" value="50">
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">10</span>ms</label>
+            <input type="range" id="speed" min="1" max="100" value="10">
+        </div>
+        <button id="start">Start Race</button>
+        <button id="reset">Reset</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="container" id="container"></div>
+
+    <script>
+        const container = document.getElementById('container');
+        let arraySize = 50;
+        let speed = 10;
+        let sorters = [];
+        let racing = false;
+
+        const algorithms = [
+            { name: 'Bubble Sort', fn: bubbleSort, color: '#ff6b6b' },
+            { name: 'Selection Sort', fn: selectionSort, color: '#4ecdc4' },
+            { name: 'Insertion Sort', fn: insertionSort, color: '#ffe66d' },
+            { name: 'Merge Sort', fn: mergeSort, color: '#95e1d3' },
+            { name: 'Quick Sort', fn: quickSort, color: '#f38181' },
+            { name: 'Heap Sort', fn: heapSort, color: '#aa96da' },
+        ];
+
+        class Sorter {
+            constructor(algorithm, color) {
+                this.algorithm = algorithm;
+                this.color = color;
+                this.array = [];
+                this.comparisons = 0;
+                this.swaps = 0;
+                this.done = false;
+                this.current = -1;
+                this.comparing = -1;
+
+                this.element = document.createElement('div');
+                this.element.className = 'sorter';
+                this.element.innerHTML = `
+                    <h3>${algorithm.name}</h3>
+                    <div class="stats">Comparisons: <span class="comps">0</span> | Swaps: <span class="swaps">0</span></div>
+                    <canvas></canvas>
+                `;
+                container.appendChild(this.element);
+
+                this.canvas = this.element.querySelector('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.compsEl = this.element.querySelector('.comps');
+                this.swapsEl = this.element.querySelector('.swaps');
+            }
+
+            init(arr) {
+                this.array = [...arr];
+                this.comparisons = 0;
+                this.swaps = 0;
+                this.done = false;
+                this.current = -1;
+                this.comparing = -1;
+                this.updateStats();
+                this.draw();
+            }
+
+            resize() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * window.devicePixelRatio;
+                this.canvas.height = rect.height * window.devicePixelRatio;
+                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                this.draw();
+            }
+
+            updateStats() {
+                this.compsEl.textContent = this.comparisons;
+                this.swapsEl.textContent = this.swaps;
+            }
+
+            draw() {
+                const rect = this.canvas.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+                this.ctx.clearRect(0, 0, w, h);
+
+                const barWidth = w / this.array.length;
+                const maxVal = Math.max(...this.array);
+
+                for (let i = 0; i < this.array.length; i++) {
+                    const barHeight = (this.array[i] / maxVal) * (h - 10);
+
+                    if (this.done) {
+                        this.ctx.fillStyle = '#4ecdc4';
+                    } else if (i === this.current || i === this.comparing) {
+                        this.ctx.fillStyle = '#fff';
+                    } else {
+                        this.ctx.fillStyle = this.color;
+                    }
+
+                    this.ctx.fillRect(
+                        i * barWidth + 1,
+                        h - barHeight,
+                        barWidth - 2,
+                        barHeight
+                    );
+                }
+            }
+
+            async run() {
+                await this.algorithm.fn(this);
+                this.done = true;
+                this.current = -1;
+                this.comparing = -1;
+                this.draw();
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function bubbleSort(sorter) {
+            const arr = sorter.array;
+            const n = arr.length;
+
+            for (let i = 0; i < n - 1; i++) {
+                for (let j = 0; j < n - i - 1; j++) {
+                    sorter.current = j;
+                    sorter.comparing = j + 1;
+                    sorter.comparisons++;
+
+                    if (arr[j] > arr[j + 1]) {
+                        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                        sorter.swaps++;
+                    }
+
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                }
+            }
+        }
+
+        async function selectionSort(sorter) {
+            const arr = sorter.array;
+            const n = arr.length;
+
+            for (let i = 0; i < n - 1; i++) {
+                let minIdx = i;
+                sorter.current = i;
+
+                for (let j = i + 1; j < n; j++) {
+                    sorter.comparing = j;
+                    sorter.comparisons++;
+
+                    if (arr[j] < arr[minIdx]) {
+                        minIdx = j;
+                    }
+
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                }
+
+                if (minIdx !== i) {
+                    [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+                    sorter.swaps++;
+                }
+            }
+        }
+
+        async function insertionSort(sorter) {
+            const arr = sorter.array;
+            const n = arr.length;
+
+            for (let i = 1; i < n; i++) {
+                const key = arr[i];
+                let j = i - 1;
+                sorter.current = i;
+
+                while (j >= 0 && arr[j] > key) {
+                    sorter.comparing = j;
+                    sorter.comparisons++;
+                    arr[j + 1] = arr[j];
+                    sorter.swaps++;
+                    j--;
+
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                }
+
+                arr[j + 1] = key;
+            }
+        }
+
+        async function mergeSort(sorter) {
+            const arr = sorter.array;
+
+            async function merge(left, mid, right) {
+                const leftArr = arr.slice(left, mid + 1);
+                const rightArr = arr.slice(mid + 1, right + 1);
+
+                let i = 0, j = 0, k = left;
+
+                while (i < leftArr.length && j < rightArr.length) {
+                    sorter.current = k;
+                    sorter.comparisons++;
+
+                    if (leftArr[i] <= rightArr[j]) {
+                        arr[k] = leftArr[i];
+                        i++;
+                    } else {
+                        arr[k] = rightArr[j];
+                        j++;
+                    }
+                    sorter.swaps++;
+                    k++;
+
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                }
+
+                while (i < leftArr.length) {
+                    arr[k] = leftArr[i];
+                    sorter.swaps++;
+                    i++;
+                    k++;
+                    sorter.draw();
+                    await sleep(speed);
+                }
+
+                while (j < rightArr.length) {
+                    arr[k] = rightArr[j];
+                    sorter.swaps++;
+                    j++;
+                    k++;
+                    sorter.draw();
+                    await sleep(speed);
+                }
+            }
+
+            async function sort(left, right) {
+                if (left < right) {
+                    const mid = Math.floor((left + right) / 2);
+                    await sort(left, mid);
+                    await sort(mid + 1, right);
+                    await merge(left, mid, right);
+                }
+            }
+
+            await sort(0, arr.length - 1);
+        }
+
+        async function quickSort(sorter) {
+            const arr = sorter.array;
+
+            async function partition(low, high) {
+                const pivot = arr[high];
+                let i = low - 1;
+
+                for (let j = low; j < high; j++) {
+                    sorter.current = j;
+                    sorter.comparing = high;
+                    sorter.comparisons++;
+
+                    if (arr[j] < pivot) {
+                        i++;
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                        sorter.swaps++;
+                    }
+
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                }
+
+                [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+                sorter.swaps++;
+                return i + 1;
+            }
+
+            async function sort(low, high) {
+                if (low < high) {
+                    const pi = await partition(low, high);
+                    await sort(low, pi - 1);
+                    await sort(pi + 1, high);
+                }
+            }
+
+            await sort(0, arr.length - 1);
+        }
+
+        async function heapSort(sorter) {
+            const arr = sorter.array;
+            const n = arr.length;
+
+            async function heapify(size, i) {
+                let largest = i;
+                const left = 2 * i + 1;
+                const right = 2 * i + 2;
+
+                sorter.current = i;
+
+                if (left < size) {
+                    sorter.comparing = left;
+                    sorter.comparisons++;
+                    if (arr[left] > arr[largest]) {
+                        largest = left;
+                    }
+                }
+
+                if (right < size) {
+                    sorter.comparing = right;
+                    sorter.comparisons++;
+                    if (arr[right] > arr[largest]) {
+                        largest = right;
+                    }
+                }
+
+                if (largest !== i) {
+                    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+                    sorter.swaps++;
+                    sorter.updateStats();
+                    sorter.draw();
+                    await sleep(speed);
+                    await heapify(size, largest);
+                }
+            }
+
+            // Build heap
+            for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+                await heapify(n, i);
+            }
+
+            // Extract elements
+            for (let i = n - 1; i > 0; i--) {
+                [arr[0], arr[i]] = [arr[i], arr[0]];
+                sorter.swaps++;
+                sorter.updateStats();
+                sorter.draw();
+                await sleep(speed);
+                await heapify(i, 0);
+            }
+        }
+
+        function generateArray() {
+            const arr = [];
+            for (let i = 0; i < arraySize; i++) {
+                arr.push(Math.random() * 100 + 1);
+            }
+            return arr;
+        }
+
+        function init() {
+            container.innerHTML = '';
+            sorters = [];
+
+            for (const algo of algorithms) {
+                sorters.push(new Sorter(algo, algo.color));
+            }
+
+            const arr = generateArray();
+            for (const sorter of sorters) {
+                sorter.init(arr);
+            }
+
+            setTimeout(() => {
+                for (const sorter of sorters) {
+                    sorter.resize();
+                }
+            }, 100);
+        }
+
+        async function startRace() {
+            if (racing) return;
+            racing = true;
+
+            const arr = generateArray();
+            for (const sorter of sorters) {
+                sorter.init(arr);
+            }
+
+            await Promise.all(sorters.map(s => s.run()));
+            racing = false;
+        }
+
+        document.getElementById('size').addEventListener('input', e => {
+            arraySize = parseInt(e.target.value);
+            document.getElementById('sizeLabel').textContent = arraySize;
+            if (!racing) init();
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('start').addEventListener('click', startRace);
+        document.getElementById('reset').addEventListener('click', () => {
+            if (!racing) init();
+        });
+
+        window.addEventListener('resize', () => {
+            for (const sorter of sorters) {
+                sorter.resize();
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>

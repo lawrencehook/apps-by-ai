@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Simulator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .hint { color: #555; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Gravity Simulator</h1>
+        <p>N-body gravitational simulation. Click and drag to launch bodies with velocity.</p>
+        <div class="control-group">
+            <label>Gravity: <span id="gravLabel">1.0</span></label>
+            <input type="range" id="gravity" min="0.1" max="5" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label>Trail Length: <span id="trailLabel">100</span></label>
+            <input type="range" id="trail" min="10" max="500" value="100">
+        </div>
+        <button id="addPlanet">Add Planet</button>
+        <button id="addMoon">Add Moon</button>
+        <button id="solarSystem">Solar System</button>
+        <button id="clear">Clear</button>
+        <div class="hint">Click + drag to set velocity. Larger drag = faster.</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let bodies = [];
+        let G = 1;
+        let trailLength = 100;
+        let dragStart = null;
+        let dragEnd = null;
+
+        class Body {
+            constructor(x, y, vx, vy, mass, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.mass = mass;
+                this.radius = Math.sqrt(mass) * 2;
+                this.color = color;
+                this.trail = [];
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > trailLength) {
+                    this.trail.shift();
+                }
+            }
+
+            draw() {
+                // Draw trail
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.strokeStyle = this.color.replace('1)', '0.3)');
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Draw body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+
+                // Glow effect
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.radius * 3
+                );
+                gradient.addColorStop(0, this.color.replace('1)', '0.3)'));
+                gradient.addColorStop(1, 'transparent');
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 3, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+
+        function applyGravity(dt) {
+            const forces = bodies.map(() => ({ fx: 0, fy: 0 }));
+
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+
+                    if (dist < bodies[i].radius + bodies[j].radius) {
+                        // Collision - merge bodies
+                        const totalMass = bodies[i].mass + bodies[j].mass;
+                        bodies[i].vx = (bodies[i].vx * bodies[i].mass + bodies[j].vx * bodies[j].mass) / totalMass;
+                        bodies[i].vy = (bodies[i].vy * bodies[i].mass + bodies[j].vy * bodies[j].mass) / totalMass;
+                        bodies[i].mass = totalMass;
+                        bodies[i].radius = Math.sqrt(totalMass) * 2;
+                        bodies.splice(j, 1);
+                        j--;
+                        continue;
+                    }
+
+                    const force = G * bodies[i].mass * bodies[j].mass / distSq;
+                    const fx = force * dx / dist;
+                    const fy = force * dy / dist;
+
+                    forces[i].fx += fx;
+                    forces[i].fy += fy;
+                    forces[j].fx -= fx;
+                    forces[j].fy -= fy;
+                }
+            }
+
+            for (let i = 0; i < bodies.length; i++) {
+                bodies[i].vx += forces[i].fx / bodies[i].mass * dt;
+                bodies[i].vy += forces[i].fy / bodies[i].mass * dt;
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function randomColor() {
+            const hue = Math.random() * 360;
+            return `hsla(${hue}, 70%, 60%, 1)`;
+        }
+
+        function createSolarSystem() {
+            bodies = [];
+
+            // Sun
+            bodies.push(new Body(width / 2, height / 2, 0, 0, 500, 'rgba(255, 200, 50, 1)'));
+
+            // Planets
+            const numPlanets = 5;
+            for (let i = 0; i < numPlanets; i++) {
+                const distance = 100 + i * 80;
+                const angle = Math.random() * Math.PI * 2;
+                const x = width / 2 + Math.cos(angle) * distance;
+                const y = height / 2 + Math.sin(angle) * distance;
+
+                // Orbital velocity
+                const orbitalSpeed = Math.sqrt(G * 500 / distance);
+                const vx = -Math.sin(angle) * orbitalSpeed;
+                const vy = Math.cos(angle) * orbitalSpeed;
+
+                const mass = 5 + Math.random() * 15;
+                bodies.push(new Body(x, y, vx, vy, mass, randomColor()));
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            const dt = 0.5;
+            applyGravity(dt);
+
+            for (const body of bodies) {
+                body.update(dt);
+                body.draw();
+            }
+
+            // Draw drag line
+            if (dragStart && dragEnd) {
+                ctx.beginPath();
+                ctx.moveTo(dragStart.x, dragStart.y);
+                ctx.lineTo(dragEnd.x, dragEnd.y);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Preview circle
+                ctx.beginPath();
+                ctx.arc(dragStart.x, dragStart.y, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            dragStart = { x: e.clientX, y: e.clientY };
+            dragEnd = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (dragStart) {
+                dragEnd = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (dragStart) {
+                const vx = (dragStart.x - e.clientX) * 0.05;
+                const vy = (dragStart.y - e.clientY) * 0.05;
+                bodies.push(new Body(dragStart.x, dragStart.y, vx, vy, 20, randomColor()));
+                dragStart = null;
+                dragEnd = null;
+            }
+        });
+
+        document.getElementById('gravity').addEventListener('input', e => {
+            G = parseFloat(e.target.value);
+            document.getElementById('gravLabel').textContent = G.toFixed(1);
+        });
+
+        document.getElementById('trail').addEventListener('input', e => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailLabel').textContent = trailLength;
+        });
+
+        document.getElementById('addPlanet').addEventListener('click', () => {
+            bodies.push(new Body(
+                Math.random() * width,
+                Math.random() * height,
+                (Math.random() - 0.5) * 2,
+                (Math.random() - 0.5) * 2,
+                50 + Math.random() * 100,
+                randomColor()
+            ));
+        });
+
+        document.getElementById('addMoon').addEventListener('click', () => {
+            bodies.push(new Body(
+                Math.random() * width,
+                Math.random() * height,
+                (Math.random() - 0.5) * 4,
+                (Math.random() - 0.5) * 4,
+                5 + Math.random() * 10,
+                randomColor()
+            ));
+        });
+
+        document.getElementById('solarSystem').addEventListener('click', createSolarSystem);
+
+        document.getElementById('clear').addEventListener('click', () => {
+            bodies = [];
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        createSolarSystem();
+        render();
+    </script>
+</body>
+</html>

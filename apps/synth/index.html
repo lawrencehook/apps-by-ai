@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Synthesizer - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 260px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.active { background: rgba(100, 200, 100, 0.3); border-color: rgba(100, 200, 100, 0.5); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .keyboard {
+            display: flex; margin-top: 12px; gap: 2px;
+        }
+        .key {
+            width: 30px; height: 80px; background: #fff; border-radius: 0 0 4px 4px;
+            cursor: pointer; display: flex; align-items: flex-end; justify-content: center;
+            padding-bottom: 5px; font-size: 10px; color: #333;
+        }
+        .key:hover { background: #ddd; }
+        .key:active, .key.active { background: #4ecdc4; }
+        .key.black {
+            background: #333; width: 20px; height: 50px; margin-left: -10px; margin-right: -10px;
+            z-index: 1; color: #fff;
+        }
+        .key.black:hover { background: #555; }
+        .key.black:active, .key.black.active { background: #4ecdc4; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .hint { color: #555; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Sound Synthesizer</h1>
+        <p>Web Audio API synthesizer with waveform visualization.</p>
+        <div class="control-group">
+            <label>Waveform</label>
+            <select id="waveform">
+                <option value="sine">Sine</option>
+                <option value="square">Square</option>
+                <option value="sawtooth">Sawtooth</option>
+                <option value="triangle">Triangle</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Attack: <span id="attackLabel">0.1</span>s</label>
+            <input type="range" id="attack" min="0.01" max="1" step="0.01" value="0.1">
+        </div>
+        <div class="control-group">
+            <label>Decay: <span id="decayLabel">0.2</span>s</label>
+            <input type="range" id="decay" min="0.01" max="1" step="0.01" value="0.2">
+        </div>
+        <div class="control-group">
+            <label>Sustain: <span id="sustainLabel">0.5</span></label>
+            <input type="range" id="sustain" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>Release: <span id="releaseLabel">0.3</span>s</label>
+            <input type="range" id="release" min="0.01" max="2" step="0.01" value="0.3">
+        </div>
+        <div class="control-group">
+            <label>Filter Cutoff: <span id="filterLabel">2000</span>Hz</label>
+            <input type="range" id="filter" min="100" max="10000" step="100" value="2000">
+        </div>
+        <div class="keyboard" id="keyboard"></div>
+        <div class="hint">Click keys or use keyboard: A S D F G H J K (white), W E T Y U (black)</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let audioCtx = null;
+        let analyser = null;
+        let masterGain = null;
+        let filter = null;
+        let activeOscillators = new Map();
+
+        let waveform = 'sine';
+        let attack = 0.1;
+        let decay = 0.2;
+        let sustain = 0.5;
+        let release = 0.3;
+        let filterCutoff = 2000;
+
+        // Note frequencies (C4 to C5)
+        const notes = [
+            { note: 'C4', freq: 261.63, key: 'a', black: false },
+            { note: 'C#4', freq: 277.18, key: 'w', black: true },
+            { note: 'D4', freq: 293.66, key: 's', black: false },
+            { note: 'D#4', freq: 311.13, key: 'e', black: true },
+            { note: 'E4', freq: 329.63, key: 'd', black: false },
+            { note: 'F4', freq: 349.23, key: 'f', black: false },
+            { note: 'F#4', freq: 369.99, key: 't', black: true },
+            { note: 'G4', freq: 392.00, key: 'g', black: false },
+            { note: 'G#4', freq: 415.30, key: 'y', black: true },
+            { note: 'A4', freq: 440.00, key: 'h', black: false },
+            { note: 'A#4', freq: 466.16, key: 'u', black: true },
+            { note: 'B4', freq: 493.88, key: 'j', black: false },
+            { note: 'C5', freq: 523.25, key: 'k', black: false },
+        ];
+
+        function initAudio() {
+            if (audioCtx) return;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.3;
+
+            filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = filterCutoff;
+
+            filter.connect(masterGain);
+            masterGain.connect(analyser);
+            analyser.connect(audioCtx.destination);
+        }
+
+        function playNote(freq, noteKey) {
+            initAudio();
+
+            if (activeOscillators.has(noteKey)) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = waveform;
+            osc.frequency.value = freq;
+
+            osc.connect(gainNode);
+            gainNode.connect(filter);
+
+            // ADSR envelope
+            const now = audioCtx.currentTime;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(1, now + attack);
+            gainNode.gain.linearRampToValueAtTime(sustain, now + attack + decay);
+
+            osc.start(now);
+
+            activeOscillators.set(noteKey, { osc, gainNode });
+
+            // Highlight key
+            const keyEl = document.querySelector(`[data-note="${noteKey}"]`);
+            if (keyEl) keyEl.classList.add('active');
+        }
+
+        function stopNote(noteKey) {
+            if (!activeOscillators.has(noteKey)) return;
+
+            const { osc, gainNode } = activeOscillators.get(noteKey);
+            const now = audioCtx.currentTime;
+
+            gainNode.gain.cancelScheduledValues(now);
+            gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + release);
+
+            osc.stop(now + release + 0.1);
+
+            activeOscillators.delete(noteKey);
+
+            // Remove highlight
+            const keyEl = document.querySelector(`[data-note="${noteKey}"]`);
+            if (keyEl) keyEl.classList.remove('active');
+        }
+
+        function createKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+
+            for (const note of notes) {
+                const key = document.createElement('div');
+                key.className = 'key' + (note.black ? ' black' : '');
+                key.dataset.note = note.key;
+                key.textContent = note.key.toUpperCase();
+
+                key.addEventListener('mousedown', () => playNote(note.freq, note.key));
+                key.addEventListener('mouseup', () => stopNote(note.key));
+                key.addEventListener('mouseleave', () => stopNote(note.key));
+
+                keyboard.appendChild(key);
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            if (analyser) {
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                // Draw waveform
+                analyser.getByteTimeDomainData(dataArray);
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 2;
+
+                const sliceWidth = width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = height / 2 + (v - 1) * height / 3;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
+                }
+
+                ctx.stroke();
+
+                // Draw frequency spectrum
+                analyser.getByteFrequencyData(dataArray);
+
+                const barWidth = (width / bufferLength) * 2.5;
+                let barX = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * height / 2;
+
+                    const hue = (i / bufferLength) * 240;
+                    ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.5)`;
+                    ctx.fillRect(barX, height - barHeight, barWidth, barHeight);
+
+                    barX += barWidth + 1;
+                    if (barX > width) break;
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // Keyboard input
+        document.addEventListener('keydown', e => {
+            if (e.repeat) return;
+            const note = notes.find(n => n.key === e.key.toLowerCase());
+            if (note) {
+                e.preventDefault();
+                playNote(note.freq, note.key);
+            }
+        });
+
+        document.addEventListener('keyup', e => {
+            const note = notes.find(n => n.key === e.key.toLowerCase());
+            if (note) {
+                stopNote(note.key);
+            }
+        });
+
+        // Controls
+        document.getElementById('waveform').addEventListener('change', e => {
+            waveform = e.target.value;
+        });
+
+        document.getElementById('attack').addEventListener('input', e => {
+            attack = parseFloat(e.target.value);
+            document.getElementById('attackLabel').textContent = attack.toFixed(2);
+        });
+
+        document.getElementById('decay').addEventListener('input', e => {
+            decay = parseFloat(e.target.value);
+            document.getElementById('decayLabel').textContent = decay.toFixed(2);
+        });
+
+        document.getElementById('sustain').addEventListener('input', e => {
+            sustain = parseFloat(e.target.value);
+            document.getElementById('sustainLabel').textContent = sustain.toFixed(2);
+        });
+
+        document.getElementById('release').addEventListener('input', e => {
+            release = parseFloat(e.target.value);
+            document.getElementById('releaseLabel').textContent = release.toFixed(2);
+        });
+
+        document.getElementById('filter').addEventListener('input', e => {
+            filterCutoff = parseInt(e.target.value);
+            document.getElementById('filterLabel').textContent = filterCutoff;
+            if (filter) filter.frequency.value = filterCutoff;
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        createKeyboard();
+        render();
+    </script>
+</body>
+</html>

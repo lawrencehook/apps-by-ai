@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader Art - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Shader Art</h1>
+        <p>Real-time GLSL fragment shaders. GPU-accelerated procedural graphics.</p>
+        <div class="control-group">
+            <label>Shader</label>
+            <select id="shader">
+                <option value="plasma">Plasma</option>
+                <option value="tunnel">Tunnel</option>
+                <option value="fractal">Fractal</option>
+                <option value="water">Water Ripples</option>
+                <option value="stars">Starfield</option>
+            </select>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const gl = canvas.getContext('webgl');
+
+        let width, height;
+        let program = null;
+        let timeLocation, resolutionLocation, mouseLocation;
+        let startTime = Date.now();
+        let mouseX = 0.5, mouseY = 0.5;
+
+        const vertexShaderSource = `
+            attribute vec2 position;
+            void main() {
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+
+        const shaders = {
+            plasma: `
+                precision highp float;
+                uniform float time;
+                uniform vec2 resolution;
+                uniform vec2 mouse;
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution;
+                    vec2 p = uv * 2.0 - 1.0;
+                    p.x *= resolution.x / resolution.y;
+
+                    float v = 0.0;
+                    v += sin(p.x * 10.0 + time);
+                    v += sin((p.y * 10.0 + time) / 2.0);
+                    v += sin((p.x * 10.0 + p.y * 10.0 + time) / 2.0);
+
+                    float cx = p.x + 0.5 * sin(time / 5.0);
+                    float cy = p.y + 0.5 * cos(time / 3.0);
+                    v += sin(sqrt(100.0 * (cx * cx + cy * cy) + 1.0) + time);
+
+                    v = v / 2.0;
+
+                    vec3 col = vec3(
+                        sin(v * 3.14159) * 0.5 + 0.5,
+                        sin(v * 3.14159 + 2.094) * 0.5 + 0.5,
+                        sin(v * 3.14159 + 4.188) * 0.5 + 0.5
+                    );
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
+            tunnel: `
+                precision highp float;
+                uniform float time;
+                uniform vec2 resolution;
+                uniform vec2 mouse;
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution;
+                    vec2 p = uv * 2.0 - 1.0;
+                    p.x *= resolution.x / resolution.y;
+
+                    float a = atan(p.y, p.x);
+                    float r = length(p);
+
+                    vec2 tuv;
+                    tuv.x = 0.5 / r + time * 0.5;
+                    tuv.y = a / 3.14159;
+
+                    float pattern = sin(tuv.x * 20.0) * sin(tuv.y * 10.0);
+
+                    vec3 col = vec3(0.0);
+                    col += 0.5 + 0.5 * cos(tuv.x * 10.0 + vec3(0.0, 2.0, 4.0));
+                    col *= 0.5 + 0.5 * pattern;
+                    col *= 1.0 - r * 0.5;
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
+            fractal: `
+                precision highp float;
+                uniform float time;
+                uniform vec2 resolution;
+                uniform vec2 mouse;
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution;
+                    vec2 c = (uv - 0.5) * 3.0;
+                    c.x *= resolution.x / resolution.y;
+                    c += vec2(-0.5 + sin(time * 0.1) * 0.2, sin(time * 0.15) * 0.2);
+
+                    vec2 z = vec2(0.0);
+                    float iter = 0.0;
+                    const float maxIter = 100.0;
+
+                    for (float i = 0.0; i < maxIter; i++) {
+                        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+                        if (dot(z, z) > 4.0) break;
+                        iter++;
+                    }
+
+                    float t = iter / maxIter;
+                    vec3 col = 0.5 + 0.5 * cos(3.0 + t * 10.0 + time * 0.5 + vec3(0.0, 0.6, 1.0));
+                    if (iter >= maxIter - 1.0) col = vec3(0.0);
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
+            water: `
+                precision highp float;
+                uniform float time;
+                uniform vec2 resolution;
+                uniform vec2 mouse;
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution;
+                    vec2 p = uv * 2.0 - 1.0;
+                    p.x *= resolution.x / resolution.y;
+
+                    float wave = 0.0;
+
+                    // Multiple ripple sources
+                    for (float i = 0.0; i < 5.0; i++) {
+                        vec2 center = vec2(
+                            sin(time * 0.5 + i * 1.3) * 0.5,
+                            cos(time * 0.4 + i * 1.7) * 0.5
+                        );
+                        float d = length(p - center);
+                        wave += sin(d * 20.0 - time * 4.0) / (d * 10.0 + 1.0);
+                    }
+
+                    // Mouse ripple
+                    vec2 m = mouse * 2.0 - 1.0;
+                    m.x *= resolution.x / resolution.y;
+                    float md = length(p - m);
+                    wave += sin(md * 30.0 - time * 6.0) / (md * 5.0 + 1.0);
+
+                    vec3 col = vec3(0.1, 0.3, 0.5);
+                    col += wave * 0.2;
+                    col += vec3(0.0, 0.2, 0.4) * (1.0 - length(p) * 0.3);
+
+                    // Specular highlights
+                    float spec = pow(max(0.0, wave), 4.0);
+                    col += vec3(1.0) * spec * 0.5;
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
+            stars: `
+                precision highp float;
+                uniform float time;
+                uniform vec2 resolution;
+                uniform vec2 mouse;
+
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution;
+                    vec2 p = uv - 0.5;
+                    p.x *= resolution.x / resolution.y;
+
+                    vec3 col = vec3(0.0);
+
+                    // Layers of stars at different depths
+                    for (float layer = 1.0; layer < 4.0; layer++) {
+                        float speed = layer * 0.5;
+                        float scale = 10.0 * layer;
+
+                        vec2 st = p * scale;
+                        st.y += time * speed;
+
+                        vec2 ipos = floor(st);
+                        vec2 fpos = fract(st);
+
+                        float star = hash(ipos);
+
+                        if (star > 0.97) {
+                            vec2 center = vec2(hash(ipos + 0.1), hash(ipos + 0.2));
+                            float d = length(fpos - center);
+                            float brightness = 1.0 - smoothstep(0.0, 0.1, d);
+                            brightness *= sin(time * 3.0 + star * 100.0) * 0.5 + 0.5;
+                            col += vec3(1.0, 0.9, 0.8) * brightness / layer;
+                        }
+                    }
+
+                    // Nebula background
+                    float nebula = 0.0;
+                    nebula += sin(p.x * 5.0 + time * 0.2) * sin(p.y * 5.0 + time * 0.15) * 0.5;
+                    nebula += sin(p.x * 10.0 - time * 0.1) * sin(p.y * 8.0) * 0.25;
+                    col += vec3(0.2, 0.1, 0.3) * (nebula * 0.3 + 0.1);
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `
+        };
+
+        function createShader(type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+
+            return shader;
+        }
+
+        function createProgram(fragmentSource) {
+            const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vertexShader);
+            gl.attachShader(prog, fragmentShader);
+            gl.linkProgram(prog);
+
+            if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+                console.error('Program link error:', gl.getProgramInfoLog(prog));
+                return null;
+            }
+
+            return prog;
+        }
+
+        function setShader(name) {
+            if (program) gl.deleteProgram(program);
+
+            program = createProgram(shaders[name]);
+            gl.useProgram(program);
+
+            timeLocation = gl.getUniformLocation(program, 'time');
+            resolutionLocation = gl.getUniformLocation(program, 'resolution');
+            mouseLocation = gl.getUniformLocation(program, 'mouse');
+
+            // Set up geometry
+            const positionLocation = gl.getAttribLocation(program, 'position');
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1, 1, -1, -1, 1,
+                -1, 1, 1, -1, 1, 1
+            ]), gl.STATIC_DRAW);
+
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            startTime = Date.now();
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            gl.viewport(0, 0, width, height);
+        }
+
+        function render() {
+            const time = (Date.now() - startTime) / 1000;
+
+            gl.uniform1f(timeLocation, time);
+            gl.uniform2f(resolutionLocation, width, height);
+            gl.uniform2f(mouseLocation, mouseX, mouseY);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            mouseX = e.clientX / width;
+            mouseY = 1.0 - e.clientY / height;
+        });
+
+        document.getElementById('shader').addEventListener('change', e => {
+            setShader(e.target.value);
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        setShader('plasma');
+        render();
+    </script>
+</body>
+</html>

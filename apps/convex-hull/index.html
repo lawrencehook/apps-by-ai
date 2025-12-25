@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convex Hull - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Convex Hull</h1>
+        <p>Find the smallest convex polygon containing all points. Click to add points.</p>
+        <div class="control-group">
+            <label>Algorithm</label>
+            <select id="algorithm">
+                <option value="jarvis">Jarvis March (Gift Wrapping)</option>
+                <option value="graham">Graham Scan</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">100</span>ms</label>
+            <input type="range" id="speed" min="20" max="500" value="100">
+        </div>
+        <button id="random">Add Random Points</button>
+        <button id="run">Build Hull</button>
+        <button id="clear">Clear</button>
+        <div class="status" id="status">Click to add points</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let points = [];
+        let hull = [];
+        let algorithm = 'jarvis';
+        let speed = 100;
+        let running = false;
+        let currentEdge = null;
+        let candidatePoint = null;
+        let scanLine = null;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            draw();
+        }
+
+        function cross(o, a, b) {
+            return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+        }
+
+        function distance(a, b) {
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }
+
+        function angle(origin, point) {
+            return Math.atan2(point.y - origin.y, point.x - origin.x);
+        }
+
+        async function jarvisMarch() {
+            if (points.length < 3) return;
+
+            hull = [];
+            running = true;
+
+            // Find leftmost point
+            let leftmost = points[0];
+            for (const p of points) {
+                if (p.x < leftmost.x) leftmost = p;
+            }
+
+            let current = leftmost;
+            hull.push(current);
+
+            do {
+                let next = points[0];
+                if (next === current) next = points[1];
+
+                for (const candidate of points) {
+                    if (candidate === current) continue;
+
+                    candidatePoint = candidate;
+                    currentEdge = { from: current, to: next };
+                    draw();
+                    await sleep(speed);
+
+                    const c = cross(current, next, candidate);
+                    if (c > 0 || (c === 0 && distance(current, candidate) > distance(current, next))) {
+                        next = candidate;
+                        currentEdge = { from: current, to: next };
+                        draw();
+                    }
+                }
+
+                candidatePoint = null;
+                current = next;
+                if (current !== leftmost) {
+                    hull.push(current);
+                }
+
+                draw();
+                await sleep(speed);
+
+            } while (current !== leftmost && running);
+
+            currentEdge = null;
+            running = false;
+            document.getElementById('status').textContent = `Hull complete: ${hull.length} points`;
+            draw();
+        }
+
+        async function grahamScan() {
+            if (points.length < 3) return;
+
+            hull = [];
+            running = true;
+
+            // Find bottom-most point (and leftmost if tie)
+            let start = points[0];
+            for (const p of points) {
+                if (p.y > start.y || (p.y === start.y && p.x < start.x)) {
+                    start = p;
+                }
+            }
+
+            // Sort points by polar angle
+            const sorted = points.filter(p => p !== start).sort((a, b) => {
+                const angleA = angle(start, a);
+                const angleB = angle(start, b);
+                if (Math.abs(angleA - angleB) < 0.0001) {
+                    return distance(start, a) - distance(start, b);
+                }
+                return angleA - angleB;
+            });
+
+            hull = [start];
+            if (sorted.length > 0) hull.push(sorted[0]);
+
+            for (let i = 1; i < sorted.length && running; i++) {
+                const point = sorted[i];
+                candidatePoint = point;
+
+                // Show scan line
+                scanLine = { from: start, angle: angle(start, point) };
+                draw();
+                await sleep(speed);
+
+                while (hull.length > 1 && cross(hull[hull.length - 2], hull[hull.length - 1], point) <= 0) {
+                    hull.pop();
+                    draw();
+                    await sleep(speed / 2);
+                }
+
+                hull.push(point);
+                draw();
+                await sleep(speed);
+            }
+
+            candidatePoint = null;
+            scanLine = null;
+            running = false;
+            document.getElementById('status').textContent = `Hull complete: ${hull.length} points`;
+            draw();
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw scan line for Graham
+            if (scanLine) {
+                ctx.strokeStyle = 'rgba(255, 230, 100, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(scanLine.from.x, scanLine.from.y);
+                ctx.lineTo(
+                    scanLine.from.x + Math.cos(scanLine.angle) * 2000,
+                    scanLine.from.y + Math.sin(scanLine.angle) * 2000
+                );
+                ctx.stroke();
+            }
+
+            // Draw current edge being tested
+            if (currentEdge) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(currentEdge.from.x, currentEdge.from.y);
+                ctx.lineTo(currentEdge.to.x, currentEdge.to.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw hull edges
+            if (hull.length > 1) {
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(hull[0].x, hull[0].y);
+                for (let i = 1; i < hull.length; i++) {
+                    ctx.lineTo(hull[i].x, hull[i].y);
+                }
+                if (!running && hull.length > 2) {
+                    ctx.lineTo(hull[0].x, hull[0].y);
+                }
+                ctx.stroke();
+
+                // Fill hull
+                if (!running && hull.length > 2) {
+                    ctx.fillStyle = 'rgba(78, 205, 196, 0.1)';
+                    ctx.beginPath();
+                    ctx.moveTo(hull[0].x, hull[0].y);
+                    for (let i = 1; i < hull.length; i++) {
+                        ctx.lineTo(hull[i].x, hull[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            // Draw points
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+
+                if (p === candidatePoint) {
+                    ctx.fillStyle = '#ffe66d';
+                } else if (hull.includes(p)) {
+                    ctx.fillStyle = '#4ecdc4';
+                } else {
+                    ctx.fillStyle = '#fff';
+                }
+                ctx.fill();
+            }
+
+            // Draw hull points larger
+            for (const p of hull) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        canvas.addEventListener('click', e => {
+            if (running) return;
+            points.push({ x: e.clientX, y: e.clientY });
+            hull = [];
+            document.getElementById('status').textContent = `${points.length} points`;
+            draw();
+        });
+
+        document.getElementById('algorithm').addEventListener('change', e => {
+            algorithm = e.target.value;
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('random').addEventListener('click', () => {
+            if (running) return;
+            for (let i = 0; i < 10; i++) {
+                points.push({
+                    x: 150 + Math.random() * (width - 300),
+                    y: 100 + Math.random() * (height - 200)
+                });
+            }
+            hull = [];
+            document.getElementById('status').textContent = `${points.length} points`;
+            draw();
+        });
+
+        document.getElementById('run').addEventListener('click', () => {
+            if (running || points.length < 3) return;
+            hull = [];
+            if (algorithm === 'jarvis') {
+                jarvisMarch();
+            } else {
+                grahamScan();
+            }
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            if (running) return;
+            points = [];
+            hull = [];
+            currentEdge = null;
+            candidatePoint = null;
+            scanLine = null;
+            document.getElementById('status').textContent = 'Click to add points';
+            draw();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Add some initial points
+        for (let i = 0; i < 20; i++) {
+            points.push({
+                x: 150 + Math.random() * (window.innerWidth - 300),
+                y: 100 + Math.random() * (window.innerHeight - 200)
+            });
+        }
+        document.getElementById('status').textContent = `${points.length} points`;
+        draw();
+    </script>
+</body>
+</html>

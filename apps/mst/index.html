@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Spanning Tree - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Minimum Spanning Tree</h1>
+        <p>Connect all nodes with minimum total edge weight. Compare Prim's vs Kruskal's.</p>
+        <div class="control-group">
+            <label>Algorithm</label>
+            <select id="algorithm">
+                <option value="prim">Prim's Algorithm</option>
+                <option value="kruskal">Kruskal's Algorithm</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">100</span>ms</label>
+            <input type="range" id="speed" min="20" max="500" value="100">
+        </div>
+        <div class="control-group">
+            <label>Nodes: <span id="nodesLabel">20</span></label>
+            <input type="range" id="nodes" min="10" max="50" value="20">
+        </div>
+        <button id="run">Build MST</button>
+        <button id="reset">New Graph</button>
+        <div class="status" id="status">Ready</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let nodes = [];
+        let edges = [];
+        let mstEdges = [];
+        let numNodes = 20;
+        let speed = 100;
+        let algorithm = 'prim';
+        let running = false;
+        let currentEdge = null;
+        let visitedNodes = new Set();
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            generateGraph();
+        }
+
+        function generateGraph() {
+            nodes = [];
+            edges = [];
+            mstEdges = [];
+            visitedNodes.clear();
+            currentEdge = null;
+
+            const margin = 100;
+            for (let i = 0; i < numNodes; i++) {
+                nodes.push({
+                    id: i,
+                    x: margin + Math.random() * (width - 2 * margin),
+                    y: margin + Math.random() * (height - 2 * margin)
+                });
+            }
+
+            // Create edges between nearby nodes
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const weight = Math.sqrt(dx * dx + dy * dy);
+
+                    if (weight < 250) {
+                        edges.push({
+                            a: nodes[i],
+                            b: nodes[j],
+                            weight: weight
+                        });
+                    }
+                }
+            }
+
+            // Ensure connected graph
+            for (let i = 1; i < nodes.length; i++) {
+                let hasConnection = false;
+                for (const edge of edges) {
+                    if ((edge.a === nodes[i] || edge.b === nodes[i]) &&
+                        (edge.a.id < i || edge.b.id < i)) {
+                        hasConnection = true;
+                        break;
+                    }
+                }
+                if (!hasConnection) {
+                    let nearest = nodes[0];
+                    let minDist = Infinity;
+                    for (let j = 0; j < i; j++) {
+                        const dx = nodes[i].x - nodes[j].x;
+                        const dy = nodes[i].y - nodes[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearest = nodes[j];
+                        }
+                    }
+                    edges.push({ a: nodes[i], b: nearest, weight: minDist });
+                }
+            }
+
+            document.getElementById('status').textContent = `${nodes.length} nodes, ${edges.length} edges`;
+            draw();
+        }
+
+        async function primMST() {
+            running = true;
+            mstEdges = [];
+            visitedNodes.clear();
+
+            visitedNodes.add(nodes[0]);
+
+            while (visitedNodes.size < nodes.length && running) {
+                let minEdge = null;
+                let minWeight = Infinity;
+
+                for (const edge of edges) {
+                    const aVisited = visitedNodes.has(edge.a);
+                    const bVisited = visitedNodes.has(edge.b);
+
+                    if (aVisited !== bVisited) {
+                        currentEdge = edge;
+                        draw();
+                        await sleep(speed / 3);
+
+                        if (edge.weight < minWeight) {
+                            minWeight = edge.weight;
+                            minEdge = edge;
+                        }
+                    }
+                }
+
+                if (minEdge) {
+                    mstEdges.push(minEdge);
+                    if (!visitedNodes.has(minEdge.a)) visitedNodes.add(minEdge.a);
+                    if (!visitedNodes.has(minEdge.b)) visitedNodes.add(minEdge.b);
+                    currentEdge = minEdge;
+                    draw();
+                    await sleep(speed);
+                }
+            }
+
+            currentEdge = null;
+            running = false;
+            showResult();
+        }
+
+        async function kruskalMST() {
+            running = true;
+            mstEdges = [];
+            visitedNodes.clear();
+
+            // Union-Find
+            const parent = new Map();
+            const rank = new Map();
+
+            for (const node of nodes) {
+                parent.set(node, node);
+                rank.set(node, 0);
+            }
+
+            function find(x) {
+                if (parent.get(x) !== x) {
+                    parent.set(x, find(parent.get(x)));
+                }
+                return parent.get(x);
+            }
+
+            function union(x, y) {
+                const px = find(x);
+                const py = find(y);
+                if (px === py) return false;
+
+                if (rank.get(px) < rank.get(py)) {
+                    parent.set(px, py);
+                } else if (rank.get(px) > rank.get(py)) {
+                    parent.set(py, px);
+                } else {
+                    parent.set(py, px);
+                    rank.set(px, rank.get(px) + 1);
+                }
+                return true;
+            }
+
+            // Sort edges by weight
+            const sortedEdges = [...edges].sort((a, b) => a.weight - b.weight);
+
+            for (const edge of sortedEdges) {
+                if (!running) break;
+
+                currentEdge = edge;
+                draw();
+                await sleep(speed / 2);
+
+                if (union(edge.a, edge.b)) {
+                    mstEdges.push(edge);
+                    visitedNodes.add(edge.a);
+                    visitedNodes.add(edge.b);
+                    draw();
+                    await sleep(speed);
+
+                    if (mstEdges.length === nodes.length - 1) break;
+                }
+            }
+
+            currentEdge = null;
+            running = false;
+            showResult();
+        }
+
+        function showResult() {
+            const totalWeight = mstEdges.reduce((sum, e) => sum + e.weight, 0);
+            document.getElementById('status').textContent =
+                `MST complete: ${mstEdges.length} edges, total weight: ${Math.round(totalWeight)}`;
+            draw();
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw all edges (dim)
+            for (const edge of edges) {
+                ctx.beginPath();
+                ctx.moveTo(edge.a.x, edge.a.y);
+                ctx.lineTo(edge.b.x, edge.b.y);
+                ctx.strokeStyle = 'rgba(100, 100, 150, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Draw current edge being considered
+            if (currentEdge && !mstEdges.includes(currentEdge)) {
+                ctx.beginPath();
+                ctx.moveTo(currentEdge.a.x, currentEdge.a.y);
+                ctx.lineTo(currentEdge.b.x, currentEdge.b.y);
+                ctx.strokeStyle = 'rgba(255, 230, 100, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Draw MST edges
+            for (const edge of mstEdges) {
+                ctx.beginPath();
+                ctx.moveTo(edge.a.x, edge.a.y);
+                ctx.lineTo(edge.b.x, edge.b.y);
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw weight
+                const mx = (edge.a.x + edge.b.x) / 2;
+                const my = (edge.a.y + edge.b.y) / 2;
+                ctx.fillStyle = '#fff';
+                ctx.font = '11px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText(Math.round(edge.weight), mx, my - 5);
+            }
+
+            // Draw nodes
+            for (const node of nodes) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+
+                if (visitedNodes.has(node)) {
+                    ctx.fillStyle = '#4ecdc4';
+                } else {
+                    ctx.fillStyle = '#2a2a4a';
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        document.getElementById('algorithm').addEventListener('change', e => {
+            algorithm = e.target.value;
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('nodes').addEventListener('input', e => {
+            numNodes = parseInt(e.target.value);
+            document.getElementById('nodesLabel').textContent = numNodes;
+            if (!running) generateGraph();
+        });
+
+        document.getElementById('run').addEventListener('click', () => {
+            if (running) return;
+            mstEdges = [];
+            visitedNodes.clear();
+            if (algorithm === 'prim') {
+                primMST();
+            } else {
+                kruskalMST();
+            }
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            running = false;
+            setTimeout(generateGraph, 100);
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

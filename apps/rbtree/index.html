@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red-Black Tree - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        input[type="number"] {
+            width: 100%; padding: 6px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+        .legend { margin-top: 12px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 11px; color: #888; }
+        .legend-color { width: 16px; height: 16px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Red-Black Tree</h1>
+        <p>Self-balancing BST. Watch rotations and color flips maintain balance.</p>
+        <div class="control-group">
+            <label>Insert Value</label>
+            <input type="number" id="value" placeholder="Enter a number">
+        </div>
+        <button id="insert">Insert</button>
+        <button id="random">Random Insert</button>
+        <button id="clear">Clear Tree</button>
+        <div class="status" id="status">Tree is empty</div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>Red Node</div>
+            <div class="legend-item"><div class="legend-color" style="background:#333"></div>Black Node</div>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let root = null;
+        let animating = false;
+        let highlightNode = null;
+
+        const RED = true;
+        const BLACK = false;
+
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.color = RED;
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+            }
+        }
+
+        function isRed(node) {
+            return node !== null && node.color === RED;
+        }
+
+        function rotateLeft(h) {
+            const x = h.right;
+            h.right = x.left;
+            x.left = h;
+            x.color = h.color;
+            h.color = RED;
+            return x;
+        }
+
+        function rotateRight(h) {
+            const x = h.left;
+            h.left = x.right;
+            x.right = h;
+            x.color = h.color;
+            h.color = RED;
+            return x;
+        }
+
+        function flipColors(h) {
+            h.color = RED;
+            h.left.color = BLACK;
+            h.right.color = BLACK;
+        }
+
+        function insert(node, value) {
+            if (node === null) {
+                const newNode = new Node(value);
+                highlightNode = newNode;
+                return newNode;
+            }
+
+            if (value < node.value) {
+                node.left = insert(node.left, value);
+            } else if (value > node.value) {
+                node.right = insert(node.right, value);
+            } else {
+                return node; // Duplicate
+            }
+
+            // Fix-up
+            if (isRed(node.right) && !isRed(node.left)) {
+                node = rotateLeft(node);
+            }
+            if (isRed(node.left) && isRed(node.left?.left)) {
+                node = rotateRight(node);
+            }
+            if (isRed(node.left) && isRed(node.right)) {
+                flipColors(node);
+            }
+
+            return node;
+        }
+
+        function insertValue(value) {
+            if (isNaN(value)) return;
+
+            root = insert(root, value);
+            root.color = BLACK;
+
+            updatePositions();
+            animateToPositions();
+            updateStatus();
+        }
+
+        function getTreeHeight(node) {
+            if (!node) return 0;
+            return 1 + Math.max(getTreeHeight(node.left), getTreeHeight(node.right));
+        }
+
+        function getTreeWidth(node) {
+            if (!node) return 0;
+            return 1 + getTreeWidth(node.left) + getTreeWidth(node.right);
+        }
+
+        function updatePositions() {
+            if (!root) return;
+
+            const treeHeight = getTreeHeight(root);
+            const levelHeight = Math.min(80, (height - 150) / treeHeight);
+            const startY = 80;
+
+            function setPositions(node, x, y, spread) {
+                if (!node) return;
+
+                node.targetX = x;
+                node.targetY = y;
+
+                if (node.x === 0 && node.y === 0) {
+                    node.x = x;
+                    node.y = y - 50;
+                }
+
+                const childSpread = spread * 0.6;
+                setPositions(node.left, x - spread, y + levelHeight, childSpread);
+                setPositions(node.right, x + spread, y + levelHeight, childSpread);
+            }
+
+            const initialSpread = Math.min(200, (width - 100) / 4);
+            setPositions(root, width / 2, startY, initialSpread);
+        }
+
+        function animateToPositions() {
+            animating = true;
+
+            function animate() {
+                let stillMoving = false;
+
+                function updateNode(node) {
+                    if (!node) return;
+
+                    const dx = node.targetX - node.x;
+                    const dy = node.targetY - node.y;
+
+                    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                        node.x += dx * 0.15;
+                        node.y += dy * 0.15;
+                        stillMoving = true;
+                    } else {
+                        node.x = node.targetX;
+                        node.y = node.targetY;
+                    }
+
+                    updateNode(node.left);
+                    updateNode(node.right);
+                }
+
+                updateNode(root);
+                draw();
+
+                if (stillMoving) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animating = false;
+                    highlightNode = null;
+                    draw();
+                }
+            }
+
+            animate();
+        }
+
+        function updateStatus() {
+            const height = getTreeHeight(root);
+            const count = countNodes(root);
+            document.getElementById('status').textContent =
+                `Nodes: ${count} | Height: ${height}`;
+        }
+
+        function countNodes(node) {
+            if (!node) return 0;
+            return 1 + countNodes(node.left) + countNodes(node.right);
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            updatePositions();
+            draw();
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            if (!root) return;
+
+            // Draw edges first
+            function drawEdges(node) {
+                if (!node) return;
+
+                if (node.left) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.left.x, node.left.y);
+                    ctx.strokeStyle = 'rgba(100, 100, 150, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    drawEdges(node.left);
+                }
+
+                if (node.right) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.right.x, node.right.y);
+                    ctx.strokeStyle = 'rgba(100, 100, 150, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    drawEdges(node.right);
+                }
+            }
+
+            drawEdges(root);
+
+            // Draw nodes
+            function drawNodes(node) {
+                if (!node) return;
+
+                drawNodes(node.left);
+                drawNodes(node.right);
+
+                const radius = 22;
+
+                // Highlight ring
+                if (node === highlightNode) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#ffe66d';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = node.color === RED ? '#ff6b6b' : '#333';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Value text
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.value, node.x, node.y);
+            }
+
+            drawNodes(root);
+        }
+
+        document.getElementById('insert').addEventListener('click', () => {
+            const value = parseInt(document.getElementById('value').value);
+            if (!isNaN(value)) {
+                insertValue(value);
+                document.getElementById('value').value = '';
+            }
+        });
+
+        document.getElementById('value').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                    insertValue(value);
+                    e.target.value = '';
+                }
+            }
+        });
+
+        document.getElementById('random').addEventListener('click', () => {
+            const value = Math.floor(Math.random() * 100);
+            insertValue(value);
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            root = null;
+            highlightNode = null;
+            document.getElementById('status').textContent = 'Tree is empty';
+            draw();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Insert some initial values
+        [50, 25, 75, 12, 37, 62, 87].forEach((v, i) => {
+            setTimeout(() => insertValue(v), i * 300);
+        });
+    </script>
+</body>
+</html>

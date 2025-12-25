@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BFS vs DFS - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        .container { display: flex; height: 100vh; }
+        .panel {
+            flex: 1; display: flex; flex-direction: column; padding: 20px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel:last-child { border-right: none; }
+        .panel h2 { color: #fff; font-size: 1.2rem; margin-bottom: 10px; text-align: center; }
+        .panel .stats { color: #666; font-size: 12px; text-align: center; margin-bottom: 10px; }
+        .panel canvas { flex: 1; width: 100%; }
+        .controls {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); padding: 15px 25px; border-radius: 8px;
+            color: #fff; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 15px; align-items: center; z-index: 100;
+        }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        .control-group label { color: #888; font-size: 12px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .bfs { border-color: #4ecdc4; }
+        .bfs h2 { color: #4ecdc4; }
+        .dfs { border-color: #ff6b6b; }
+        .dfs h2 { color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="start">Start</button>
+        <button id="reset">Reset</button>
+        <div class="control-group">
+            <label>Speed:</label>
+            <input type="range" id="speed" min="10" max="200" value="50" style="width:100px">
+        </div>
+        <div class="control-group">
+            <label>Grid:</label>
+            <input type="range" id="gridSize" min="10" max="40" value="20" style="width:100px">
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="container">
+        <div class="panel bfs">
+            <h2>Breadth-First Search</h2>
+            <div class="stats">Visited: <span id="bfsCount">0</span> | Queue: <span id="bfsQueue">0</span></div>
+            <canvas id="bfsCanvas"></canvas>
+        </div>
+        <div class="panel dfs">
+            <h2>Depth-First Search</h2>
+            <div class="stats">Visited: <span id="dfsCount">0</span> | Stack: <span id="dfsStack">0</span></div>
+            <canvas id="dfsCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const bfsCanvas = document.getElementById('bfsCanvas');
+        const dfsCanvas = document.getElementById('dfsCanvas');
+        const bfsCtx = bfsCanvas.getContext('2d');
+        const dfsCtx = dfsCanvas.getContext('2d');
+
+        let gridSize = 20;
+        let speed = 50;
+        let running = false;
+        let bfsGrid, dfsGrid;
+        let startX, startY;
+
+        const EMPTY = 0;
+        const WALL = 1;
+        const VISITED = 2;
+        const CURRENT = 3;
+        const QUEUED = 4;
+
+        function resize() {
+            const rect = bfsCanvas.parentElement.getBoundingClientRect();
+            bfsCanvas.width = rect.width - 40;
+            bfsCanvas.height = rect.height - 80;
+            dfsCanvas.width = rect.width - 40;
+            dfsCanvas.height = rect.height - 80;
+            init();
+        }
+
+        function init() {
+            bfsGrid = [];
+            dfsGrid = [];
+
+            // Generate maze-like structure
+            for (let y = 0; y < gridSize; y++) {
+                bfsGrid[y] = [];
+                dfsGrid[y] = [];
+                for (let x = 0; x < gridSize; x++) {
+                    const isWall = Math.random() < 0.25;
+                    bfsGrid[y][x] = isWall ? WALL : EMPTY;
+                    dfsGrid[y][x] = isWall ? WALL : EMPTY;
+                }
+            }
+
+            // Start from center
+            startX = Math.floor(gridSize / 2);
+            startY = Math.floor(gridSize / 2);
+            bfsGrid[startY][startX] = EMPTY;
+            dfsGrid[startY][startX] = EMPTY;
+
+            updateStats(0, 0, 0, 0);
+            draw();
+        }
+
+        function getCellSize(canvas) {
+            return Math.min(
+                canvas.width / gridSize,
+                canvas.height / gridSize
+            );
+        }
+
+        function drawGrid(ctx, grid, canvas, color) {
+            const cellSize = getCellSize(canvas);
+            const offsetX = (canvas.width - cellSize * gridSize) / 2;
+            const offsetY = (canvas.height - cellSize * gridSize) / 2;
+
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const px = offsetX + x * cellSize;
+                    const py = offsetY + y * cellSize;
+
+                    switch (grid[y][x]) {
+                        case WALL:
+                            ctx.fillStyle = '#2a2a3a';
+                            break;
+                        case VISITED:
+                            ctx.fillStyle = color;
+                            break;
+                        case CURRENT:
+                            ctx.fillStyle = '#fff';
+                            break;
+                        case QUEUED:
+                            ctx.fillStyle = color.replace(')', ', 0.4)').replace('rgb', 'rgba');
+                            break;
+                        default:
+                            ctx.fillStyle = '#1a1a2a';
+                    }
+
+                    ctx.fillRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
+
+                    // Mark start
+                    if (x === startX && y === startY) {
+                        ctx.fillStyle = '#ffe66d';
+                        ctx.beginPath();
+                        ctx.arc(px + cellSize / 2, py + cellSize / 2, cellSize / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            drawGrid(bfsCtx, bfsGrid, bfsCanvas, 'rgb(78, 205, 196)');
+            drawGrid(dfsCtx, dfsGrid, dfsCanvas, 'rgb(255, 107, 107)');
+        }
+
+        function updateStats(bfsVisited, bfsQueueSize, dfsVisited, dfsStackSize) {
+            document.getElementById('bfsCount').textContent = bfsVisited;
+            document.getElementById('bfsQueue').textContent = bfsQueueSize;
+            document.getElementById('dfsCount').textContent = dfsVisited;
+            document.getElementById('dfsStack').textContent = dfsStackSize;
+        }
+
+        function getNeighbors(x, y) {
+            const neighbors = [];
+            const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+            for (const [dx, dy] of dirs) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                    neighbors.push({ x: nx, y: ny });
+                }
+            }
+
+            return neighbors;
+        }
+
+        async function runSearch() {
+            if (running) return;
+            running = true;
+
+            // Reset grids but keep walls
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    if (bfsGrid[y][x] !== WALL) bfsGrid[y][x] = EMPTY;
+                    if (dfsGrid[y][x] !== WALL) dfsGrid[y][x] = EMPTY;
+                }
+            }
+
+            // BFS setup
+            const bfsQueue = [{ x: startX, y: startY }];
+            bfsGrid[startY][startX] = QUEUED;
+            let bfsVisited = 0;
+
+            // DFS setup
+            const dfsStack = [{ x: startX, y: startY }];
+            dfsGrid[startY][startX] = QUEUED;
+            let dfsVisited = 0;
+
+            while ((bfsQueue.length > 0 || dfsStack.length > 0) && running) {
+                // BFS step
+                if (bfsQueue.length > 0) {
+                    const current = bfsQueue.shift();
+
+                    if (bfsGrid[current.y][current.x] === QUEUED) {
+                        bfsGrid[current.y][current.x] = CURRENT;
+                        bfsVisited++;
+
+                        for (const neighbor of getNeighbors(current.x, current.y)) {
+                            if (bfsGrid[neighbor.y][neighbor.x] === EMPTY) {
+                                bfsGrid[neighbor.y][neighbor.x] = QUEUED;
+                                bfsQueue.push(neighbor);
+                            }
+                        }
+                    }
+
+                    // Mark as visited after showing current
+                    setTimeout(() => {
+                        if (bfsGrid[current.y][current.x] === CURRENT) {
+                            bfsGrid[current.y][current.x] = VISITED;
+                        }
+                    }, speed / 2);
+                }
+
+                // DFS step
+                if (dfsStack.length > 0) {
+                    const current = dfsStack.pop();
+
+                    if (dfsGrid[current.y][current.x] === QUEUED) {
+                        dfsGrid[current.y][current.x] = CURRENT;
+                        dfsVisited++;
+
+                        // Shuffle neighbors for more interesting paths
+                        const neighbors = getNeighbors(current.x, current.y);
+                        for (let i = neighbors.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
+                        }
+
+                        for (const neighbor of neighbors) {
+                            if (dfsGrid[neighbor.y][neighbor.x] === EMPTY) {
+                                dfsGrid[neighbor.y][neighbor.x] = QUEUED;
+                                dfsStack.push(neighbor);
+                            }
+                        }
+                    }
+
+                    setTimeout(() => {
+                        if (dfsGrid[current.y][current.x] === CURRENT) {
+                            dfsGrid[current.y][current.x] = VISITED;
+                        }
+                    }, speed / 2);
+                }
+
+                updateStats(bfsVisited, bfsQueue.length, dfsVisited, dfsStack.length);
+                draw();
+                await new Promise(r => setTimeout(r, speed));
+            }
+
+            running = false;
+            draw();
+        }
+
+        document.getElementById('start').addEventListener('click', runSearch);
+        document.getElementById('reset').addEventListener('click', () => {
+            running = false;
+            setTimeout(init, 100);
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = 210 - parseInt(e.target.value);
+        });
+
+        document.getElementById('gridSize').addEventListener('input', e => {
+            gridSize = parseInt(e.target.value);
+            if (!running) init();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

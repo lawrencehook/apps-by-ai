@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A* Pathfinding - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.active { background: rgba(100, 200, 100, 0.3); border-color: rgba(100, 200, 100, 0.5); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+        .hint { color: #555; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+        .legend { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #888; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>A* Pathfinding</h1>
+        <p>Optimal pathfinding algorithm. Draw walls, set start and end points.</p>
+        <div class="control-group">
+            <label>Animation Speed: <span id="speedLabel">10</span></label>
+            <input type="range" id="speed" min="1" max="50" value="10">
+        </div>
+        <button id="wall" class="active">Draw Walls</button>
+        <button id="start">Set Start</button>
+        <button id="end">Set End</button>
+        <button id="clear">Clear All</button>
+        <button id="maze">Random Maze</button>
+        <button id="find">Find Path</button>
+        <div class="status" id="status">Draw obstacles, then click Find Path</div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>Start</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>End</div>
+            <div class="legend-item"><div class="legend-color" style="background:#2a2a4a"></div>Wall</div>
+            <div class="legend-item"><div class="legend-color" style="background:#3a5a6a"></div>Open</div>
+            <div class="legend-item"><div class="legend-color" style="background:#5a3a5a"></div>Closed</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ffe66d"></div>Path</div>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, cols, rows;
+        let grid = [];
+        let openSet = [];
+        let closedSet = [];
+        let path = [];
+        let start = null;
+        let end = null;
+        let searching = false;
+        let found = false;
+        let mode = 'wall';
+        let speed = 10;
+        let isDrawing = false;
+
+        const CELL_SIZE = 20;
+
+        const EMPTY = 0;
+        const WALL = 1;
+        const START = 2;
+        const END = 3;
+
+        class Node {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.g = Infinity;
+                this.h = 0;
+                this.f = Infinity;
+                this.parent = null;
+                this.type = EMPTY;
+            }
+        }
+
+        function heuristic(a, b) {
+            // Manhattan distance
+            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cols = Math.floor(width / CELL_SIZE);
+            rows = Math.floor(height / CELL_SIZE);
+            init();
+        }
+
+        function init() {
+            grid = [];
+            openSet = [];
+            closedSet = [];
+            path = [];
+            start = null;
+            end = null;
+            searching = false;
+            found = false;
+
+            for (let y = 0; y < rows; y++) {
+                grid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = new Node(x, y);
+                }
+            }
+
+            // Default start and end
+            start = grid[Math.floor(rows / 2)][2];
+            start.type = START;
+
+            end = grid[Math.floor(rows / 2)][cols - 3];
+            end.type = END;
+
+            document.getElementById('status').textContent = 'Draw obstacles, then click Find Path';
+        }
+
+        function getNeighbors(node) {
+            const neighbors = [];
+            const dirs = [
+                [0, -1], [1, 0], [0, 1], [-1, 0],  // Cardinal
+                [-1, -1], [1, -1], [-1, 1], [1, 1]  // Diagonal
+            ];
+
+            for (const [dx, dy] of dirs) {
+                const nx = node.x + dx;
+                const ny = node.y + dy;
+
+                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                    const neighbor = grid[ny][nx];
+                    if (neighbor.type !== WALL) {
+                        neighbors.push({ node: neighbor, cost: dx !== 0 && dy !== 0 ? 1.414 : 1 });
+                    }
+                }
+            }
+
+            return neighbors;
+        }
+
+        function startSearch() {
+            if (!start || !end) return;
+
+            // Reset
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x].g = Infinity;
+                    grid[y][x].f = Infinity;
+                    grid[y][x].parent = null;
+                }
+            }
+
+            openSet = [start];
+            closedSet = [];
+            path = [];
+            searching = true;
+            found = false;
+
+            start.g = 0;
+            start.h = heuristic(start, end);
+            start.f = start.h;
+
+            document.getElementById('status').textContent = 'Searching...';
+        }
+
+        function stepSearch() {
+            if (!searching || openSet.length === 0) {
+                if (searching && openSet.length === 0) {
+                    searching = false;
+                    document.getElementById('status').textContent = 'No path found!';
+                }
+                return;
+            }
+
+            // Find node with lowest f score
+            openSet.sort((a, b) => a.f - b.f);
+            const current = openSet.shift();
+            closedSet.push(current);
+
+            if (current === end) {
+                // Reconstruct path
+                let node = current;
+                while (node) {
+                    path.unshift(node);
+                    node = node.parent;
+                }
+                searching = false;
+                found = true;
+                document.getElementById('status').textContent = `Path found! Length: ${path.length}`;
+                return;
+            }
+
+            const neighbors = getNeighbors(current);
+
+            for (const { node: neighbor, cost } of neighbors) {
+                if (closedSet.includes(neighbor)) continue;
+
+                const tentativeG = current.g + cost;
+
+                if (tentativeG < neighbor.g) {
+                    neighbor.parent = current;
+                    neighbor.g = tentativeG;
+                    neighbor.h = heuristic(neighbor, end);
+                    neighbor.f = neighbor.g + neighbor.h;
+
+                    if (!openSet.includes(neighbor)) {
+                        openSet.push(neighbor);
+                    }
+                }
+            }
+        }
+
+        function generateMaze() {
+            init();
+
+            // Random walls
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (grid[y][x] !== start && grid[y][x] !== end && Math.random() < 0.3) {
+                        grid[y][x].type = WALL;
+                    }
+                }
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Run search steps
+            if (searching) {
+                for (let i = 0; i < speed; i++) {
+                    stepSearch();
+                    if (!searching) break;
+                }
+            }
+
+            // Draw grid
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const node = grid[y][x];
+                    const px = x * CELL_SIZE;
+                    const py = y * CELL_SIZE;
+
+                    // Cell color
+                    if (node.type === WALL) {
+                        ctx.fillStyle = '#2a2a4a';
+                    } else if (node.type === START) {
+                        ctx.fillStyle = '#4ecdc4';
+                    } else if (node.type === END) {
+                        ctx.fillStyle = '#ff6b6b';
+                    } else if (path.includes(node)) {
+                        ctx.fillStyle = '#ffe66d';
+                    } else if (closedSet.includes(node)) {
+                        ctx.fillStyle = '#5a3a5a';
+                    } else if (openSet.includes(node)) {
+                        ctx.fillStyle = '#3a5a6a';
+                    } else {
+                        ctx.fillStyle = '#1a1a2e';
+                    }
+
+                    ctx.fillRect(px + 1, py + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+                }
+            }
+
+            // Draw path line
+            if (path.length > 1) {
+                ctx.strokeStyle = '#ffe66d';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(path[0].x * CELL_SIZE + CELL_SIZE / 2, path[0].y * CELL_SIZE + CELL_SIZE / 2);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x * CELL_SIZE + CELL_SIZE / 2, path[i].y * CELL_SIZE + CELL_SIZE / 2);
+                }
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function handleCell(e) {
+            const x = Math.floor(e.clientX / CELL_SIZE);
+            const y = Math.floor(e.clientY / CELL_SIZE);
+
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return;
+
+            const node = grid[y][x];
+
+            if (mode === 'wall') {
+                if (node !== start && node !== end) {
+                    node.type = node.type === WALL ? EMPTY : WALL;
+                }
+            } else if (mode === 'start') {
+                if (start) start.type = EMPTY;
+                start = node;
+                node.type = START;
+            } else if (mode === 'end') {
+                if (end) end.type = EMPTY;
+                end = node;
+                node.type = END;
+            }
+
+            // Reset search when modifying
+            if (found || searching) {
+                openSet = [];
+                closedSet = [];
+                path = [];
+                searching = false;
+                found = false;
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            isDrawing = true;
+            handleCell(e);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDrawing && mode === 'wall') {
+                handleCell(e);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.querySelectorAll('#wall, #start, #end').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('#wall, #start, #end').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                mode = e.target.id;
+            });
+        });
+
+        document.getElementById('clear').addEventListener('click', init);
+        document.getElementById('maze').addEventListener('click', generateMaze);
+        document.getElementById('find').addEventListener('click', startSearch);
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

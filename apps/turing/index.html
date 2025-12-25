@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Machine - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 280px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        select, input[type="text"] {
+            width: 100%; padding: 6px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+            font-family: monospace;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .status-row { display: flex; justify-content: space-between; margin: 4px 0; }
+        .status-label { color: #888; font-size: 11px; }
+        .status-value { color: #4ecdc4; font-family: monospace; font-size: 13px; }
+        .result { margin-top: 8px; font-weight: bold; }
+        .result.halt { color: #4ecdc4; }
+        .result.running { color: #ffe66d; }
+        .transitions {
+            max-height: 150px; overflow-y: auto; margin-top: 10px;
+            background: rgba(255,255,255,0.03); border-radius: 4px; padding: 8px;
+        }
+        .transition {
+            font-family: monospace; font-size: 11px; padding: 3px 6px;
+            margin: 2px 0; border-radius: 2px; color: #888;
+        }
+        .transition.current { background: rgba(78, 205, 196, 0.3); color: #4ecdc4; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Turing Machine</h1>
+        <p>Universal computation model. Watch the head read, write, and move on an infinite tape.</p>
+
+        <div class="control-group">
+            <label>Preset Programs</label>
+            <select id="preset">
+                <option value="binary_inc">Binary Increment</option>
+                <option value="palindrome">Palindrome Checker</option>
+                <option value="unary_add">Unary Addition</option>
+                <option value="busy_beaver">Busy Beaver (3-state)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Initial Tape</label>
+            <input type="text" id="tape" placeholder="Enter initial tape...">
+        </div>
+
+        <button id="run">Run</button>
+        <button id="step">Step</button>
+        <button id="reset">Reset</button>
+
+        <div class="status">
+            <div class="status-row">
+                <span class="status-label">State</span>
+                <span class="status-value" id="stateDisplay">-</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Steps</span>
+                <span class="status-value" id="steps">0</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Head Position</span>
+                <span class="status-value" id="headPos">0</span>
+            </div>
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="transitions" id="transitions"></div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let tape = {};
+        let headPos = 0;
+        let state = 'q0';
+        let halted = false;
+        let running = false;
+        let stepCount = 0;
+        let transitions = {};
+        let statePositions = {};
+        let blankSymbol = '_';
+
+        const presets = {
+            binary_inc: {
+                description: 'Increments a binary number by 1',
+                tape: '1011',
+                blank: '_',
+                startState: 'q0',
+                acceptStates: ['halt'],
+                transitions: {
+                    'q0,0': ['q0', '0', 'R'],
+                    'q0,1': ['q0', '1', 'R'],
+                    'q0,_': ['q1', '_', 'L'],
+                    'q1,0': ['halt', '1', 'N'],
+                    'q1,1': ['q1', '0', 'L'],
+                    'q1,_': ['halt', '1', 'N']
+                }
+            },
+            palindrome: {
+                description: 'Checks if input is a palindrome (a/b)',
+                tape: 'abba',
+                blank: '_',
+                startState: 'q0',
+                acceptStates: ['accept'],
+                transitions: {
+                    'q0,a': ['q1', '_', 'R'],
+                    'q0,b': ['q2', '_', 'R'],
+                    'q0,_': ['accept', '_', 'N'],
+                    'q1,a': ['q1', 'a', 'R'],
+                    'q1,b': ['q1', 'b', 'R'],
+                    'q1,_': ['q3', '_', 'L'],
+                    'q2,a': ['q2', 'a', 'R'],
+                    'q2,b': ['q2', 'b', 'R'],
+                    'q2,_': ['q4', '_', 'L'],
+                    'q3,a': ['q5', '_', 'L'],
+                    'q3,_': ['accept', '_', 'N'],
+                    'q4,b': ['q5', '_', 'L'],
+                    'q4,_': ['accept', '_', 'N'],
+                    'q5,a': ['q5', 'a', 'L'],
+                    'q5,b': ['q5', 'b', 'L'],
+                    'q5,_': ['q0', '_', 'R']
+                }
+            },
+            unary_add: {
+                description: 'Adds two unary numbers (1s separated by 0)',
+                tape: '1110111',
+                blank: '_',
+                startState: 'q0',
+                acceptStates: ['halt'],
+                transitions: {
+                    'q0,1': ['q0', '1', 'R'],
+                    'q0,0': ['q1', '1', 'R'],
+                    'q1,1': ['q1', '1', 'R'],
+                    'q1,_': ['q2', '_', 'L'],
+                    'q2,1': ['halt', '_', 'N']
+                }
+            },
+            busy_beaver: {
+                description: '3-state busy beaver - writes maximum 1s before halting',
+                tape: '',
+                blank: '0',
+                startState: 'A',
+                acceptStates: ['HALT'],
+                transitions: {
+                    'A,0': ['B', '1', 'R'],
+                    'A,1': ['C', '1', 'L'],
+                    'B,0': ['A', '1', 'L'],
+                    'B,1': ['B', '1', 'R'],
+                    'C,0': ['B', '1', 'L'],
+                    'C,1': ['HALT', '1', 'N']
+                }
+            }
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            draw();
+        }
+
+        function loadPreset(name) {
+            const preset = presets[name];
+            blankSymbol = preset.blank;
+            document.getElementById('tape').value = preset.tape;
+            document.getElementById('tape').placeholder = `Blank symbol: ${blankSymbol}`;
+            reset();
+        }
+
+        function reset() {
+            const presetName = document.getElementById('preset').value;
+            const preset = presets[presetName];
+            const tapeInput = document.getElementById('tape').value;
+
+            tape = {};
+            headPos = 0;
+            state = preset.startState;
+            halted = false;
+            running = false;
+            stepCount = 0;
+            transitions = preset.transitions;
+            blankSymbol = preset.blank;
+
+            // Initialize tape
+            for (let i = 0; i < tapeInput.length; i++) {
+                tape[i] = tapeInput[i];
+            }
+
+            updateStatePositions();
+            updateUI();
+            draw();
+        }
+
+        function updateStatePositions() {
+            const presetName = document.getElementById('preset').value;
+            const preset = presets[presetName];
+
+            // Get all unique states
+            const states = new Set([preset.startState]);
+            for (const key in transitions) {
+                const [s] = key.split(',');
+                const [nextState] = transitions[key];
+                states.add(s);
+                states.add(nextState);
+            }
+
+            // Position states in a circle
+            const stateArray = Array.from(states);
+            const centerX = width / 2 + 100;
+            const centerY = height * 0.75;
+            const radius = Math.min(150, Math.min(width, height) / 5);
+
+            statePositions = {};
+            stateArray.forEach((s, i) => {
+                const angle = (i / stateArray.length) * Math.PI * 2 - Math.PI / 2;
+                statePositions[s] = {
+                    x: centerX + Math.cos(angle) * radius,
+                    y: centerY + Math.sin(angle) * radius
+                };
+            });
+        }
+
+        function getTapeSymbol(pos) {
+            return tape[pos] !== undefined ? tape[pos] : blankSymbol;
+        }
+
+        function step() {
+            if (halted) return false;
+
+            const symbol = getTapeSymbol(headPos);
+            const key = `${state},${symbol}`;
+            const transition = transitions[key];
+
+            if (!transition) {
+                halted = true;
+                updateUI();
+                draw();
+                return false;
+            }
+
+            const [nextState, writeSymbol, direction] = transition;
+
+            // Write symbol
+            tape[headPos] = writeSymbol;
+
+            // Move head
+            if (direction === 'L') headPos--;
+            else if (direction === 'R') headPos++;
+
+            // Update state
+            state = nextState;
+            stepCount++;
+
+            // Check for halt
+            const preset = presets[document.getElementById('preset').value];
+            if (preset.acceptStates.includes(state)) {
+                halted = true;
+            }
+
+            updateUI();
+            draw();
+            return !halted;
+        }
+
+        async function run() {
+            if (running || halted) return;
+            running = true;
+
+            while (!halted && running) {
+                step();
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            running = false;
+        }
+
+        function updateUI() {
+            document.getElementById('stateDisplay').textContent = state;
+            document.getElementById('steps').textContent = stepCount;
+            document.getElementById('headPos').textContent = headPos;
+
+            const resultEl = document.getElementById('result');
+            if (halted) {
+                const preset = presets[document.getElementById('preset').value];
+                if (preset.acceptStates.includes(state)) {
+                    resultEl.textContent = 'HALTED (Accepted)';
+                } else {
+                    resultEl.textContent = 'HALTED (No transition)';
+                }
+                resultEl.className = 'result halt';
+            } else if (running) {
+                resultEl.textContent = 'Running...';
+                resultEl.className = 'result running';
+            } else {
+                resultEl.textContent = '';
+                resultEl.className = 'result';
+            }
+
+            // Update transitions display
+            const transEl = document.getElementById('transitions');
+            transEl.innerHTML = '';
+            for (const key in transitions) {
+                const [s, sym] = key.split(',');
+                const [nextState, writeSym, dir] = transitions[key];
+                const current = s === state && sym === getTapeSymbol(headPos);
+                const div = document.createElement('div');
+                div.className = 'transition' + (current ? ' current' : '');
+                div.textContent = `(${s}, ${sym}) → (${nextState}, ${writeSym}, ${dir})`;
+                transEl.appendChild(div);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            drawTape();
+            drawStateMachine();
+        }
+
+        function drawTape() {
+            const cellWidth = 50;
+            const cellHeight = 60;
+            const tapeY = height * 0.25;
+            const visibleCells = Math.ceil(width / cellWidth) + 2;
+            const startCell = headPos - Math.floor(visibleCells / 2);
+
+            // Draw tape cells
+            for (let i = 0; i < visibleCells; i++) {
+                const cellPos = startCell + i;
+                const x = (i - (headPos - startCell)) * cellWidth + width / 2 - cellWidth / 2;
+
+                // Cell background
+                ctx.fillStyle = cellPos === headPos ? 'rgba(78, 205, 196, 0.3)' : 'rgba(255,255,255,0.05)';
+                ctx.fillRect(x, tapeY, cellWidth - 2, cellHeight);
+
+                // Cell border
+                ctx.strokeStyle = cellPos === headPos ? '#4ecdc4' : 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = cellPos === headPos ? 3 : 1;
+                ctx.strokeRect(x, tapeY, cellWidth - 2, cellHeight);
+
+                // Symbol
+                const symbol = getTapeSymbol(cellPos);
+                ctx.fillStyle = symbol === blankSymbol ? '#666' : '#fff';
+                ctx.font = 'bold 24px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(symbol, x + cellWidth / 2 - 1, tapeY + cellHeight / 2);
+
+                // Position number
+                ctx.fillStyle = '#444';
+                ctx.font = '10px system-ui';
+                ctx.fillText(cellPos, x + cellWidth / 2 - 1, tapeY + cellHeight + 15);
+            }
+
+            // Draw head
+            const headX = width / 2;
+            const headY = tapeY - 20;
+
+            ctx.beginPath();
+            ctx.moveTo(headX, headY + 15);
+            ctx.lineTo(headX - 12, headY - 5);
+            ctx.lineTo(headX + 12, headY - 5);
+            ctx.closePath();
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fill();
+
+            // Head label
+            ctx.fillStyle = '#4ecdc4';
+            ctx.font = 'bold 14px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('HEAD', headX, headY - 15);
+        }
+
+        function drawStateMachine() {
+            const nodeRadius = 25;
+
+            // Draw transitions as arrows
+            const drawnArrows = new Set();
+            for (const key in transitions) {
+                const [fromState, symbol] = key.split(',');
+                const [toState, writeSym, dir] = transitions[key];
+
+                if (!statePositions[fromState] || !statePositions[toState]) continue;
+
+                const from = statePositions[fromState];
+                const to = statePositions[toState];
+
+                if (fromState === toState) {
+                    // Self loop
+                    const angle = -Math.PI / 2;
+                    const loopRadius = 25;
+                    const cx = from.x + Math.cos(angle) * 45;
+                    const cy = from.y + Math.sin(angle) * 45;
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, loopRadius, 0.5, Math.PI * 2 - 0.5);
+                    ctx.strokeStyle = 'rgba(100, 100, 150, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    const arrowKey = `${fromState}-${toState}`;
+                    if (drawnArrows.has(arrowKey)) continue;
+                    drawnArrows.add(arrowKey);
+
+                    const dx = to.x - from.x;
+                    const dy = to.y - from.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const ndx = dx / dist;
+                    const ndy = dy / dist;
+
+                    const startX = from.x + ndx * nodeRadius;
+                    const startY = from.y + ndy * nodeRadius;
+                    const endX = to.x - ndx * nodeRadius;
+                    const endY = to.y - ndy * nodeRadius;
+
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = 'rgba(100, 100, 150, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Arrow head
+                    const angle = Math.atan2(endY - startY, endX - startX);
+                    ctx.beginPath();
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - Math.cos(angle - 0.3) * 10, endY - Math.sin(angle - 0.3) * 10);
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - Math.cos(angle + 0.3) * 10, endY - Math.sin(angle + 0.3) * 10);
+                    ctx.stroke();
+                }
+            }
+
+            // Draw states
+            for (const s in statePositions) {
+                const pos = statePositions[s];
+                const isCurrent = s === state;
+                const preset = presets[document.getElementById('preset').value];
+                const isAccept = preset.acceptStates.includes(s);
+
+                // Accept state double circle
+                if (isAccept) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, nodeRadius + 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = isCurrent ? '#4ecdc4' : '#666';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // State circle
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, nodeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = isCurrent ? '#4ecdc4' : '#2a2a4a';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // State label
+                ctx.fillStyle = isCurrent ? '#000' : '#fff';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(s, pos.x, pos.y);
+            }
+        }
+
+        document.getElementById('preset').addEventListener('change', e => {
+            loadPreset(e.target.value);
+        });
+
+        document.getElementById('run').addEventListener('click', run);
+        document.getElementById('step').addEventListener('click', step);
+        document.getElementById('reset').addEventListener('click', reset);
+
+        document.getElementById('tape').addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                reset();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resize();
+            updateStatePositions();
+            draw();
+        });
+
+        resize();
+        loadPreset('binary_inc');
+    </script>
+</body>
+</html>

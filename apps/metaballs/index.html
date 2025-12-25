@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metaballs - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Metaballs</h1>
+        <p>Organic blobs that smoothly merge together. Based on implicit surfaces.</p>
+        <div class="control-group">
+            <label>Blobs: <span id="countLabel">8</span></label>
+            <input type="range" id="count" min="3" max="20" value="8">
+        </div>
+        <div class="control-group">
+            <label>Threshold: <span id="threshLabel">1.0</span></label>
+            <input type="range" id="threshold" min="0.5" max="2" step="0.1" value="1">
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let balls = [];
+        let numBalls = 8;
+        let threshold = 1.0;
+        const SCALE = 4;
+
+        let mouseX = -1000, mouseY = -1000;
+
+        class Ball {
+            constructor() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.r = 30 + Math.random() * 50;
+                this.hue = Math.random() * 60 + 180; // Blue-cyan range
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off walls
+                if (this.x < 0 || this.x > window.innerWidth) this.vx *= -1;
+                if (this.y < 0 || this.y > window.innerHeight) this.vy *= -1;
+
+                // Attract to mouse
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 300) {
+                    this.vx += dx * 0.0005;
+                    this.vy += dy * 0.0005;
+                }
+
+                // Limit speed
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 5) {
+                    this.vx = (this.vx / speed) * 5;
+                    this.vy = (this.vy / speed) * 5;
+                }
+            }
+        }
+
+        function resize() {
+            width = Math.floor(window.innerWidth / SCALE);
+            height = Math.floor(window.innerHeight / SCALE);
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+        }
+
+        function init() {
+            balls = [];
+            for (let i = 0; i < numBalls; i++) {
+                balls.push(new Ball());
+            }
+        }
+
+        function render() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const px = x * SCALE;
+                    const py = y * SCALE;
+
+                    let sum = 0;
+                    let hueSum = 0;
+                    let weightSum = 0;
+
+                    for (const ball of balls) {
+                        const dx = px - ball.x;
+                        const dy = py - ball.y;
+                        const distSq = dx * dx + dy * dy;
+                        const influence = (ball.r * ball.r) / distSq;
+                        sum += influence;
+
+                        hueSum += ball.hue * influence;
+                        weightSum += influence;
+                    }
+
+                    const idx = (y * width + x) * 4;
+
+                    if (sum > threshold) {
+                        const avgHue = hueSum / weightSum;
+                        const intensity = Math.min(1, (sum - threshold) * 2);
+                        const [r, g, b] = hslToRgb(avgHue, 80, 40 + intensity * 20);
+                        data[idx] = r;
+                        data[idx + 1] = g;
+                        data[idx + 2] = b;
+                        data[idx + 3] = 255;
+                    } else {
+                        // Background gradient
+                        const bgIntensity = sum / threshold * 0.3;
+                        data[idx] = Math.floor(bgIntensity * 30);
+                        data[idx + 1] = Math.floor(bgIntensity * 20);
+                        data[idx + 2] = Math.floor(bgIntensity * 40);
+                        data[idx + 3] = 255;
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function hslToRgb(h, s, l) {
+            s /= 100; l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r, g, b;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return [Math.floor((r + m) * 255), Math.floor((g + m) * 255), Math.floor((b + m) * 255)];
+        }
+
+        function animate() {
+            for (const ball of balls) {
+                ball.update();
+            }
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+        });
+
+        document.getElementById('count').addEventListener('input', e => {
+            numBalls = parseInt(e.target.value);
+            document.getElementById('countLabel').textContent = numBalls;
+            init();
+        });
+
+        document.getElementById('threshold').addEventListener('input', e => {
+            threshold = parseFloat(e.target.value);
+            document.getElementById('threshLabel').textContent = threshold.toFixed(1);
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        init();
+        animate();
+    </script>
+</body>
+</html>

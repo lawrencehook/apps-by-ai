@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ray Marching - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .fps { position: fixed; bottom: 20px; left: 20px; color: #444; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Ray Marching</h1>
+        <p>Real-time 3D rendering using signed distance functions. No polygons—pure math.</p>
+        <div class="control-group">
+            <label>Scene</label>
+            <select id="scene">
+                <option value="spheres">Morphing Spheres</option>
+                <option value="fractal">Mandelbulb Fractal</option>
+                <option value="torus">Twisted Torus</option>
+                <option value="boxes">Infinite Boxes</option>
+            </select>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="fps" id="fps">FPS: 0</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let time = 0;
+        let scene = 'spheres';
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+
+        const SCALE = 3; // Lower resolution for performance
+
+        function resize() {
+            width = Math.floor(window.innerWidth / SCALE);
+            height = Math.floor(window.innerHeight / SCALE);
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            canvas.style.imageRendering = 'pixelated';
+        }
+
+        // Vector operations
+        const vec3 = {
+            add: (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]],
+            sub: (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]],
+            mul: (a, s) => [a[0]*s, a[1]*s, a[2]*s],
+            dot: (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2],
+            length: a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]),
+            normalize: a => { const l = vec3.length(a); return l > 0 ? [a[0]/l, a[1]/l, a[2]/l] : [0,0,0]; },
+            abs: a => [Math.abs(a[0]), Math.abs(a[1]), Math.abs(a[2])],
+            max: (a, v) => [Math.max(a[0],v), Math.max(a[1],v), Math.max(a[2],v)],
+            mod: (a, m) => [((a[0]%m)+m)%m, ((a[1]%m)+m)%m, ((a[2]%m)+m)%m]
+        };
+
+        // Signed distance functions
+        function sdSphere(p, r) {
+            return vec3.length(p) - r;
+        }
+
+        function sdBox(p, b) {
+            const d = vec3.sub(vec3.abs(p), b);
+            return Math.min(Math.max(d[0], Math.max(d[1], d[2])), 0) +
+                   vec3.length(vec3.max(d, 0));
+        }
+
+        function sdTorus(p, t) {
+            const q = [vec3.length([p[0], p[2]]) - t[0], p[1]];
+            return vec3.length(q) - t[1];
+        }
+
+        function opSmoothUnion(d1, d2, k) {
+            const h = Math.max(k - Math.abs(d1 - d2), 0) / k;
+            return Math.min(d1, d2) - h * h * k * 0.25;
+        }
+
+        function sceneSDF(p) {
+            switch(scene) {
+                case 'spheres': {
+                    const d1 = sdSphere(vec3.sub(p, [Math.sin(time) * 1.5, 0, 0]), 1);
+                    const d2 = sdSphere(vec3.sub(p, [-Math.sin(time) * 1.5, Math.cos(time), 0]), 0.8);
+                    const d3 = sdSphere(vec3.sub(p, [0, -Math.sin(time * 0.7), Math.cos(time * 1.3)]), 0.6);
+                    return opSmoothUnion(opSmoothUnion(d1, d2, 0.5), d3, 0.5);
+                }
+                case 'fractal': {
+                    let z = [...p];
+                    let dr = 1;
+                    let r = 0;
+                    const power = 8 + Math.sin(time * 0.5) * 2;
+                    for (let i = 0; i < 5; i++) {
+                        r = vec3.length(z);
+                        if (r > 2) break;
+                        let theta = Math.acos(z[2] / r) * power;
+                        let phi = Math.atan2(z[1], z[0]) * power;
+                        let zr = Math.pow(r, power);
+                        dr = Math.pow(r, power - 1) * power * dr + 1;
+                        z = [zr * Math.sin(theta) * Math.cos(phi) + p[0],
+                             zr * Math.sin(theta) * Math.sin(phi) + p[1],
+                             zr * Math.cos(theta) + p[2]];
+                    }
+                    return 0.5 * Math.log(r) * r / dr;
+                }
+                case 'torus': {
+                    const twist = p[1] * (1 + Math.sin(time) * 0.5);
+                    const c = Math.cos(twist), s = Math.sin(twist);
+                    const tp = [p[0] * c - p[2] * s, p[1], p[0] * s + p[2] * c];
+                    return sdTorus(tp, [1.5, 0.5]);
+                }
+                case 'boxes': {
+                    const rep = 4;
+                    const q = vec3.sub(vec3.mod(vec3.add(p, [rep/2, rep/2, rep/2]), rep), [rep/2, rep/2, rep/2]);
+                    const size = 0.8 + Math.sin(time + p[0] * 0.5) * 0.2;
+                    return sdBox(q, [size, size, size]);
+                }
+            }
+        }
+
+        function getNormal(p) {
+            const e = 0.001;
+            return vec3.normalize([
+                sceneSDF([p[0]+e, p[1], p[2]]) - sceneSDF([p[0]-e, p[1], p[2]]),
+                sceneSDF([p[0], p[1]+e, p[2]]) - sceneSDF([p[0], p[1]-e, p[2]]),
+                sceneSDF([p[0], p[1], p[2]+e]) - sceneSDF([p[0], p[1], p[2]-e])
+            ]);
+        }
+
+        function rayMarch(ro, rd) {
+            let t = 0;
+            for (let i = 0; i < 64; i++) {
+                const p = vec3.add(ro, vec3.mul(rd, t));
+                const d = sceneSDF(p);
+                if (d < 0.001) return { hit: true, t, p };
+                if (t > 50) break;
+                t += d;
+            }
+            return { hit: false };
+        }
+
+        function render() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            const camPos = [Math.sin(time * 0.3) * 5, 2, Math.cos(time * 0.3) * 5];
+            const target = [0, 0, 0];
+            const forward = vec3.normalize(vec3.sub(target, camPos));
+            const right = vec3.normalize([forward[2], 0, -forward[0]]);
+            const up = [0, 1, 0];
+
+            const lightDir = vec3.normalize([1, 1, 1]);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const u = (x / width - 0.5) * 2 * (width / height);
+                    const v = (0.5 - y / height) * 2;
+
+                    const rd = vec3.normalize(vec3.add(vec3.add(
+                        forward,
+                        vec3.mul(right, u)),
+                        vec3.mul(up, v)
+                    ));
+
+                    const result = rayMarch(camPos, rd);
+
+                    let color = [20, 20, 30];
+                    if (result.hit) {
+                        const normal = getNormal(result.p);
+                        const diff = Math.max(0, vec3.dot(normal, lightDir));
+                        const ambient = 0.2;
+                        const lighting = ambient + diff * 0.8;
+
+                        // Color based on normal
+                        color = [
+                            Math.floor((normal[0] * 0.5 + 0.5) * lighting * 255),
+                            Math.floor((normal[1] * 0.5 + 0.5) * lighting * 255),
+                            Math.floor((normal[2] * 0.5 + 0.5) * lighting * 255)
+                        ];
+                    }
+
+                    const idx = (y * width + x) * 4;
+                    data[idx] = color[0];
+                    data[idx + 1] = color[1];
+                    data[idx + 2] = color[2];
+                    data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function animate() {
+            time += 0.02;
+            render();
+
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsTime >= 1000) {
+                document.getElementById('fps').textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('scene').addEventListener('change', e => {
+            scene = e.target.value;
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

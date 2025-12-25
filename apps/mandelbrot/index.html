@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandelbrot Explorer - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas {
+            display: block;
+            cursor: crosshair;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 240px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.2); }
+        button.active { background: rgba(100, 150, 255, 0.3); border-color: rgba(100, 150, 255, 0.5); }
+        .info { margin-top: 12px; color: #666; font-size: 11px; font-family: monospace; }
+        .info div { margin-bottom: 4px; }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+        .back-link:hover { color: #fff; }
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #444;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 5;
+        }
+        select {
+            width: 100%;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="loading" id="loading">Rendering...</div>
+    <div class="controls">
+        <h1>Mandelbrot Explorer</h1>
+        <p>Scroll to zoom (centers on mouse). Drag to pan. Click interesting areas to explore.</p>
+        <div class="control-group">
+            <label>Max Iterations: <span id="iterLabel">200</span></label>
+            <input type="range" id="iterations" min="50" max="1000" value="200">
+        </div>
+        <div class="control-group">
+            <label>Color Scheme</label>
+            <select id="colorScheme">
+                <option value="classic">Classic</option>
+                <option value="fire">Fire</option>
+                <option value="ocean">Ocean</option>
+                <option value="grayscale">Grayscale</option>
+            </select>
+        </div>
+        <button id="reset">Reset View</button>
+        <button id="julia">Julia Mode</button>
+        <div class="info">
+            <div>Zoom: <span id="zoom">1x</span></div>
+            <div>Center: <span id="center">0, 0</span></div>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+
+        let width, height;
+
+        // View state
+        let centerX = -0.5, centerY = 0;
+        let zoom = 1;
+
+        // Rendered state
+        let renderedCenterX = centerX;
+        let renderedCenterY = centerY;
+        let renderedZoom = zoom;
+
+        // Visual transform state (pixels)
+        let visualOffsetX = 0;
+        let visualOffsetY = 0;
+        let visualScale = 1;
+
+        let maxIter = 200;
+        let colorScheme = 'classic';
+        let isJulia = false;
+        let juliaC = { x: -0.7, y: 0.27015 };
+
+        // Interaction state
+        let isDragging = false;
+        let hasDragged = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragOffsetStart = { x: 0, y: 0 };
+        let interactionTimeout;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            resetVisualTransform();
+            render();
+        }
+
+        function getColor(iter, maxIter) {
+            if (iter === maxIter) return [0, 0, 0];
+            const t = iter / maxIter;
+
+            switch (colorScheme) {
+                case 'fire':
+                    return [
+                        Math.floor(255 * Math.min(1, t * 3)),
+                        Math.floor(255 * Math.max(0, Math.min(1, t * 3 - 1))),
+                        Math.floor(255 * Math.max(0, t * 3 - 2))
+                    ];
+                case 'ocean':
+                    return [
+                        Math.floor(255 * t * t),
+                        Math.floor(255 * t),
+                        Math.floor(255 * Math.sqrt(t))
+                    ];
+                case 'grayscale':
+                    const g = Math.floor(255 * t);
+                    return [g, g, g];
+                default:
+                    const hue = 360 * t;
+                    return hslToRgb(hue, 100, 50);
+            }
+        }
+
+        function hslToRgb(h, s, l) {
+            s /= 100; l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r, g, b;
+            if (h < 60) { r = c; g = x; b = 0; }
+            else if (h < 120) { r = x; g = c; b = 0; }
+            else if (h < 180) { r = 0; g = c; b = x; }
+            else if (h < 240) { r = 0; g = x; b = c; }
+            else if (h < 300) { r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return [Math.floor((r + m) * 255), Math.floor((g + m) * 255), Math.floor((b + m) * 255)];
+        }
+
+        function mandelbrot(cx, cy) {
+            let x = 0, y = 0;
+            let iter = 0;
+            while (x * x + y * y <= 4 && iter < maxIter) {
+                const xNew = x * x - y * y + cx;
+                y = 2 * x * y + cy;
+                x = xNew;
+                iter++;
+            }
+            return iter;
+        }
+
+        function julia(zx, zy) {
+            let iter = 0;
+            while (zx * zx + zy * zy <= 4 && iter < maxIter) {
+                const xNew = zx * zx - zy * zy + juliaC.x;
+                zy = 2 * zx * zy + juliaC.y;
+                zx = xNew;
+                iter++;
+            }
+            return iter;
+        }
+
+        function render() {
+            loading.style.display = 'block';
+
+            setTimeout(() => {
+                const imageData = ctx.createImageData(width, height);
+                const data = imageData.data;
+                const aspectRatio = width / height;
+                const scale = 3 / zoom;
+
+                for (let py = 0; py < height; py++) {
+                    for (let px = 0; px < width; px++) {
+                        const x = centerX + (px / width - 0.5) * scale * aspectRatio;
+                        const y = centerY + (py / height - 0.5) * scale;
+
+                        const iter = isJulia ? julia(x, y) : mandelbrot(x, y);
+                        const [r, g, b] = getColor(iter, maxIter);
+
+                        const idx = (py * width + px) * 4;
+                        data[idx] = r;
+                        data[idx + 1] = g;
+                        data[idx + 2] = b;
+                        data[idx + 3] = 255;
+                    }
+                }
+
+                // Reset transform and draw
+                resetVisualTransform();
+                ctx.putImageData(imageData, 0, 0);
+
+                // Store rendered state
+                renderedCenterX = centerX;
+                renderedCenterY = centerY;
+                renderedZoom = zoom;
+
+                loading.style.display = 'none';
+                updateInfo();
+            }, 10);
+        }
+
+        function resetVisualTransform() {
+            visualOffsetX = 0;
+            visualOffsetY = 0;
+            visualScale = 1;
+            applyVisualTransform();
+        }
+
+        function applyVisualTransform() {
+            canvas.style.transform = `translate(${visualOffsetX}px, ${visualOffsetY}px) scale(${visualScale})`;
+            updateInfo();
+        }
+
+        function endInteraction() {
+            clearTimeout(interactionTimeout);
+            interactionTimeout = setTimeout(() => {
+                // Convert visual transform back to view state
+                const aspectRatio = width / height;
+                const renderedComplexScale = 3 / renderedZoom;
+
+                // What rendered pixel is currently at screen center?
+                const rpx = (width / 2 - visualOffsetX) / visualScale;
+                const rpy = (height / 2 - visualOffsetY) / visualScale;
+
+                // What complex coordinate is at that rendered pixel?
+                centerX = renderedCenterX + (rpx / width - 0.5) * renderedComplexScale * aspectRatio;
+                centerY = renderedCenterY + (rpy / height - 0.5) * renderedComplexScale;
+                zoom = renderedZoom * visualScale;
+
+                render();
+            }, 200);
+        }
+
+        function updateInfo() {
+            const currentZoom = renderedZoom * visualScale;
+            document.getElementById('zoom').textContent = currentZoom.toExponential(2) + 'x';
+
+            const aspectRatio = width / height;
+            const renderedComplexScale = 3 / renderedZoom;
+            const rpx = (width / 2 - visualOffsetX) / visualScale;
+            const rpy = (height / 2 - visualOffsetY) / visualScale;
+            const cx = renderedCenterX + (rpx / width - 0.5) * renderedComplexScale * aspectRatio;
+            const cy = renderedCenterY + (rpy / height - 0.5) * renderedComplexScale;
+            document.getElementById('center').textContent = `${cx.toFixed(6)}, ${cy.toFixed(6)}`;
+        }
+
+        // Event handlers
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            hasDragged = false;
+            clearTimeout(interactionTimeout);
+            dragStart = { x: e.clientX, y: e.clientY };
+            dragOffsetStart = { x: visualOffsetX, y: visualOffsetY };
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging) {
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                    hasDragged = true;
+                }
+
+                visualOffsetX = dragOffsetStart.x + dx;
+                visualOffsetY = dragOffsetStart.y + dy;
+                applyVisualTransform();
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (!hasDragged && isDragging) {
+                // Click to zoom - zoom toward click point
+                const zoomFactor = e.shiftKey ? 0.5 : 2;
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+
+                // Adjust offset so mouse point stays fixed while scaling
+                visualOffsetX = mouseX - (mouseX - visualOffsetX) * zoomFactor;
+                visualOffsetY = mouseY - (mouseY - visualOffsetY) * zoomFactor;
+                visualScale *= zoomFactor;
+
+                applyVisualTransform();
+            }
+            isDragging = false;
+            endInteraction();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDragging) {
+                isDragging = false;
+                endInteraction();
+            }
+        });
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            clearTimeout(interactionTimeout);
+
+            // Gentler zoom
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+
+            // Adjust offset so mouse point stays fixed while scaling
+            visualOffsetX = mouseX - (mouseX - visualOffsetX) * zoomFactor;
+            visualOffsetY = mouseY - (mouseY - visualOffsetY) * zoomFactor;
+            visualScale *= zoomFactor;
+
+            applyVisualTransform();
+            endInteraction();
+        }, { passive: false });
+
+        document.getElementById('iterations').addEventListener('input', e => {
+            maxIter = parseInt(e.target.value);
+            document.getElementById('iterLabel').textContent = maxIter;
+            render();
+        });
+
+        document.getElementById('colorScheme').addEventListener('change', e => {
+            colorScheme = e.target.value;
+            render();
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            centerX = isJulia ? 0 : -0.5;
+            centerY = 0;
+            zoom = 1;
+            resetVisualTransform();
+            render();
+        });
+
+        document.getElementById('julia').addEventListener('click', (e) => {
+            isJulia = !isJulia;
+            e.target.classList.toggle('active', isJulia);
+            e.target.textContent = isJulia ? 'Julia Mode (On)' : 'Julia Mode';
+            centerX = isJulia ? 0 : -0.5;
+            centerY = 0;
+            zoom = 1;
+            resetVisualTransform();
+            render();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

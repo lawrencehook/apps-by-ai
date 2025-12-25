@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Physics - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .hint { color: #555; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Spring Physics</h1>
+        <p>Mass-spring system with damping. Drag nodes to interact, watch energy propagate.</p>
+        <div class="control-group">
+            <label>Stiffness: <span id="stiffLabel">0.3</span></label>
+            <input type="range" id="stiffness" min="0.05" max="0.8" step="0.05" value="0.3">
+        </div>
+        <div class="control-group">
+            <label>Damping: <span id="dampLabel">0.98</span></label>
+            <input type="range" id="damping" min="0.9" max="1" step="0.01" value="0.98">
+        </div>
+        <div class="control-group">
+            <label>Gravity: <span id="gravLabel">0.2</span></label>
+            <input type="range" id="gravity" min="0" max="1" step="0.1" value="0.2">
+        </div>
+        <button id="reset">Reset</button>
+        <button id="shake">Shake</button>
+        <div class="hint">Click and drag nodes to pull them around.</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let nodes = [];
+        let springs = [];
+        let stiffness = 0.3;
+        let damping = 0.98;
+        let gravity = 0.2;
+        let selectedNode = null;
+        let mouseX = 0, mouseY = 0;
+
+        const COLS = 12;
+        const ROWS = 8;
+        const REST_LENGTH = 50;
+
+        class Node {
+            constructor(x, y, fixed = false) {
+                this.x = x;
+                this.y = y;
+                this.oldX = x;
+                this.oldY = y;
+                this.fixed = fixed;
+            }
+
+            update() {
+                if (this.fixed) return;
+
+                const vx = (this.x - this.oldX) * damping;
+                const vy = (this.y - this.oldY) * damping;
+
+                this.oldX = this.x;
+                this.oldY = this.y;
+
+                this.x += vx;
+                this.y += vy + gravity;
+
+                // Bounds
+                if (this.y > height - 20) {
+                    this.y = height - 20;
+                    this.oldY = this.y + vy * 0.5;
+                }
+                if (this.x < 20) this.x = 20;
+                if (this.x > width - 20) this.x = width - 20;
+            }
+        }
+
+        class Spring {
+            constructor(a, b, restLength) {
+                this.a = a;
+                this.b = b;
+                this.restLength = restLength;
+            }
+
+            update() {
+                const dx = this.b.x - this.a.x;
+                const dy = this.b.y - this.a.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const diff = (this.restLength - dist) / dist;
+
+                const offsetX = dx * diff * stiffness;
+                const offsetY = dy * diff * stiffness;
+
+                if (!this.a.fixed) {
+                    this.a.x -= offsetX * 0.5;
+                    this.a.y -= offsetY * 0.5;
+                }
+                if (!this.b.fixed) {
+                    this.b.x += offsetX * 0.5;
+                    this.b.y += offsetY * 0.5;
+                }
+            }
+
+            draw() {
+                const dx = this.b.x - this.a.x;
+                const dy = this.b.y - this.a.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const strain = Math.abs(dist - this.restLength) / this.restLength;
+
+                const hue = 200 - strain * 200;
+                ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.a.x, this.a.y);
+                ctx.lineTo(this.b.x, this.b.y);
+                ctx.stroke();
+            }
+        }
+
+        function init() {
+            nodes = [];
+            springs = [];
+
+            const startX = (width - (COLS - 1) * REST_LENGTH) / 2;
+            const startY = 100;
+
+            // Create nodes
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const x = startX + col * REST_LENGTH;
+                    const y = startY + row * REST_LENGTH;
+                    const fixed = row === 0 && (col === 0 || col === COLS - 1 || col === Math.floor(COLS / 2));
+                    nodes.push(new Node(x, y, fixed));
+                }
+            }
+
+            // Create springs
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const idx = row * COLS + col;
+
+                    // Horizontal spring
+                    if (col < COLS - 1) {
+                        springs.push(new Spring(nodes[idx], nodes[idx + 1], REST_LENGTH));
+                    }
+
+                    // Vertical spring
+                    if (row < ROWS - 1) {
+                        springs.push(new Spring(nodes[idx], nodes[idx + COLS], REST_LENGTH));
+                    }
+
+                    // Diagonal springs for stability
+                    if (col < COLS - 1 && row < ROWS - 1) {
+                        springs.push(new Spring(nodes[idx], nodes[idx + COLS + 1], REST_LENGTH * 1.414));
+                        springs.push(new Spring(nodes[idx + 1], nodes[idx + COLS], REST_LENGTH * 1.414));
+                    }
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            init();
+        }
+
+        function getNodeAt(x, y) {
+            for (const node of nodes) {
+                const dx = x - node.x;
+                const dy = y - node.y;
+                if (dx * dx + dy * dy < 400) return node;
+            }
+            return null;
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Update springs multiple times for stability
+            for (let i = 0; i < 5; i++) {
+                for (const spring of springs) {
+                    spring.update();
+                }
+            }
+
+            // Update nodes
+            for (const node of nodes) {
+                if (node === selectedNode) {
+                    node.x = mouseX;
+                    node.y = mouseY;
+                } else {
+                    node.update();
+                }
+            }
+
+            // Draw springs
+            for (const spring of springs) {
+                spring.draw();
+            }
+
+            // Draw nodes
+            for (const node of nodes) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.fixed ? 8 : 6, 0, Math.PI * 2);
+                ctx.fillStyle = node.fixed ? '#ff6b6b' : (node === selectedNode ? '#ffe66d' : '#4ecdc4');
+                ctx.fill();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const node = getNodeAt(e.clientX, e.clientY);
+            if (node && !node.fixed) {
+                selectedNode = node;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            selectedNode = null;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            selectedNode = null;
+        });
+
+        document.getElementById('stiffness').addEventListener('input', e => {
+            stiffness = parseFloat(e.target.value);
+            document.getElementById('stiffLabel').textContent = stiffness.toFixed(2);
+        });
+
+        document.getElementById('damping').addEventListener('input', e => {
+            damping = parseFloat(e.target.value);
+            document.getElementById('dampLabel').textContent = damping.toFixed(2);
+        });
+
+        document.getElementById('gravity').addEventListener('input', e => {
+            gravity = parseFloat(e.target.value);
+            document.getElementById('gravLabel').textContent = gravity.toFixed(1);
+        });
+
+        document.getElementById('reset').addEventListener('click', init);
+
+        document.getElementById('shake').addEventListener('click', () => {
+            for (const node of nodes) {
+                if (!node.fixed) {
+                    node.x += (Math.random() - 0.5) * 50;
+                    node.y += (Math.random() - 0.5) * 50;
+                }
+            }
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

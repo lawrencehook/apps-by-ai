@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Physics - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Cloth Physics</h1>
+        <p>Drag the cloth with your mouse. Click to tear it. Watch realistic fabric physics.</p>
+        <div class="control-group">
+            <label>Gravity: <span id="gravLabel">0.5</span></label>
+            <input type="range" id="gravity" min="0" max="2" step="0.1" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>Wind: <span id="windLabel">0</span></label>
+            <input type="range" id="wind" min="-2" max="2" step="0.1" value="0">
+        </div>
+        <button id="reset">Reset</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let points = [];
+        let sticks = [];
+
+        const COLS = 40;
+        const ROWS = 25;
+        let spacing;
+        let gravity = 0.5;
+        let wind = 0;
+        let friction = 0.99;
+        let tearDistance = 50;
+
+        let mouse = { x: 0, y: 0, px: 0, py: 0, down: false };
+        let selectedPoint = null;
+
+        class Point {
+            constructor(x, y, pinned = false) {
+                this.x = x;
+                this.y = y;
+                this.px = x;
+                this.py = y;
+                this.pinned = pinned;
+            }
+
+            update() {
+                if (this.pinned) return;
+
+                const vx = (this.x - this.px) * friction;
+                const vy = (this.y - this.py) * friction;
+
+                this.px = this.x;
+                this.py = this.y;
+                this.x += vx;
+                this.y += vy;
+                this.y += gravity;
+                this.x += wind + (Math.random() - 0.5) * 0.1;
+
+                // Bounds
+                if (this.y > height - 10) {
+                    this.y = height - 10;
+                    this.py = this.y + vy * 0.5;
+                }
+                if (this.x < 10) this.x = 10;
+                if (this.x > width - 10) this.x = width - 10;
+            }
+        }
+
+        class Stick {
+            constructor(p1, p2) {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.length = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                this.active = true;
+            }
+
+            update() {
+                if (!this.active) return;
+
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > tearDistance) {
+                    this.active = false;
+                    return;
+                }
+
+                const diff = (this.length - dist) / dist;
+                const offsetX = dx * diff * 0.5;
+                const offsetY = dy * diff * 0.5;
+
+                if (!this.p1.pinned) {
+                    this.p1.x -= offsetX;
+                    this.p1.y -= offsetY;
+                }
+                if (!this.p2.pinned) {
+                    this.p2.x += offsetX;
+                    this.p2.y += offsetY;
+                }
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            init();
+        }
+
+        function init() {
+            points = [];
+            sticks = [];
+
+            spacing = Math.min(width, height) / (COLS + 5);
+            const startX = (width - (COLS - 1) * spacing) / 2;
+            const startY = 50;
+
+            // Create points
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const pinned = y === 0 && (x % 4 === 0 || x === COLS - 1);
+                    points.push(new Point(startX + x * spacing, startY + y * spacing, pinned));
+                }
+            }
+
+            // Create sticks
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    const idx = y * COLS + x;
+                    if (x < COLS - 1) {
+                        sticks.push(new Stick(points[idx], points[idx + 1]));
+                    }
+                    if (y < ROWS - 1) {
+                        sticks.push(new Stick(points[idx], points[idx + COLS]));
+                    }
+                }
+            }
+        }
+
+        function update() {
+            // Mouse interaction
+            if (mouse.down && selectedPoint) {
+                selectedPoint.x += (mouse.x - selectedPoint.x) * 0.5;
+                selectedPoint.y += (mouse.y - selectedPoint.y) * 0.5;
+            }
+
+            for (const point of points) {
+                point.update();
+            }
+
+            for (let i = 0; i < 3; i++) {
+                for (const stick of sticks) {
+                    stick.update();
+                }
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw sticks (cloth)
+            ctx.strokeStyle = '#667';
+            ctx.lineWidth = 1;
+
+            for (const stick of sticks) {
+                if (!stick.active) continue;
+                ctx.beginPath();
+                ctx.moveTo(stick.p1.x, stick.p1.y);
+                ctx.lineTo(stick.p2.x, stick.p2.y);
+                ctx.stroke();
+            }
+
+            // Draw pinned points
+            ctx.fillStyle = '#f55';
+            for (const point of points) {
+                if (point.pinned) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function animate() {
+            update();
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        function findClosestPoint(x, y) {
+            let closest = null;
+            let minDist = 30;
+            for (const point of points) {
+                const dist = Math.hypot(point.x - x, point.y - y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = point;
+                }
+            }
+            return closest;
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            mouse.down = true;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            selectedPoint = findClosestPoint(mouse.x, mouse.y);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            mouse.px = mouse.x;
+            mouse.py = mouse.y;
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            if (mouse.down && !selectedPoint) {
+                // Tear cloth
+                for (const stick of sticks) {
+                    if (!stick.active) continue;
+                    const mx = (stick.p1.x + stick.p2.x) / 2;
+                    const my = (stick.p1.y + stick.p2.y) / 2;
+                    if (Math.hypot(mouse.x - mx, mouse.y - my) < 15) {
+                        stick.active = false;
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+            selectedPoint = null;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.down = false;
+            selectedPoint = null;
+        });
+
+        document.getElementById('gravity').addEventListener('input', e => {
+            gravity = parseFloat(e.target.value);
+            document.getElementById('gravLabel').textContent = gravity.toFixed(1);
+        });
+
+        document.getElementById('wind').addEventListener('input', e => {
+            wind = parseFloat(e.target.value);
+            document.getElementById('windLabel').textContent = wind.toFixed(1);
+        });
+
+        document.getElementById('reset').addEventListener('click', init);
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

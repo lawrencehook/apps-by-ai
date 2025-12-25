@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Maze Generator</h1>
+        <p>Watch algorithms carve perfect mazes in real-time. Each cell visited exactly once.</p>
+        <div class="control-group">
+            <label>Algorithm</label>
+            <select id="algorithm">
+                <option value="backtrack">Recursive Backtracker</option>
+                <option value="prim">Prim's Algorithm</option>
+                <option value="kruskal">Kruskal's Algorithm</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">10</span> cells/frame</label>
+            <input type="range" id="speed" min="1" max="50" value="10">
+        </div>
+        <div class="control-group">
+            <label>Cell Size: <span id="sizeLabel">20</span>px</label>
+            <input type="range" id="size" min="10" max="40" value="20">
+        </div>
+        <button id="generate">Generate New</button>
+        <button id="solve">Solve</button>
+        <div class="status" id="status">Ready</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, cols, rows;
+        let cells = [];
+        let stack = [];
+        let frontier = [];
+        let edges = [];
+        let generating = false;
+        let solving = false;
+        let speed = 10;
+        let cellSize = 20;
+        let algorithm = 'backtrack';
+        let solution = [];
+
+        const WALL = 0;
+        const PASSAGE = 1;
+        const VISITED = 2;
+        const CURRENT = 3;
+        const SOLUTION = 4;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cols = Math.floor((width - 40) / cellSize);
+            rows = Math.floor((height - 40) / cellSize);
+            if (cols % 2 === 0) cols--;
+            if (rows % 2 === 0) rows--;
+            init();
+        }
+
+        function init() {
+            cells = [];
+            stack = [];
+            frontier = [];
+            edges = [];
+            solution = [];
+            generating = true;
+            solving = false;
+
+            // Initialize all cells as walls
+            for (let y = 0; y < rows; y++) {
+                cells[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    cells[y][x] = WALL;
+                }
+            }
+
+            if (algorithm === 'backtrack') {
+                // Start from top-left corner (odd coordinates)
+                const startX = 1;
+                const startY = 1;
+                cells[startY][startX] = CURRENT;
+                stack.push({ x: startX, y: startY });
+            } else if (algorithm === 'prim') {
+                const startX = 1;
+                const startY = 1;
+                cells[startY][startX] = PASSAGE;
+                addFrontier(startX, startY);
+            } else if (algorithm === 'kruskal') {
+                // Create all possible edges
+                for (let y = 1; y < rows; y += 2) {
+                    for (let x = 1; x < cols; x += 2) {
+                        cells[y][x] = PASSAGE;
+                        if (x + 2 < cols) edges.push({ x1: x, y1: y, x2: x + 2, y2: y });
+                        if (y + 2 < rows) edges.push({ x1: x, y1: y, x2: x, y2: y + 2 });
+                    }
+                }
+                // Shuffle edges
+                for (let i = edges.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [edges[i], edges[j]] = [edges[j], edges[i]];
+                }
+                // Initialize sets for union-find
+                for (let y = 1; y < rows; y += 2) {
+                    for (let x = 1; x < cols; x += 2) {
+                        cells[y][x] = { parent: null, rank: 0 };
+                    }
+                }
+            }
+
+            document.getElementById('status').textContent = 'Generating...';
+        }
+
+        function addFrontier(x, y) {
+            const dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            for (const [dx, dy] of dirs) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx > 0 && nx < cols && ny > 0 && ny < rows && cells[ny][nx] === WALL) {
+                    cells[ny][nx] = VISITED;
+                    frontier.push({ x: nx, y: ny, px: x, py: y });
+                }
+            }
+        }
+
+        function find(x, y) {
+            let cell = cells[y][x];
+            if (cell.parent === null) return { x, y };
+            return find(cell.parent.x, cell.parent.y);
+        }
+
+        function union(x1, y1, x2, y2) {
+            const root1 = find(x1, y1);
+            const root2 = find(x2, y2);
+            if (root1.x === root2.x && root1.y === root2.y) return false;
+
+            const cell1 = cells[root1.y][root1.x];
+            const cell2 = cells[root2.y][root2.x];
+
+            if (cell1.rank < cell2.rank) {
+                cell1.parent = root2;
+            } else if (cell1.rank > cell2.rank) {
+                cell2.parent = root1;
+            } else {
+                cell2.parent = root1;
+                cell1.rank++;
+            }
+            return true;
+        }
+
+        function stepBacktrack() {
+            if (stack.length === 0) {
+                generating = false;
+                document.getElementById('status').textContent = 'Complete!';
+                return;
+            }
+
+            const current = stack[stack.length - 1];
+            cells[current.y][current.x] = PASSAGE;
+
+            // Get unvisited neighbors
+            const dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            const neighbors = [];
+
+            for (const [dx, dy] of dirs) {
+                const nx = current.x + dx;
+                const ny = current.y + dy;
+                if (nx > 0 && nx < cols - 1 && ny > 0 && ny < rows - 1 && cells[ny][nx] === WALL) {
+                    neighbors.push({ x: nx, y: ny, wx: current.x + dx / 2, wy: current.y + dy / 2 });
+                }
+            }
+
+            if (neighbors.length > 0) {
+                const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                cells[next.wy][next.wx] = PASSAGE;
+                cells[next.y][next.x] = CURRENT;
+                stack.push({ x: next.x, y: next.y });
+            } else {
+                stack.pop();
+                if (stack.length > 0) {
+                    cells[stack[stack.length - 1].y][stack[stack.length - 1].x] = CURRENT;
+                }
+            }
+        }
+
+        function stepPrim() {
+            if (frontier.length === 0) {
+                generating = false;
+                document.getElementById('status').textContent = 'Complete!';
+                return;
+            }
+
+            const idx = Math.floor(Math.random() * frontier.length);
+            const cell = frontier[idx];
+            frontier.splice(idx, 1);
+
+            if (cells[cell.y][cell.x] !== VISITED) return;
+
+            // Find a passage neighbor
+            const dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            const passages = [];
+
+            for (const [dx, dy] of dirs) {
+                const nx = cell.x + dx;
+                const ny = cell.y + dy;
+                if (nx > 0 && nx < cols && ny > 0 && ny < rows && cells[ny][nx] === PASSAGE) {
+                    passages.push({ wx: cell.x + dx / 2, wy: cell.y + dy / 2 });
+                }
+            }
+
+            if (passages.length > 0) {
+                const wall = passages[Math.floor(Math.random() * passages.length)];
+                cells[wall.wy][wall.wx] = PASSAGE;
+                cells[cell.y][cell.x] = PASSAGE;
+                addFrontier(cell.x, cell.y);
+            }
+        }
+
+        function stepKruskal() {
+            while (edges.length > 0) {
+                const edge = edges.pop();
+
+                if (union(edge.x1, edge.y1, edge.x2, edge.y2)) {
+                    const wx = (edge.x1 + edge.x2) / 2;
+                    const wy = (edge.y1 + edge.y2) / 2;
+                    cells[wy][wx] = PASSAGE;
+                    return;
+                }
+            }
+
+            // Convert cell objects back to PASSAGE
+            for (let y = 1; y < rows; y += 2) {
+                for (let x = 1; x < cols; x += 2) {
+                    if (typeof cells[y][x] === 'object') {
+                        cells[y][x] = PASSAGE;
+                    }
+                }
+            }
+
+            generating = false;
+            document.getElementById('status').textContent = 'Complete!';
+        }
+
+        function solveMaze() {
+            if (generating) return;
+
+            solving = true;
+            solution = [];
+
+            // BFS to find path from top-left to bottom-right
+            const start = { x: 1, y: 1 };
+            const end = { x: cols - 2, y: rows - 2 };
+
+            const queue = [start];
+            const visited = new Set();
+            const parent = new Map();
+
+            visited.add(`${start.x},${start.y}`);
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+
+                if (current.x === end.x && current.y === end.y) {
+                    // Reconstruct path
+                    let node = current;
+                    while (node) {
+                        solution.unshift(node);
+                        node = parent.get(`${node.x},${node.y}`);
+                    }
+                    document.getElementById('status').textContent = `Solved! Path length: ${solution.length}`;
+                    return;
+                }
+
+                const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+                for (const [dx, dy] of dirs) {
+                    const nx = current.x + dx;
+                    const ny = current.y + dy;
+                    const key = `${nx},${ny}`;
+
+                    if (nx > 0 && nx < cols && ny > 0 && ny < rows &&
+                        !visited.has(key) && cells[ny][nx] === PASSAGE) {
+                        visited.add(key);
+                        parent.set(key, current);
+                        queue.push({ x: nx, y: ny });
+                    }
+                }
+            }
+
+            document.getElementById('status').textContent = 'No solution found!';
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            if (generating) {
+                for (let i = 0; i < speed; i++) {
+                    if (algorithm === 'backtrack') stepBacktrack();
+                    else if (algorithm === 'prim') stepPrim();
+                    else if (algorithm === 'kruskal') stepKruskal();
+
+                    if (!generating) break;
+                }
+            }
+
+            const offsetX = (width - cols * cellSize) / 2;
+            const offsetY = (height - rows * cellSize) / 2;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cell = cells[y][x];
+                    const px = offsetX + x * cellSize;
+                    const py = offsetY + y * cellSize;
+
+                    if (cell === WALL) {
+                        ctx.fillStyle = '#1a1a2e';
+                    } else if (cell === PASSAGE || typeof cell === 'object') {
+                        ctx.fillStyle = '#2a2a4a';
+                    } else if (cell === VISITED) {
+                        ctx.fillStyle = '#3a5a3a';
+                    } else if (cell === CURRENT) {
+                        ctx.fillStyle = '#ff6b6b';
+                    }
+
+                    ctx.fillRect(px, py, cellSize - 1, cellSize - 1);
+                }
+            }
+
+            // Draw solution
+            if (solution.length > 0) {
+                ctx.fillStyle = '#4ecdc4';
+                for (const node of solution) {
+                    const px = offsetX + node.x * cellSize;
+                    const py = offsetY + node.y * cellSize;
+                    ctx.fillRect(px + cellSize / 4, py + cellSize / 4, cellSize / 2, cellSize / 2);
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('algorithm').addEventListener('change', e => {
+            algorithm = e.target.value;
+            init();
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('size').addEventListener('input', e => {
+            cellSize = parseInt(e.target.value);
+            document.getElementById('sizeLabel').textContent = cellSize;
+            resize();
+        });
+
+        document.getElementById('generate').addEventListener('click', init);
+        document.getElementById('solve').addEventListener('click', solveMaze);
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

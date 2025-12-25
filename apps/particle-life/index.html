@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Life - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            max-width: 280px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls h1 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls p {
+            color: #888;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: #aaa;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            accent-color: #8338ec;
+        }
+
+        button {
+            background: linear-gradient(135deg, #8338ec, #3a86ff);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+            margin-top: 8px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .matrix-display {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .matrix-display h3 {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .matrix {
+            display: grid;
+            gap: 2px;
+            font-size: 10px;
+        }
+
+        .matrix-cell {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .fps {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: #444;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+        <h1>Particle Life</h1>
+        <p>Particles attract or repel based on color. Simple rules create complex, lifelike behavior.</p>
+
+        <div class="control-group">
+            <label>Particles: <span id="particleCountLabel">1000</span></label>
+            <input type="range" id="particleCount" min="200" max="3000" value="1000" step="100">
+        </div>
+
+        <div class="control-group">
+            <label>Friction: <span id="frictionLabel">0.05</span></label>
+            <input type="range" id="friction" min="0.01" max="0.2" value="0.05" step="0.01">
+        </div>
+
+        <div class="control-group">
+            <label>Force Range: <span id="rangeLabel">80</span></label>
+            <input type="range" id="forceRange" min="30" max="200" value="80" step="10">
+        </div>
+
+        <button id="randomize">Randomize Rules</button>
+        <button id="reset">Reset</button>
+
+        <div class="matrix-display">
+            <h3>Attraction Matrix</h3>
+            <div class="matrix" id="matrix"></div>
+        </div>
+    </div>
+
+    <a href="../../index.html" class="back-link">← Back to Gallery</a>
+
+    <div class="fps" id="fps">FPS: 60</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuration
+        let config = {
+            particleCount: 1000,
+            friction: 0.05,
+            forceRange: 80,
+            colors: [
+                '#ff006e', // Pink
+                '#8338ec', // Purple
+                '#3a86ff', // Blue
+                '#06d6a0', // Green
+                '#ffbe0b', // Yellow
+                '#fb5607'  // Orange
+            ]
+        };
+
+        let particles = [];
+        let attractionMatrix = [];
+        let width, height;
+
+        // Resize canvas
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Initialize attraction matrix with random values
+        function randomizeMatrix() {
+            const n = config.colors.length;
+            attractionMatrix = [];
+            for (let i = 0; i < n; i++) {
+                attractionMatrix[i] = [];
+                for (let j = 0; j < n; j++) {
+                    // Random value between -1 (repel) and 1 (attract)
+                    attractionMatrix[i][j] = Math.random() * 2 - 1;
+                }
+            }
+            renderMatrix();
+        }
+
+        // Create particles
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: 0,
+                    vy: 0,
+                    color: Math.floor(Math.random() * config.colors.length)
+                });
+            }
+        }
+
+        // Calculate force between particles
+        function calculateForce(p1, p2) {
+            let dx = p2.x - p1.x;
+            let dy = p2.y - p1.y;
+
+            // Wrap around edges for toroidal space
+            if (dx > width / 2) dx -= width;
+            if (dx < -width / 2) dx += width;
+            if (dy > height / 2) dy -= height;
+            if (dy < -height / 2) dy += height;
+
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist === 0 || dist > config.forceRange) return { fx: 0, fy: 0 };
+
+            // Get attraction value from matrix
+            const attraction = attractionMatrix[p1.color][p2.color];
+
+            // Force calculation with smooth falloff
+            let force = 0;
+            const minDist = 20;
+
+            if (dist < minDist) {
+                // Repulsion at very close range (prevents overlap)
+                force = (dist / minDist - 1) * 0.5;
+            } else {
+                // Attraction/repulsion based on matrix
+                const normalizedDist = (dist - minDist) / (config.forceRange - minDist);
+                force = attraction * (1 - normalizedDist);
+            }
+
+            return {
+                fx: (dx / dist) * force,
+                fy: (dy / dist) * force
+            };
+        }
+
+        // Update simulation
+        function update() {
+            // Apply forces
+            for (let i = 0; i < particles.length; i++) {
+                let fx = 0, fy = 0;
+                const p1 = particles[i];
+
+                for (let j = 0; j < particles.length; j++) {
+                    if (i === j) continue;
+                    const p2 = particles[j];
+                    const force = calculateForce(p1, p2);
+                    fx += force.fx;
+                    fy += force.fy;
+                }
+
+                // Apply force and friction
+                p1.vx = (p1.vx + fx) * (1 - config.friction);
+                p1.vy = (p1.vy + fy) * (1 - config.friction);
+
+                // Update position
+                p1.x += p1.vx;
+                p1.y += p1.vy;
+
+                // Wrap around edges
+                if (p1.x < 0) p1.x += width;
+                if (p1.x >= width) p1.x -= width;
+                if (p1.y < 0) p1.y += height;
+                if (p1.y >= height) p1.y -= height;
+            }
+        }
+
+        // Render particles
+        function render() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = config.colors[p.color];
+                ctx.fill();
+            }
+        }
+
+        // Render attraction matrix in UI
+        function renderMatrix() {
+            const container = document.getElementById('matrix');
+            const n = config.colors.length;
+            container.style.gridTemplateColumns = `repeat(${n}, 24px)`;
+
+            container.innerHTML = attractionMatrix.map((row, i) =>
+                row.map((val, j) => {
+                    const hue = val > 0 ? 120 : 0; // Green for attract, red for repel
+                    const lightness = 20 + Math.abs(val) * 30;
+                    return `<div class="matrix-cell" style="background: hsl(${hue}, 70%, ${lightness}%)" title="${config.colors[i]} → ${config.colors[j]}: ${val.toFixed(2)}"></div>`;
+                }).join('')
+            ).join('');
+        }
+
+        // FPS counter
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        // Animation loop
+        function animate() {
+            update();
+            render();
+
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                document.getElementById('fps').textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+                lastTime = now;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        document.getElementById('particleCount').addEventListener('input', (e) => {
+            config.particleCount = parseInt(e.target.value);
+            document.getElementById('particleCountLabel').textContent = config.particleCount;
+        });
+
+        document.getElementById('friction').addEventListener('input', (e) => {
+            config.friction = parseFloat(e.target.value);
+            document.getElementById('frictionLabel').textContent = config.friction.toFixed(2);
+        });
+
+        document.getElementById('forceRange').addEventListener('input', (e) => {
+            config.forceRange = parseInt(e.target.value);
+            document.getElementById('rangeLabel').textContent = config.forceRange;
+        });
+
+        document.getElementById('randomize').addEventListener('click', () => {
+            randomizeMatrix();
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            randomizeMatrix();
+            createParticles();
+        });
+
+        // Initialize
+        randomizeMatrix();
+        createParticles();
+        animate();
+    </script>
+</body>
+</html>

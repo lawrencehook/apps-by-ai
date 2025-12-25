@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier Drawing Machine - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .mode { color: #888; font-size: 12px; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Fourier Drawing</h1>
+        <p>Draw a closed shape, then watch rotating circles (epicycles) recreate it using the Fourier transform.</p>
+        <div class="control-group">
+            <label>Epicycles: <span id="circlesLabel">50</span></label>
+            <input type="range" id="circles" min="5" max="150" value="50">
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">1.0</span>x</label>
+            <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1">
+        </div>
+        <button id="clear">Clear & Draw Again</button>
+        <button id="demo">Load Demo</button>
+        <div class="mode" id="mode">Draw a shape on the canvas...</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let drawing = [];
+        let fourier = [];
+        let time = 0;
+        let path = [];
+        let isDrawing = false;
+        let state = 'waiting'; // 'waiting' | 'drawing' | 'animating'
+        let numCircles = 50;
+        let speed = 1;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            if (state === 'waiting') {
+                drawPrompt();
+            }
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Complex DFT - treats points as complex numbers
+        function dft(points) {
+            const N = points.length;
+            const X = [];
+
+            for (let k = 0; k < N; k++) {
+                let re = 0, im = 0;
+
+                for (let n = 0; n < N; n++) {
+                    const phi = (2 * Math.PI * k * n) / N;
+                    re += points[n].x * Math.cos(phi) + points[n].y * Math.sin(phi);
+                    im += points[n].y * Math.cos(phi) - points[n].x * Math.sin(phi);
+                }
+
+                re /= N;
+                im /= N;
+
+                X.push({
+                    re,
+                    im,
+                    freq: k,
+                    amp: Math.sqrt(re * re + im * im),
+                    phase: Math.atan2(im, re)
+                });
+            }
+
+            // Sort by amplitude (largest first) for visual effect
+            return X.sort((a, b) => b.amp - a.amp);
+        }
+
+        function epicycles(x, y, fourier, t) {
+            const limit = Math.min(numCircles, fourier.length);
+
+            for (let i = 0; i < limit; i++) {
+                const prevX = x;
+                const prevY = y;
+
+                const { freq, amp, phase } = fourier[i];
+                x += amp * Math.cos(freq * t + phase);
+                y += amp * Math.sin(freq * t + phase);
+
+                // Draw circle
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 - i * 0.001})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(prevX, prevY, amp, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw radius
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 - i * 0.002})`;
+                ctx.beginPath();
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+
+            return { x, y };
+        }
+
+        function drawPrompt() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#333';
+            ctx.font = '18px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('Draw a shape with your mouse', width / 2, height / 2);
+        }
+
+        function animate() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            if (state === 'waiting') {
+                drawPrompt();
+            } else if (state === 'drawing') {
+                // Show the drawing in progress
+                if (drawing.length > 1) {
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(drawing[0].x, drawing[0].y);
+                    for (let i = 1; i < drawing.length; i++) {
+                        ctx.lineTo(drawing[i].x, drawing[i].y);
+                    }
+                    ctx.stroke();
+                }
+            } else if (state === 'animating') {
+                // Draw with epicycles from center of drawing
+                const result = epicycles(width / 2, height / 2, fourier, time);
+
+                // Add point to path
+                path.push({ x: result.x, y: result.y });
+
+                // Draw the traced path
+                if (path.length > 1) {
+                    ctx.strokeStyle = '#00aaff';
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x, path[0].y);
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].x, path[i].y);
+                    }
+                    ctx.stroke();
+                }
+
+                // Draw current point
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(result.x, result.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Advance time
+                const dt = (2 * Math.PI) / fourier.length;
+                time += dt * speed;
+
+                // Reset after one full cycle
+                if (time >= 2 * Math.PI) {
+                    time = 0;
+                    path = [];
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function startAnimation() {
+            if (drawing.length < 20) {
+                document.getElementById('mode').textContent = 'Draw a larger shape (need more points)';
+                state = 'waiting';
+                return;
+            }
+
+            // Resample to get evenly spaced points
+            const resampled = resamplePath(drawing, Math.min(drawing.length, 300));
+
+            // Center the drawing
+            let sumX = 0, sumY = 0;
+            for (let p of resampled) {
+                sumX += p.x;
+                sumY += p.y;
+            }
+            const avgX = sumX / resampled.length;
+            const avgY = sumY / resampled.length;
+
+            // Create centered points
+            const centered = resampled.map(p => ({
+                x: p.x - avgX,
+                y: p.y - avgY
+            }));
+
+            // Compute Fourier transform
+            fourier = dft(centered);
+
+            time = 0;
+            path = [];
+            state = 'animating';
+            document.getElementById('mode').textContent = `Reconstructing with ${Math.min(numCircles, fourier.length)} epicycles...`;
+        }
+
+        function resamplePath(points, numPoints) {
+            if (points.length < 2) return points;
+
+            // Calculate total path length
+            let totalLength = 0;
+            for (let i = 1; i < points.length; i++) {
+                const dx = points[i].x - points[i-1].x;
+                const dy = points[i].y - points[i-1].y;
+                totalLength += Math.sqrt(dx * dx + dy * dy);
+            }
+
+            const segmentLength = totalLength / (numPoints - 1);
+            const result = [{ ...points[0] }];
+            let currentDist = 0;
+            let pointIndex = 0;
+
+            for (let i = 1; i < numPoints; i++) {
+                const targetDist = i * segmentLength;
+
+                while (pointIndex < points.length - 1) {
+                    const dx = points[pointIndex + 1].x - points[pointIndex].x;
+                    const dy = points[pointIndex + 1].y - points[pointIndex].y;
+                    const segLen = Math.sqrt(dx * dx + dy * dy);
+
+                    if (currentDist + segLen >= targetDist) {
+                        const t = (targetDist - currentDist) / segLen;
+                        result.push({
+                            x: points[pointIndex].x + dx * t,
+                            y: points[pointIndex].y + dy * t
+                        });
+                        break;
+                    }
+
+                    currentDist += segLen;
+                    pointIndex++;
+                }
+            }
+
+            return result;
+        }
+
+        function loadDemo() {
+            drawing = [];
+            const cx = width / 2, cy = height / 2;
+            const points = 300;
+
+            // Draw a star/flower shape
+            for (let i = 0; i <= points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+                const r = 120 + 40 * Math.sin(angle * 5);
+                drawing.push({
+                    x: cx + r * Math.cos(angle),
+                    y: cy + r * Math.sin(angle)
+                });
+            }
+
+            startAnimation();
+        }
+
+        // Event handlers
+        canvas.addEventListener('mousedown', e => {
+            // Ignore clicks on controls
+            if (e.target !== canvas) return;
+
+            state = 'drawing';
+            isDrawing = true;
+            drawing = [{ x: e.clientX, y: e.clientY }];
+            path = [];
+            document.getElementById('mode').textContent = 'Drawing...';
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDrawing) {
+                const lastPoint = drawing[drawing.length - 1];
+                const dx = e.clientX - lastPoint.x;
+                const dy = e.clientY - lastPoint.y;
+                // Only add point if moved enough (reduces noise)
+                if (dx * dx + dy * dy > 16) {
+                    drawing.push({ x: e.clientX, y: e.clientY });
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                // Close the path by adding first point
+                if (drawing.length > 2) {
+                    drawing.push({ ...drawing[0] });
+                }
+                startAnimation();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                if (drawing.length > 2) {
+                    drawing.push({ ...drawing[0] });
+                }
+                startAnimation();
+            }
+        });
+
+        document.getElementById('circles').addEventListener('input', e => {
+            numCircles = parseInt(e.target.value);
+            document.getElementById('circlesLabel').textContent = numCircles;
+            if (state === 'animating') {
+                document.getElementById('mode').textContent = `Reconstructing with ${Math.min(numCircles, fourier.length)} epicycles...`;
+            }
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedLabel').textContent = speed.toFixed(1);
+        });
+
+        document.getElementById('clear').addEventListener('click', () => {
+            state = 'waiting';
+            drawing = [];
+            path = [];
+            fourier = [];
+            time = 0;
+            document.getElementById('mode').textContent = 'Draw a shape on the canvas...';
+        });
+
+        document.getElementById('demo').addEventListener('click', loadDemo);
+
+        animate();
+    </script>
+</body>
+</html>

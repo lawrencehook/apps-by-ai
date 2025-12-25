@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Field - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Flow Field</h1>
+        <p>Particles follow a Perlin noise-based vector field. Smooth, organic motion.</p>
+        <div class="control-group">
+            <label>Particles: <span id="countLabel">2000</span></label>
+            <input type="range" id="count" min="500" max="10000" step="500" value="2000">
+        </div>
+        <div class="control-group">
+            <label>Noise Scale: <span id="scaleLabel">0.005</span></label>
+            <input type="range" id="scale" min="0.001" max="0.02" step="0.001" value="0.005">
+        </div>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">2</span></label>
+            <input type="range" id="speed" min="0.5" max="5" step="0.5" value="2">
+        </div>
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let numParticles = 2000;
+        let noiseScale = 0.005;
+        let speed = 2;
+        let time = 0;
+        let paused = false;
+
+        // Perlin noise implementation
+        const perm = new Uint8Array(512);
+        for (let i = 0; i < 256; i++) perm[i] = i;
+        for (let i = 255; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [perm[i], perm[j]] = [perm[j], perm[i]];
+        }
+        for (let i = 0; i < 256; i++) perm[i + 256] = perm[i];
+
+        function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+        function lerp(a, b, t) { return a + t * (b - a); }
+
+        function grad(hash, x, y) {
+            const h = hash & 3;
+            const u = h < 2 ? x : y;
+            const v = h < 2 ? y : x;
+            return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+        }
+
+        function perlin(x, y) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+            const u = fade(x);
+            const v = fade(y);
+            const A = perm[X] + Y;
+            const B = perm[X + 1] + Y;
+            return lerp(
+                lerp(grad(perm[A], x, y), grad(perm[B], x - 1, y), u),
+                lerp(grad(perm[A + 1], x, y - 1), grad(perm[B + 1], x - 1, y - 1), u),
+                v
+            );
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+                this.hue = Math.random() * 360;
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.prevX = this.x;
+                this.prevY = this.y;
+                this.life = 100 + Math.random() * 200;
+            }
+
+            update() {
+                this.prevX = this.x;
+                this.prevY = this.y;
+
+                const angle = perlin(this.x * noiseScale, this.y * noiseScale + time) * Math.PI * 4;
+
+                this.x += Math.cos(angle) * speed;
+                this.y += Math.sin(angle) * speed;
+
+                this.life--;
+
+                if (this.life <= 0 || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                const alpha = Math.min(1, this.life / 50);
+                ctx.strokeStyle = `hsla(${this.hue}, 70%, 60%, ${alpha * 0.5})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(this.prevX, this.prevY);
+                ctx.lineTo(this.x, this.y);
+                ctx.stroke();
+            }
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            init();
+        }
+
+        function render() {
+            if (!paused) {
+                // Fade effect
+                ctx.fillStyle = 'rgba(10, 10, 15, 0.02)';
+                ctx.fillRect(0, 0, width, height);
+
+                time += 0.0005;
+
+                for (const p of particles) {
+                    p.update();
+                    p.draw();
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('count').addEventListener('input', e => {
+            numParticles = parseInt(e.target.value);
+            document.getElementById('countLabel').textContent = numParticles;
+            init();
+        });
+
+        document.getElementById('scale').addEventListener('input', e => {
+            noiseScale = parseFloat(e.target.value);
+            document.getElementById('scaleLabel').textContent = noiseScale.toFixed(3);
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            time = 0;
+            init();
+        });
+
+        document.getElementById('pause').addEventListener('click', e => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Resume' : 'Pause';
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

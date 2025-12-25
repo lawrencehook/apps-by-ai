@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huffman Encoding - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        .container { display: flex; height: 100vh; }
+        .sidebar {
+            width: 320px; padding: 20px; background: rgba(0,0,0,0.5);
+            border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
+        }
+        .sidebar h1 { color: #fff; font-size: 1.3rem; margin-bottom: 8px; }
+        .sidebar p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .main { flex: 1; position: relative; }
+        canvas { display: block; width: 100%; height: 100%; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 10px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        textarea {
+            width: 100%; height: 80px; padding: 10px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+            font-family: monospace; font-size: 13px; resize: none; margin-bottom: 10px;
+        }
+        .stats { color: #888; font-size: 12px; margin-bottom: 15px; }
+        .code-table { max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+        .code-row {
+            display: flex; justify-content: space-between; padding: 4px 8px;
+            background: rgba(255,255,255,0.05); margin-bottom: 2px; border-radius: 2px;
+        }
+        .code-char { color: #4ecdc4; font-family: monospace; }
+        .code-bits { color: #ffe66d; font-family: monospace; font-size: 11px; }
+        .encoded {
+            background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;
+            font-family: monospace; font-size: 11px; word-break: break-all;
+            max-height: 100px; overflow-y: auto; color: #ffe66d;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        label { display: block; color: #888; font-size: 12px; margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Huffman Encoding</h1>
+            <p>Optimal prefix-free encoding. Frequent characters get shorter codes.</p>
+
+            <label>Input Text</label>
+            <textarea id="input" placeholder="Enter text to encode...">hello huffman encoding</textarea>
+            <button id="encode">Build Tree & Encode</button>
+
+            <div class="stats" id="stats"></div>
+
+            <label>Character Codes</label>
+            <div class="code-table" id="codeTable"></div>
+
+            <label>Encoded Output</label>
+            <div class="encoded" id="encoded"></div>
+        </div>
+        <div class="main">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let root = null;
+        let codes = new Map();
+        let animationPhase = 0;
+        let highlightPath = [];
+
+        class Node {
+            constructor(char, freq) {
+                this.char = char;
+                this.freq = freq;
+                this.left = null;
+                this.right = null;
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+            }
+        }
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (root) {
+                updatePositions();
+                draw();
+            }
+        }
+
+        function buildTree(text) {
+            // Count frequencies
+            const freq = new Map();
+            for (const char of text) {
+                freq.set(char, (freq.get(char) || 0) + 1);
+            }
+
+            // Create leaf nodes
+            let nodes = [];
+            for (const [char, count] of freq) {
+                nodes.push(new Node(char, count));
+            }
+
+            if (nodes.length === 0) return null;
+            if (nodes.length === 1) {
+                const parent = new Node(null, nodes[0].freq);
+                parent.left = nodes[0];
+                return parent;
+            }
+
+            // Build tree
+            while (nodes.length > 1) {
+                nodes.sort((a, b) => a.freq - b.freq);
+
+                const left = nodes.shift();
+                const right = nodes.shift();
+
+                const parent = new Node(null, left.freq + right.freq);
+                parent.left = left;
+                parent.right = right;
+
+                nodes.push(parent);
+            }
+
+            return nodes[0];
+        }
+
+        function generateCodes(node, code = '') {
+            if (!node) return;
+
+            if (node.char !== null) {
+                codes.set(node.char, code || '0');
+                return;
+            }
+
+            generateCodes(node.left, code + '0');
+            generateCodes(node.right, code + '1');
+        }
+
+        function updatePositions() {
+            if (!root) return;
+
+            const treeHeight = getHeight(root);
+            const levelHeight = Math.min(70, (canvas.height - 100) / treeHeight);
+
+            function setPos(node, x, y, spread) {
+                if (!node) return;
+
+                node.targetX = x;
+                node.targetY = y;
+
+                if (node.x === 0 && node.y === 0) {
+                    node.x = canvas.width / 2;
+                    node.y = 0;
+                }
+
+                setPos(node.left, x - spread, y + levelHeight, spread * 0.55);
+                setPos(node.right, x + spread, y + levelHeight, spread * 0.55);
+            }
+
+            const spread = Math.min(canvas.width / 4, 150);
+            setPos(root, canvas.width / 2, 50, spread);
+        }
+
+        function getHeight(node) {
+            if (!node) return 0;
+            return 1 + Math.max(getHeight(node.left), getHeight(node.right));
+        }
+
+        function animate() {
+            let moving = false;
+
+            function update(node) {
+                if (!node) return;
+
+                const dx = node.targetX - node.x;
+                const dy = node.targetY - node.y;
+
+                if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                    node.x += dx * 0.1;
+                    node.y += dy * 0.1;
+                    moving = true;
+                }
+
+                update(node.left);
+                update(node.right);
+            }
+
+            update(root);
+            draw();
+
+            if (moving) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (!root) return;
+
+            // Draw edges
+            function drawEdges(node) {
+                if (!node) return;
+
+                if (node.left) {
+                    const isHighlighted = isEdgeHighlighted(node, node.left);
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.left.x, node.left.y);
+                    ctx.strokeStyle = isHighlighted ? '#ffe66d' : 'rgba(100, 100, 150, 0.5)';
+                    ctx.lineWidth = isHighlighted ? 3 : 1;
+                    ctx.stroke();
+
+                    // Draw 0
+                    const mx = (node.x + node.left.x) / 2 - 10;
+                    const my = (node.y + node.left.y) / 2;
+                    ctx.fillStyle = '#4ecdc4';
+                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillText('0', mx, my);
+
+                    drawEdges(node.left);
+                }
+
+                if (node.right) {
+                    const isHighlighted = isEdgeHighlighted(node, node.right);
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.right.x, node.right.y);
+                    ctx.strokeStyle = isHighlighted ? '#ffe66d' : 'rgba(100, 100, 150, 0.5)';
+                    ctx.lineWidth = isHighlighted ? 3 : 1;
+                    ctx.stroke();
+
+                    // Draw 1
+                    const mx = (node.x + node.right.x) / 2 + 10;
+                    const my = (node.y + node.right.y) / 2;
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.font = 'bold 12px system-ui';
+                    ctx.fillText('1', mx, my);
+
+                    drawEdges(node.right);
+                }
+            }
+
+            drawEdges(root);
+
+            // Draw nodes
+            function drawNodes(node) {
+                if (!node) return;
+
+                drawNodes(node.left);
+                drawNodes(node.right);
+
+                const isLeaf = node.char !== null;
+                const radius = isLeaf ? 22 : 16;
+                const isHighlighted = highlightPath.includes(node);
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+
+                if (isLeaf) {
+                    ctx.fillStyle = isHighlighted ? '#ffe66d' : '#4ecdc4';
+                } else {
+                    ctx.fillStyle = isHighlighted ? '#ffe66d' : '#2a2a4a';
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Text
+                ctx.fillStyle = isLeaf ? '#000' : '#fff';
+                ctx.font = isLeaf ? 'bold 14px system-ui' : '11px system-ui';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (isLeaf) {
+                    const display = node.char === ' ' ? '␣' : node.char;
+                    ctx.fillText(display, node.x, node.y);
+                } else {
+                    ctx.fillText(node.freq, node.x, node.y);
+                }
+            }
+
+            drawNodes(root);
+        }
+
+        function isEdgeHighlighted(parent, child) {
+            const pi = highlightPath.indexOf(parent);
+            const ci = highlightPath.indexOf(child);
+            return pi !== -1 && ci !== -1 && ci === pi + 1;
+        }
+
+        function encode() {
+            const text = document.getElementById('input').value;
+            if (!text) return;
+
+            codes.clear();
+            highlightPath = [];
+
+            root = buildTree(text);
+            if (!root) return;
+
+            generateCodes(root);
+            updatePositions();
+            animate();
+
+            // Show codes table
+            const tableEl = document.getElementById('codeTable');
+            tableEl.innerHTML = '';
+
+            const sortedCodes = [...codes.entries()].sort((a, b) => a[1].length - b[1].length);
+            for (const [char, code] of sortedCodes) {
+                const display = char === ' ' ? '␣' : char;
+                tableEl.innerHTML += `
+                    <div class="code-row">
+                        <span class="code-char">'${display}'</span>
+                        <span class="code-bits">${code}</span>
+                    </div>
+                `;
+            }
+
+            // Encode text
+            let encoded = '';
+            for (const char of text) {
+                encoded += codes.get(char);
+            }
+
+            document.getElementById('encoded').textContent = encoded;
+
+            // Stats
+            const originalBits = text.length * 8;
+            const compressedBits = encoded.length;
+            const ratio = ((1 - compressedBits / originalBits) * 100).toFixed(1);
+
+            document.getElementById('stats').innerHTML = `
+                Original: ${originalBits} bits (${text.length} × 8)<br>
+                Compressed: ${compressedBits} bits<br>
+                Savings: ${ratio}%
+            `;
+
+            // Animate encoding
+            animateEncoding(text);
+        }
+
+        async function animateEncoding(text) {
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                highlightPath = [];
+
+                // Find path to character
+                function findPath(node, target, path) {
+                    if (!node) return false;
+                    path.push(node);
+
+                    if (node.char === target) return true;
+
+                    if (findPath(node.left, target, path)) return true;
+                    if (findPath(node.right, target, path)) return true;
+
+                    path.pop();
+                    return false;
+                }
+
+                findPath(root, char, highlightPath);
+                draw();
+
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            highlightPath = [];
+            draw();
+        }
+
+        document.getElementById('encode').addEventListener('click', encode);
+
+        document.getElementById('input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                encode();
+            }
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Initial encode
+        setTimeout(encode, 500);
+    </script>
+</body>
+</html>

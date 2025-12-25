@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijkstra's Algorithm - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.active { background: rgba(100,200,100,0.3); border-color: rgba(100,200,100,0.5); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+        .legend { margin-top: 12px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 11px; color: #888; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Dijkstra's Algorithm</h1>
+        <p>Shortest path algorithm. Click to set start (green) and end (red) nodes.</p>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">50</span>ms</label>
+            <input type="range" id="speed" min="10" max="500" value="50">
+        </div>
+        <div class="control-group">
+            <label>Nodes: <span id="nodesLabel">40</span></label>
+            <input type="range" id="nodes" min="20" max="100" value="40">
+        </div>
+        <button id="run">Find Path</button>
+        <button id="reset">New Graph</button>
+        <div class="status" id="status">Click two nodes to set start and end</div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div>Start</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div>End</div>
+            <div class="legend-item"><div class="legend-color" style="background:#ffe66d"></div>Current</div>
+            <div class="legend-item"><div class="legend-color" style="background:#5a8a5a"></div>Visited</div>
+            <div class="legend-item"><div class="legend-color" style="background:#8a5a8a"></div>In Queue</div>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let nodes = [];
+        let edges = [];
+        let numNodes = 40;
+        let speed = 50;
+        let startNode = null;
+        let endNode = null;
+        let running = false;
+        let path = [];
+        let visited = new Set();
+        let inQueue = new Set();
+        let currentNode = null;
+
+        class Node {
+            constructor(x, y, id) {
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                this.neighbors = [];
+                this.dist = Infinity;
+                this.prev = null;
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            generateGraph();
+        }
+
+        function generateGraph() {
+            nodes = [];
+            edges = [];
+            path = [];
+            visited.clear();
+            inQueue.clear();
+            startNode = null;
+            endNode = null;
+            currentNode = null;
+
+            // Generate random nodes
+            const margin = 100;
+            for (let i = 0; i < numNodes; i++) {
+                const x = margin + Math.random() * (width - 2 * margin);
+                const y = margin + Math.random() * (height - 2 * margin);
+                nodes.push(new Node(x, y, i));
+            }
+
+            // Connect nearby nodes
+            const maxDist = 200;
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDist && Math.random() < 0.5) {
+                        nodes[i].neighbors.push({ node: nodes[j], weight: dist });
+                        nodes[j].neighbors.push({ node: nodes[i], weight: dist });
+                        edges.push({ a: nodes[i], b: nodes[j], weight: dist });
+                    }
+                }
+            }
+
+            // Ensure graph is connected
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].neighbors.length === 0) {
+                    // Find nearest node
+                    let nearest = null;
+                    let minDist = Infinity;
+                    for (let j = 0; j < nodes.length; j++) {
+                        if (i === j) continue;
+                        const dx = nodes[i].x - nodes[j].x;
+                        const dy = nodes[i].y - nodes[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearest = nodes[j];
+                        }
+                    }
+                    if (nearest) {
+                        nodes[i].neighbors.push({ node: nearest, weight: minDist });
+                        nearest.neighbors.push({ node: nodes[i], weight: minDist });
+                        edges.push({ a: nodes[i], b: nearest, weight: minDist });
+                    }
+                }
+            }
+
+            document.getElementById('status').textContent = 'Click two nodes to set start and end';
+            draw();
+        }
+
+        function getNodeAt(x, y) {
+            for (const node of nodes) {
+                const dx = x - node.x;
+                const dy = y - node.y;
+                if (dx * dx + dy * dy < 400) return node;
+            }
+            return null;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw edges
+            for (const edge of edges) {
+                const inPath = path.length > 0 && isEdgeInPath(edge);
+
+                ctx.beginPath();
+                ctx.moveTo(edge.a.x, edge.a.y);
+                ctx.lineTo(edge.b.x, edge.b.y);
+
+                if (inPath) {
+                    ctx.strokeStyle = '#ffe66d';
+                    ctx.lineWidth = 4;
+                } else {
+                    ctx.strokeStyle = 'rgba(100, 100, 150, 0.3)';
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+
+                // Draw weight
+                if (!inPath) {
+                    const mx = (edge.a.x + edge.b.x) / 2;
+                    const my = (edge.a.y + edge.b.y) / 2;
+                    ctx.fillStyle = 'rgba(100, 100, 150, 0.5)';
+                    ctx.font = '9px system-ui';
+                    ctx.fillText(Math.round(edge.weight), mx, my);
+                }
+            }
+
+            // Draw nodes
+            for (const node of nodes) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 12, 0, Math.PI * 2);
+
+                if (node === startNode) {
+                    ctx.fillStyle = '#4ecdc4';
+                } else if (node === endNode) {
+                    ctx.fillStyle = '#ff6b6b';
+                } else if (node === currentNode) {
+                    ctx.fillStyle = '#ffe66d';
+                } else if (visited.has(node)) {
+                    ctx.fillStyle = '#5a8a5a';
+                } else if (inQueue.has(node)) {
+                    ctx.fillStyle = '#8a5a8a';
+                } else {
+                    ctx.fillStyle = '#2a2a4a';
+                }
+
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Show distance
+                if (node.dist < Infinity && node.dist > 0) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px system-ui';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(Math.round(node.dist), node.x, node.y + 4);
+                }
+            }
+        }
+
+        function isEdgeInPath(edge) {
+            for (let i = 0; i < path.length - 1; i++) {
+                if ((path[i] === edge.a && path[i + 1] === edge.b) ||
+                    (path[i] === edge.b && path[i + 1] === edge.a)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        async function dijkstra() {
+            if (!startNode || !endNode || running) return;
+            running = true;
+
+            // Reset
+            for (const node of nodes) {
+                node.dist = Infinity;
+                node.prev = null;
+            }
+            visited.clear();
+            inQueue.clear();
+            path = [];
+
+            startNode.dist = 0;
+            const queue = [startNode];
+            inQueue.add(startNode);
+
+            while (queue.length > 0) {
+                // Find node with minimum distance
+                queue.sort((a, b) => a.dist - b.dist);
+                currentNode = queue.shift();
+                inQueue.delete(currentNode);
+                visited.add(currentNode);
+
+                draw();
+                await new Promise(r => setTimeout(r, speed));
+
+                if (currentNode === endNode) {
+                    // Reconstruct path
+                    let node = endNode;
+                    while (node) {
+                        path.unshift(node);
+                        node = node.prev;
+                    }
+                    currentNode = null;
+                    draw();
+                    document.getElementById('status').textContent =
+                        `Path found! Distance: ${Math.round(endNode.dist)}`;
+                    running = false;
+                    return;
+                }
+
+                for (const { node: neighbor, weight } of currentNode.neighbors) {
+                    if (visited.has(neighbor)) continue;
+
+                    const alt = currentNode.dist + weight;
+                    if (alt < neighbor.dist) {
+                        neighbor.dist = alt;
+                        neighbor.prev = currentNode;
+
+                        if (!inQueue.has(neighbor)) {
+                            queue.push(neighbor);
+                            inQueue.add(neighbor);
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('status').textContent = 'No path found!';
+            currentNode = null;
+            running = false;
+            draw();
+        }
+
+        canvas.addEventListener('click', e => {
+            if (running) return;
+
+            const node = getNodeAt(e.clientX, e.clientY);
+            if (!node) return;
+
+            if (!startNode) {
+                startNode = node;
+                document.getElementById('status').textContent = 'Now click to set end node';
+            } else if (!endNode && node !== startNode) {
+                endNode = node;
+                document.getElementById('status').textContent = 'Click "Find Path" to start';
+            } else {
+                // Reset selection
+                startNode = node;
+                endNode = null;
+                path = [];
+                visited.clear();
+                inQueue.clear();
+                for (const n of nodes) {
+                    n.dist = Infinity;
+                    n.prev = null;
+                }
+                document.getElementById('status').textContent = 'Now click to set end node';
+            }
+            draw();
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('nodes').addEventListener('input', e => {
+            numNodes = parseInt(e.target.value);
+            document.getElementById('nodesLabel').textContent = numNodes;
+            if (!running) generateGraph();
+        });
+
+        document.getElementById('run').addEventListener('click', dijkstra);
+        document.getElementById('reset').addEventListener('click', () => {
+            if (!running) generateGraph();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

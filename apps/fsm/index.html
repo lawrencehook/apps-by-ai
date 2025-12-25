@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finite State Machine - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 260px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        input[type="text"] {
+            width: 100%; padding: 8px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+            font-family: monospace;
+        }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .status-label { color: #888; font-size: 11px; margin-bottom: 4px; }
+        .status-value { color: #4ecdc4; font-family: monospace; }
+        .result { margin-top: 8px; font-weight: bold; }
+        .result.accept { color: #4ecdc4; }
+        .result.reject { color: #ff6b6b; }
+        .tape {
+            display: flex; gap: 2px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .tape-cell {
+            width: 24px; height: 24px; background: rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-family: monospace; font-size: 14px; border-radius: 2px;
+        }
+        .tape-cell.current { background: #4ecdc4; color: #000; }
+        .tape-cell.processed { background: rgba(78, 205, 196, 0.3); }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Finite State Machine</h1>
+        <p>Deterministic Finite Automaton. Test if strings match a pattern.</p>
+
+        <div class="control-group">
+            <label>Preset Machines</label>
+            <select id="preset">
+                <option value="binary_div3">Binary divisible by 3</option>
+                <option value="ends_ab">Ends with "ab"</option>
+                <option value="even_zeros">Even number of 0s</option>
+                <option value="contains_01">Contains "01"</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Input String</label>
+            <input type="text" id="input" placeholder="Enter input...">
+        </div>
+
+        <button id="run">Run</button>
+        <button id="step">Step</button>
+        <button id="reset">Reset</button>
+
+        <div class="status">
+            <div class="status-label">Current State</div>
+            <div class="status-value" id="currentState">-</div>
+            <div class="tape" id="tape"></div>
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let states = [];
+        let transitions = [];
+        let currentState = null;
+        let startState = null;
+        let acceptStates = new Set();
+        let inputString = '';
+        let inputIndex = 0;
+        let running = false;
+        let alphabet = ['0', '1'];
+
+        const presets = {
+            binary_div3: {
+                states: ['q0', 'q1', 'q2'],
+                start: 'q0',
+                accept: ['q0'],
+                alphabet: ['0', '1'],
+                transitions: [
+                    ['q0', '0', 'q0'], ['q0', '1', 'q1'],
+                    ['q1', '0', 'q2'], ['q1', '1', 'q0'],
+                    ['q2', '0', 'q1'], ['q2', '1', 'q2']
+                ],
+                description: 'Accepts binary numbers divisible by 3'
+            },
+            ends_ab: {
+                states: ['q0', 'q1', 'q2'],
+                start: 'q0',
+                accept: ['q2'],
+                alphabet: ['a', 'b'],
+                transitions: [
+                    ['q0', 'a', 'q1'], ['q0', 'b', 'q0'],
+                    ['q1', 'a', 'q1'], ['q1', 'b', 'q2'],
+                    ['q2', 'a', 'q1'], ['q2', 'b', 'q0']
+                ],
+                description: 'Accepts strings ending with "ab"'
+            },
+            even_zeros: {
+                states: ['q0', 'q1'],
+                start: 'q0',
+                accept: ['q0'],
+                alphabet: ['0', '1'],
+                transitions: [
+                    ['q0', '0', 'q1'], ['q0', '1', 'q0'],
+                    ['q1', '0', 'q0'], ['q1', '1', 'q1']
+                ],
+                description: 'Accepts strings with even number of 0s'
+            },
+            contains_01: {
+                states: ['q0', 'q1', 'q2'],
+                start: 'q0',
+                accept: ['q2'],
+                alphabet: ['0', '1'],
+                transitions: [
+                    ['q0', '0', 'q1'], ['q0', '1', 'q0'],
+                    ['q1', '0', 'q1'], ['q1', '1', 'q2'],
+                    ['q2', '0', 'q2'], ['q2', '1', 'q2']
+                ],
+                description: 'Accepts strings containing "01"'
+            }
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            positionStates();
+            draw();
+        }
+
+        function loadPreset(name) {
+            const preset = presets[name];
+            alphabet = preset.alphabet;
+            states = preset.states.map((name, i) => ({
+                name,
+                x: 0,
+                y: 0,
+                isStart: name === preset.start,
+                isAccept: preset.accept.includes(name)
+            }));
+
+            startState = states.find(s => s.isStart);
+            acceptStates = new Set(states.filter(s => s.isAccept));
+
+            transitions = preset.transitions.map(([from, symbol, to]) => ({
+                from: states.find(s => s.name === from),
+                to: states.find(s => s.name === to),
+                symbol
+            }));
+
+            currentState = null;
+            inputIndex = 0;
+            document.getElementById('input').placeholder = `Enter ${alphabet.join('/')}...`;
+            positionStates();
+            updateUI();
+            draw();
+        }
+
+        function positionStates() {
+            const centerX = width / 2 + 100;
+            const centerY = height / 2;
+            const radius = Math.min(200, Math.min(width, height) / 3);
+
+            states.forEach((state, i) => {
+                const angle = (i / states.length) * Math.PI * 2 - Math.PI / 2;
+                state.x = centerX + Math.cos(angle) * radius;
+                state.y = centerY + Math.sin(angle) * radius;
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw transitions
+            for (const trans of transitions) {
+                drawTransition(trans);
+            }
+
+            // Draw states
+            for (const state of states) {
+                drawState(state);
+            }
+        }
+
+        function drawTransition(trans) {
+            const from = trans.from;
+            const to = trans.to;
+
+            if (from === to) {
+                // Self-loop
+                const angle = -Math.PI / 2;
+                const loopRadius = 30;
+                const cx = from.x + Math.cos(angle) * 50;
+                const cy = from.y + Math.sin(angle) * 50;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, loopRadius, 0.5, Math.PI * 2 - 0.5);
+                ctx.strokeStyle = 'rgba(100, 100, 150, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Arrow
+                const arrowAngle = Math.PI * 2 - 0.5;
+                const ax = cx + Math.cos(arrowAngle) * loopRadius;
+                const ay = cy + Math.sin(arrowAngle) * loopRadius;
+                drawArrow(ax, ay, arrowAngle + Math.PI / 2);
+
+                // Label
+                ctx.fillStyle = '#ffe66d';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText(trans.symbol, cx, cy - loopRadius - 10);
+            } else {
+                // Check for reverse transition
+                const hasReverse = transitions.some(t =>
+                    t.from === to && t.to === from
+                );
+
+                let dx = to.x - from.x;
+                let dy = to.y - from.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                dx /= dist;
+                dy /= dist;
+
+                // Curve if bidirectional
+                const curve = hasReverse ? 20 : 0;
+                const perpX = -dy * curve;
+                const perpY = dx * curve;
+
+                const startX = from.x + dx * 35;
+                const startY = from.y + dy * 35;
+                const endX = to.x - dx * 35;
+                const endY = to.y - dy * 35;
+                const ctrlX = (startX + endX) / 2 + perpX;
+                const ctrlY = (startY + endY) / 2 + perpY;
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+                ctx.strokeStyle = 'rgba(100, 100, 150, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Arrow
+                const angle = Math.atan2(endY - ctrlY, endX - ctrlX);
+                drawArrow(endX, endY, angle);
+
+                // Label
+                ctx.fillStyle = '#ffe66d';
+                ctx.font = 'bold 14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText(trans.symbol, ctrlX, ctrlY - 10);
+            }
+        }
+
+        function drawArrow(x, y, angle) {
+            const size = 10;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - Math.cos(angle - 0.3) * size, y - Math.sin(angle - 0.3) * size);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - Math.cos(angle + 0.3) * size, y - Math.sin(angle + 0.3) * size);
+            ctx.strokeStyle = 'rgba(100, 100, 150, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawState(state) {
+            const radius = 30;
+
+            // Accept state double circle
+            if (state.isAccept) {
+                ctx.beginPath();
+                ctx.arc(state.x, state.y, radius + 5, 0, Math.PI * 2);
+                ctx.strokeStyle = state === currentState ? '#4ecdc4' : '#666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Main circle
+            ctx.beginPath();
+            ctx.arc(state.x, state.y, radius, 0, Math.PI * 2);
+
+            if (state === currentState) {
+                ctx.fillStyle = '#4ecdc4';
+            } else {
+                ctx.fillStyle = '#2a2a4a';
+            }
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Start arrow
+            if (state.isStart) {
+                ctx.beginPath();
+                ctx.moveTo(state.x - radius - 40, state.y);
+                ctx.lineTo(state.x - radius - 5, state.y);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawArrow(state.x - radius - 5, state.y, 0);
+            }
+
+            // Label
+            ctx.fillStyle = state === currentState ? '#000' : '#fff';
+            ctx.font = 'bold 16px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(state.name, state.x, state.y);
+        }
+
+        function updateUI() {
+            document.getElementById('currentState').textContent =
+                currentState ? currentState.name : '-';
+
+            // Update tape
+            const tapeEl = document.getElementById('tape');
+            tapeEl.innerHTML = '';
+            for (let i = 0; i < inputString.length; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'tape-cell';
+                if (i === inputIndex) cell.classList.add('current');
+                else if (i < inputIndex) cell.classList.add('processed');
+                cell.textContent = inputString[i];
+                tapeEl.appendChild(cell);
+            }
+
+            // Result
+            const resultEl = document.getElementById('result');
+            if (currentState && inputIndex >= inputString.length) {
+                if (acceptStates.has(currentState)) {
+                    resultEl.textContent = 'ACCEPTED';
+                    resultEl.className = 'result accept';
+                } else {
+                    resultEl.textContent = 'REJECTED';
+                    resultEl.className = 'result reject';
+                }
+            } else {
+                resultEl.textContent = '';
+                resultEl.className = 'result';
+            }
+        }
+
+        function step() {
+            if (!currentState) {
+                currentState = startState;
+                inputString = document.getElementById('input').value;
+                inputIndex = 0;
+            }
+
+            if (inputIndex >= inputString.length) {
+                return false;
+            }
+
+            const symbol = inputString[inputIndex];
+            const trans = transitions.find(t =>
+                t.from === currentState && t.symbol === symbol
+            );
+
+            if (trans) {
+                currentState = trans.to;
+                inputIndex++;
+            } else {
+                // No valid transition
+                inputIndex = inputString.length;
+            }
+
+            updateUI();
+            draw();
+
+            return inputIndex < inputString.length;
+        }
+
+        async function run() {
+            if (running) return;
+            running = true;
+
+            // Reset
+            currentState = startState;
+            inputString = document.getElementById('input').value;
+            inputIndex = 0;
+            updateUI();
+            draw();
+
+            await new Promise(r => setTimeout(r, 300));
+
+            while (inputIndex < inputString.length) {
+                step();
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            running = false;
+        }
+
+        function reset() {
+            currentState = null;
+            inputIndex = 0;
+            inputString = '';
+            running = false;
+            document.getElementById('result').textContent = '';
+            document.getElementById('tape').innerHTML = '';
+            updateUI();
+            draw();
+        }
+
+        document.getElementById('preset').addEventListener('change', e => {
+            loadPreset(e.target.value);
+        });
+
+        document.getElementById('run').addEventListener('click', run);
+        document.getElementById('step').addEventListener('click', step);
+        document.getElementById('reset').addEventListener('click', reset);
+
+        document.getElementById('input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') run();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        loadPreset('binary_div3');
+    </script>
+</body>
+</html>

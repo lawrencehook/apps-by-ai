@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorenz Attractor - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Lorenz Attractor</h1>
+        <p>A chaotic system discovered by Edward Lorenz. The "butterfly effect" visualized.</p>
+        <div class="control-group">
+            <label>Sigma (σ): <span id="sigmaLabel">10</span></label>
+            <input type="range" id="sigma" min="1" max="20" step="0.5" value="10">
+        </div>
+        <div class="control-group">
+            <label>Rho (ρ): <span id="rhoLabel">28</span></label>
+            <input type="range" id="rho" min="10" max="50" step="0.5" value="28">
+        </div>
+        <div class="control-group">
+            <label>Beta (β): <span id="betaLabel">2.67</span></label>
+            <input type="range" id="beta" min="0.5" max="5" step="0.1" value="2.67">
+        </div>
+        <div class="control-group">
+            <label>Trails: <span id="trailsLabel">3</span></label>
+            <input type="range" id="trails" min="1" max="10" value="3">
+        </div>
+        <button id="reset">Reset</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let sigma = 10;
+        let rho = 28;
+        let beta = 8 / 3;
+        let numTrails = 3;
+        let particles = [];
+        let rotationX = 0.5;
+        let rotationY = 0;
+        let autoRotate = true;
+
+        const dt = 0.005;
+        const scale = 10;
+        const trailLength = 1000;
+
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181',
+            '#aa96da', '#fcbad3', '#a8d8ea', '#ffaaa5', '#ffd3b6'
+        ];
+
+        class Particle {
+            constructor(x, y, z, color) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.color = color;
+                this.trail = [];
+            }
+
+            update() {
+                const dx = sigma * (this.y - this.x);
+                const dy = this.x * (rho - this.z) - this.y;
+                const dz = this.x * this.y - beta * this.z;
+
+                this.x += dx * dt;
+                this.y += dy * dt;
+                this.z += dz * dt;
+
+                this.trail.push({ x: this.x, y: this.y, z: this.z });
+                if (this.trail.length > trailLength) {
+                    this.trail.shift();
+                }
+            }
+        }
+
+        function project(x, y, z) {
+            // Rotate around Y axis
+            const cosY = Math.cos(rotationY);
+            const sinY = Math.sin(rotationY);
+            const x1 = x * cosY - z * sinY;
+            const z1 = x * sinY + z * cosY;
+
+            // Rotate around X axis
+            const cosX = Math.cos(rotationX);
+            const sinX = Math.sin(rotationX);
+            const y1 = y * cosX - z1 * sinX;
+            const z2 = y * sinX + z1 * cosX;
+
+            // Project to 2D
+            const perspective = 200 / (200 + z2);
+            return {
+                x: width / 2 + x1 * scale * perspective,
+                y: height / 2 + y1 * scale * perspective,
+                z: z2
+            };
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < numTrails; i++) {
+                particles.push(new Particle(
+                    0.1 + i * 0.001,
+                    0,
+                    0,
+                    colors[i % colors.length]
+                ));
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (autoRotate) {
+                rotationY += 0.003;
+            }
+
+            for (const particle of particles) {
+                for (let i = 0; i < 5; i++) {
+                    particle.update();
+                }
+
+                if (particle.trail.length < 2) continue;
+
+                ctx.beginPath();
+                const start = project(particle.trail[0].x, particle.trail[0].y, particle.trail[0].z);
+                ctx.moveTo(start.x, start.y);
+
+                for (let i = 1; i < particle.trail.length; i++) {
+                    const p = particle.trail[i];
+                    const proj = project(p.x, p.y, p.z);
+                    ctx.lineTo(proj.x, proj.y);
+                }
+
+                ctx.strokeStyle = particle.color;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw current position
+                const current = project(particle.x, particle.y, particle.z);
+                ctx.beginPath();
+                ctx.arc(current.x, current.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = particle.color;
+                ctx.fill();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // Mouse drag to rotate
+        let isDragging = false;
+        let lastX, lastY;
+
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            autoRotate = false;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging) {
+                rotationY += (e.clientX - lastX) * 0.01;
+                rotationX += (e.clientY - lastY) * 0.01;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        document.getElementById('sigma').addEventListener('input', e => {
+            sigma = parseFloat(e.target.value);
+            document.getElementById('sigmaLabel').textContent = sigma;
+        });
+
+        document.getElementById('rho').addEventListener('input', e => {
+            rho = parseFloat(e.target.value);
+            document.getElementById('rhoLabel').textContent = rho;
+        });
+
+        document.getElementById('beta').addEventListener('input', e => {
+            beta = parseFloat(e.target.value);
+            document.getElementById('betaLabel').textContent = beta.toFixed(2);
+        });
+
+        document.getElementById('trails').addEventListener('input', e => {
+            numTrails = parseInt(e.target.value);
+            document.getElementById('trailsLabel').textContent = numTrails;
+            init();
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            autoRotate = true;
+            init();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        init();
+        render();
+    </script>
+</body>
+</html>

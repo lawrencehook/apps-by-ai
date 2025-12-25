@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Langton's Ant - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .status { color: #666; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Langton's Ant</h1>
+        <p>Simple rules create complex emergent behavior. After ~10,000 steps, a "highway" pattern emerges.</p>
+        <div class="control-group">
+            <label>Speed: <span id="speedLabel">100</span> steps/frame</label>
+            <input type="range" id="speed" min="1" max="500" value="100">
+        </div>
+        <div class="control-group">
+            <label>Ants: <span id="antsLabel">1</span></label>
+            <input type="range" id="ants" min="1" max="10" value="1">
+        </div>
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+        <div class="status" id="status">Steps: 0</div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, cols, rows;
+        let grid = [];
+        let ants = [];
+        let steps = 0;
+        let speed = 100;
+        let numAnts = 1;
+        let paused = false;
+        const CELL_SIZE = 4;
+
+        // Directions: 0=up, 1=right, 2=down, 3=left
+        const dx = [0, 1, 0, -1];
+        const dy = [-1, 0, 1, 0];
+
+        const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181',
+                        '#aa96da', '#fcbad3', '#a8d8ea', '#ffaaa5', '#ffd3b6'];
+
+        class Ant {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.dir = 0; // facing up
+                this.color = color;
+            }
+
+            step() {
+                // Get current cell state
+                const idx = this.y * cols + this.x;
+                const isBlack = grid[idx] === 0;
+
+                // Turn based on current cell
+                if (isBlack) {
+                    this.dir = (this.dir + 1) % 4; // Turn right
+                } else {
+                    this.dir = (this.dir + 3) % 4; // Turn left
+                }
+
+                // Flip cell color
+                grid[idx] = 1 - grid[idx];
+
+                // Move forward
+                this.x = (this.x + dx[this.dir] + cols) % cols;
+                this.y = (this.y + dy[this.dir] + rows) % rows;
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cols = Math.floor(width / CELL_SIZE);
+            rows = Math.floor(height / CELL_SIZE);
+            init();
+        }
+
+        function init() {
+            grid = new Uint8Array(cols * rows);
+            ants = [];
+            steps = 0;
+
+            for (let i = 0; i < numAnts; i++) {
+                const offsetX = Math.floor((i - numAnts / 2) * 20);
+                ants.push(new Ant(
+                    Math.floor(cols / 2) + offsetX,
+                    Math.floor(rows / 2),
+                    colors[i % colors.length]
+                ));
+            }
+
+            // Clear canvas
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function render() {
+            if (!paused) {
+                for (let s = 0; s < speed; s++) {
+                    for (const ant of ants) {
+                        // Draw the cell ant is leaving
+                        const idx = ant.y * cols + ant.x;
+                        const x = ant.x * CELL_SIZE;
+                        const y = ant.y * CELL_SIZE;
+
+                        if (grid[idx] === 0) {
+                            ctx.fillStyle = '#0a0a0f';
+                        } else {
+                            ctx.fillStyle = '#fff';
+                        }
+                        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
+                        ant.step();
+                    }
+                    steps++;
+                }
+
+                // Draw ants
+                for (const ant of ants) {
+                    ctx.fillStyle = ant.color;
+                    ctx.fillRect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+
+                document.getElementById('status').textContent = `Steps: ${steps.toLocaleString()}`;
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedLabel').textContent = speed;
+        });
+
+        document.getElementById('ants').addEventListener('input', e => {
+            numAnts = parseInt(e.target.value);
+            document.getElementById('antsLabel').textContent = numAnts;
+            init();
+        });
+
+        document.getElementById('reset').addEventListener('click', init);
+
+        document.getElementById('pause').addEventListener('click', e => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Resume' : 'Pause';
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction-Diffusion - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; cursor: crosshair; }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            min-width: 220px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255, 255, 255, 0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        select { width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Reaction-Diffusion</h1>
+        <p>Click to add chemical B. Turing patterns emerge from two diffusing chemicals that react.</p>
+        <div class="control-group">
+            <label>Preset</label>
+            <select id="preset">
+                <option value="default">Default</option>
+                <option value="mitosis">Mitosis</option>
+                <option value="coral">Coral</option>
+                <option value="spots">Spots</option>
+                <option value="waves">Waves</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Feed Rate: <span id="feedLabel">0.055</span></label>
+            <input type="range" id="feed" min="0.01" max="0.1" step="0.001" value="0.055">
+        </div>
+        <div class="control-group">
+            <label>Kill Rate: <span id="killLabel">0.062</span></label>
+            <input type="range" id="kill" min="0.01" max="0.1" step="0.001" value="0.062">
+        </div>
+        <button id="clear">Clear</button>
+        <button id="seed">Random Seed</button>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const SCALE = 2;
+        let width, height, cols, rows;
+        let gridA, gridB, nextA, nextB;
+
+        const dA = 1.0;
+        const dB = 0.5;
+        let feed = 0.055;
+        let kill = 0.062;
+
+        const presets = {
+            default: { feed: 0.055, kill: 0.062 },
+            mitosis: { feed: 0.0367, kill: 0.0649 },
+            coral: { feed: 0.0545, kill: 0.062 },
+            spots: { feed: 0.025, kill: 0.06 },
+            waves: { feed: 0.014, kill: 0.045 }
+        };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            cols = Math.floor(canvas.width / SCALE);
+            rows = Math.floor(canvas.height / SCALE);
+            init();
+        }
+
+        function init() {
+            gridA = new Float32Array(cols * rows);
+            gridB = new Float32Array(cols * rows);
+            nextA = new Float32Array(cols * rows);
+            nextB = new Float32Array(cols * rows);
+
+            // Fill with chemical A
+            gridA.fill(1);
+            gridB.fill(0);
+
+            // Seed with some B in center
+            seedCenter();
+        }
+
+        function seedCenter() {
+            const cx = Math.floor(cols / 2);
+            const cy = Math.floor(rows / 2);
+            const r = 10;
+            for (let y = cy - r; y < cy + r; y++) {
+                for (let x = cx - r; x < cx + r; x++) {
+                    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                        if ((x - cx) ** 2 + (y - cy) ** 2 < r * r) {
+                            gridB[y * cols + x] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        function seedRandom() {
+            for (let i = 0; i < 20; i++) {
+                const cx = Math.floor(Math.random() * cols);
+                const cy = Math.floor(Math.random() * rows);
+                const r = 5 + Math.random() * 10;
+                for (let y = cy - r; y < cy + r; y++) {
+                    for (let x = cx - r; x < cx + r; x++) {
+                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                            if ((x - cx) ** 2 + (y - cy) ** 2 < r * r) {
+                                gridB[y * cols + x] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function laplacian(grid, x, y) {
+            const idx = y * cols + x;
+            let sum = 0;
+            sum += grid[idx] * -1;
+            sum += (grid[idx - 1] || 0) * 0.2;
+            sum += (grid[idx + 1] || 0) * 0.2;
+            sum += (grid[(y - 1) * cols + x] || 0) * 0.2;
+            sum += (grid[(y + 1) * cols + x] || 0) * 0.2;
+            sum += (grid[(y - 1) * cols + x - 1] || 0) * 0.05;
+            sum += (grid[(y - 1) * cols + x + 1] || 0) * 0.05;
+            sum += (grid[(y + 1) * cols + x - 1] || 0) * 0.05;
+            sum += (grid[(y + 1) * cols + x + 1] || 0) * 0.05;
+            return sum;
+        }
+
+        function step() {
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    const idx = y * cols + x;
+                    const a = gridA[idx];
+                    const b = gridB[idx];
+                    const reaction = a * b * b;
+
+                    nextA[idx] = a + (dA * laplacian(gridA, x, y) - reaction + feed * (1 - a));
+                    nextB[idx] = b + (dB * laplacian(gridB, x, y) + reaction - (kill + feed) * b);
+
+                    nextA[idx] = Math.max(0, Math.min(1, nextA[idx]));
+                    nextB[idx] = Math.max(0, Math.min(1, nextB[idx]));
+                }
+            }
+            [gridA, nextA] = [nextA, gridA];
+            [gridB, nextB] = [nextB, gridB];
+        }
+
+        function render() {
+            const imageData = ctx.createImageData(cols, rows);
+            const data = imageData.data;
+
+            for (let i = 0; i < cols * rows; i++) {
+                const a = gridA[i];
+                const b = gridB[i];
+                const c = Math.floor((a - b) * 255);
+                const idx = i * 4;
+                data[idx] = c;
+                data[idx + 1] = c;
+                data[idx + 2] = c;
+                data[idx + 3] = 255;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            ctx.drawImage(canvas, 0, 0, cols, rows, 0, 0, canvas.width, canvas.height);
+        }
+
+        function animate() {
+            for (let i = 0; i < 10; i++) step();
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            if (e.buttons === 1) {
+                const x = Math.floor(e.clientX / SCALE);
+                const y = Math.floor(e.clientY / SCALE);
+                const r = 5;
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        const px = x + dx;
+                        const py = y + dy;
+                        if (px >= 0 && px < cols && py >= 0 && py < rows && dx*dx + dy*dy < r*r) {
+                            gridB[py * cols + px] = 1;
+                        }
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mousedown', e => {
+            const x = Math.floor(e.clientX / SCALE);
+            const y = Math.floor(e.clientY / SCALE);
+            const r = 8;
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    const px = x + dx;
+                    const py = y + dy;
+                    if (px >= 0 && px < cols && py >= 0 && py < rows && dx*dx + dy*dy < r*r) {
+                        gridB[py * cols + px] = 1;
+                    }
+                }
+            }
+        });
+
+        document.getElementById('preset').addEventListener('change', e => {
+            const p = presets[e.target.value];
+            feed = p.feed;
+            kill = p.kill;
+            document.getElementById('feed').value = feed;
+            document.getElementById('kill').value = kill;
+            document.getElementById('feedLabel').textContent = feed.toFixed(3);
+            document.getElementById('killLabel').textContent = kill.toFixed(3);
+        });
+
+        document.getElementById('feed').addEventListener('input', e => {
+            feed = parseFloat(e.target.value);
+            document.getElementById('feedLabel').textContent = feed.toFixed(3);
+        });
+
+        document.getElementById('kill').addEventListener('input', e => {
+            kill = parseFloat(e.target.value);
+            document.getElementById('killLabel').textContent = kill.toFixed(3);
+        });
+
+        document.getElementById('clear').addEventListener('click', init);
+        document.getElementById('seed').addEventListener('click', () => { init(); seedRandom(); });
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>
