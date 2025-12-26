@@ -44,7 +44,8 @@
         }
 
         .search-container {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            text-align: center;
         }
 
         .search-input {
@@ -68,35 +69,67 @@
             color: #666;
         }
 
+        .category-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .category-filter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+            color: #aaa;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .category-filter:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .category-filter.active {
+            background: rgba(78, 205, 196, 0.25);
+            border-color: rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+
         .tag-filters {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
+            justify-content: center;
         }
 
         .tag-filter {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 4px 10px;
-            border-radius: 4px;
-            color: #888;
-            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 3px 8px;
+            border-radius: 3px;
+            color: #666;
+            font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.15s;
         }
 
         .tag-filter:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #aaa;
+            background: rgba(255, 255, 255, 0.08);
+            color: #888;
         }
 
         .tag-filter.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
+            background: rgba(78, 205, 196, 0.15);
+            border-color: rgba(78, 205, 196, 0.3);
             color: #4ecdc4;
         }
 
         .results-count {
+            text-align: center;
             color: #555;
             font-size: 0.8rem;
             margin-top: 10px;
@@ -170,6 +203,15 @@
             flex-wrap: wrap;
         }
 
+        .card-category {
+            background: rgba(78, 205, 196, 0.15);
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: #4ecdc4;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
         .tag {
             background: rgba(255, 255, 255, 0.06);
             padding: 2px 6px;
@@ -231,6 +273,7 @@
         <div class="search-container">
             <input type="text" class="search-input" id="search" placeholder="Search demos...">
         </div>
+        <div class="category-filters" id="categoryFilters"></div>
         <div class="tag-filters" id="tagFilters"></div>
         <div class="results-count" id="resultsCount"></div>
     </div>
@@ -245,7 +288,9 @@
     <script>
         let allApps = [];
         let allTags = [];
+        let allCategories = [];
         let selectedTags = new Set();
+        let selectedCategory = null;
         let searchQuery = '';
 
         async function loadApps() {
@@ -253,11 +298,19 @@
                 const response = await fetch('metadata.json');
                 allApps = await response.json();
 
+                // Extract all unique categories
+                const categorySet = new Set();
+                allApps.forEach(app => {
+                    if (app.category) categorySet.add(app.category);
+                });
+                allCategories = Array.from(categorySet).sort();
+
                 // Extract all unique tags
                 const tagSet = new Set();
                 allApps.forEach(app => app.tags.forEach(tag => tagSet.add(tag)));
                 allTags = Array.from(tagSet).sort();
 
+                renderCategoryFilters();
                 renderTagFilters();
                 filterAndRender();
             } catch (error) {
@@ -268,6 +321,30 @@
                     </div>
                 `;
             }
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('categoryFilters');
+            container.innerHTML = allCategories.map(cat => `
+                <button class="category-filter" data-category="${cat}">${cat}</button>
+            `).join('');
+
+            container.addEventListener('click', e => {
+                if (e.target.classList.contains('category-filter')) {
+                    const cat = e.target.dataset.category;
+
+                    // Remove active from all
+                    container.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
+
+                    if (selectedCategory === cat) {
+                        selectedCategory = null;
+                    } else {
+                        selectedCategory = cat;
+                        e.target.classList.add('active');
+                    }
+                    filterAndRender();
+                }
+            });
         }
 
         function renderTagFilters() {
@@ -300,8 +377,14 @@
                 filtered = filtered.filter(app =>
                     app.title.toLowerCase().includes(query) ||
                     app.description.toLowerCase().includes(query) ||
+                    (app.category && app.category.toLowerCase().includes(query)) ||
                     app.tags.some(tag => tag.toLowerCase().includes(query))
                 );
+            }
+
+            // Filter by selected category
+            if (selectedCategory) {
+                filtered = filtered.filter(app => app.category === selectedCategory);
             }
 
             // Filter by selected tags
@@ -315,7 +398,7 @@
 
             // Update results count
             const countEl = document.getElementById('resultsCount');
-            if (searchQuery || selectedTags.size > 0) {
+            if (searchQuery || selectedCategory || selectedTags.size > 0) {
                 countEl.textContent = `Showing ${filtered.length} of ${allApps.length} demos`;
             } else {
                 countEl.textContent = '';
@@ -343,7 +426,8 @@
                         <h2 class="card-title">${app.title}</h2>
                         <p class="card-description">${app.description}</p>
                         <div class="card-meta">
-                            ${app.tags.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            ${app.category ? `<span class="card-category">${app.category}</span>` : ''}
+                            ${app.tags.slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
                         </div>
                     </div>
                     ${app.link ? `

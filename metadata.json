@@ -8,6 +8,7 @@
         "previewGradient": "linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["simulation", "emergent", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Artificial_life"
     },
@@ -20,6 +21,7 @@
         "previewGradient": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["simulation", "swarm", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Boids"
     },
@@ -32,6 +34,7 @@
         "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Theory of Computation",
         "tags": ["cellular automata", "interactive", "patterns"],
         "link": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life"
     },
@@ -44,6 +47,7 @@
         "previewGradient": "linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #4a00e0 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Mathematics",
         "tags": ["fractal", "math", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Mandelbrot_set"
     },
@@ -56,6 +60,7 @@
         "previewGradient": "linear-gradient(135deg, #00b4db 0%, #0083b0 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Mathematics",
         "tags": ["math", "visualization", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Fourier_series"
     },
@@ -68,6 +73,7 @@
         "previewGradient": "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["physics", "simulation", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Computational_fluid_dynamics"
     },
@@ -80,6 +86,7 @@
         "previewGradient": "linear-gradient(135deg, #134e5e 0%, #71b280 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Mathematics",
         "tags": ["generative", "procedural", "nature"],
         "link": "https://en.wikipedia.org/wiki/L-system"
     },
@@ -92,6 +99,7 @@
         "previewGradient": "linear-gradient(135deg, #2c3e50 0%, #3498db 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["simulation", "patterns", "generative"],
         "link": "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system"
     },
@@ -104,6 +112,7 @@
         "previewGradient": "linear-gradient(135deg, #8e44ad 0%, #3498db 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["physics", "simulation", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Verlet_integration"
     },
@@ -116,6 +125,7 @@
         "previewGradient": "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["3D", "graphics", "math"],
         "link": "https://en.wikipedia.org/wiki/Ray_marching"
     },
@@ -128,6 +138,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["physics", "chaos", "simulation"],
         "link": "https://en.wikipedia.org/wiki/Double_pendulum"
     },
@@ -140,6 +151,7 @@
         "previewGradient": "linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["graphics", "interactive", "organic"],
         "link": "https://en.wikipedia.org/wiki/Metaballs"
     },
@@ -152,6 +164,7 @@
         "previewGradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "geometry", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Voronoi_diagram"
     },
@@ -164,6 +177,7 @@
         "previewGradient": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["procedural", "3D", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Procedural_generation"
     },
@@ -176,6 +190,7 @@
         "previewGradient": "linear-gradient(135deg, #4a90a4 0%, #8ed4e8 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["procedural", "algorithm", "patterns"],
         "link": "https://en.wikipedia.org/wiki/Wave_function_collapse"
     },
@@ -188,6 +203,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #ffe66d 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Mathematics",
         "tags": ["chaos", "3D", "physics"],
         "link": "https://en.wikipedia.org/wiki/Lorenz_system"
     },
@@ -200,6 +216,7 @@
         "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "visualization", "graphics"],
         "link": "https://en.wikipedia.org/wiki/Marching_squares"
     },
@@ -212,6 +229,7 @@
         "previewGradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "geometry", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Delaunay_triangulation"
     },
@@ -224,6 +242,7 @@
         "previewGradient": "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["generative", "particles", "art"],
         "link": "https://en.wikipedia.org/wiki/Perlin_noise"
     },
@@ -236,6 +255,7 @@
         "previewGradient": "linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #4a00e0 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["physics", "simulation", "interactive"],
         "link": "https://en.wikipedia.org/wiki/N-body_problem"
     },
@@ -248,6 +268,7 @@
         "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Mathematics",
         "tags": ["math", "graphics", "interactive"],
         "link": "https://en.wikipedia.org/wiki/B%C3%A9zier_curve"
     },
@@ -260,6 +281,7 @@
         "previewGradient": "linear-gradient(135deg, #2c3e50 0%, #bdc3c7 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Theory of Computation",
         "tags": ["cellular automata", "emergent", "patterns"],
         "link": "https://en.wikipedia.org/wiki/Langton%27s_ant"
     },
@@ -272,6 +294,7 @@
         "previewGradient": "linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["fractal", "generative", "simulation"],
         "link": "https://en.wikipedia.org/wiki/Diffusion-limited_aggregation"
     },
@@ -284,6 +307,7 @@
         "previewGradient": "linear-gradient(135deg, #f12711 0%, #f5af19 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["retro", "graphics", "demoscene"],
         "link": "https://en.wikipedia.org/wiki/Demoscene"
     },
@@ -296,6 +320,7 @@
         "previewGradient": "linear-gradient(135deg, #1a1a2e 0%, #4a4a6a 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "procedural", "visualization"],
         "link": "https://en.wikipedia.org/wiki/Maze_generation_algorithm"
     },
@@ -308,6 +333,7 @@
         "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #ff6b6b 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Physics",
         "tags": ["physics", "simulation", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Hooke%27s_law"
     },
@@ -320,6 +346,7 @@
         "previewGradient": "linear-gradient(135deg, #3a5a6a 0%, #4ecdc4 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Data Structures",
         "tags": ["algorithm", "data structure", "visualization"],
         "link": "https://en.wikipedia.org/wiki/Quadtree"
     },
@@ -332,6 +359,7 @@
         "previewGradient": "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Audio",
         "tags": ["audio", "interactive", "visualization"],
         "link": "https://en.wikipedia.org/wiki/Synthesizer"
     },
@@ -344,6 +372,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #ffe66d 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Computer Graphics",
         "tags": ["graphics", "GPU", "art"],
         "link": "https://en.wikipedia.org/wiki/Shader"
     },
@@ -356,6 +385,7 @@
         "previewGradient": "linear-gradient(135deg, #ffe66d 0%, #4ecdc4 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "AI", "interactive"],
         "link": "https://en.wikipedia.org/wiki/A*_search_algorithm"
     },
@@ -368,6 +398,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #ffe66d 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "visualization", "comparison"],
         "link": "https://en.wikipedia.org/wiki/Sorting_algorithm"
     },
@@ -380,6 +411,7 @@
         "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "graph", "pathfinding"],
         "link": "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm"
     },
@@ -392,6 +424,7 @@
         "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #ff6b6b 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "graph", "comparison"],
         "link": "https://en.wikipedia.org/wiki/Graph_traversal"
     },
@@ -404,6 +437,7 @@
         "previewGradient": "linear-gradient(135deg, #00b4db 0%, #0083b0 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "geometry", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Convex_hull"
     },
@@ -416,6 +450,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #333333 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Data Structures",
         "tags": ["data structure", "tree", "visualization"],
         "link": "https://en.wikipedia.org/wiki/Red%E2%80%93black_tree"
     },
@@ -428,6 +463,7 @@
         "previewGradient": "linear-gradient(135deg, #134e5e 0%, #4ecdc4 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "graph", "optimization"],
         "link": "https://en.wikipedia.org/wiki/Minimum_spanning_tree"
     },
@@ -440,6 +476,7 @@
         "previewGradient": "linear-gradient(135deg, #ffe66d 0%, #4ecdc4 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Algorithms",
         "tags": ["algorithm", "compression", "tree"],
         "link": "https://en.wikipedia.org/wiki/Huffman_coding"
     },
@@ -452,6 +489,7 @@
         "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Theory of Computation",
         "tags": ["automata", "theory", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Finite-state_machine"
     },
@@ -464,6 +502,7 @@
         "previewGradient": "linear-gradient(135deg, #1a1a2e 0%, #4a4a6a 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Theory of Computation",
         "tags": ["automata", "theory", "computation"],
         "link": "https://en.wikipedia.org/wiki/Turing_machine"
     },
@@ -476,6 +515,7 @@
         "previewGradient": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
+        "category": "Data Structures",
         "tags": ["data structure", "tree", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Binary_search_tree"
     }
