@@ -43,13 +43,6 @@
             align-items: center;
             justify-content: center;
         }
-        .result.spinning {
-            animation: spin 0.1s infinite;
-        }
-        @keyframes spin {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -228,31 +221,8 @@ Elderberry"></textarea>
             }
 
             const resultEl = document.getElementById('result');
-            resultEl.classList.add('spinning');
 
-            // Animate
-            let spins = 0;
-            const spinInterval = setInterval(() => {
-                const randomItems = [];
-                for (let i = 0; i < count; i++) {
-                    randomItems.push(items[Math.floor(Math.random() * items.length)]);
-                }
-                resultEl.innerHTML = randomItems.map(item =>
-                    `<span class="picked-item">${escapeHtml(item)}</span>`
-                ).join('');
-                spins++;
-                if (spins > 15) {
-                    clearInterval(spinInterval);
-                    finishPick(items, count, removePicked);
-                }
-            }, 50);
-        }
-
-        function finishPick(items, count, removePicked) {
-            const resultEl = document.getElementById('result');
-            resultEl.classList.remove('spinning');
-
-            // Pick random items without duplicates
+            // Pick random items without duplicates (immediate)
             const pool = [...items];
             const picked = [];
             for (let i = 0; i < count && pool.length > 0; i++) {
@@ -268,6 +238,7 @@ Elderberry"></textarea>
                 const remaining = items.filter(item => !picked.includes(item));
                 textarea.value = remaining.join('\n');
                 updateCount();
+                updateURL();
             }
         }
 

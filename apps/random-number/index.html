@@ -169,12 +169,13 @@
 
         loadFromURL();
 
-        document.getElementById('minVal').addEventListener('change', updateURL);
-        document.getElementById('maxVal').addEventListener('change', updateURL);
-        document.getElementById('count').addEventListener('change', updateURL);
-        document.getElementById('allowDuplicates').addEventListener('change', updateURL);
+        document.getElementById('minVal').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('maxVal').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('count').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('allowDuplicates').addEventListener('change', () => { updateURL(); generate(); });
 
         document.getElementById('generateBtn').addEventListener('click', generate);
+        generate();
         document.addEventListener('keydown', e => {
             if (e.code === 'Space' || e.code === 'Enter') {
                 e.preventDefault();

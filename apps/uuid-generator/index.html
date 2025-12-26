@@ -33,33 +33,41 @@
             margin-bottom: 20px;
         }
         .uuid-display {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            position: relative;
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
             padding: 16px;
+            padding-right: 50px;
             margin-bottom: 12px;
         }
         .uuid-text {
-            flex: 1;
             font-size: 1.1rem;
             font-family: 'SF Mono', Monaco, monospace;
             color: #4ecdc4;
-            word-break: break-all;
+            overflow-x: auto;
+            white-space: nowrap;
         }
         .copy-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(78, 205, 196, 0.2);
             border: 1px solid rgba(78, 205, 196, 0.4);
             color: #4ecdc4;
-            padding: 8px 16px;
-            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.85rem;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.2s;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
-        .copy-btn.copied { background: rgba(78, 205, 196, 0.4); }
+        .copy-btn:hover { opacity: 1; background: rgba(78, 205, 196, 0.3); }
+        .copy-btn.copied { opacity: 1; background: rgba(78, 205, 196, 0.4); }
+        .copy-btn span { font-size: 18px; line-height: 1; }
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
@@ -133,7 +141,10 @@
         <div class="card">
             <div class="uuid-display">
                 <div class="uuid-text" id="uuid">-</div>
-                <button class="copy-btn" id="copyBtn">Copy</button>
+                <button class="copy-btn" id="copyBtn" title="Copy to clipboard">
+                    <span class="icon-copy">⧉</span>
+                    <span class="icon-check" style="display:none">✓</span>
+                </button>
             </div>
             <button id="generateBtn">Generate UUID</button>
         </div>
@@ -190,10 +201,10 @@
 
         loadFromURL();
 
-        document.getElementById('version').addEventListener('change', updateURL);
-        document.getElementById('count').addEventListener('change', updateURL);
-        document.getElementById('uppercase').addEventListener('change', updateURL);
-        document.getElementById('noDashes').addEventListener('change', updateURL);
+        document.getElementById('version').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('count').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('uppercase').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('noDashes').addEventListener('change', () => { updateURL(); generate(); });
 
         document.getElementById('generateBtn').addEventListener('click', generate);
         document.getElementById('copyBtn').addEventListener('click', () => copyText(document.getElementById('uuid').textContent));
@@ -252,10 +263,12 @@
             if (text && text !== '-') {
                 navigator.clipboard.writeText(text);
                 const btn = document.getElementById('copyBtn');
-                btn.textContent = 'Copied!';
+                btn.querySelector('.icon-copy').style.display = 'none';
+                btn.querySelector('.icon-check').style.display = 'block';
                 btn.classList.add('copied');
                 setTimeout(() => {
-                    btn.textContent = 'Copy';
+                    btn.querySelector('.icon-copy').style.display = 'block';
+                    btn.querySelector('.icon-check').style.display = 'none';
                     btn.classList.remove('copied');
                 }, 1500);
             }

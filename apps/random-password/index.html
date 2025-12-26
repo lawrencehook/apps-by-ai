@@ -33,9 +33,11 @@
             margin-bottom: 20px;
         }
         .password-display {
+            position: relative;
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
             padding: 16px;
+            padding-right: 50px;
             margin-bottom: 16px;
         }
         .password-text {
@@ -44,21 +46,28 @@
             color: #4ecdc4;
             overflow-x: auto;
             white-space: nowrap;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
         }
         .copy-btn {
-            width: 100%;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(78, 205, 196, 0.2);
             border: 1px solid rgba(78, 205, 196, 0.4);
             color: #4ecdc4;
-            padding: 10px 16px;
-            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.2s;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
-        .copy-btn.copied { background: rgba(78, 205, 196, 0.4); }
+        .copy-btn:hover { opacity: 1; background: rgba(78, 205, 196, 0.3); }
+        .copy-btn.copied { opacity: 1; background: rgba(78, 205, 196, 0.4); }
+        .copy-btn span { font-size: 18px; line-height: 1; }
         .strength-bar {
             height: 4px;
             background: rgba(255,255,255,0.1);
@@ -126,7 +135,10 @@
         <div class="card">
             <div class="password-display">
                 <div class="password-text" id="password">Click Generate</div>
-                <button class="copy-btn" id="copyBtn">Copy</button>
+                <button class="copy-btn" id="copyBtn" title="Copy to clipboard">
+                    <span class="icon-copy">⧉</span>
+                    <span class="icon-check" style="display:none">✓</span>
+                </button>
             </div>
             <div class="strength-bar">
                 <div class="strength-fill" id="strengthFill"></div>
@@ -206,12 +218,13 @@
         lengthSlider.addEventListener('input', () => {
             lengthValue.textContent = lengthSlider.value;
             updateURL();
+            generate();
         });
 
-        document.getElementById('uppercase').addEventListener('change', updateURL);
-        document.getElementById('lowercase').addEventListener('change', updateURL);
-        document.getElementById('numbers').addEventListener('change', updateURL);
-        document.getElementById('symbols').addEventListener('change', updateURL);
+        document.getElementById('uppercase').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('lowercase').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('numbers').addEventListener('change', () => { updateURL(); generate(); });
+        document.getElementById('symbols').addEventListener('change', () => { updateURL(); generate(); });
 
         document.getElementById('generateBtn').addEventListener('click', generate);
         document.getElementById('copyBtn').addEventListener('click', copyPassword);
@@ -273,10 +286,12 @@
             if (password && password !== 'Click Generate' && password !== 'Select at least one option') {
                 navigator.clipboard.writeText(password);
                 const btn = document.getElementById('copyBtn');
-                btn.textContent = 'Copied!';
+                btn.querySelector('.icon-copy').style.display = 'none';
+                btn.querySelector('.icon-check').style.display = 'block';
                 btn.classList.add('copied');
                 setTimeout(() => {
-                    btn.textContent = 'Copy';
+                    btn.querySelector('.icon-copy').style.display = 'block';
+                    btn.querySelector('.icon-check').style.display = 'none';
                     btn.classList.remove('copied');
                 }, 1500);
             }

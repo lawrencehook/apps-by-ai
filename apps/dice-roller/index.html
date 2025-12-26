@@ -61,13 +61,6 @@
             font-weight: 600;
             color: #fff;
         }
-        .die.rolling {
-            animation: roll 0.1s infinite;
-        }
-        @keyframes roll {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
-        }
         .dice-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -216,12 +209,14 @@
                 btn.classList.add('selected');
                 selectedSides = parseInt(btn.dataset.sides);
                 updateURL();
+                roll();
             });
         });
 
-        document.getElementById('diceCount').addEventListener('change', updateURL);
+        document.getElementById('diceCount').addEventListener('change', () => { updateURL(); roll(); });
 
         document.getElementById('rollBtn').addEventListener('click', roll);
+        roll();
         document.addEventListener('keydown', e => {
             if (e.code === 'Space' || e.code === 'Enter') {
                 e.preventDefault();
@@ -233,47 +228,22 @@
             const count = Math.min(20, Math.max(1, parseInt(document.getElementById('diceCount').value) || 1));
             const container = document.getElementById('diceResults');
 
-            // Create dice elements
+            // Create dice elements and roll immediately
             container.innerHTML = '';
-            const diceEls = [];
-            for (let i = 0; i < count; i++) {
-                const die = document.createElement('div');
-                die.className = 'die rolling';
-                die.textContent = '?';
-                container.appendChild(die);
-                diceEls.push(die);
-            }
-
-            document.getElementById('total').textContent = '...';
-
-            // Animate rolling
-            let rollCount = 0;
-            const rollInterval = setInterval(() => {
-                diceEls.forEach(die => {
-                    die.textContent = Math.floor(Math.random() * selectedSides) + 1;
-                });
-                rollCount++;
-                if (rollCount > 10) {
-                    clearInterval(rollInterval);
-                    finishRoll(diceEls);
-                }
-            }, 50);
-        }
-
-        function finishRoll(diceEls) {
             const results = [];
-            diceEls.forEach(die => {
+            for (let i = 0; i < count; i++) {
                 const value = Math.floor(Math.random() * selectedSides) + 1;
                 results.push(value);
+                const die = document.createElement('div');
+                die.className = 'die';
                 die.textContent = value;
-                die.classList.remove('rolling');
-            });
+                container.appendChild(die);
+            }
 
             const total = results.reduce((a, b) => a + b, 0);
             document.getElementById('total').textContent = total;
 
             // Add to roll history
-            const count = results.length;
             rollHistory.unshift({
                 type: `${count}d${selectedSides}`,
                 results: results.join(', '),
