@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Merge - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .files-list {
+            margin-bottom: 24px;
+        }
+        .file-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .file-item.dragging {
+            opacity: 0.5;
+            border-style: dashed;
+        }
+        .file-item.drag-over {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .file-order {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            min-width: 30px;
+        }
+        .file-waveform {
+            width: 120px;
+            height: 40px;
+            background: #1a1a1f;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-meta { color: #666; font-size: 0.85rem; }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .drag-handle {
+            cursor: grab;
+            color: #555;
+            padding: 8px;
+            font-size: 1.2rem;
+        }
+        .drag-handle:hover { color: #888; }
+        .remove-btn {
+            background: rgba(255,100,100,0.1);
+            border: 1px solid rgba(255,100,100,0.3);
+            color: #ff6b6b;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .remove-btn:hover {
+            background: rgba(255,100,100,0.2);
+        }
+        .total-info {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-label { color: #888; }
+        .total-value { color: #4ecdc4; font-size: 1.2rem; font-weight: 600; font-family: monospace; }
+        .gap-setting {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .gap-setting label { color: #888; }
+        .gap-setting input {
+            width: 100px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .gap-setting span { color: #666; font-size: 0.85rem; }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 14px 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+            margin-top: 12px;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Audio Merge</h1>
+        <p class="subtitle">Combine multiple audio files into one. Drag to reorder.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop audio files here or click to browse</div>
+            <div class="drop-zone-hint">Supports MP3, WAV, OGG, M4A, and more. Select multiple files.</div>
+            <input type="file" id="fileInput" accept="audio/*" multiple>
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="files-list" id="filesList"></div>
+
+            <div class="total-info">
+                <span class="total-label">Total Duration</span>
+                <span class="total-value" id="totalDuration">0:00.000</span>
+            </div>
+
+            <div class="gap-setting">
+                <label>Gap between files:</label>
+                <input type="number" id="gapInput" value="0" min="0" max="10" step="0.1">
+                <span>seconds</span>
+            </div>
+
+            <button id="mergeBtn">Merge & Download</button>
+            <button id="addMoreBtn" class="secondary">Add More Files</button>
+            <button id="resetBtn" class="secondary">Start Over</button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let audioFiles = []; // { file, buffer, name, duration }
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const filesList = document.getElementById('filesList');
+        const status = document.getElementById('status');
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(Array.from(e.dataTransfer.files));
+        });
+        fileInput.addEventListener('change', e => {
+            handleFiles(Array.from(e.target.files));
+            fileInput.value = '';
+        });
+
+        async function handleFiles(files) {
+            initAudioContext();
+
+            for (const file of files) {
+                if (!file.type.startsWith('audio/')) continue;
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const buffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                    audioFiles.push({
+                        file,
+                        buffer,
+                        name: file.name,
+                        duration: buffer.duration
+                    });
+                } catch (err) {
+                    console.error('Error loading:', file.name, err);
+                }
+            }
+
+            if (audioFiles.length > 0) {
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+                renderFilesList();
+                updateTotalDuration();
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toFixed(3).padStart(6, '0')}`;
+        }
+
+        function renderFilesList() {
+            filesList.innerHTML = '';
+
+            audioFiles.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'file-item';
+                el.draggable = true;
+                el.dataset.index = index;
+
+                el.innerHTML = `
+                    <span class="drag-handle">⋮⋮</span>
+                    <span class="file-order">${index + 1}</span>
+                    <canvas class="file-waveform" data-index="${index}"></canvas>
+                    <div class="file-details">
+                        <div class="file-name">${item.name}</div>
+                        <div class="file-meta">${formatTime(item.duration)} • ${item.buffer.sampleRate} Hz</div>
+                    </div>
+                    <button class="remove-btn" data-index="${index}">Remove</button>
+                `;
+
+                // Draw waveform
+                requestAnimationFrame(() => {
+                    const canvas = el.querySelector('.file-waveform');
+                    drawMiniWaveform(canvas, item.buffer);
+                });
+
+                // Drag events
+                el.addEventListener('dragstart', handleDragStart);
+                el.addEventListener('dragend', handleDragEnd);
+                el.addEventListener('dragover', handleDragOver);
+                el.addEventListener('drop', handleDrop);
+
+                // Remove button
+                el.querySelector('.remove-btn').addEventListener('click', () => {
+                    audioFiles.splice(index, 1);
+                    if (audioFiles.length === 0) {
+                        dropZone.classList.remove('hidden');
+                        editorPanel.classList.add('hidden');
+                    } else {
+                        renderFilesList();
+                        updateTotalDuration();
+                    }
+                });
+
+                filesList.appendChild(el);
+            });
+        }
+
+        function drawMiniWaveform(canvas, buffer) {
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = 120 * dpr;
+            canvas.height = 40 * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = 120;
+            const height = 40;
+
+            ctx.fillStyle = '#1a1a1f';
+            ctx.fillRect(0, 0, width, height);
+
+            const data = buffer.getChannelData(0);
+            const step = Math.ceil(data.length / width);
+            const amp = height / 2;
+
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            for (let i = 0; i < width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j] || 0;
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * amp);
+                ctx.lineTo(i, (1 + max) * amp);
+            }
+            ctx.stroke();
+        }
+
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.currentTarget.dataset.index);
+            e.currentTarget.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const item = e.currentTarget;
+            if (parseInt(item.dataset.index) !== draggedIndex) {
+                item.classList.add('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropIndex = parseInt(e.currentTarget.dataset.index);
+
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                const [removed] = audioFiles.splice(draggedIndex, 1);
+                audioFiles.splice(dropIndex, 0, removed);
+                renderFilesList();
+            }
+
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over'));
+            draggedIndex = null;
+        }
+
+        function updateTotalDuration() {
+            const gap = parseFloat(document.getElementById('gapInput').value) || 0;
+            let total = audioFiles.reduce((sum, item) => sum + item.duration, 0);
+            if (audioFiles.length > 1) {
+                total += gap * (audioFiles.length - 1);
+            }
+            document.getElementById('totalDuration').textContent = formatTime(total);
+        }
+
+        document.getElementById('gapInput').addEventListener('input', updateTotalDuration);
+
+        document.getElementById('addMoreBtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        document.getElementById('mergeBtn').addEventListener('click', () => {
+            if (audioFiles.length === 0) return;
+
+            const gap = parseFloat(document.getElementById('gapInput').value) || 0;
+
+            // Use the highest sample rate and max channels
+            const sampleRate = Math.max(...audioFiles.map(f => f.buffer.sampleRate));
+            const numChannels = Math.max(...audioFiles.map(f => f.buffer.numberOfChannels));
+
+            // Calculate total length
+            let totalLength = 0;
+            audioFiles.forEach((item, i) => {
+                const ratio = sampleRate / item.buffer.sampleRate;
+                totalLength += Math.floor(item.buffer.length * ratio);
+                if (i < audioFiles.length - 1) {
+                    totalLength += Math.floor(gap * sampleRate);
+                }
+            });
+
+            const mergedBuffer = audioContext.createBuffer(numChannels, totalLength, sampleRate);
+
+            let offset = 0;
+            audioFiles.forEach((item, fileIndex) => {
+                const ratio = sampleRate / item.buffer.sampleRate;
+
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sourceChannel = item.buffer.numberOfChannels > ch ? ch : 0;
+                    const sourceData = item.buffer.getChannelData(sourceChannel);
+                    const destData = mergedBuffer.getChannelData(ch);
+
+                    // Simple resampling if needed
+                    if (ratio === 1) {
+                        for (let i = 0; i < sourceData.length; i++) {
+                            destData[offset + i] = sourceData[i];
+                        }
+                    } else {
+                        const resampledLength = Math.floor(sourceData.length * ratio);
+                        for (let i = 0; i < resampledLength; i++) {
+                            const srcIndex = i / ratio;
+                            const idx = Math.floor(srcIndex);
+                            const frac = srcIndex - idx;
+                            const sample = sourceData[idx] * (1 - frac) + (sourceData[idx + 1] || 0) * frac;
+                            destData[offset + i] = sample;
+                        }
+                    }
+                }
+
+                const resampledLength = Math.floor(item.buffer.length * ratio);
+                offset += resampledLength;
+
+                // Add gap
+                if (fileIndex < audioFiles.length - 1) {
+                    offset += Math.floor(gap * sampleRate);
+                }
+            });
+
+            const wavBlob = audioBufferToWav(mergedBuffer);
+            const url = URL.createObjectURL(wavBlob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'merged_audio.wav';
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            status.textContent = `Merged ${audioFiles.length} files into ${formatTime(mergedBuffer.duration)}!`;
+            status.classList.add('show');
+        });
+
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1;
+            const bitDepth = 16;
+
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+
+            const samples = buffer.length;
+            const dataSize = samples * blockAlign;
+            const bufferSize = 44 + dataSize;
+
+            const arrayBuffer = new ArrayBuffer(bufferSize);
+            const view = new DataView(arrayBuffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, bufferSize - 8, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            const channels = [];
+            for (let i = 0; i < numChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            let offset = 44;
+            for (let i = 0; i < samples; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                    const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                    view.setInt16(offset, intSample, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            audioFiles = [];
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

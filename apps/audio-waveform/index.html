@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Waveform - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .file-info {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .file-name { font-weight: 500; margin-bottom: 4px; }
+        .file-meta { color: #666; font-size: 0.85rem; }
+        .preview-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .preview-label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+        .preview-wrapper {
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #previewCanvas {
+            width: 100%;
+            display: block;
+        }
+        .style-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .control-group {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .control-group h3 {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .control-row:last-child { margin-bottom: 0; }
+        .control-row label {
+            color: #666;
+            font-size: 0.85rem;
+            min-width: 60px;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+            accent-color: #4ecdc4;
+        }
+        .control-row input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+        .control-row input[type="number"] {
+            width: 70px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .control-row select {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .control-row .value {
+            color: #4ecdc4;
+            font-size: 0.85rem;
+            min-width: 40px;
+            text-align: right;
+        }
+        .color-presets {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .color-preset {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-preset:hover { transform: scale(1.1); }
+        .color-preset.active { border-color: #fff; }
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.primary { flex: 1; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Audio Waveform</h1>
+        <p class="subtitle">Generate waveform visualization images from audio files.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an audio file here or click to browse</div>
+            <div class="drop-zone-hint">Supports MP3, WAV, OGG, M4A, and more</div>
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="file-info">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-meta">
+                    <span id="fileDuration"></span> •
+                    <span id="fileSampleRate"></span>
+                </div>
+            </div>
+
+            <div class="preview-container">
+                <div class="preview-label">Preview</div>
+                <div class="preview-wrapper">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="style-controls">
+                <div class="control-group">
+                    <h3>Dimensions</h3>
+                    <div class="control-row">
+                        <label>Width</label>
+                        <input type="number" id="canvasWidth" value="1200" min="200" max="4000" step="100">
+                        <span>px</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Height</label>
+                        <input type="number" id="canvasHeight" value="200" min="50" max="1000" step="50">
+                        <span>px</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Style</h3>
+                    <div class="control-row">
+                        <label>Type</label>
+                        <select id="waveformStyle">
+                            <option value="bars">Bars</option>
+                            <option value="line">Line</option>
+                            <option value="mirror" selected>Mirror</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <label>Bar Width</label>
+                        <input type="range" id="barWidth" min="1" max="10" value="2">
+                        <span class="value" id="barWidthValue">2</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Gap</label>
+                        <input type="range" id="barGap" min="0" max="5" value="1">
+                        <span class="value" id="barGapValue">1</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Waveform Color</h3>
+                    <div class="color-presets" id="waveformPresets">
+                        <div class="color-preset active" style="background: #4ecdc4" data-color="#4ecdc4"></div>
+                        <div class="color-preset" style="background: #ff6b6b" data-color="#ff6b6b"></div>
+                        <div class="color-preset" style="background: #ffd93d" data-color="#ffd93d"></div>
+                        <div class="color-preset" style="background: #6bcb77" data-color="#6bcb77"></div>
+                        <div class="color-preset" style="background: #9b59b6" data-color="#9b59b6"></div>
+                        <div class="color-preset" style="background: #fff" data-color="#ffffff"></div>
+                    </div>
+                    <div class="control-row" style="margin-top: 10px;">
+                        <label>Custom</label>
+                        <input type="color" id="waveformColor" value="#4ecdc4">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Background</h3>
+                    <div class="color-presets" id="bgPresets">
+                        <div class="color-preset active" style="background: #1a1a1f" data-color="#1a1a1f"></div>
+                        <div class="color-preset" style="background: #000" data-color="#000000"></div>
+                        <div class="color-preset" style="background: #fff; border: 1px solid #333" data-color="#ffffff"></div>
+                        <div class="color-preset" style="background: transparent; border: 2px dashed #555" data-color="transparent"></div>
+                    </div>
+                    <div class="control-row" style="margin-top: 10px;">
+                        <label>Custom</label>
+                        <input type="color" id="bgColor" value="#1a1a1f">
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="downloadPngBtn" class="primary">Download PNG</button>
+                <button id="downloadSvgBtn" class="secondary">Download SVG</button>
+                <button id="resetBtn" class="secondary">New File</button>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let audioBuffer = null;
+        let currentFile = null;
+
+        let settings = {
+            width: 1200,
+            height: 200,
+            waveformColor: '#4ecdc4',
+            bgColor: '#1a1a1f',
+            style: 'mirror',
+            barWidth: 2,
+            barGap: 1
+        };
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const status = document.getElementById('status');
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        async function handleFile(file) {
+            initAudioContext();
+            currentFile = file;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+
+                drawWaveform();
+
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+            } catch (err) {
+                status.textContent = 'Error loading audio file: ' + err.message;
+                status.classList.add('show');
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(2);
+            return `${mins}:${secs.padStart(5, '0')}`;
+        }
+
+        function getAudioData(targetBars) {
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.floor(data.length / targetBars);
+            const result = [];
+
+            for (let i = 0; i < targetBars; i++) {
+                let sum = 0;
+                let count = 0;
+                for (let j = 0; j < step; j++) {
+                    const idx = i * step + j;
+                    if (idx < data.length) {
+                        sum += Math.abs(data[idx]);
+                        count++;
+                    }
+                }
+                result.push(count > 0 ? sum / count : 0);
+            }
+
+            // Normalize
+            const max = Math.max(...result);
+            return result.map(v => max > 0 ? v / max : 0);
+        }
+
+        function drawWaveform() {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Use display dimensions for preview
+            const previewWidth = canvas.parentElement.offsetWidth;
+            const previewHeight = Math.min(200, settings.height);
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = previewWidth * dpr;
+            canvas.height = previewHeight * dpr;
+            canvas.style.height = previewHeight + 'px';
+            ctx.scale(dpr, dpr);
+
+            const width = previewWidth;
+            const height = previewHeight;
+
+            // Background
+            if (settings.bgColor === 'transparent') {
+                ctx.clearRect(0, 0, width, height);
+            } else {
+                ctx.fillStyle = settings.bgColor;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            const barWidth = settings.barWidth;
+            const barGap = settings.barGap;
+            const totalBarWidth = barWidth + barGap;
+            const numBars = Math.floor(width / totalBarWidth);
+
+            const audioData = getAudioData(numBars);
+
+            ctx.fillStyle = settings.waveformColor;
+
+            const centerY = height / 2;
+
+            for (let i = 0; i < numBars; i++) {
+                const x = i * totalBarWidth;
+                const value = audioData[i];
+
+                if (settings.style === 'bars') {
+                    const barHeight = value * height * 0.9;
+                    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                } else if (settings.style === 'line') {
+                    const barHeight = value * height * 0.45;
+                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                } else if (settings.style === 'mirror') {
+                    const barHeight = value * height * 0.45;
+                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                }
+            }
+        }
+
+        function drawExportCanvas() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = settings.width;
+            canvas.height = settings.height;
+
+            const width = settings.width;
+            const height = settings.height;
+
+            // Background
+            if (settings.bgColor === 'transparent') {
+                ctx.clearRect(0, 0, width, height);
+            } else {
+                ctx.fillStyle = settings.bgColor;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            const barWidth = settings.barWidth;
+            const barGap = settings.barGap;
+            const totalBarWidth = barWidth + barGap;
+            const numBars = Math.floor(width / totalBarWidth);
+
+            const audioData = getAudioData(numBars);
+
+            ctx.fillStyle = settings.waveformColor;
+
+            const centerY = height / 2;
+
+            for (let i = 0; i < numBars; i++) {
+                const x = i * totalBarWidth;
+                const value = audioData[i];
+
+                if (settings.style === 'bars') {
+                    const barHeight = value * height * 0.9;
+                    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                } else if (settings.style === 'line') {
+                    const barHeight = value * height * 0.45;
+                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                } else if (settings.style === 'mirror') {
+                    const barHeight = value * height * 0.45;
+                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                }
+            }
+
+            return canvas;
+        }
+
+        function generateSVG() {
+            const width = settings.width;
+            const height = settings.height;
+
+            const barWidth = settings.barWidth;
+            const barGap = settings.barGap;
+            const totalBarWidth = barWidth + barGap;
+            const numBars = Math.floor(width / totalBarWidth);
+
+            const audioData = getAudioData(numBars);
+
+            let rects = '';
+            const centerY = height / 2;
+
+            for (let i = 0; i < numBars; i++) {
+                const x = i * totalBarWidth;
+                const value = audioData[i];
+
+                if (settings.style === 'bars') {
+                    const barHeight = value * height * 0.9;
+                    rects += `<rect x="${x}" y="${height - barHeight}" width="${barWidth}" height="${barHeight}" fill="${settings.waveformColor}"/>`;
+                } else if (settings.style === 'line' || settings.style === 'mirror') {
+                    const barHeight = value * height * 0.45;
+                    rects += `<rect x="${x}" y="${centerY - barHeight}" width="${barWidth}" height="${barHeight * 2}" fill="${settings.waveformColor}"/>`;
+                }
+            }
+
+            const bgRect = settings.bgColor === 'transparent' ? '' : `<rect width="${width}" height="${height}" fill="${settings.bgColor}"/>`;
+
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${bgRect}
+${rects}
+</svg>`;
+        }
+
+        // Event listeners for controls
+        document.getElementById('canvasWidth').addEventListener('change', e => {
+            settings.width = parseInt(e.target.value);
+        });
+
+        document.getElementById('canvasHeight').addEventListener('change', e => {
+            settings.height = parseInt(e.target.value);
+            drawWaveform();
+        });
+
+        document.getElementById('waveformStyle').addEventListener('change', e => {
+            settings.style = e.target.value;
+            drawWaveform();
+        });
+
+        document.getElementById('barWidth').addEventListener('input', e => {
+            settings.barWidth = parseInt(e.target.value);
+            document.getElementById('barWidthValue').textContent = e.target.value;
+            drawWaveform();
+        });
+
+        document.getElementById('barGap').addEventListener('input', e => {
+            settings.barGap = parseInt(e.target.value);
+            document.getElementById('barGapValue').textContent = e.target.value;
+            drawWaveform();
+        });
+
+        document.getElementById('waveformColor').addEventListener('input', e => {
+            settings.waveformColor = e.target.value;
+            updateColorPresets('waveformPresets', e.target.value);
+            drawWaveform();
+        });
+
+        document.getElementById('bgColor').addEventListener('input', e => {
+            settings.bgColor = e.target.value;
+            updateColorPresets('bgPresets', e.target.value);
+            drawWaveform();
+        });
+
+        function updateColorPresets(groupId, color) {
+            document.querySelectorAll(`#${groupId} .color-preset`).forEach(el => {
+                el.classList.toggle('active', el.dataset.color === color);
+            });
+        }
+
+        document.querySelectorAll('#waveformPresets .color-preset').forEach(el => {
+            el.addEventListener('click', () => {
+                settings.waveformColor = el.dataset.color;
+                document.getElementById('waveformColor').value = el.dataset.color;
+                updateColorPresets('waveformPresets', el.dataset.color);
+                drawWaveform();
+            });
+        });
+
+        document.querySelectorAll('#bgPresets .color-preset').forEach(el => {
+            el.addEventListener('click', () => {
+                settings.bgColor = el.dataset.color;
+                if (el.dataset.color !== 'transparent') {
+                    document.getElementById('bgColor').value = el.dataset.color;
+                }
+                updateColorPresets('bgPresets', el.dataset.color);
+                drawWaveform();
+            });
+        });
+
+        document.getElementById('downloadPngBtn').addEventListener('click', () => {
+            const canvas = drawExportCanvas();
+            const url = canvas.toDataURL('image/png');
+
+            const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}_waveform.png`;
+            a.click();
+
+            status.textContent = `Waveform image saved (${settings.width} × ${settings.height})!`;
+            status.classList.add('show');
+        });
+
+        document.getElementById('downloadSvgBtn').addEventListener('click', () => {
+            const svg = generateSVG();
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+
+            const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}_waveform.svg`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            status.textContent = `Waveform SVG saved (${settings.width} × ${settings.height})!`;
+            status.classList.add('show');
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            audioBuffer = null;
+            currentFile = null;
+            fileInput.value = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+
+        window.addEventListener('resize', () => {
+            if (audioBuffer) {
+                drawWaveform();
+            }
+        });
+    </script>
+</body>
+</html>

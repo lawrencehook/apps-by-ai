@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UUID Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .uuid-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .uuid-text {
+            flex: 1;
+            font-size: 1.1rem;
+            font-family: 'SF Mono', Monaco, monospace;
+            color: #4ecdc4;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .copy-btn.copied { background: rgba(78, 205, 196, 0.4); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .checkbox-group input { accent-color: #4ecdc4; }
+        .checkbox-group label { margin: 0; color: #aaa; font-size: 0.9rem; }
+        button {
+            width: 100%;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 14px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        .bulk-output {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9rem;
+            color: #888;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .bulk-output .uuid-line {
+            padding: 4px 0;
+            color: #4ecdc4;
+        }
+        .copy-all-btn {
+            margin-top: 12px;
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+        .copy-all-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>UUID Generator</h1>
+        <p class="subtitle">Generate universally unique identifiers.</p>
+
+        <div class="card">
+            <div class="uuid-display">
+                <div class="uuid-text" id="uuid">-</div>
+                <button class="copy-btn" id="copyBtn">Copy</button>
+            </div>
+            <button id="generateBtn">Generate UUID</button>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label>UUID Version</label>
+                <select id="version">
+                    <option value="4">Version 4 (Random)</option>
+                    <option value="1">Version 1 (Timestamp)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Generate Multiple</label>
+                <input type="number" id="count" value="1" min="1" max="100">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="uppercase">
+                <label for="uppercase">Uppercase</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="noDashes">
+                <label for="noDashes">Remove dashes</label>
+            </div>
+        </div>
+
+        <div class="card" id="bulkCard" style="display: none;">
+            <div class="form-group">
+                <label>Generated UUIDs</label>
+            </div>
+            <div class="bulk-output" id="bulkOutput"></div>
+            <button class="copy-all-btn" id="copyAllBtn">Copy All</button>
+        </div>
+    </div>
+
+    <script>
+        // URL parameter handling
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('v')) document.getElementById('version').value = params.get('v');
+            if (params.has('count')) document.getElementById('count').value = params.get('count');
+            if (params.has('upper')) document.getElementById('uppercase').checked = params.get('upper') === '1';
+            if (params.has('nodash')) document.getElementById('noDashes').checked = params.get('nodash') === '1';
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('v', document.getElementById('version').value);
+            params.set('count', document.getElementById('count').value);
+            params.set('upper', document.getElementById('uppercase').checked ? '1' : '0');
+            params.set('nodash', document.getElementById('noDashes').checked ? '1' : '0');
+            history.replaceState(null, '', '?' + params.toString());
+        }
+
+        loadFromURL();
+
+        document.getElementById('version').addEventListener('change', updateURL);
+        document.getElementById('count').addEventListener('change', updateURL);
+        document.getElementById('uppercase').addEventListener('change', updateURL);
+        document.getElementById('noDashes').addEventListener('change', updateURL);
+
+        document.getElementById('generateBtn').addEventListener('click', generate);
+        document.getElementById('copyBtn').addEventListener('click', () => copyText(document.getElementById('uuid').textContent));
+        document.getElementById('copyAllBtn').addEventListener('click', copyAll);
+
+        function generate() {
+            const version = document.getElementById('version').value;
+            const count = Math.min(100, Math.max(1, parseInt(document.getElementById('count').value) || 1));
+            const uppercase = document.getElementById('uppercase').checked;
+            const noDashes = document.getElementById('noDashes').checked;
+
+            const uuids = [];
+            for (let i = 0; i < count; i++) {
+                let uuid = version === '4' ? generateUUIDv4() : generateUUIDv1();
+                if (uppercase) uuid = uuid.toUpperCase();
+                if (noDashes) uuid = uuid.replace(/-/g, '');
+                uuids.push(uuid);
+            }
+
+            document.getElementById('uuid').textContent = uuids[0];
+
+            const bulkCard = document.getElementById('bulkCard');
+            if (count > 1) {
+                bulkCard.style.display = 'block';
+                document.getElementById('bulkOutput').innerHTML = uuids.map(u =>
+                    `<div class="uuid-line">${u}</div>`
+                ).join('');
+            } else {
+                bulkCard.style.display = 'none';
+            }
+        }
+
+        function generateUUIDv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function generateUUIDv1() {
+            // Simplified v1-like UUID (not strictly RFC compliant but functional)
+            const now = Date.now();
+            const timeHex = now.toString(16).padStart(12, '0');
+            const timeLow = timeHex.slice(-8);
+            const timeMid = timeHex.slice(-12, -8);
+            const timeHiAndVersion = '1' + timeHex.slice(-15, -12).slice(-3);
+            const clockSeq = (Math.random() * 0x3fff | 0x8000).toString(16);
+            const node = Array.from({length: 6}, () =>
+                Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+            ).join('');
+            return `${timeLow}-${timeMid}-${timeHiAndVersion}-${clockSeq}-${node}`;
+        }
+
+        function copyText(text) {
+            if (text && text !== '-') {
+                navigator.clipboard.writeText(text);
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 1500);
+            }
+        }
+
+        function copyAll() {
+            const uuids = Array.from(document.querySelectorAll('.uuid-line'))
+                .map(el => el.textContent).join('\n');
+            navigator.clipboard.writeText(uuids);
+            const btn = document.getElementById('copyAllBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = 'Copy All';
+            }, 1500);
+        }
+
+        // Generate initial UUID
+        generate();
+    </script>
+</body>
+</html>

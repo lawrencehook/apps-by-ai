@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Trim - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .file-info {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .file-name { font-weight: 500; margin-bottom: 4px; }
+        .file-meta { color: #666; font-size: 0.85rem; }
+        .waveform-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .waveform-wrapper {
+            position: relative;
+            height: 120px;
+            background: #1a1a1f;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        #waveformCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        .trim-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(78, 205, 196, 0.2);
+            border-left: 2px solid #4ecdc4;
+            border-right: 2px solid #4ecdc4;
+            pointer-events: none;
+        }
+        .trim-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: #4ecdc4;
+            cursor: ew-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .trim-handle::after {
+            content: '';
+            width: 2px;
+            height: 30px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 1px;
+        }
+        .trim-handle.start { left: 0; transform: translateX(-50%); border-radius: 3px 0 0 3px; }
+        .trim-handle.end { right: 0; transform: translateX(50%); border-radius: 0 3px 3px 0; }
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #fff;
+            pointer-events: none;
+            display: none;
+        }
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .time-input-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .time-input-group input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: monospace;
+        }
+        .time-input-group input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        .duration-display {
+            text-align: center;
+            padding-top: 28px;
+        }
+        .duration-label { color: #888; font-size: 0.85rem; }
+        .duration-value { color: #4ecdc4; font-size: 1.2rem; font-weight: 600; font-family: monospace; }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.primary { flex: 1; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Audio Trim</h1>
+        <p class="subtitle">Cut audio files to a specific start and end time.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an audio file here or click to browse</div>
+            <div class="drop-zone-hint">Supports MP3, WAV, OGG, M4A, and more</div>
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="file-info">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-meta">
+                    <span id="fileDuration"></span> •
+                    <span id="fileSampleRate"></span> •
+                    <span id="fileChannels"></span>
+                </div>
+            </div>
+
+            <div class="waveform-container">
+                <div class="waveform-wrapper" id="waveformWrapper">
+                    <canvas id="waveformCanvas"></canvas>
+                    <div class="trim-overlay" id="trimOverlay">
+                        <div class="trim-handle start" id="handleStart"></div>
+                        <div class="trim-handle end" id="handleEnd"></div>
+                    </div>
+                    <div class="playhead" id="playhead"></div>
+                </div>
+            </div>
+
+            <div class="time-inputs">
+                <div class="time-input-group">
+                    <label>Start Time</label>
+                    <input type="text" id="startTime" value="0:00.000" placeholder="0:00.000">
+                </div>
+                <div class="time-input-group">
+                    <label>End Time</label>
+                    <input type="text" id="endTime" value="0:00.000" placeholder="0:00.000">
+                </div>
+                <div class="duration-display">
+                    <div class="duration-label">Selection Duration</div>
+                    <div class="duration-value" id="selectionDuration">0:00.000</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="playBtn" class="secondary">▶ Preview</button>
+                <button id="trimBtn" class="primary">Trim & Download</button>
+                <button id="resetBtn" class="secondary">New File</button>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let audioBuffer = null;
+        let sourceNode = null;
+        let isPlaying = false;
+        let currentFile = null;
+        let trimStart = 0;
+        let trimEnd = 0;
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const status = document.getElementById('status');
+
+        // Initialize audio context on first user interaction
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        async function handleFile(file) {
+            initAudioContext();
+            currentFile = file;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                document.getElementById('fileChannels').textContent = audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo';
+
+                trimStart = 0;
+                trimEnd = audioBuffer.duration;
+
+                updateTimeInputs();
+                drawWaveform();
+                updateTrimOverlay();
+
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+            } catch (err) {
+                status.textContent = 'Error loading audio file: ' + err.message;
+                status.classList.add('show');
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toFixed(3).padStart(6, '0')}`;
+        }
+
+        function parseTime(str) {
+            const parts = str.split(':');
+            if (parts.length === 2) {
+                return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+            }
+            return parseFloat(str) || 0;
+        }
+
+        function drawWaveform() {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('waveformWrapper');
+
+            canvas.width = wrapper.offsetWidth * window.devicePixelRatio;
+            canvas.height = wrapper.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const width = wrapper.offsetWidth;
+            const height = wrapper.offsetHeight;
+
+            ctx.fillStyle = '#1a1a1f';
+            ctx.fillRect(0, 0, width, height);
+
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / width);
+            const amp = height / 2;
+
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            for (let i = 0; i < width; i++) {
+                let min = 1.0;
+                let max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j] || 0;
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * amp);
+                ctx.lineTo(i, (1 + max) * amp);
+            }
+            ctx.stroke();
+        }
+
+        function updateTrimOverlay() {
+            const wrapper = document.getElementById('waveformWrapper');
+            const overlay = document.getElementById('trimOverlay');
+            const width = wrapper.offsetWidth;
+
+            const startPct = trimStart / audioBuffer.duration;
+            const endPct = trimEnd / audioBuffer.duration;
+
+            overlay.style.left = (startPct * width) + 'px';
+            overlay.style.width = ((endPct - startPct) * width) + 'px';
+        }
+
+        function updateTimeInputs() {
+            document.getElementById('startTime').value = formatTime(trimStart);
+            document.getElementById('endTime').value = formatTime(trimEnd);
+            document.getElementById('selectionDuration').textContent = formatTime(trimEnd - trimStart);
+        }
+
+        // Handle dragging
+        let isDragging = null;
+
+        document.getElementById('handleStart').addEventListener('mousedown', e => {
+            e.stopPropagation();
+            isDragging = 'start';
+        });
+
+        document.getElementById('handleEnd').addEventListener('mousedown', e => {
+            e.stopPropagation();
+            isDragging = 'end';
+        });
+
+        document.getElementById('waveformWrapper').addEventListener('click', e => {
+            if (isDragging) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            const time = pct * audioBuffer.duration;
+
+            // Move whichever handle is closer
+            if (Math.abs(time - trimStart) < Math.abs(time - trimEnd)) {
+                trimStart = Math.max(0, Math.min(time, trimEnd - 0.01));
+            } else {
+                trimEnd = Math.max(trimStart + 0.01, Math.min(time, audioBuffer.duration));
+            }
+            updateTimeInputs();
+            updateTrimOverlay();
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+
+            const wrapper = document.getElementById('waveformWrapper');
+            const rect = wrapper.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const time = pct * audioBuffer.duration;
+
+            if (isDragging === 'start') {
+                trimStart = Math.max(0, Math.min(time, trimEnd - 0.01));
+            } else {
+                trimEnd = Math.max(trimStart + 0.01, Math.min(time, audioBuffer.duration));
+            }
+
+            updateTimeInputs();
+            updateTrimOverlay();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = null;
+        });
+
+        // Time input changes
+        document.getElementById('startTime').addEventListener('change', e => {
+            trimStart = Math.max(0, Math.min(parseTime(e.target.value), trimEnd - 0.01));
+            updateTimeInputs();
+            updateTrimOverlay();
+        });
+
+        document.getElementById('endTime').addEventListener('change', e => {
+            trimEnd = Math.max(trimStart + 0.01, Math.min(parseTime(e.target.value), audioBuffer.duration));
+            updateTimeInputs();
+            updateTrimOverlay();
+        });
+
+        // Preview playback
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                playPreview();
+            }
+        });
+
+        function playPreview() {
+            initAudioContext();
+            stopPlayback();
+
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.connect(audioContext.destination);
+
+            const duration = trimEnd - trimStart;
+            sourceNode.start(0, trimStart, duration);
+            isPlaying = true;
+
+            document.getElementById('playBtn').textContent = '⏹ Stop';
+            document.getElementById('playhead').style.display = 'block';
+
+            const wrapper = document.getElementById('waveformWrapper');
+            const playhead = document.getElementById('playhead');
+            const startX = (trimStart / audioBuffer.duration) * wrapper.offsetWidth;
+            const endX = (trimEnd / audioBuffer.duration) * wrapper.offsetWidth;
+            let startTime = audioContext.currentTime;
+
+            function updatePlayhead() {
+                if (!isPlaying) return;
+                const elapsed = audioContext.currentTime - startTime;
+                const progress = elapsed / duration;
+                if (progress >= 1) {
+                    stopPlayback();
+                    return;
+                }
+                playhead.style.left = (startX + progress * (endX - startX)) + 'px';
+                requestAnimationFrame(updatePlayhead);
+            }
+            updatePlayhead();
+
+            sourceNode.onended = () => {
+                if (isPlaying) stopPlayback();
+            };
+        }
+
+        function stopPlayback() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+                sourceNode = null;
+            }
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Preview';
+            document.getElementById('playhead').style.display = 'none';
+        }
+
+        // Trim and download
+        document.getElementById('trimBtn').addEventListener('click', () => {
+            const startSample = Math.floor(trimStart * audioBuffer.sampleRate);
+            const endSample = Math.floor(trimEnd * audioBuffer.sampleRate);
+            const length = endSample - startSample;
+
+            const trimmedBuffer = audioContext.createBuffer(
+                audioBuffer.numberOfChannels,
+                length,
+                audioBuffer.sampleRate
+            );
+
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+                const sourceData = audioBuffer.getChannelData(channel);
+                const destData = trimmedBuffer.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    destData[i] = sourceData[startSample + i];
+                }
+            }
+
+            const wavBlob = audioBufferToWav(trimmedBuffer);
+            const url = URL.createObjectURL(wavBlob);
+
+            const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}_trimmed.wav`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            status.textContent = `Trimmed ${formatTime(trimEnd - trimStart)} of audio saved!`;
+            status.classList.add('show');
+        });
+
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+
+            const samples = buffer.length;
+            const dataSize = samples * blockAlign;
+            const bufferSize = 44 + dataSize;
+
+            const arrayBuffer = new ArrayBuffer(bufferSize);
+            const view = new DataView(arrayBuffer);
+
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, bufferSize - 8, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            // Interleave channels and write samples
+            const channels = [];
+            for (let i = 0; i < numChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            let offset = 44;
+            for (let i = 0; i < samples; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                    const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                    view.setInt16(offset, intSample, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            stopPlayback();
+            audioBuffer = null;
+            currentFile = null;
+            fileInput.value = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+
+        // Redraw on resize
+        window.addEventListener('resize', () => {
+            if (audioBuffer) {
+                drawWaveform();
+                updateTrimOverlay();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Number Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .result {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            text-align: center;
+            padding: 40px 20px;
+            font-family: 'SF Mono', Monaco, monospace;
+            word-break: break-all;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group { flex: 1; }
+        input[type="number"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input:focus { outline: none; border-color: #4ecdc4; }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-group input { accent-color: #4ecdc4; }
+        .checkbox-group label { margin: 0; color: #aaa; }
+        button {
+            width: 100%;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 14px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        .history {
+            margin-top: 20px;
+        }
+        .history-title {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .history-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Random Number Generator</h1>
+        <p class="subtitle">Generate random numbers within a range.</p>
+
+        <div class="card">
+            <div class="result" id="result">-</div>
+        </div>
+
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Minimum</label>
+                    <input type="number" id="minVal" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Maximum</label>
+                    <input type="number" id="maxVal" value="100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Count (generate multiple)</label>
+                <input type="number" id="count" value="1" min="1" max="100">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="allowDuplicates" checked>
+                    <label for="allowDuplicates">Allow duplicates</label>
+                </div>
+            </div>
+            <button id="generateBtn">Generate</button>
+        </div>
+
+        <div class="history" id="historySection" style="display: none;">
+            <div class="history-title">History</div>
+            <div class="history-items" id="historyItems"></div>
+        </div>
+    </div>
+
+    <script>
+        const resultHistory = [];
+
+        // URL parameter handling
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('min')) document.getElementById('minVal').value = params.get('min');
+            if (params.has('max')) document.getElementById('maxVal').value = params.get('max');
+            if (params.has('count')) document.getElementById('count').value = params.get('count');
+            if (params.has('duplicates')) document.getElementById('allowDuplicates').checked = params.get('duplicates') === '1';
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('min', document.getElementById('minVal').value);
+            params.set('max', document.getElementById('maxVal').value);
+            params.set('count', document.getElementById('count').value);
+            params.set('duplicates', document.getElementById('allowDuplicates').checked ? '1' : '0');
+            history.replaceState(null, '', '?' + params.toString());
+        }
+
+        loadFromURL();
+
+        document.getElementById('minVal').addEventListener('change', updateURL);
+        document.getElementById('maxVal').addEventListener('change', updateURL);
+        document.getElementById('count').addEventListener('change', updateURL);
+        document.getElementById('allowDuplicates').addEventListener('change', updateURL);
+
+        document.getElementById('generateBtn').addEventListener('click', generate);
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                generate();
+            }
+        });
+
+        function generate() {
+            const min = parseInt(document.getElementById('minVal').value) || 0;
+            const max = parseInt(document.getElementById('maxVal').value) || 100;
+            const count = Math.min(100, Math.max(1, parseInt(document.getElementById('count').value) || 1));
+            const allowDuplicates = document.getElementById('allowDuplicates').checked;
+
+            if (min > max) {
+                document.getElementById('result').textContent = 'Invalid range';
+                return;
+            }
+
+            const range = max - min + 1;
+            if (!allowDuplicates && count > range) {
+                document.getElementById('result').textContent = 'Range too small';
+                return;
+            }
+
+            let numbers = [];
+            if (allowDuplicates) {
+                for (let i = 0; i < count; i++) {
+                    numbers.push(Math.floor(Math.random() * range) + min);
+                }
+            } else {
+                const pool = Array.from({ length: range }, (_, i) => i + min);
+                for (let i = 0; i < count; i++) {
+                    const idx = Math.floor(Math.random() * pool.length);
+                    numbers.push(pool.splice(idx, 1)[0]);
+                }
+            }
+
+            const resultText = numbers.join(', ');
+            document.getElementById('result').textContent = resultText;
+
+            // Add to history
+            resultHistory.unshift(resultText);
+            if (resultHistory.length > 10) resultHistory.pop();
+            updateHistory();
+        }
+
+        function updateHistory() {
+            const section = document.getElementById('historySection');
+            const container = document.getElementById('historyItems');
+
+            if (resultHistory.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = resultHistory.map(h =>
+                `<span class="history-item">${h}</span>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>

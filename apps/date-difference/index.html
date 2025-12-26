@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date Difference Calculator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input[type="date"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            color-scheme: dark;
+        }
+        input:focus { outline: none; border-color: #4ecdc4; }
+        .date-row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+        }
+        .date-row .form-group { flex: 1; }
+        .swap-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+        }
+        .swap-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .result-section {
+            text-align: center;
+        }
+        .main-result {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .main-result-label {
+            color: #888;
+            font-size: 1rem;
+            margin-bottom: 24px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .detail-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .detail-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .detail-label {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        .breakdown {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .breakdown-title {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+        .breakdown-text {
+            color: #4ecdc4;
+            font-size: 1.1rem;
+        }
+        .quick-picks {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .quick-pick {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .quick-pick:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Date Difference</h1>
+        <p class="subtitle">Calculate time between two dates.</p>
+
+        <div class="card">
+            <div class="date-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <button class="swap-btn" id="swapBtn" title="Swap dates">⇄</button>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            <div class="quick-picks">
+                <button class="quick-pick" data-action="today-start">Today → Start</button>
+                <button class="quick-pick" data-action="today-end">Today → End</button>
+                <button class="quick-pick" data-action="year-start">Year Start</button>
+                <button class="quick-pick" data-action="year-end">Year End</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="result-section">
+                <div class="main-result" id="mainResult">0</div>
+                <div class="main-result-label">days</div>
+
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value" id="weeks">0</div>
+                        <div class="detail-label">weeks</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value" id="months">0</div>
+                        <div class="detail-label">months</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value" id="hours">0</div>
+                        <div class="detail-label">hours</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value" id="minutes">0</div>
+                        <div class="detail-label">minutes</div>
+                    </div>
+                </div>
+
+                <div class="breakdown">
+                    <div class="breakdown-title">Breakdown</div>
+                    <div class="breakdown-text" id="breakdown">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+
+        // Set default dates
+        const today = new Date();
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        startInput.value = formatDateInput(today);
+        endInput.value = formatDateInput(nextMonth);
+
+        startInput.addEventListener('change', calculate);
+        endInput.addEventListener('change', calculate);
+
+        document.getElementById('swapBtn').addEventListener('click', () => {
+            const temp = startInput.value;
+            startInput.value = endInput.value;
+            endInput.value = temp;
+            calculate();
+        });
+
+        document.querySelectorAll('.quick-pick').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                const now = new Date();
+                const year = now.getFullYear();
+
+                switch (action) {
+                    case 'today-start':
+                        startInput.value = formatDateInput(now);
+                        break;
+                    case 'today-end':
+                        endInput.value = formatDateInput(now);
+                        break;
+                    case 'year-start':
+                        startInput.value = `${year}-01-01`;
+                        break;
+                    case 'year-end':
+                        endInput.value = `${year}-12-31`;
+                        break;
+                }
+                calculate();
+            });
+        });
+
+        function formatDateInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function calculate() {
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+
+            if (isNaN(start) || isNaN(end)) return;
+
+            const diffMs = Math.abs(end - start);
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffWeeks = (diffDays / 7).toFixed(1);
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+            // Calculate months difference
+            let months = (end.getFullYear() - start.getFullYear()) * 12;
+            months += end.getMonth() - start.getMonth();
+            months = Math.abs(months);
+
+            document.getElementById('mainResult').textContent = diffDays.toLocaleString();
+            document.getElementById('weeks').textContent = diffWeeks;
+            document.getElementById('months').textContent = months;
+            document.getElementById('hours').textContent = diffHours.toLocaleString();
+            document.getElementById('minutes').textContent = diffMinutes.toLocaleString();
+
+            // Breakdown
+            const years = Math.floor(diffDays / 365);
+            const remainingAfterYears = diffDays % 365;
+            const monthsBreakdown = Math.floor(remainingAfterYears / 30);
+            const daysBreakdown = remainingAfterYears % 30;
+
+            let breakdownParts = [];
+            if (years > 0) breakdownParts.push(`${years} year${years !== 1 ? 's' : ''}`);
+            if (monthsBreakdown > 0) breakdownParts.push(`${monthsBreakdown} month${monthsBreakdown !== 1 ? 's' : ''}`);
+            if (daysBreakdown > 0 || breakdownParts.length === 0) breakdownParts.push(`${daysBreakdown} day${daysBreakdown !== 1 ? 's' : ''}`);
+
+            document.getElementById('breakdown').textContent = breakdownParts.join(', ');
+        }
+
+        calculate();
+    </script>
+</body>
+</html>

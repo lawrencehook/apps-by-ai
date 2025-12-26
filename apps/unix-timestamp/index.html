@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unix Timestamp Converter - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            color: #888;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        .current-time {
+            text-align: center;
+            padding: 20px;
+        }
+        .current-timestamp {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+            cursor: pointer;
+        }
+        .current-timestamp:hover { opacity: 0.8; }
+        .current-label {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        input:focus { outline: none; border-color: #4ecdc4; }
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+        .input-row .form-group { flex: 1; }
+        .result {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #888; }
+        .result-value {
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .copy-hint {
+            color: #555;
+            font-size: 0.75rem;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .unit-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .unit-btn {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .unit-btn:hover { background: rgba(255,255,255,0.08); }
+        .unit-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Unix Timestamp</h1>
+        <p class="subtitle">Convert between Unix timestamps and dates.</p>
+
+        <div class="card">
+            <div class="current-time">
+                <div class="current-timestamp" id="currentTimestamp" title="Click to copy">-</div>
+                <div class="current-label">Current Unix Timestamp (seconds)</div>
+                <div class="copy-hint">Click to copy</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Timestamp → Date</div>
+            <div class="unit-toggle">
+                <button class="unit-btn active" data-unit="s">Seconds</button>
+                <button class="unit-btn" data-unit="ms">Milliseconds</button>
+            </div>
+            <div class="form-group">
+                <label>Unix Timestamp</label>
+                <input type="text" id="timestampInput" placeholder="e.g. 1704067200">
+            </div>
+            <div class="result" id="timestampResult">
+                <div class="result-row">
+                    <span class="result-label">UTC</span>
+                    <span class="result-value" id="utcResult">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Local</span>
+                    <span class="result-value" id="localResult">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">ISO 8601</span>
+                    <span class="result-value" id="isoResult">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Date → Timestamp</div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="dateInput">
+                </div>
+                <div class="form-group">
+                    <label>Time</label>
+                    <input type="time" id="timeInput" step="1">
+                </div>
+            </div>
+            <div class="result">
+                <div class="result-row">
+                    <span class="result-label">Seconds</span>
+                    <span class="result-value" id="secondsResult">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Milliseconds</span>
+                    <span class="result-value" id="msResult">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let unit = 's';
+
+        // Update current timestamp
+        function updateCurrent() {
+            const now = Math.floor(Date.now() / 1000);
+            document.getElementById('currentTimestamp').textContent = now;
+        }
+        updateCurrent();
+        setInterval(updateCurrent, 1000);
+
+        // Copy current timestamp
+        document.getElementById('currentTimestamp').addEventListener('click', () => {
+            const ts = document.getElementById('currentTimestamp').textContent;
+            navigator.clipboard.writeText(ts);
+            const el = document.getElementById('currentTimestamp');
+            const original = el.textContent;
+            el.textContent = 'Copied!';
+            setTimeout(() => el.textContent = original, 1000);
+        });
+
+        // Unit toggle
+        document.querySelectorAll('.unit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                unit = btn.dataset.unit;
+                convertTimestamp();
+            });
+        });
+
+        // Timestamp to date
+        document.getElementById('timestampInput').addEventListener('input', convertTimestamp);
+
+        function convertTimestamp() {
+            const input = document.getElementById('timestampInput').value.trim();
+            if (!input) {
+                document.getElementById('utcResult').textContent = '-';
+                document.getElementById('localResult').textContent = '-';
+                document.getElementById('isoResult').textContent = '-';
+                return;
+            }
+
+            let ts = parseInt(input);
+            if (isNaN(ts)) {
+                document.getElementById('utcResult').textContent = 'Invalid';
+                document.getElementById('localResult').textContent = '-';
+                document.getElementById('isoResult').textContent = '-';
+                return;
+            }
+
+            // Convert to milliseconds if in seconds
+            if (unit === 's') {
+                ts *= 1000;
+            }
+
+            const date = new Date(ts);
+
+            if (isNaN(date.getTime())) {
+                document.getElementById('utcResult').textContent = 'Invalid';
+                document.getElementById('localResult').textContent = '-';
+                document.getElementById('isoResult').textContent = '-';
+                return;
+            }
+
+            document.getElementById('utcResult').textContent = date.toUTCString();
+            document.getElementById('localResult').textContent = date.toLocaleString();
+            document.getElementById('isoResult').textContent = date.toISOString();
+        }
+
+        // Date to timestamp
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+
+        // Set defaults
+        const now = new Date();
+        dateInput.value = now.toISOString().split('T')[0];
+        timeInput.value = now.toTimeString().slice(0, 8);
+
+        dateInput.addEventListener('change', convertDate);
+        timeInput.addEventListener('change', convertDate);
+
+        function convertDate() {
+            const dateStr = dateInput.value;
+            const timeStr = timeInput.value || '00:00:00';
+
+            if (!dateStr) {
+                document.getElementById('secondsResult').textContent = '-';
+                document.getElementById('msResult').textContent = '-';
+                return;
+            }
+
+            const date = new Date(`${dateStr}T${timeStr}`);
+
+            if (isNaN(date.getTime())) {
+                document.getElementById('secondsResult').textContent = 'Invalid';
+                document.getElementById('msResult').textContent = '-';
+                return;
+            }
+
+            const ms = date.getTime();
+            const seconds = Math.floor(ms / 1000);
+
+            document.getElementById('secondsResult').textContent = seconds;
+            document.getElementById('msResult').textContent = ms;
+        }
+
+        convertDate();
+    </script>
+</body>
+</html>

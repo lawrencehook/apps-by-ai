@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Calculator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input[type="date"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            color-scheme: dark;
+        }
+        input:focus { outline: none; border-color: #4ecdc4; }
+        .main-result {
+            text-align: center;
+            padding: 24px;
+        }
+        .age-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            line-height: 1;
+        }
+        .age-label {
+            color: #888;
+            font-size: 1.2rem;
+            margin-top: 8px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .detail-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .detail-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .detail-label {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .stats {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { color: #888; }
+        .stat-value {
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .birthday-card {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%);
+            border-color: rgba(78, 205, 196, 0.3);
+            text-align: center;
+        }
+        .birthday-card .emoji {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+        .birthday-card .message {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+        .birthday-card .countdown {
+            color: #888;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Age Calculator</h1>
+        <p class="subtitle">Calculate your exact age from your birthdate.</p>
+
+        <div class="card">
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="birthdate">
+            </div>
+        </div>
+
+        <div class="card" id="resultCard" style="display: none;">
+            <div class="main-result">
+                <div class="age-display" id="ageYears">-</div>
+                <div class="age-label">years old</div>
+            </div>
+
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-value" id="ageMonths">-</div>
+                    <div class="detail-label">months</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value" id="ageDays">-</div>
+                    <div class="detail-label">days</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-value" id="ageHours">-</div>
+                    <div class="detail-label">hours</div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-row">
+                    <span class="stat-label">Total Days Lived</span>
+                    <span class="stat-value" id="totalDays">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Weeks Lived</span>
+                    <span class="stat-value" id="totalWeeks">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Hours Lived</span>
+                    <span class="stat-value" id="totalHours">-</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Day of Week Born</span>
+                    <span class="stat-value" id="dayOfWeek">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card birthday-card" id="birthdayCard" style="display: none;">
+            <div class="emoji" id="birthdayEmoji">🎂</div>
+            <div class="message" id="birthdayMessage">-</div>
+            <div class="countdown" id="birthdayCountdown">-</div>
+        </div>
+    </div>
+
+    <script>
+        const birthdateInput = document.getElementById('birthdate');
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        birthdateInput.addEventListener('change', calculate);
+
+        function calculate() {
+            const birthdate = new Date(birthdateInput.value);
+            const now = new Date();
+
+            if (isNaN(birthdate) || birthdate > now) {
+                document.getElementById('resultCard').style.display = 'none';
+                document.getElementById('birthdayCard').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('resultCard').style.display = 'block';
+            document.getElementById('birthdayCard').style.display = 'block';
+
+            // Calculate exact age
+            let years = now.getFullYear() - birthdate.getFullYear();
+            let months = now.getMonth() - birthdate.getMonth();
+            let days = now.getDate() - birthdate.getDate();
+
+            if (days < 0) {
+                months--;
+                const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                days += prevMonth.getDate();
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            // Total time calculations
+            const diffMs = now - birthdate;
+            const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const totalWeeks = Math.floor(totalDays / 7);
+            const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+            // Update display
+            document.getElementById('ageYears').textContent = years;
+            document.getElementById('ageMonths').textContent = months;
+            document.getElementById('ageDays').textContent = days;
+            document.getElementById('ageHours').textContent = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            document.getElementById('totalDays').textContent = totalDays.toLocaleString();
+            document.getElementById('totalWeeks').textContent = totalWeeks.toLocaleString();
+            document.getElementById('totalHours').textContent = totalHours.toLocaleString();
+            document.getElementById('dayOfWeek').textContent = daysOfWeek[birthdate.getDay()];
+
+            // Birthday calculation
+            const nextBirthday = new Date(now.getFullYear(), birthdate.getMonth(), birthdate.getDate());
+            if (nextBirthday < now) {
+                nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+            }
+
+            const isBirthdayToday = now.getMonth() === birthdate.getMonth() && now.getDate() === birthdate.getDate();
+
+            if (isBirthdayToday) {
+                document.getElementById('birthdayEmoji').textContent = '🎉';
+                document.getElementById('birthdayMessage').textContent = 'Happy Birthday!';
+                document.getElementById('birthdayCountdown').textContent = `You're turning ${years} today!`;
+            } else {
+                const daysUntil = Math.ceil((nextBirthday - now) / (1000 * 60 * 60 * 24));
+                document.getElementById('birthdayEmoji').textContent = '🎂';
+                document.getElementById('birthdayMessage').textContent = `Next birthday: ${nextBirthday.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                document.getElementById('birthdayCountdown').textContent = `${daysUntil} day${daysUntil !== 1 ? 's' : ''} away (turning ${years + 1})`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Roller - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .result-area {
+            text-align: center;
+            padding: 20px;
+        }
+        .total {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #4ecdc4;
+        }
+        .dice-results {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .die {
+            width: 50px;
+            height: 50px;
+            background: rgba(78, 205, 196, 0.2);
+            border: 2px solid rgba(78, 205, 196, 0.4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .die.rolling {
+            animation: roll 0.1s infinite;
+        }
+        @keyframes roll {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        .dice-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .dice-btn {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 20px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .dice-btn:hover {
+            background: rgba(78, 205, 196, 0.15);
+            border-color: rgba(78, 205, 196, 0.4);
+        }
+        .dice-btn.selected {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+        .dice-btn .sides {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        .dice-btn.selected .sides { color: #4ecdc4; }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            align-items: center;
+        }
+        .controls label { color: #888; font-size: 0.9rem; }
+        .controls input {
+            width: 60px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .roll-btn {
+            flex: 1;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 14px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .roll-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .history {
+            margin-top: 20px;
+        }
+        .history-title { color: #666; font-size: 0.85rem; margin-bottom: 8px; }
+        .history-item {
+            background: rgba(255,255,255,0.03);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+        .history-item .roll-type { color: #4ecdc4; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Dice Roller</h1>
+        <p class="subtitle">Roll polyhedral dice for tabletop games.</p>
+
+        <div class="card">
+            <div class="result-area">
+                <div class="total" id="total">-</div>
+                <div class="dice-results" id="diceResults"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="dice-grid">
+                <button class="dice-btn" data-sides="4">d4<span class="sides">4 sides</span></button>
+                <button class="dice-btn selected" data-sides="6">d6<span class="sides">6 sides</span></button>
+                <button class="dice-btn" data-sides="8">d8<span class="sides">8 sides</span></button>
+                <button class="dice-btn" data-sides="10">d10<span class="sides">10 sides</span></button>
+                <button class="dice-btn" data-sides="12">d12<span class="sides">12 sides</span></button>
+                <button class="dice-btn" data-sides="20">d20<span class="sides">20 sides</span></button>
+            </div>
+            <div class="controls">
+                <label>Roll</label>
+                <input type="number" id="diceCount" value="1" min="1" max="20">
+                <label>dice</label>
+                <button class="roll-btn" id="rollBtn">Roll!</button>
+            </div>
+        </div>
+
+        <div class="history" id="historySection" style="display: none;">
+            <div class="history-title">History</div>
+            <div id="historyItems"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedSides = 6;
+        const rollHistory = [];
+
+        // URL parameter handling
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('sides')) {
+                selectedSides = parseInt(params.get('sides'));
+                document.querySelectorAll('.dice-btn').forEach(b => {
+                    b.classList.toggle('selected', parseInt(b.dataset.sides) === selectedSides);
+                });
+            }
+            if (params.has('count')) document.getElementById('diceCount').value = params.get('count');
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('sides', selectedSides);
+            params.set('count', document.getElementById('diceCount').value);
+            history.replaceState(null, '', '?' + params.toString());
+        }
+
+        loadFromURL();
+
+        document.querySelectorAll('.dice-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dice-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedSides = parseInt(btn.dataset.sides);
+                updateURL();
+            });
+        });
+
+        document.getElementById('diceCount').addEventListener('change', updateURL);
+
+        document.getElementById('rollBtn').addEventListener('click', roll);
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                roll();
+            }
+        });
+
+        function roll() {
+            const count = Math.min(20, Math.max(1, parseInt(document.getElementById('diceCount').value) || 1));
+            const container = document.getElementById('diceResults');
+
+            // Create dice elements
+            container.innerHTML = '';
+            const diceEls = [];
+            for (let i = 0; i < count; i++) {
+                const die = document.createElement('div');
+                die.className = 'die rolling';
+                die.textContent = '?';
+                container.appendChild(die);
+                diceEls.push(die);
+            }
+
+            document.getElementById('total').textContent = '...';
+
+            // Animate rolling
+            let rollCount = 0;
+            const rollInterval = setInterval(() => {
+                diceEls.forEach(die => {
+                    die.textContent = Math.floor(Math.random() * selectedSides) + 1;
+                });
+                rollCount++;
+                if (rollCount > 10) {
+                    clearInterval(rollInterval);
+                    finishRoll(diceEls);
+                }
+            }, 50);
+        }
+
+        function finishRoll(diceEls) {
+            const results = [];
+            diceEls.forEach(die => {
+                const value = Math.floor(Math.random() * selectedSides) + 1;
+                results.push(value);
+                die.textContent = value;
+                die.classList.remove('rolling');
+            });
+
+            const total = results.reduce((a, b) => a + b, 0);
+            document.getElementById('total').textContent = total;
+
+            // Add to roll history
+            const count = results.length;
+            rollHistory.unshift({
+                type: `${count}d${selectedSides}`,
+                results: results.join(', '),
+                total
+            });
+            if (rollHistory.length > 10) rollHistory.pop();
+            updateRollHistory();
+        }
+
+        function updateRollHistory() {
+            const section = document.getElementById('historySection');
+            const container = document.getElementById('historyItems');
+
+            if (rollHistory.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = rollHistory.map(h =>
+                `<div class="history-item">
+                    <span class="roll-type">${h.type}</span>
+                    <span>[${h.results}] = ${h.total}</span>
+                </div>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>

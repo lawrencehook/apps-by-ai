@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown to Date - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input:focus { outline: none; border-color: #4ecdc4; }
+        input[type="date"], input[type="time"] { color-scheme: dark; }
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+        .input-row .form-group { flex: 1; }
+        .presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .preset-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .countdown-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .event-name {
+            font-size: 1.3rem;
+            color: #888;
+            margin-bottom: 24px;
+        }
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .countdown-item {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 12px;
+            padding: 20px 10px;
+        }
+        .countdown-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .countdown-label {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        .total-time {
+            margin-top: 24px;
+            color: #888;
+            font-size: 0.95rem;
+        }
+        .total-time span { color: #4ecdc4; }
+        .past-event {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .past-event .emoji {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .past-event .message {
+            font-size: 1.5rem;
+            color: #4ecdc4;
+        }
+        .past-event .ago {
+            color: #888;
+            margin-top: 8px;
+        }
+        .progress-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            transition: width 0.3s;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Countdown to Date</h1>
+        <p class="subtitle">Count down to any event or date.</p>
+
+        <div class="card">
+            <div class="form-group">
+                <label>Event Name</label>
+                <input type="text" id="eventName" placeholder="My Event" value="Event">
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Target Date</label>
+                    <input type="date" id="targetDate">
+                </div>
+                <div class="form-group">
+                    <label>Target Time</label>
+                    <input type="time" id="targetTime" value="00:00">
+                </div>
+            </div>
+            <div class="presets">
+                <button class="preset-btn" data-preset="new-year">New Year</button>
+                <button class="preset-btn" data-preset="week">1 Week</button>
+                <button class="preset-btn" data-preset="month">1 Month</button>
+                <button class="preset-btn" data-preset="christmas">Christmas</button>
+            </div>
+        </div>
+
+        <div class="card" id="countdownCard">
+            <div class="countdown-display" id="countdownActive">
+                <div class="event-name" id="displayEventName">-</div>
+                <div class="countdown-grid">
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="days">00</div>
+                        <div class="countdown-label">Days</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="hours">00</div>
+                        <div class="countdown-label">Hours</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="minutes">00</div>
+                        <div class="countdown-label">Minutes</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="seconds">00</div>
+                        <div class="countdown-label">Seconds</div>
+                    </div>
+                </div>
+                <div class="total-time" id="totalTime">-</div>
+
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-label">
+                        <span>Progress</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="past-event hidden" id="pastEvent">
+                <div class="emoji">🎉</div>
+                <div class="message" id="pastMessage">Event has passed!</div>
+                <div class="ago" id="pastAgo">-</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const eventNameInput = document.getElementById('eventName');
+        const targetDateInput = document.getElementById('targetDate');
+        const targetTimeInput = document.getElementById('targetTime');
+        let createdAt = Date.now();
+
+        // Set default to 7 days from now
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 7);
+        targetDateInput.value = defaultDate.toISOString().split('T')[0];
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                const now = new Date();
+
+                switch (preset) {
+                    case 'new-year':
+                        const nextYear = now.getFullYear() + 1;
+                        targetDateInput.value = `${nextYear}-01-01`;
+                        targetTimeInput.value = '00:00';
+                        eventNameInput.value = `New Year ${nextYear}`;
+                        break;
+                    case 'week':
+                        const week = new Date(now);
+                        week.setDate(week.getDate() + 7);
+                        targetDateInput.value = week.toISOString().split('T')[0];
+                        eventNameInput.value = '1 Week from Now';
+                        break;
+                    case 'month':
+                        const month = new Date(now);
+                        month.setMonth(month.getMonth() + 1);
+                        targetDateInput.value = month.toISOString().split('T')[0];
+                        eventNameInput.value = '1 Month from Now';
+                        break;
+                    case 'christmas':
+                        let christmasYear = now.getFullYear();
+                        const christmas = new Date(christmasYear, 11, 25);
+                        if (christmas < now) christmasYear++;
+                        targetDateInput.value = `${christmasYear}-12-25`;
+                        targetTimeInput.value = '00:00';
+                        eventNameInput.value = `Christmas ${christmasYear}`;
+                        break;
+                }
+                createdAt = Date.now();
+                update();
+            });
+        });
+
+        eventNameInput.addEventListener('input', update);
+        targetDateInput.addEventListener('change', () => { createdAt = Date.now(); update(); });
+        targetTimeInput.addEventListener('change', () => { createdAt = Date.now(); update(); });
+
+        function update() {
+            const name = eventNameInput.value || 'Event';
+            const dateStr = targetDateInput.value;
+            const timeStr = targetTimeInput.value || '00:00';
+
+            if (!dateStr) return;
+
+            const target = new Date(`${dateStr}T${timeStr}`);
+            const now = new Date();
+            const diff = target - now;
+
+            document.getElementById('displayEventName').textContent = name;
+
+            if (diff <= 0) {
+                // Event has passed
+                document.getElementById('countdownActive').classList.add('hidden');
+                document.getElementById('pastEvent').classList.remove('hidden');
+                document.getElementById('pastMessage').textContent = `${name} has arrived!`;
+
+                const agoMs = Math.abs(diff);
+                const agoDays = Math.floor(agoMs / (1000 * 60 * 60 * 24));
+                const agoHours = Math.floor((agoMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                if (agoDays > 0) {
+                    document.getElementById('pastAgo').textContent = `${agoDays} day${agoDays !== 1 ? 's' : ''} and ${agoHours} hour${agoHours !== 1 ? 's' : ''} ago`;
+                } else if (agoHours > 0) {
+                    document.getElementById('pastAgo').textContent = `${agoHours} hour${agoHours !== 1 ? 's' : ''} ago`;
+                } else {
+                    document.getElementById('pastAgo').textContent = 'Just now!';
+                }
+            } else {
+                document.getElementById('countdownActive').classList.remove('hidden');
+                document.getElementById('pastEvent').classList.add('hidden');
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = String(days).padStart(2, '0');
+                document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+
+                // Total time
+                const totalHours = Math.floor(diff / (1000 * 60 * 60));
+                const totalMinutes = Math.floor(diff / (1000 * 60));
+                document.getElementById('totalTime').innerHTML =
+                    `<span>${totalHours.toLocaleString()}</span> hours or <span>${totalMinutes.toLocaleString()}</span> minutes remaining`;
+
+                // Progress
+                const totalDuration = target - createdAt;
+                const elapsed = now - createdAt;
+                const progress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+
+                document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+        }
+
+        update();
+        setInterval(update, 1000);
+    </script>
+</body>
+</html>

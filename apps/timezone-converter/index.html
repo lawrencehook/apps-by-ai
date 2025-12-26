@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Converter - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input, select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input:focus, select:focus { outline: none; border-color: #4ecdc4; }
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+        .input-row .form-group { flex: 1; }
+        .now-btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 22px;
+        }
+        .now-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .result-card {
+            background: rgba(78, 205, 196, 0.1);
+            border-color: rgba(78, 205, 196, 0.2);
+        }
+        .result-time {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            text-align: center;
+        }
+        .result-date {
+            font-size: 1.1rem;
+            color: #888;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .result-tz {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .world-clocks {
+            margin-top: 24px;
+        }
+        .world-clock-title {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+        .world-clock-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .world-clock {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .world-clock-city {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        .world-clock-time {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .world-clock-diff {
+            color: #4ecdc4;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Timezone Converter</h1>
+        <p class="subtitle">Convert times between timezones.</p>
+
+        <div class="card">
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="inputDate">
+                </div>
+                <div class="form-group">
+                    <label>Time</label>
+                    <input type="time" id="inputTime">
+                </div>
+                <button class="now-btn" id="nowBtn">Now</button>
+            </div>
+            <div class="form-group">
+                <label>From Timezone</label>
+                <select id="fromTz"></select>
+            </div>
+            <div class="form-group">
+                <label>To Timezone</label>
+                <select id="toTz"></select>
+            </div>
+        </div>
+
+        <div class="card result-card">
+            <div class="result-time" id="resultTime">--:--</div>
+            <div class="result-date" id="resultDate">-</div>
+            <div class="result-tz" id="resultTz">-</div>
+        </div>
+
+        <div class="world-clocks">
+            <div class="world-clock-title">World Clocks (Current Time)</div>
+            <div class="world-clock-grid" id="worldClocks"></div>
+        </div>
+    </div>
+
+    <script>
+        const timezones = [
+            { id: 'UTC', name: 'UTC', city: 'UTC' },
+            { id: 'America/New_York', name: 'Eastern Time (ET)', city: 'New York' },
+            { id: 'America/Chicago', name: 'Central Time (CT)', city: 'Chicago' },
+            { id: 'America/Denver', name: 'Mountain Time (MT)', city: 'Denver' },
+            { id: 'America/Los_Angeles', name: 'Pacific Time (PT)', city: 'Los Angeles' },
+            { id: 'America/Anchorage', name: 'Alaska Time', city: 'Anchorage' },
+            { id: 'Pacific/Honolulu', name: 'Hawaii Time', city: 'Honolulu' },
+            { id: 'Europe/London', name: 'British Time (GMT/BST)', city: 'London' },
+            { id: 'Europe/Paris', name: 'Central European (CET)', city: 'Paris' },
+            { id: 'Europe/Berlin', name: 'Central European (CET)', city: 'Berlin' },
+            { id: 'Europe/Moscow', name: 'Moscow Time', city: 'Moscow' },
+            { id: 'Asia/Dubai', name: 'Gulf Time', city: 'Dubai' },
+            { id: 'Asia/Kolkata', name: 'India Time (IST)', city: 'Mumbai' },
+            { id: 'Asia/Singapore', name: 'Singapore Time', city: 'Singapore' },
+            { id: 'Asia/Shanghai', name: 'China Time', city: 'Shanghai' },
+            { id: 'Asia/Tokyo', name: 'Japan Time', city: 'Tokyo' },
+            { id: 'Australia/Sydney', name: 'Australian Eastern', city: 'Sydney' },
+            { id: 'Pacific/Auckland', name: 'New Zealand', city: 'Auckland' }
+        ];
+
+        const worldClockCities = [
+            'America/New_York', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris',
+            'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney', 'Asia/Dubai'
+        ];
+
+        const fromSelect = document.getElementById('fromTz');
+        const toSelect = document.getElementById('toTz');
+
+        // Populate selects
+        timezones.forEach(tz => {
+            fromSelect.add(new Option(`${tz.city} - ${tz.name}`, tz.id));
+            toSelect.add(new Option(`${tz.city} - ${tz.name}`, tz.id));
+        });
+
+        // Set defaults
+        const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        fromSelect.value = localTz || 'America/New_York';
+        toSelect.value = 'UTC';
+
+        // Set current date/time
+        function setNow() {
+            const now = new Date();
+            document.getElementById('inputDate').value = now.toISOString().split('T')[0];
+            document.getElementById('inputTime').value = now.toTimeString().slice(0, 5);
+            convert();
+        }
+
+        document.getElementById('nowBtn').addEventListener('click', setNow);
+        document.getElementById('inputDate').addEventListener('change', convert);
+        document.getElementById('inputTime').addEventListener('change', convert);
+        fromSelect.addEventListener('change', convert);
+        toSelect.addEventListener('change', convert);
+
+        function convert() {
+            const dateStr = document.getElementById('inputDate').value;
+            const timeStr = document.getElementById('inputTime').value;
+            const fromTz = fromSelect.value;
+            const toTz = toSelect.value;
+
+            if (!dateStr || !timeStr) return;
+
+            try {
+                // Create date in source timezone
+                const dateTimeStr = `${dateStr}T${timeStr}:00`;
+                const sourceDate = new Date(dateTimeStr);
+
+                // Format in source timezone to get the actual time
+                const sourceFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: fromTz,
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    hour12: false
+                });
+
+                // Get offset difference
+                const targetFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: toTz,
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    weekday: 'long',
+                    hour: '2-digit', minute: '2-digit',
+                    hour12: true
+                });
+
+                const timeFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: toTz,
+                    hour: '2-digit', minute: '2-digit',
+                    hour12: true
+                });
+
+                const dateFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: toTz,
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+
+                // Create a date object and adjust for timezone
+                // This is a simplified conversion
+                const parts = targetFormatter.formatToParts(sourceDate);
+                const timeParts = timeFormatter.format(sourceDate);
+                const dateParts = dateFormatter.format(sourceDate);
+
+                document.getElementById('resultTime').textContent = timeParts;
+                document.getElementById('resultDate').textContent = dateParts;
+
+                const tzInfo = timezones.find(t => t.id === toTz);
+                document.getElementById('resultTz').textContent = tzInfo ? tzInfo.name : toTz;
+
+            } catch (e) {
+                document.getElementById('resultTime').textContent = 'Error';
+                document.getElementById('resultDate').textContent = e.message;
+            }
+        }
+
+        function updateWorldClocks() {
+            const container = document.getElementById('worldClocks');
+            const now = new Date();
+
+            container.innerHTML = worldClockCities.map(tzId => {
+                const tz = timezones.find(t => t.id === tzId);
+                if (!tz) return '';
+
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzId,
+                    hour: '2-digit', minute: '2-digit',
+                    hour12: true
+                });
+
+                const time = formatter.format(now);
+
+                // Calculate offset from local
+                const localOffset = now.getTimezoneOffset();
+                const tzFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzId,
+                    timeZoneName: 'shortOffset'
+                });
+                const tzParts = tzFormatter.formatToParts(now);
+                const offsetPart = tzParts.find(p => p.type === 'timeZoneName');
+                const offsetStr = offsetPart ? offsetPart.value : '';
+
+                return `
+                    <div class="world-clock">
+                        <div class="world-clock-city">${tz.city}</div>
+                        <div class="world-clock-time">${time}</div>
+                        <div class="world-clock-diff">${offsetStr}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        setNow();
+        updateWorldClocks();
+        setInterval(updateWorldClocks, 60000);
+    </script>
+</body>
+</html>

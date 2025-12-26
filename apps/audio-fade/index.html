@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Fade - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .file-info {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .file-name { font-weight: 500; margin-bottom: 4px; }
+        .file-meta { color: #666; font-size: 0.85rem; }
+        .waveform-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .waveform-wrapper {
+            position: relative;
+            height: 120px;
+            background: #1a1a1f;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #waveformCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        .fade-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .fade-overlay.fade-in {
+            left: 0;
+            background: linear-gradient(to right, rgba(78, 205, 196, 0.3), transparent);
+        }
+        .fade-overlay.fade-out {
+            right: 0;
+            background: linear-gradient(to left, rgba(78, 205, 196, 0.3), transparent);
+        }
+        .fade-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .fade-controls { grid-template-columns: 1fr; }
+        }
+        .fade-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .fade-section h3 {
+            color: #4ecdc4;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .fade-icon { font-size: 1.2rem; }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .control-row:last-child { margin-bottom: 0; }
+        .control-row label {
+            color: #888;
+            font-size: 0.9rem;
+            min-width: 80px;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+            accent-color: #4ecdc4;
+        }
+        .control-row .value {
+            color: #4ecdc4;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+            font-family: monospace;
+        }
+        .control-row select {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .enable-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .enable-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4ecdc4;
+        }
+        .enable-toggle label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.primary { flex: 1; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Audio Fade</h1>
+        <p class="subtitle">Add fade in and fade out effects to audio.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an audio file here or click to browse</div>
+            <div class="drop-zone-hint">Supports MP3, WAV, OGG, M4A, and more</div>
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="file-info">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-meta">
+                    <span id="fileDuration"></span> •
+                    <span id="fileSampleRate"></span>
+                </div>
+            </div>
+
+            <div class="waveform-container">
+                <div class="waveform-wrapper" id="waveformWrapper">
+                    <canvas id="waveformCanvas"></canvas>
+                    <div class="fade-overlay fade-in" id="fadeInOverlay"></div>
+                    <div class="fade-overlay fade-out" id="fadeOutOverlay"></div>
+                </div>
+            </div>
+
+            <div class="fade-controls">
+                <div class="fade-section">
+                    <h3><span class="fade-icon">📈</span> Fade In</h3>
+                    <div class="enable-toggle">
+                        <input type="checkbox" id="fadeInEnabled" checked>
+                        <label for="fadeInEnabled">Enable fade in</label>
+                    </div>
+                    <div class="control-row">
+                        <label>Duration</label>
+                        <input type="range" id="fadeInDuration" min="0" max="10" step="0.1" value="2">
+                        <span class="value" id="fadeInValue">2.0s</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Curve</label>
+                        <select id="fadeInCurve">
+                            <option value="linear">Linear</option>
+                            <option value="exponential" selected>Exponential</option>
+                            <option value="logarithmic">Logarithmic</option>
+                            <option value="scurve">S-Curve</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="fade-section">
+                    <h3><span class="fade-icon">📉</span> Fade Out</h3>
+                    <div class="enable-toggle">
+                        <input type="checkbox" id="fadeOutEnabled" checked>
+                        <label for="fadeOutEnabled">Enable fade out</label>
+                    </div>
+                    <div class="control-row">
+                        <label>Duration</label>
+                        <input type="range" id="fadeOutDuration" min="0" max="10" step="0.1" value="2">
+                        <span class="value" id="fadeOutValue">2.0s</span>
+                    </div>
+                    <div class="control-row">
+                        <label>Curve</label>
+                        <select id="fadeOutCurve">
+                            <option value="linear">Linear</option>
+                            <option value="exponential" selected>Exponential</option>
+                            <option value="logarithmic">Logarithmic</option>
+                            <option value="scurve">S-Curve</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="playBtn" class="secondary">▶ Preview</button>
+                <button id="downloadBtn" class="primary">Download with Fades</button>
+                <button id="resetBtn" class="secondary">New File</button>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let audioBuffer = null;
+        let sourceNode = null;
+        let gainNode = null;
+        let isPlaying = false;
+        let currentFile = null;
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const status = document.getElementById('status');
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        async function handleFile(file) {
+            initAudioContext();
+            currentFile = file;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+
+                // Set max fade duration to half the audio length
+                const maxFade = Math.min(10, audioBuffer.duration / 2);
+                document.getElementById('fadeInDuration').max = maxFade;
+                document.getElementById('fadeOutDuration').max = maxFade;
+
+                drawWaveform();
+                updateOverlays();
+
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+            } catch (err) {
+                status.textContent = 'Error loading audio file: ' + err.message;
+                status.classList.add('show');
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(2);
+            return `${mins}:${secs.padStart(5, '0')}`;
+        }
+
+        function drawWaveform() {
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('waveformWrapper');
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = wrapper.offsetWidth * dpr;
+            canvas.height = wrapper.offsetHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = wrapper.offsetWidth;
+            const height = wrapper.offsetHeight;
+
+            ctx.fillStyle = '#1a1a1f';
+            ctx.fillRect(0, 0, width, height);
+
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / width);
+            const amp = height / 2;
+
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            for (let i = 0; i < width; i++) {
+                let min = 1.0, max = -1.0;
+                for (let j = 0; j < step; j++) {
+                    const datum = data[(i * step) + j] || 0;
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * amp);
+                ctx.lineTo(i, (1 + max) * amp);
+            }
+            ctx.stroke();
+        }
+
+        function updateOverlays() {
+            const wrapper = document.getElementById('waveformWrapper');
+            const width = wrapper.offsetWidth;
+            const duration = audioBuffer.duration;
+
+            const fadeInEnabled = document.getElementById('fadeInEnabled').checked;
+            const fadeOutEnabled = document.getElementById('fadeOutEnabled').checked;
+            const fadeInDuration = parseFloat(document.getElementById('fadeInDuration').value);
+            const fadeOutDuration = parseFloat(document.getElementById('fadeOutDuration').value);
+
+            const fadeInOverlay = document.getElementById('fadeInOverlay');
+            const fadeOutOverlay = document.getElementById('fadeOutOverlay');
+
+            if (fadeInEnabled) {
+                fadeInOverlay.style.display = 'block';
+                fadeInOverlay.style.width = ((fadeInDuration / duration) * width) + 'px';
+            } else {
+                fadeInOverlay.style.display = 'none';
+            }
+
+            if (fadeOutEnabled) {
+                fadeOutOverlay.style.display = 'block';
+                fadeOutOverlay.style.width = ((fadeOutDuration / duration) * width) + 'px';
+            } else {
+                fadeOutOverlay.style.display = 'none';
+            }
+        }
+
+        // Update UI
+        document.getElementById('fadeInDuration').addEventListener('input', e => {
+            document.getElementById('fadeInValue').textContent = parseFloat(e.target.value).toFixed(1) + 's';
+            updateOverlays();
+        });
+
+        document.getElementById('fadeOutDuration').addEventListener('input', e => {
+            document.getElementById('fadeOutValue').textContent = parseFloat(e.target.value).toFixed(1) + 's';
+            updateOverlays();
+        });
+
+        document.getElementById('fadeInEnabled').addEventListener('change', updateOverlays);
+        document.getElementById('fadeOutEnabled').addEventListener('change', updateOverlays);
+
+        // Fade curve functions
+        function applyFadeCurve(t, curve) {
+            switch (curve) {
+                case 'linear':
+                    return t;
+                case 'exponential':
+                    return t * t;
+                case 'logarithmic':
+                    return Math.sqrt(t);
+                case 'scurve':
+                    return t * t * (3 - 2 * t);
+                default:
+                    return t;
+            }
+        }
+
+        function applyFades(buffer) {
+            const fadeInEnabled = document.getElementById('fadeInEnabled').checked;
+            const fadeOutEnabled = document.getElementById('fadeOutEnabled').checked;
+            const fadeInDuration = parseFloat(document.getElementById('fadeInDuration').value);
+            const fadeOutDuration = parseFloat(document.getElementById('fadeOutDuration').value);
+            const fadeInCurve = document.getElementById('fadeInCurve').value;
+            const fadeOutCurve = document.getElementById('fadeOutCurve').value;
+
+            const newBuffer = audioContext.createBuffer(
+                buffer.numberOfChannels,
+                buffer.length,
+                buffer.sampleRate
+            );
+
+            const fadeInSamples = Math.floor(fadeInDuration * buffer.sampleRate);
+            const fadeOutSamples = Math.floor(fadeOutDuration * buffer.sampleRate);
+            const fadeOutStart = buffer.length - fadeOutSamples;
+
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                const sourceData = buffer.getChannelData(ch);
+                const destData = newBuffer.getChannelData(ch);
+
+                for (let i = 0; i < buffer.length; i++) {
+                    let gain = 1.0;
+
+                    // Apply fade in
+                    if (fadeInEnabled && i < fadeInSamples) {
+                        const t = i / fadeInSamples;
+                        gain *= applyFadeCurve(t, fadeInCurve);
+                    }
+
+                    // Apply fade out
+                    if (fadeOutEnabled && i >= fadeOutStart) {
+                        const t = (buffer.length - i) / fadeOutSamples;
+                        gain *= applyFadeCurve(t, fadeOutCurve);
+                    }
+
+                    destData[i] = sourceData[i] * gain;
+                }
+            }
+
+            return newBuffer;
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                playPreview();
+            }
+        });
+
+        function playPreview() {
+            initAudioContext();
+            stopPlayback();
+
+            const fadedBuffer = applyFades(audioBuffer);
+
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = fadedBuffer;
+            sourceNode.connect(audioContext.destination);
+
+            sourceNode.start();
+            isPlaying = true;
+
+            document.getElementById('playBtn').textContent = '⏹ Stop';
+
+            sourceNode.onended = () => {
+                if (isPlaying) stopPlayback();
+            };
+        }
+
+        function stopPlayback() {
+            if (sourceNode) {
+                try { sourceNode.stop(); } catch(e) {}
+                sourceNode = null;
+            }
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Preview';
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const fadedBuffer = applyFades(audioBuffer);
+            const wavBlob = audioBufferToWav(fadedBuffer);
+            const url = URL.createObjectURL(wavBlob);
+
+            const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}_faded.wav`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            const fadeInEnabled = document.getElementById('fadeInEnabled').checked;
+            const fadeOutEnabled = document.getElementById('fadeOutEnabled').checked;
+            const fadeInDuration = document.getElementById('fadeInDuration').value;
+            const fadeOutDuration = document.getElementById('fadeOutDuration').value;
+
+            let msg = 'Audio saved with';
+            if (fadeInEnabled) msg += ` ${fadeInDuration}s fade in`;
+            if (fadeInEnabled && fadeOutEnabled) msg += ' and';
+            if (fadeOutEnabled) msg += ` ${fadeOutDuration}s fade out`;
+            msg += '!';
+
+            status.textContent = msg;
+            status.classList.add('show');
+        });
+
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1;
+            const bitDepth = 16;
+
+            const bytesPerSample = bitDepth / 8;
+            const blockAlign = numChannels * bytesPerSample;
+
+            const samples = buffer.length;
+            const dataSize = samples * blockAlign;
+            const bufferSize = 44 + dataSize;
+
+            const arrayBuffer = new ArrayBuffer(bufferSize);
+            const view = new DataView(arrayBuffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, bufferSize - 8, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            const channels = [];
+            for (let i = 0; i < numChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            let offset = 44;
+            for (let i = 0; i < samples; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+                    const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                    view.setInt16(offset, intSample, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            stopPlayback();
+            audioBuffer = null;
+            currentFile = null;
+            fileInput.value = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+
+        window.addEventListener('resize', () => {
+            if (audioBuffer) {
+                drawWaveform();
+                updateOverlays();
+            }
+        });
+    </script>
+</body>
+</html>
