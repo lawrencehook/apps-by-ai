@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Watermark - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+        .sidebar {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        .section { margin-bottom: 20px; }
+        .section-title {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #4ecdc4;
+        }
+        input[type="color"] {
+            width: 50px;
+            height: 32px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .slider-value { color: #4ecdc4; font-size: 0.85rem; }
+        .position-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .position-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 10px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .position-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .position-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+            margin-top: 12px;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .preview-area {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+        .preview-area canvas {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+        .color-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .color-row input[type="color"] { flex-shrink: 0; }
+        .color-row span { color: #888; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Image Watermark</h1>
+        <p class="subtitle">Add text or image watermarks to your images.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an image here or click to browse</div>
+            <div class="drop-zone-hint">Supports PNG, JPEG, WebP</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="editor-layout hidden" id="editorPanel">
+            <div class="sidebar">
+                <div class="section">
+                    <div class="section-title">Watermark Type</div>
+                    <select id="watermarkType">
+                        <option value="text">Text Watermark</option>
+                        <option value="image">Image Watermark</option>
+                    </select>
+                </div>
+
+                <div class="section" id="textOptions">
+                    <div class="section-title">Text Options</div>
+                    <div class="form-group">
+                        <label>Watermark Text</label>
+                        <input type="text" id="watermarkText" value="© Your Name" placeholder="Enter watermark text">
+                    </div>
+                    <div class="form-group">
+                        <label>Font</label>
+                        <select id="fontFamily">
+                            <option value="Arial">Arial</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Size</label>
+                        <input type="number" id="fontSize" value="48" min="8" max="200">
+                    </div>
+                    <div class="form-group">
+                        <label>Color</label>
+                        <div class="color-row">
+                            <input type="color" id="textColor" value="#ffffff">
+                            <span>Text Color</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section hidden" id="imageOptions">
+                    <div class="section-title">Image Watermark</div>
+                    <div class="form-group">
+                        <button id="selectWatermarkImage" class="secondary">Select Watermark Image</button>
+                        <input type="file" id="watermarkImageInput" accept="image/*">
+                    </div>
+                    <div id="watermarkImagePreview" style="margin-top: 8px; color: #888; font-size: 0.85rem;"></div>
+                    <div class="form-group">
+                        <div class="slider-header">
+                            <label>Scale</label>
+                            <span class="slider-value" id="imageScaleValue">20%</span>
+                        </div>
+                        <input type="range" id="imageScale" min="5" max="100" value="20">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Opacity</div>
+                    <div class="slider-header">
+                        <label>Opacity</label>
+                        <span class="slider-value" id="opacityValue">50%</span>
+                    </div>
+                    <input type="range" id="opacity" min="5" max="100" value="50">
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Position</div>
+                    <div class="position-grid">
+                        <button class="position-btn" data-pos="top-left">Top Left</button>
+                        <button class="position-btn" data-pos="top-center">Top</button>
+                        <button class="position-btn" data-pos="top-right">Top Right</button>
+                        <button class="position-btn" data-pos="center-left">Left</button>
+                        <button class="position-btn active" data-pos="center">Center</button>
+                        <button class="position-btn" data-pos="center-right">Right</button>
+                        <button class="position-btn" data-pos="bottom-left">Btm Left</button>
+                        <button class="position-btn" data-pos="bottom-center">Bottom</button>
+                        <button class="position-btn" data-pos="bottom-right">Btm Right</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Pattern</div>
+                    <select id="pattern">
+                        <option value="single">Single</option>
+                        <option value="tile">Tile / Repeat</option>
+                    </select>
+                </div>
+
+                <button id="downloadBtn">Download</button>
+                <button id="resetBtn" class="secondary">Choose Different Image</button>
+            </div>
+
+            <div class="preview-area">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentImage = null;
+        let watermarkImage = null;
+        let position = 'center';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const status = document.getElementById('status');
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+
+            currentImage = { file, type: file.type };
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage.img = img;
+                    updatePreview();
+                    dropZone.classList.add('hidden');
+                    editorPanel.classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Watermark type switching
+        document.getElementById('watermarkType').addEventListener('change', e => {
+            const isText = e.target.value === 'text';
+            document.getElementById('textOptions').classList.toggle('hidden', !isText);
+            document.getElementById('imageOptions').classList.toggle('hidden', isText);
+            updatePreview();
+        });
+
+        // Watermark image selection
+        document.getElementById('selectWatermarkImage').addEventListener('click', () => {
+            document.getElementById('watermarkImageInput').click();
+        });
+
+        document.getElementById('watermarkImageInput').addEventListener('change', e => {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const img = new Image();
+                    img.onload = () => {
+                        watermarkImage = img;
+                        document.getElementById('watermarkImagePreview').textContent =
+                            `Loaded: ${file.name} (${img.width}×${img.height})`;
+                        updatePreview();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Position buttons
+        document.querySelectorAll('.position-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                position = btn.dataset.pos;
+                updatePreview();
+            });
+        });
+
+        // Input listeners
+        ['watermarkText', 'fontFamily', 'fontSize', 'textColor', 'opacity', 'pattern', 'imageScale'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        });
+
+        document.getElementById('opacity').addEventListener('input', e => {
+            document.getElementById('opacityValue').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('imageScale').addEventListener('input', e => {
+            document.getElementById('imageScaleValue').textContent = e.target.value + '%';
+        });
+
+        function updatePreview() {
+            if (!currentImage || !currentImage.img) return;
+
+            const img = currentImage.img;
+            const ctx = previewCanvas.getContext('2d');
+
+            previewCanvas.width = img.width;
+            previewCanvas.height = img.height;
+
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+
+            const opacity = parseInt(document.getElementById('opacity').value) / 100;
+            const pattern = document.getElementById('pattern').value;
+            const isText = document.getElementById('watermarkType').value === 'text';
+
+            ctx.globalAlpha = opacity;
+
+            if (pattern === 'tile') {
+                drawTiledWatermark(ctx, img.width, img.height, isText);
+            } else {
+                drawSingleWatermark(ctx, img.width, img.height, isText);
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawSingleWatermark(ctx, canvasWidth, canvasHeight, isText) {
+            if (isText) {
+                const text = document.getElementById('watermarkText').value;
+                const font = document.getElementById('fontFamily').value;
+                const fontSize = parseInt(document.getElementById('fontSize').value);
+                const color = document.getElementById('textColor').value;
+
+                ctx.font = `${fontSize}px ${font}`;
+                ctx.fillStyle = color;
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'center';
+
+                const metrics = ctx.measureText(text);
+                const { x, y } = getPosition(metrics.width, fontSize, canvasWidth, canvasHeight);
+
+                // Add shadow for better visibility
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                ctx.fillText(text, x, y);
+                ctx.shadowColor = 'transparent';
+            } else if (watermarkImage) {
+                const scale = parseInt(document.getElementById('imageScale').value) / 100;
+                const wmWidth = watermarkImage.width * scale;
+                const wmHeight = watermarkImage.height * scale;
+
+                // Scale relative to image size
+                const maxDim = Math.min(canvasWidth, canvasHeight) * scale;
+                const aspectRatio = watermarkImage.width / watermarkImage.height;
+                let finalWidth, finalHeight;
+
+                if (aspectRatio > 1) {
+                    finalWidth = maxDim;
+                    finalHeight = maxDim / aspectRatio;
+                } else {
+                    finalHeight = maxDim;
+                    finalWidth = maxDim * aspectRatio;
+                }
+
+                const { x, y } = getPosition(finalWidth, finalHeight, canvasWidth, canvasHeight);
+                ctx.drawImage(watermarkImage, x - finalWidth/2, y - finalHeight/2, finalWidth, finalHeight);
+            }
+        }
+
+        function drawTiledWatermark(ctx, canvasWidth, canvasHeight, isText) {
+            const spacing = 100;
+
+            if (isText) {
+                const text = document.getElementById('watermarkText').value;
+                const font = document.getElementById('fontFamily').value;
+                const fontSize = parseInt(document.getElementById('fontSize').value) * 0.6;
+                const color = document.getElementById('textColor').value;
+
+                ctx.font = `${fontSize}px ${font}`;
+                ctx.fillStyle = color;
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'center';
+
+                const metrics = ctx.measureText(text);
+                const stepX = metrics.width + spacing;
+                const stepY = fontSize + spacing;
+
+                ctx.save();
+                ctx.rotate(-30 * Math.PI / 180);
+
+                for (let y = -canvasHeight; y < canvasHeight * 2; y += stepY) {
+                    for (let x = -canvasWidth; x < canvasWidth * 2; x += stepX) {
+                        ctx.fillText(text, x, y);
+                    }
+                }
+                ctx.restore();
+            } else if (watermarkImage) {
+                const scale = parseInt(document.getElementById('imageScale').value) / 100 * 0.5;
+                const maxDim = Math.min(canvasWidth, canvasHeight) * scale;
+                const aspectRatio = watermarkImage.width / watermarkImage.height;
+                let finalWidth, finalHeight;
+
+                if (aspectRatio > 1) {
+                    finalWidth = maxDim;
+                    finalHeight = maxDim / aspectRatio;
+                } else {
+                    finalHeight = maxDim;
+                    finalWidth = maxDim * aspectRatio;
+                }
+
+                const stepX = finalWidth + spacing;
+                const stepY = finalHeight + spacing;
+
+                ctx.save();
+                ctx.rotate(-30 * Math.PI / 180);
+
+                for (let y = -canvasHeight; y < canvasHeight * 2; y += stepY) {
+                    for (let x = -canvasWidth; x < canvasWidth * 2; x += stepX) {
+                        ctx.drawImage(watermarkImage, x, y, finalWidth, finalHeight);
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        function getPosition(wmWidth, wmHeight, canvasWidth, canvasHeight) {
+            const padding = 30;
+            let x, y;
+
+            switch (position) {
+                case 'top-left':
+                    x = padding + wmWidth/2;
+                    y = padding + wmHeight/2;
+                    break;
+                case 'top-center':
+                    x = canvasWidth / 2;
+                    y = padding + wmHeight/2;
+                    break;
+                case 'top-right':
+                    x = canvasWidth - padding - wmWidth/2;
+                    y = padding + wmHeight/2;
+                    break;
+                case 'center-left':
+                    x = padding + wmWidth/2;
+                    y = canvasHeight / 2;
+                    break;
+                case 'center':
+                    x = canvasWidth / 2;
+                    y = canvasHeight / 2;
+                    break;
+                case 'center-right':
+                    x = canvasWidth - padding - wmWidth/2;
+                    y = canvasHeight / 2;
+                    break;
+                case 'bottom-left':
+                    x = padding + wmWidth/2;
+                    y = canvasHeight - padding - wmHeight/2;
+                    break;
+                case 'bottom-center':
+                    x = canvasWidth / 2;
+                    y = canvasHeight - padding - wmHeight/2;
+                    break;
+                case 'bottom-right':
+                    x = canvasWidth - padding - wmWidth/2;
+                    y = canvasHeight - padding - wmHeight/2;
+                    break;
+                default:
+                    x = canvasWidth / 2;
+                    y = canvasHeight / 2;
+            }
+
+            return { x, y };
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const format = currentImage.type;
+            const quality = format === 'image/jpeg' ? 0.92 : undefined;
+            const dataUrl = previewCanvas.toDataURL(format, quality);
+
+            const ext = format.split('/')[1];
+            const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `${baseName}_watermarked.${ext}`;
+            a.click();
+
+            status.textContent = 'Image downloaded!';
+            status.className = 'status show';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            currentImage = null;
+            watermarkImage = null;
+            fileInput.value = '';
+            document.getElementById('watermarkImageInput').value = '';
+            document.getElementById('watermarkImagePreview').textContent = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

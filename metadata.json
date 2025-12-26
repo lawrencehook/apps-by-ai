@@ -661,5 +661,83 @@
         "category": "PDF",
         "tags": ["pdf", "security", "privacy"],
         "link": "https://en.wikipedia.org/wiki/Redaction"
+    },
+    {
+        "id": "image-resize",
+        "title": "Image Resize",
+        "description": "Resize images by dimensions or percentage. Preset sizes and aspect ratio lock included.",
+        "path": "apps/image-resize/index.html",
+        "emoji": "📐",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "utility", "resize"],
+        "link": "https://en.wikipedia.org/wiki/Image_scaling"
+    },
+    {
+        "id": "image-crop",
+        "title": "Image Crop",
+        "description": "Crop images with draggable selection. Supports aspect ratio constraints like 16:9 or 1:1.",
+        "path": "apps/image-crop/index.html",
+        "emoji": "✂️",
+        "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "utility", "crop"],
+        "link": "https://en.wikipedia.org/wiki/Cropping_(image)"
+    },
+    {
+        "id": "image-rotate",
+        "title": "Image Rotate & Flip",
+        "description": "Rotate images by 90° increments and flip horizontally or vertically.",
+        "path": "apps/image-rotate/index.html",
+        "emoji": "🔄",
+        "previewGradient": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "utility", "rotate"],
+        "link": "https://en.wikipedia.org/wiki/Image_rotation"
+    },
+    {
+        "id": "image-convert",
+        "title": "Image Convert",
+        "description": "Convert images between PNG, JPEG, and WebP formats with quality control.",
+        "path": "apps/image-convert/index.html",
+        "emoji": "🔀",
+        "previewGradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "conversion", "utility"],
+        "link": "https://en.wikipedia.org/wiki/Image_file_format"
+    },
+    {
+        "id": "image-filters",
+        "title": "Image Filters",
+        "description": "Apply filters and adjustments—brightness, contrast, saturation, blur, and preset looks.",
+        "path": "apps/image-filters/index.html",
+        "emoji": "🎨",
+        "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #ffe66d 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "filters", "effects"],
+        "link": "https://en.wikipedia.org/wiki/Image_editing"
+    },
+    {
+        "id": "image-watermark",
+        "title": "Image Watermark",
+        "description": "Add text or image watermarks with customizable position, opacity, and tiling patterns.",
+        "path": "apps/image-watermark/index.html",
+        "emoji": "💧",
+        "previewGradient": "linear-gradient(135deg, #00b4db 0%, #0083b0 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["images", "watermark", "security"],
+        "link": "https://en.wikipedia.org/wiki/Digital_watermarking"
     }
 ]

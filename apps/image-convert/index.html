@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Convert - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .file-info {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .file-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: #1a1a1f;
+        }
+        .file-details { flex: 1; }
+        .file-name { font-weight: 500; margin-bottom: 4px; }
+        .file-meta { color: #666; font-size: 0.85rem; }
+        .format-selector {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .format-selector h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            color: #888;
+        }
+        .format-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .format-option {
+            background: rgba(255,255,255,0.02);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .format-option:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .format-option.selected {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .format-option.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .format-name { font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; }
+        .format-desc { color: #666; font-size: 0.75rem; }
+        .format-option.selected .format-name { color: #4ecdc4; }
+        .quality-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .quality-section h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            color: #888;
+        }
+        .quality-slider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .quality-slider input {
+            flex: 1;
+            accent-color: #4ecdc4;
+        }
+        .quality-value {
+            color: #4ecdc4;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+        }
+        .size-estimate {
+            margin-top: 12px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 14px 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+            margin-top: 12px;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Image Convert</h1>
+        <p class="subtitle">Convert images between PNG, JPEG, and WebP formats.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an image here or click to browse</div>
+            <div class="drop-zone-hint">Supports PNG, JPEG, WebP, GIF, BMP</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="file-info">
+                <img id="preview" class="file-preview" src="" alt="Preview">
+                <div class="file-details">
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-meta">
+                        <span id="originalFormat"></span> •
+                        <span id="dimensions"></span> •
+                        <span id="fileSize"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="format-selector">
+                <h3>Convert to</h3>
+                <div class="format-options">
+                    <div class="format-option" data-format="image/png">
+                        <div class="format-name">PNG</div>
+                        <div class="format-desc">Lossless, supports transparency</div>
+                    </div>
+                    <div class="format-option" data-format="image/jpeg">
+                        <div class="format-name">JPEG</div>
+                        <div class="format-desc">Smaller size, no transparency</div>
+                    </div>
+                    <div class="format-option" data-format="image/webp">
+                        <div class="format-name">WebP</div>
+                        <div class="format-desc">Modern, best compression</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quality-section" id="qualitySection">
+                <h3>Quality</h3>
+                <div class="quality-slider">
+                    <input type="range" id="qualitySlider" min="1" max="100" value="92">
+                    <span class="quality-value" id="qualityValue">92%</span>
+                </div>
+                <div class="size-estimate" id="sizeEstimate"></div>
+            </div>
+
+            <button id="convertBtn">Convert & Download</button>
+            <button id="resetBtn" class="secondary">Choose Different Image</button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentImage = null;
+        let selectedFormat = 'image/png';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const status = document.getElementById('status');
+        const qualitySlider = document.getElementById('qualitySlider');
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+
+            currentImage = { file, type: file.type };
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage.img = img;
+                    currentImage.dataUrl = e.target.result;
+
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('fileName').textContent = file.name;
+                    document.getElementById('originalFormat').textContent = file.type.split('/')[1].toUpperCase();
+                    document.getElementById('dimensions').textContent = `${img.width} × ${img.height}`;
+                    document.getElementById('fileSize').textContent = formatSize(file.size);
+
+                    // Select a different format than current
+                    const formats = ['image/png', 'image/jpeg', 'image/webp'];
+                    selectedFormat = formats.find(f => f !== file.type) || 'image/png';
+                    updateFormatSelection();
+                    updateQualityVisibility();
+
+                    dropZone.classList.add('hidden');
+                    editorPanel.classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Format selection
+        document.querySelectorAll('.format-option').forEach(option => {
+            option.addEventListener('click', () => {
+                if (option.classList.contains('disabled')) return;
+                selectedFormat = option.dataset.format;
+                updateFormatSelection();
+                updateQualityVisibility();
+            });
+        });
+
+        function updateFormatSelection() {
+            document.querySelectorAll('.format-option').forEach(option => {
+                option.classList.toggle('selected', option.dataset.format === selectedFormat);
+                // Mark current format as "same"
+                const isSame = option.dataset.format === currentImage.type;
+                option.classList.toggle('disabled', isSame);
+            });
+        }
+
+        function updateQualityVisibility() {
+            const showQuality = selectedFormat === 'image/jpeg' || selectedFormat === 'image/webp';
+            document.getElementById('qualitySection').style.display = showQuality ? 'block' : 'none';
+        }
+
+        qualitySlider.addEventListener('input', () => {
+            document.getElementById('qualityValue').textContent = qualitySlider.value + '%';
+        });
+
+        document.getElementById('convertBtn').addEventListener('click', () => {
+            const img = currentImage.img;
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+
+            // For JPEG, fill with white background (no transparency)
+            if (selectedFormat === 'image/jpeg') {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            ctx.drawImage(img, 0, 0);
+
+            const quality = selectedFormat === 'image/png' ? undefined : qualitySlider.value / 100;
+            const dataUrl = canvas.toDataURL(selectedFormat, quality);
+
+            // Calculate new size
+            const base64 = dataUrl.split(',')[1];
+            const newSize = Math.round((base64.length * 3) / 4);
+
+            const ext = selectedFormat.split('/')[1];
+            const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `${baseName}.${ext}`;
+            a.click();
+
+            const savings = currentImage.file.size - newSize;
+            const savingsText = savings > 0
+                ? `Saved ${formatSize(Math.abs(savings))} (${Math.round(Math.abs(savings) / currentImage.file.size * 100)}% smaller)`
+                : `New file is ${formatSize(Math.abs(savings))} larger`;
+
+            status.textContent = `Converted to ${ext.toUpperCase()}! ${savingsText}`;
+            status.className = 'status show';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            currentImage = null;
+            fileInput.value = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

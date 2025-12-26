@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Filters - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+        .sidebar {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .section { margin-bottom: 20px; }
+        .section-title {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .slider-group { margin-bottom: 14px; }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .slider-label { color: #aaa; font-size: 0.85rem; }
+        .slider-value { color: #4ecdc4; font-size: 0.85rem; font-weight: 500; }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #4ecdc4;
+        }
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .preset-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 10px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .preset-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+            margin-top: 12px;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .preview-area {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+        .preview-area canvas {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            color: #4ecdc4;
+            display: none;
+            text-align: center;
+        }
+        .status.show { display: block; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Image Filters</h1>
+        <p class="subtitle">Apply adjustments and filters to your images.</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop an image here or click to browse</div>
+            <div class="drop-zone-hint">Supports PNG, JPEG, WebP</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="editor-layout hidden" id="editorPanel">
+            <div class="sidebar">
+                <div class="section">
+                    <div class="section-title">Presets</div>
+                    <div class="preset-grid">
+                        <button class="preset-btn" data-preset="none">Original</button>
+                        <button class="preset-btn" data-preset="grayscale">Grayscale</button>
+                        <button class="preset-btn" data-preset="sepia">Sepia</button>
+                        <button class="preset-btn" data-preset="vintage">Vintage</button>
+                        <button class="preset-btn" data-preset="cold">Cold</button>
+                        <button class="preset-btn" data-preset="warm">Warm</button>
+                        <button class="preset-btn" data-preset="dramatic">Dramatic</button>
+                        <button class="preset-btn" data-preset="fade">Faded</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Adjustments</div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Brightness</span>
+                            <span class="slider-value" id="brightnessValue">100%</span>
+                        </div>
+                        <input type="range" id="brightness" min="0" max="200" value="100">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Contrast</span>
+                            <span class="slider-value" id="contrastValue">100%</span>
+                        </div>
+                        <input type="range" id="contrast" min="0" max="200" value="100">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Saturation</span>
+                            <span class="slider-value" id="saturateValue">100%</span>
+                        </div>
+                        <input type="range" id="saturate" min="0" max="200" value="100">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Hue Rotate</span>
+                            <span class="slider-value" id="hueValue">0°</span>
+                        </div>
+                        <input type="range" id="hue" min="0" max="360" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Blur</span>
+                            <span class="slider-value" id="blurValue">0px</span>
+                        </div>
+                        <input type="range" id="blur" min="0" max="20" value="0">
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Invert</span>
+                            <span class="slider-value" id="invertValue">0%</span>
+                        </div>
+                        <input type="range" id="invert" min="0" max="100" value="0">
+                    </div>
+                </div>
+
+                <button id="downloadBtn">Download</button>
+                <button id="resetBtn" class="secondary">Choose Different Image</button>
+            </div>
+
+            <div class="preview-area">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentImage = null;
+        let filters = {
+            brightness: 100,
+            contrast: 100,
+            saturate: 100,
+            hue: 0,
+            blur: 0,
+            invert: 0
+        };
+
+        const presets = {
+            none: { brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, invert: 0 },
+            grayscale: { brightness: 100, contrast: 110, saturate: 0, hue: 0, blur: 0, invert: 0 },
+            sepia: { brightness: 100, contrast: 90, saturate: 50, hue: 30, blur: 0, invert: 0 },
+            vintage: { brightness: 110, contrast: 85, saturate: 70, hue: 15, blur: 0, invert: 0 },
+            cold: { brightness: 100, contrast: 100, saturate: 90, hue: 200, blur: 0, invert: 0 },
+            warm: { brightness: 105, contrast: 100, saturate: 110, hue: 350, blur: 0, invert: 0 },
+            dramatic: { brightness: 90, contrast: 150, saturate: 120, hue: 0, blur: 0, invert: 0 },
+            fade: { brightness: 110, contrast: 80, saturate: 80, hue: 0, blur: 0, invert: 0 }
+        };
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const status = document.getElementById('status');
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+
+            currentImage = { file, type: file.type };
+            filters = { ...presets.none };
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage.img = img;
+                    updateSliders();
+                    updatePreview();
+                    dropZone.classList.add('hidden');
+                    editorPanel.classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateSliders() {
+            document.getElementById('brightness').value = filters.brightness;
+            document.getElementById('brightnessValue').textContent = filters.brightness + '%';
+
+            document.getElementById('contrast').value = filters.contrast;
+            document.getElementById('contrastValue').textContent = filters.contrast + '%';
+
+            document.getElementById('saturate').value = filters.saturate;
+            document.getElementById('saturateValue').textContent = filters.saturate + '%';
+
+            document.getElementById('hue').value = filters.hue;
+            document.getElementById('hueValue').textContent = filters.hue + '°';
+
+            document.getElementById('blur').value = filters.blur;
+            document.getElementById('blurValue').textContent = filters.blur + 'px';
+
+            document.getElementById('invert').value = filters.invert;
+            document.getElementById('invertValue').textContent = filters.invert + '%';
+        }
+
+        function updatePreview() {
+            const img = currentImage.img;
+            const ctx = previewCanvas.getContext('2d');
+
+            previewCanvas.width = img.width;
+            previewCanvas.height = img.height;
+
+            // Apply CSS filters
+            ctx.filter = `
+                brightness(${filters.brightness}%)
+                contrast(${filters.contrast}%)
+                saturate(${filters.saturate}%)
+                hue-rotate(${filters.hue}deg)
+                blur(${filters.blur}px)
+                invert(${filters.invert}%)
+            `;
+
+            ctx.drawImage(img, 0, 0);
+        }
+
+        // Slider events
+        ['brightness', 'contrast', 'saturate', 'hue', 'blur', 'invert'].forEach(name => {
+            const slider = document.getElementById(name);
+            slider.addEventListener('input', () => {
+                filters[name] = parseInt(slider.value);
+                const suffix = name === 'hue' ? '°' : (name === 'blur' ? 'px' : '%');
+                document.getElementById(name + 'Value').textContent = filters[name] + suffix;
+                updatePreview();
+
+                // Deselect presets
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            });
+        });
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = presets[btn.dataset.preset];
+                filters = { ...preset };
+                updateSliders();
+                updatePreview();
+
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const format = currentImage.type;
+            const quality = format === 'image/jpeg' ? 0.92 : undefined;
+            const dataUrl = previewCanvas.toDataURL(format, quality);
+
+            const ext = format.split('/')[1];
+            const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `${baseName}_filtered.${ext}`;
+            a.click();
+
+            status.textContent = 'Image downloaded!';
+            status.className = 'status show';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            currentImage = null;
+            fileInput.value = '';
+            dropZone.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            status.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
