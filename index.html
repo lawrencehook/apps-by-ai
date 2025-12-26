@@ -37,6 +37,71 @@
             margin: 0 auto;
         }
 
+        .filters {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px 16px;
+        }
+
+        .search-container {
+            margin-bottom: 12px;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-input::placeholder {
+            color: #666;
+        }
+
+        .tag-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag-filter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #888;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tag-filter:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        .tag-filter.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+
+        .results-count {
+            color: #555;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -113,6 +178,29 @@
             font-size: 0.65rem;
         }
 
+        .card-link {
+            color: #555;
+            font-size: 0.7rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin-left: auto;
+            padding: 4px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .card-link:hover {
+            color: #888;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .card-link svg {
+            width: 12px;
+            height: 12px;
+        }
+
         footer {
             text-align: center;
             padding: 24px;
@@ -139,6 +227,14 @@
         <p class="subtitle">Interactive demos showcasing what AI can create</p>
     </header>
 
+    <div class="filters">
+        <div class="search-container">
+            <input type="text" class="search-input" id="search" placeholder="Search demos...">
+        </div>
+        <div class="tag-filters" id="tagFilters"></div>
+        <div class="results-count" id="resultsCount"></div>
+    </div>
+
     <main class="gallery" id="gallery">
     </main>
 
@@ -147,11 +243,23 @@
     </footer>
 
     <script>
+        let allApps = [];
+        let allTags = [];
+        let selectedTags = new Set();
+        let searchQuery = '';
+
         async function loadApps() {
             try {
                 const response = await fetch('metadata.json');
-                const apps = await response.json();
-                renderApps(apps);
+                allApps = await response.json();
+
+                // Extract all unique tags
+                const tagSet = new Set();
+                allApps.forEach(app => app.tags.forEach(tag => tagSet.add(tag)));
+                allTags = Array.from(tagSet).sort();
+
+                renderTagFilters();
+                filterAndRender();
             } catch (error) {
                 console.error('Failed to load metadata:', error);
                 document.getElementById('gallery').innerHTML = `
@@ -162,13 +270,65 @@
             }
         }
 
+        function renderTagFilters() {
+            const container = document.getElementById('tagFilters');
+            container.innerHTML = allTags.map(tag => `
+                <button class="tag-filter" data-tag="${tag}">${tag}</button>
+            `).join('');
+
+            container.addEventListener('click', e => {
+                if (e.target.classList.contains('tag-filter')) {
+                    const tag = e.target.dataset.tag;
+                    if (selectedTags.has(tag)) {
+                        selectedTags.delete(tag);
+                        e.target.classList.remove('active');
+                    } else {
+                        selectedTags.add(tag);
+                        e.target.classList.add('active');
+                    }
+                    filterAndRender();
+                }
+            });
+        }
+
+        function filterAndRender() {
+            let filtered = allApps;
+
+            // Filter by search query
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(app =>
+                    app.title.toLowerCase().includes(query) ||
+                    app.description.toLowerCase().includes(query) ||
+                    app.tags.some(tag => tag.toLowerCase().includes(query))
+                );
+            }
+
+            // Filter by selected tags
+            if (selectedTags.size > 0) {
+                filtered = filtered.filter(app =>
+                    Array.from(selectedTags).every(tag => app.tags.includes(tag))
+                );
+            }
+
+            renderApps(filtered);
+
+            // Update results count
+            const countEl = document.getElementById('resultsCount');
+            if (searchQuery || selectedTags.size > 0) {
+                countEl.textContent = `Showing ${filtered.length} of ${allApps.length} demos`;
+            } else {
+                countEl.textContent = '';
+            }
+        }
+
         function renderApps(apps) {
             const gallery = document.getElementById('gallery');
 
             if (apps.length === 0) {
                 gallery.innerHTML = `
                     <div class="empty-state">
-                        <p>No applications yet. Check back soon!</p>
+                        <p>No matching demos found.</p>
                     </div>
                 `;
                 return;
@@ -183,13 +343,28 @@
                         <h2 class="card-title">${app.title}</h2>
                         <p class="card-description">${app.description}</p>
                         <div class="card-meta">
-                            <span class="tag">${app.model}</span>
-                            ${app.tags.slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            ${app.tags.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
                         </div>
                     </div>
+                    ${app.link ? `
+                        <span class="card-link" onclick="event.preventDefault(); event.stopPropagation(); window.open('${app.link}', '_blank');">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            Info
+                        </span>
+                    ` : ''}
                 </a>
             `).join('');
         }
+
+        // Search input handler
+        document.getElementById('search').addEventListener('input', e => {
+            searchQuery = e.target.value;
+            filterAndRender();
+        });
 
         loadApps();
     </script>
