@@ -104,6 +104,9 @@
             flex-wrap: wrap;
             gap: 6px;
             justify-content: center;
+            height: 52px;
+            overflow: hidden;
+            align-content: flex-start;
         }
 
         .tag-filter {
@@ -342,6 +345,11 @@
                         selectedCategory = cat;
                         e.target.classList.add('active');
                     }
+
+                    // Reset tag selection
+                    selectedTags.clear();
+                    document.querySelectorAll('.tag-filter').forEach(btn => btn.classList.remove('active'));
+
                     filterAndRender();
                 }
             });
@@ -393,6 +401,21 @@
                     Array.from(selectedTags).every(tag => app.tags.includes(tag))
                 );
             }
+
+            // Get available tags from final filtered results
+            const availableTags = new Set();
+            filtered.forEach(app => app.tags.forEach(tag => availableTags.add(tag)));
+
+            // Update tag filter visibility (show available tags + selected tags for deselection)
+            const tagContainer = document.getElementById('tagFilters');
+            tagContainer.querySelectorAll('.tag-filter').forEach(btn => {
+                const tag = btn.dataset.tag;
+                if (availableTags.has(tag) || selectedTags.has(tag)) {
+                    btn.style.display = '';
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
 
             renderApps(filtered);
 
