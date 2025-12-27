@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time Test - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .game-area {
+            width: 100%;
+            height: 400px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            user-select: none;
+            margin-bottom: 24px;
+        }
+        .game-area.waiting {
+            background: linear-gradient(135deg, #ff6b6b, #c44569);
+        }
+        .game-area.ready {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+        .game-area.clicked {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .game-area.too-early {
+            background: linear-gradient(135deg, #f39c12, #d35400);
+        }
+        .game-text {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .game-subtext {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 12px;
+        }
+        .result-time {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .result-unit {
+            font-size: 1.5rem;
+            color: #888;
+        }
+        .result-rating {
+            font-size: 1.2rem;
+            margin-top: 16px;
+            padding: 8px 20px;
+            border-radius: 20px;
+        }
+        .rating-excellent { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
+        .rating-good { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .rating-average { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        .rating-slow { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #fff;
+            font-family: monospace;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        .history-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .history-title { color: #888; font-size: 0.9rem; }
+        .clear-btn {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .clear-btn:hover { background: rgba(255, 107, 107, 0.2); }
+        .history-chart {
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            padding: 10px 0;
+        }
+        .history-bar {
+            flex: 1;
+            background: linear-gradient(to top, #4ecdc4, #44a08d);
+            border-radius: 4px 4px 0 0;
+            min-height: 5px;
+            position: relative;
+        }
+        .history-bar:hover::after {
+            content: attr(data-time);
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .try-counter {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 16px;
+        }
+        .instructions {
+            background: rgba(78, 205, 196, 0.05);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .instructions-title { color: #4ecdc4; font-size: 0.9rem; margin-bottom: 8px; }
+        .instructions-text { color: #888; font-size: 0.85rem; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Reaction Time Test</h1>
+        <p class="subtitle">Test how fast you can react! Click when the color changes to green.</p>
+
+        <div class="instructions">
+            <div class="instructions-title">How to Play</div>
+            <div class="instructions-text">
+                1. Click the red box to start<br>
+                2. Wait for it to turn green (random delay)<br>
+                3. Click as fast as you can when it turns green!<br>
+                4. If you click too early, you'll need to try again
+            </div>
+        </div>
+
+        <div class="game-area waiting" id="gameArea">
+            <div class="game-text" id="gameText">Click to Start</div>
+            <div class="game-subtext" id="gameSubtext">Test your reaction time</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="bestTime">--</div>
+                <div class="stat-label">Best Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgTime">--</div>
+                <div class="stat-label">Average</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastTime">--</div>
+                <div class="stat-label">Last Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="attempts">0</div>
+                <div class="stat-label">Attempts</div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title">Recent Results (last 20)</span>
+                <button class="clear-btn" id="clearBtn">Clear History</button>
+            </div>
+            <div class="history-chart" id="historyChart"></div>
+            <div class="try-counter" id="tryCounter">Complete a test to see your history</div>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const gameText = document.getElementById('gameText');
+        const gameSubtext = document.getElementById('gameSubtext');
+
+        let state = 'idle'; // idle, waiting, ready
+        let startTime = null;
+        let timeoutId = null;
+        let results = [];
+
+        function getRating(ms) {
+            if (ms < 200) return { text: 'Incredible!', class: 'rating-excellent' };
+            if (ms < 250) return { text: 'Excellent!', class: 'rating-excellent' };
+            if (ms < 300) return { text: 'Good!', class: 'rating-good' };
+            if (ms < 400) return { text: 'Average', class: 'rating-average' };
+            return { text: 'Keep practicing', class: 'rating-slow' };
+        }
+
+        function updateStats() {
+            if (results.length === 0) {
+                document.getElementById('bestTime').textContent = '--';
+                document.getElementById('avgTime').textContent = '--';
+                document.getElementById('lastTime').textContent = '--';
+                document.getElementById('attempts').textContent = '0';
+                return;
+            }
+
+            const best = Math.min(...results);
+            const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+            const last = results[results.length - 1];
+
+            document.getElementById('bestTime').textContent = best + 'ms';
+            document.getElementById('avgTime').textContent = avg + 'ms';
+            document.getElementById('lastTime').textContent = last + 'ms';
+            document.getElementById('attempts').textContent = results.length;
+
+            updateChart();
+        }
+
+        function updateChart() {
+            const chart = document.getElementById('historyChart');
+            const last20 = results.slice(-20);
+
+            if (last20.length === 0) {
+                chart.innerHTML = '';
+                document.getElementById('tryCounter').textContent = 'Complete a test to see your history';
+                return;
+            }
+
+            const maxTime = Math.max(...last20, 500);
+            chart.innerHTML = last20.map((time, i) => {
+                const height = (time / maxTime) * 100;
+                return `<div class="history-bar" style="height: ${height}%" data-time="${time}ms"></div>`;
+            }).join('');
+
+            document.getElementById('tryCounter').textContent =
+                `${results.length} total attempt${results.length === 1 ? '' : 's'}`;
+        }
+
+        function showResult(reactionTime) {
+            const rating = getRating(reactionTime);
+
+            gameArea.className = 'game-area clicked';
+            gameArea.innerHTML = `
+                <div class="result-time">${reactionTime}</div>
+                <div class="result-unit">milliseconds</div>
+                <div class="result-rating ${rating.class}">${rating.text}</div>
+                <div class="game-subtext" style="margin-top: 24px;">Click to try again</div>
+            `;
+
+            results.push(reactionTime);
+            updateStats();
+        }
+
+        function showTooEarly() {
+            gameArea.className = 'game-area too-early';
+            gameText.textContent = 'Too Early!';
+            gameSubtext.textContent = 'Wait for green, then click. Click to retry.';
+        }
+
+        function startWaiting() {
+            state = 'waiting';
+            gameArea.className = 'game-area waiting';
+            gameArea.innerHTML = `
+                <div class="game-text">Wait for Green...</div>
+                <div class="game-subtext">Get ready!</div>
+            `;
+
+            const delay = 1500 + Math.random() * 3000; // 1.5-4.5 seconds
+            timeoutId = setTimeout(() => {
+                if (state === 'waiting') {
+                    state = 'ready';
+                    startTime = performance.now();
+                    gameArea.className = 'game-area ready';
+                    gameArea.innerHTML = `
+                        <div class="game-text">CLICK NOW!</div>
+                        <div class="game-subtext"></div>
+                    `;
+                }
+            }, delay);
+        }
+
+        function reset() {
+            state = 'idle';
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            gameArea.className = 'game-area waiting';
+            gameArea.innerHTML = `
+                <div class="game-text" id="gameText">Click to Start</div>
+                <div class="game-subtext" id="gameSubtext">Test your reaction time</div>
+            `;
+        }
+
+        gameArea.addEventListener('click', () => {
+            if (state === 'idle' || gameArea.classList.contains('clicked') || gameArea.classList.contains('too-early')) {
+                startWaiting();
+            } else if (state === 'waiting') {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+                state = 'idle';
+                showTooEarly();
+            } else if (state === 'ready') {
+                const reactionTime = Math.round(performance.now() - startTime);
+                state = 'idle';
+                showResult(reactionTime);
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            results = [];
+            updateStats();
+            updateChart();
+        });
+
+        // Prevent accidental spacebar triggering
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                gameArea.click();
+            }
+        });
+    </script>
+</body>
+</html>

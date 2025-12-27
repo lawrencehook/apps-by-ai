@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .settings {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .setting-label { color: #888; font-size: 0.9rem; }
+        select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        select:focus { outline: none; border-color: #4ecdc4; }
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            font-family: monospace;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        .timer-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .timer-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+        .typing-area {
+            position: relative;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            min-height: 200px;
+            cursor: text;
+        }
+        .typing-area:focus-within {
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+        .text-display {
+            font-size: 1.4rem;
+            line-height: 2;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .word {
+            display: inline;
+        }
+        .char {
+            position: relative;
+            transition: color 0.05s;
+        }
+        .char.correct { color: #4ecdc4; }
+        .char.incorrect {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.15);
+            border-radius: 2px;
+        }
+        .char.current::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #4ecdc4;
+            animation: blink 1s infinite;
+        }
+        .char.pending { color: #555; }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .hidden-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .click-hint {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 15, 0.85);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            color: #888;
+        }
+        .click-hint span {
+            padding: 16px 32px;
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            border-radius: 8px;
+            color: #4ecdc4;
+        }
+        .hidden { display: none !important; }
+        .source-info {
+            text-align: center;
+            color: #444;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+        .results-card {
+            background: rgba(78, 205, 196, 0.05);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .results-title {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        @media (max-width: 500px) {
+            .results-grid { grid-template-columns: 1fr; }
+        }
+        .result-item {
+            padding: 16px;
+        }
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+        }
+        .result-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 4px;
+        }
+        .restart-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 16px;
+        }
+        .restart-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+        <p class="subtitle">Test your typing speed and accuracy. Click the text area to begin.</p>
+
+        <div class="settings">
+            <div class="setting-group">
+                <span class="setting-label">Duration:</span>
+                <select id="duration">
+                    <option value="30">30 seconds</option>
+                    <option value="60" selected>1 minute</option>
+                    <option value="120">2 minutes</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <span class="setting-label">Source:</span>
+                <select id="source">
+                    <option value="literature">Classic Literature</option>
+                    <option value="science">Science & Nature</option>
+                    <option value="philosophy">Philosophy</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="wpmLive">0</div>
+                <div class="stat-label">WPM</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="accuracyLive">100%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="charsTyped">0</div>
+                <div class="stat-label">Characters</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="timeLeft">60</div>
+                <div class="stat-label">Seconds Left</div>
+            </div>
+        </div>
+
+        <div class="timer-bar">
+            <div class="timer-progress" id="timerProgress" style="width: 100%"></div>
+        </div>
+
+        <div class="typing-area" id="typingArea">
+            <input type="text" class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <div class="text-display" id="textDisplay"></div>
+            <div class="click-hint" id="clickHint">
+                <span>Click here to start typing</span>
+            </div>
+        </div>
+
+        <div class="source-info" id="sourceInfo"></div>
+
+        <div class="results-card hidden" id="resultsCard">
+            <div class="results-title">Test Complete!</div>
+            <div class="results-grid">
+                <div class="result-item">
+                    <div class="result-value" id="finalWpm">0</div>
+                    <div class="result-label">Words Per Minute</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-value" id="finalAccuracy">0%</div>
+                    <div class="result-label">Accuracy</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-value" id="finalChars">0</div>
+                    <div class="result-label">Characters Typed</div>
+                </div>
+            </div>
+            <button class="restart-btn" id="restartBtn">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const passages = {
+            literature: [
+                { text: "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair.", source: "A Tale of Two Cities — Charles Dickens" },
+                { text: "All happy families are alike; each unhappy family is unhappy in its own way. Everything was in confusion in the Oblonskys' house. The wife had discovered that the husband was carrying on an intrigue with a French girl, who had been a governess in their family.", source: "Anna Karenina — Leo Tolstoy" },
+                { text: "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. Whenever you feel like criticizing anyone, he told me, just remember that all the people in this world haven't had the advantages that you've had.", source: "The Great Gatsby — F. Scott Fitzgerald" },
+                { text: "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families.", source: "Pride and Prejudice — Jane Austen" },
+                { text: "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen.", source: "Moby Dick — Herman Melville" },
+                { text: "Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much. They were the last people you'd expect to be involved in anything strange or mysterious, because they just didn't hold with such nonsense.", source: "Harry Potter — J.K. Rowling" },
+                { text: "Far out in the uncharted backwaters of the unfashionable end of the Western Spiral arm of the Galaxy lies a small unregarded yellow sun. Orbiting this at a distance of roughly ninety-eight million miles is an utterly insignificant little blue-green planet.", source: "The Hitchhiker's Guide to the Galaxy — Douglas Adams" },
+                { text: "The story so far: In the beginning the Universe was created. This has made a lot of people very angry and been widely regarded as a bad move. Many races believe that it was created by some sort of god, though the Jatravartid people of Viltvodle VI believe that the entire Universe was sneezed out of the nose of a being called the Great Green Arkleseizure.", source: "The Restaurant at the End of the Universe — Douglas Adams" },
+            ],
+            science: [
+                { text: "The cosmos is all that is or ever was or ever will be. Our feeblest contemplations of the Cosmos stir us. There is a tingling in the spine, a catch in the voice, a faint sensation, as if a distant memory, of falling from a height. We know we are approaching the greatest of mysteries.", source: "Cosmos — Carl Sagan" },
+                { text: "Look again at that dot. That's here. That's home. That's us. On it everyone you love, everyone you know, everyone you ever heard of, every human being who ever was, lived out their lives. The aggregate of our joy and suffering, thousands of confident religions, ideologies, and economic doctrines.", source: "Pale Blue Dot — Carl Sagan" },
+                { text: "Nothing in biology makes sense except in the light of evolution. Evolution is the fundamental concept underlying all of biology. It provides a framework for understanding the diversity of life and the relationships among organisms, from the simplest bacteria to the most complex plants and animals.", source: "Theodosius Dobzhansky" },
+                { text: "The good thing about science is that it's true whether or not you believe in it. Scientific knowledge is based on evidence and can be tested and verified. It represents our best understanding of how the natural world works, and it continues to advance as we make new discoveries.", source: "Neil deGrasse Tyson" },
+                { text: "We are just an advanced breed of monkeys on a minor planet of a very average star. But we can understand the Universe. That makes us something very special. Intelligence is the ability to adapt to change, and our species has shown remarkable adaptability throughout our history.", source: "Stephen Hawking" },
+                { text: "The beauty of a living thing is not the atoms that go into it, but the way those atoms are put together. Information distilled over four billion years of biological evolution. Massively parallel processing. The cosmos is also within us. We are made of star stuff.", source: "Cosmos — Carl Sagan" },
+            ],
+            philosophy: [
+                { text: "The unexamined life is not worth living. To find yourself, think for yourself. I cannot teach anybody anything. I can only make them think. True wisdom comes to each of us when we realize how little we understand about life, ourselves, and the world around us.", source: "Socrates" },
+                { text: "He who has a why to live can bear almost any how. Without music, life would be a mistake. That which does not kill us makes us stronger. There are no facts, only interpretations. And those who were seen dancing were thought to be insane by those who could not hear the music.", source: "Friedrich Nietzsche" },
+                { text: "One cannot step twice in the same river, for other waters are ever flowing on to you. The only constant in life is change. Everything flows, nothing stands still. You could not step twice into the same river, for other waters are ever flowing on to you.", source: "Heraclitus" },
+                { text: "I think therefore I am. Doubt is the origin of wisdom. The reading of all good books is like a conversation with the finest minds of past centuries. Each problem that I solved became a rule, which served afterwards to solve other problems.", source: "René Descartes" },
+                { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit. It is the mark of an educated mind to be able to entertain a thought without accepting it. Knowing yourself is the beginning of all wisdom. Happiness depends upon ourselves.", source: "Aristotle" },
+                { text: "The only thing I know is that I know nothing. Be kind, for everyone you meet is fighting a hard battle. Strong minds discuss ideas, average minds discuss events, weak minds discuss people. Education is the kindling of a flame, not the filling of a vessel.", source: "Socrates" },
+            ]
+        };
+
+        let targetText = '';
+        let currentSource = '';
+        let currentPosition = 0;
+        let correctChars = 0;
+        let incorrectChars = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let duration = 60;
+        let isRunning = false;
+        let isFocused = false;
+
+        const textDisplay = document.getElementById('textDisplay');
+        const hiddenInput = document.getElementById('hiddenInput');
+        const typingArea = document.getElementById('typingArea');
+        const clickHint = document.getElementById('clickHint');
+        const resultsCard = document.getElementById('resultsCard');
+        const sourceInfo = document.getElementById('sourceInfo');
+
+        // Load settings from URL
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('duration')) {
+                const d = params.get('duration');
+                if (['30', '60', '120'].includes(d)) {
+                    document.getElementById('duration').value = d;
+                }
+            }
+            if (params.get('source')) {
+                const s = params.get('source');
+                if (['literature', 'science', 'philosophy'].includes(s)) {
+                    document.getElementById('source').value = s;
+                }
+            }
+        }
+
+        // Update URL with current settings
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('duration', document.getElementById('duration').value);
+            params.set('source', document.getElementById('source').value);
+            const newURL = window.location.pathname + '?' + params.toString();
+            window.history.replaceState({}, '', newURL);
+        }
+
+        function getRandomPassage() {
+            const source = document.getElementById('source').value;
+            const list = passages[source];
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function renderText() {
+            let html = '';
+            for (let i = 0; i < targetText.length; i++) {
+                const char = targetText[i];
+                let className = 'char';
+
+                if (i < currentPosition) {
+                    if (hiddenInput.value[i] === char) {
+                        className += ' correct';
+                    } else {
+                        className += ' incorrect';
+                    }
+                } else if (i === currentPosition) {
+                    className += ' current pending';
+                } else {
+                    className += ' pending';
+                }
+
+                html += `<span class="${className}">${char}</span>`;
+            }
+            textDisplay.innerHTML = html;
+        }
+
+        function updateStats() {
+            if (!startTime) return;
+
+            const elapsed = (Date.now() - startTime) / 1000 / 60; // minutes
+            const wordsTyped = correctChars / 5; // Standard: 5 chars = 1 word
+            const wpm = Math.round(wordsTyped / elapsed) || 0;
+            const totalTyped = correctChars + incorrectChars;
+            const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
+
+            document.getElementById('wpmLive').textContent = wpm;
+            document.getElementById('accuracyLive').textContent = accuracy + '%';
+            document.getElementById('charsTyped').textContent = currentPosition;
+        }
+
+        function endTest() {
+            isRunning = false;
+            clearInterval(timerInterval);
+
+            const elapsed = (Date.now() - startTime) / 1000 / 60;
+            const wordsTyped = correctChars / 5;
+            const wpm = Math.round(wordsTyped / elapsed) || 0;
+            const totalTyped = correctChars + incorrectChars;
+            const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
+
+            document.getElementById('finalWpm').textContent = wpm;
+            document.getElementById('finalAccuracy').textContent = accuracy + '%';
+            document.getElementById('finalChars').textContent = currentPosition;
+
+            resultsCard.classList.remove('hidden');
+            clickHint.classList.remove('hidden');
+            clickHint.querySelector('span').textContent = 'Click to try again';
+        }
+
+        function startTest() {
+            duration = parseInt(document.getElementById('duration').value);
+            const passage = getRandomPassage();
+            targetText = passage.text;
+            currentSource = passage.source;
+            currentPosition = 0;
+            correctChars = 0;
+            incorrectChars = 0;
+            startTime = Date.now();
+            isRunning = true;
+
+            sourceInfo.textContent = currentSource;
+            renderText();
+            hiddenInput.value = '';
+            resultsCard.classList.add('hidden');
+
+            document.getElementById('timeLeft').textContent = duration;
+            document.getElementById('timerProgress').style.width = '100%';
+
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const remaining = Math.max(0, duration - elapsed);
+
+                document.getElementById('timeLeft').textContent = Math.ceil(remaining);
+                document.getElementById('timerProgress').style.width = (remaining / duration * 100) + '%';
+
+                updateStats();
+
+                if (remaining <= 0) {
+                    endTest();
+                }
+            }, 100);
+        }
+
+        function resetTest() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            hiddenInput.value = '';
+            currentPosition = 0;
+            correctChars = 0;
+            incorrectChars = 0;
+            startTime = null;
+
+            document.getElementById('wpmLive').textContent = '0';
+            document.getElementById('accuracyLive').textContent = '100%';
+            document.getElementById('charsTyped').textContent = '0';
+            document.getElementById('timeLeft').textContent = document.getElementById('duration').value;
+            document.getElementById('timerProgress').style.width = '100%';
+
+            clickHint.classList.remove('hidden');
+            clickHint.querySelector('span').textContent = 'Click here to start typing';
+            resultsCard.classList.add('hidden');
+
+            const passage = getRandomPassage();
+            targetText = passage.text;
+            currentSource = passage.source;
+            sourceInfo.textContent = currentSource;
+            renderText();
+        }
+
+        typingArea.addEventListener('click', () => {
+            hiddenInput.focus();
+            if (!isRunning && !resultsCard.classList.contains('hidden')) {
+                resetTest();
+            }
+        });
+
+        hiddenInput.addEventListener('focus', () => {
+            isFocused = true;
+            clickHint.classList.add('hidden');
+            if (!isRunning && resultsCard.classList.contains('hidden')) {
+                startTest();
+            }
+        });
+
+        hiddenInput.addEventListener('blur', () => {
+            isFocused = false;
+            if (!isRunning) {
+                clickHint.classList.remove('hidden');
+            }
+        });
+
+        hiddenInput.addEventListener('input', (e) => {
+            if (!isRunning) return;
+
+            const typed = hiddenInput.value;
+
+            // Recalculate correct/incorrect
+            correctChars = 0;
+            incorrectChars = 0;
+
+            for (let i = 0; i < typed.length && i < targetText.length; i++) {
+                if (typed[i] === targetText[i]) {
+                    correctChars++;
+                } else {
+                    incorrectChars++;
+                }
+            }
+
+            currentPosition = Math.min(typed.length, targetText.length);
+            renderText();
+            updateStats();
+
+            // Check if completed
+            if (currentPosition >= targetText.length) {
+                endTest();
+            }
+        });
+
+        // Prevent pasting
+        hiddenInput.addEventListener('paste', (e) => e.preventDefault());
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            resetTest();
+            hiddenInput.focus();
+        });
+
+        document.getElementById('duration').addEventListener('change', () => {
+            resetTest();
+            updateURL();
+        });
+        document.getElementById('source').addEventListener('change', () => {
+            resetTest();
+            updateURL();
+        });
+
+        // Initialize
+        loadFromURL();
+        document.getElementById('timeLeft').textContent = document.getElementById('duration').value;
+        const passage = getRandomPassage();
+        targetText = passage.text;
+        currentSource = passage.source;
+        sourceInfo.textContent = currentSource;
+        renderText();
+    </script>
+</body>
+</html>

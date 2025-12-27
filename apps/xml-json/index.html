@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML ↔ JSON Converter - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .mode-btn {
+            flex: 1;
+            max-width: 200px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #888;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .mode-btn.active {
+            background: rgba(78, 205, 196, 0.15);
+            border-color: rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+        .converter {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 800px) {
+            .converter { grid-template-columns: 1fr; }
+            .arrow { transform: rotate(90deg); }
+        }
+        .panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .panel-title { font-size: 0.9rem; color: #888; }
+        .panel-actions { display: flex; gap: 8px; }
+        .panel-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .panel-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        textarea {
+            width: 100%;
+            height: 450px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+        textarea:focus { outline: none; }
+        textarea::placeholder { color: #444; }
+        .arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4ecdc4;
+            font-size: 1.5rem;
+        }
+        .options {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .option label { color: #888; font-size: 0.9rem; }
+        .option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4ecdc4;
+        }
+        .option select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+        .success {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>XML ↔ JSON Converter</h1>
+        <p class="subtitle">Convert between XML and JSON formats.</p>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="xml-to-json">XML → JSON</button>
+            <button class="mode-btn" data-mode="json-to-xml">JSON → XML</button>
+        </div>
+
+        <div class="options">
+            <div class="option">
+                <input type="checkbox" id="preserveAttrs" checked>
+                <label for="preserveAttrs">Preserve attributes (as @attr)</label>
+            </div>
+            <div class="option">
+                <label>Indent:</label>
+                <select id="indent">
+                    <option value="2">2 spaces</option>
+                    <option value="4">4 spaces</option>
+                    <option value="0">Minified</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="converter">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title" id="inputLabel">XML Input</span>
+                    <div class="panel-actions">
+                        <button class="panel-btn" id="pasteBtn">Paste</button>
+                        <button class="panel-btn" id="clearBtn">Clear</button>
+                        <button class="panel-btn" id="sampleBtn">Sample</button>
+                    </div>
+                </div>
+                <textarea id="input" placeholder="Paste your XML here..."></textarea>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title" id="outputLabel">JSON Output</span>
+                    <div class="panel-actions">
+                        <button class="panel-btn" id="copyBtn">Copy</button>
+                        <button class="panel-btn" id="downloadBtn">Download</button>
+                    </div>
+                </div>
+                <textarea id="output" readonly placeholder="Converted output will appear here..."></textarea>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let mode = 'xml-to-json';
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        const messageEl = document.getElementById('message');
+
+        function xmlToJson(xml) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xml, 'text/xml');
+
+            const errorNode = doc.querySelector('parsererror');
+            if (errorNode) {
+                throw new Error('Invalid XML: ' + errorNode.textContent);
+            }
+
+            const preserveAttrs = document.getElementById('preserveAttrs').checked;
+
+            function parseNode(node) {
+                const obj = {};
+
+                // Handle attributes
+                if (preserveAttrs && node.attributes && node.attributes.length > 0) {
+                    for (const attr of node.attributes) {
+                        obj['@' + attr.name] = attr.value;
+                    }
+                }
+
+                // Handle children
+                const children = node.childNodes;
+                let textContent = '';
+                const childElements = {};
+
+                for (const child of children) {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        textContent += child.textContent;
+                    } else if (child.nodeType === Node.ELEMENT_NODE) {
+                        const childName = child.nodeName;
+                        const childValue = parseNode(child);
+
+                        if (childElements[childName]) {
+                            if (!Array.isArray(childElements[childName])) {
+                                childElements[childName] = [childElements[childName]];
+                            }
+                            childElements[childName].push(childValue);
+                        } else {
+                            childElements[childName] = childValue;
+                        }
+                    } else if (child.nodeType === Node.CDATA_SECTION_NODE) {
+                        textContent += child.textContent;
+                    }
+                }
+
+                // Merge children into object
+                Object.assign(obj, childElements);
+
+                // Handle text content
+                textContent = textContent.trim();
+                if (textContent) {
+                    if (Object.keys(obj).length === 0) {
+                        // Try to parse as number/boolean
+                        if (textContent === 'true') return true;
+                        if (textContent === 'false') return false;
+                        if (!isNaN(textContent) && textContent !== '') return Number(textContent);
+                        return textContent;
+                    } else {
+                        obj['#text'] = textContent;
+                    }
+                }
+
+                return Object.keys(obj).length === 0 ? null : obj;
+            }
+
+            const result = {};
+            result[doc.documentElement.nodeName] = parseNode(doc.documentElement);
+            return result;
+        }
+
+        function jsonToXml(json, indent = 2) {
+            const spaces = (level) => ' '.repeat(level * indent);
+
+            function escape(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            function convert(obj, tagName, level = 0) {
+                if (obj === null || obj === undefined) {
+                    return `${spaces(level)}<${tagName}/>\n`;
+                }
+
+                if (typeof obj !== 'object') {
+                    return `${spaces(level)}<${tagName}>${escape(obj)}</${tagName}>\n`;
+                }
+
+                if (Array.isArray(obj)) {
+                    return obj.map(item => convert(item, tagName, level)).join('');
+                }
+
+                let attrs = '';
+                let children = '';
+                let textContent = '';
+
+                for (const [key, value] of Object.entries(obj)) {
+                    if (key.startsWith('@')) {
+                        attrs += ` ${key.substring(1)}="${escape(value)}"`;
+                    } else if (key === '#text') {
+                        textContent = escape(value);
+                    } else {
+                        children += convert(value, key, level + 1);
+                    }
+                }
+
+                if (children || textContent) {
+                    if (children && !textContent) {
+                        return `${spaces(level)}<${tagName}${attrs}>\n${children}${spaces(level)}</${tagName}>\n`;
+                    } else {
+                        return `${spaces(level)}<${tagName}${attrs}>${textContent}${children.trim()}</${tagName}>\n`;
+                    }
+                } else {
+                    return `${spaces(level)}<${tagName}${attrs}/>\n`;
+                }
+            }
+
+            if (typeof json !== 'object' || Array.isArray(json)) {
+                throw new Error('JSON must be an object with a root element');
+            }
+
+            const keys = Object.keys(json);
+            if (keys.length !== 1) {
+                throw new Error('JSON must have exactly one root element');
+            }
+
+            const rootName = keys[0];
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            xml += convert(json[rootName], rootName, 0);
+            return xml.trim();
+        }
+
+        function convert() {
+            const text = input.value.trim();
+            if (!text) {
+                output.value = '';
+                messageEl.innerHTML = '';
+                return;
+            }
+
+            try {
+                const indent = parseInt(document.getElementById('indent').value);
+
+                if (mode === 'xml-to-json') {
+                    const json = xmlToJson(text);
+                    output.value = JSON.stringify(json, null, indent || undefined);
+                } else {
+                    const json = JSON.parse(text);
+                    output.value = jsonToXml(json, indent);
+                }
+                messageEl.innerHTML = '<div class="success">Conversion successful!</div>';
+            } catch (e) {
+                output.value = '';
+                messageEl.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+
+        function updateMode() {
+            document.getElementById('inputLabel').textContent = mode === 'xml-to-json' ? 'XML Input' : 'JSON Input';
+            document.getElementById('outputLabel').textContent = mode === 'xml-to-json' ? 'JSON Output' : 'XML Output';
+            input.placeholder = mode === 'xml-to-json' ? 'Paste your XML here...' : 'Paste your JSON here...';
+        }
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                updateMode();
+                const temp = input.value;
+                input.value = output.value;
+                output.value = temp;
+                convert();
+            });
+        });
+
+        document.getElementById('sampleBtn').addEventListener('click', () => {
+            if (mode === 'xml-to-json') {
+                input.value = `<?xml version="1.0" encoding="UTF-8"?>
+<bookstore>
+    <book category="fiction" lang="en">
+        <title>The Great Gatsby</title>
+        <author>F. Scott Fitzgerald</author>
+        <year>1925</year>
+        <price>10.99</price>
+    </book>
+    <book category="fiction" lang="en">
+        <title>1984</title>
+        <author>George Orwell</author>
+        <year>1949</year>
+        <price>9.99</price>
+    </book>
+    <book category="non-fiction" lang="en">
+        <title>Sapiens</title>
+        <author>Yuval Noah Harari</author>
+        <year>2011</year>
+        <price>14.99</price>
+    </book>
+</bookstore>`;
+            } else {
+                input.value = `{
+  "bookstore": {
+    "book": [
+      {
+        "@category": "fiction",
+        "@lang": "en",
+        "title": "The Great Gatsby",
+        "author": "F. Scott Fitzgerald",
+        "year": 1925,
+        "price": 10.99
+      },
+      {
+        "@category": "fiction",
+        "@lang": "en",
+        "title": "1984",
+        "author": "George Orwell",
+        "year": 1949,
+        "price": 9.99
+      },
+      {
+        "@category": "non-fiction",
+        "@lang": "en",
+        "title": "Sapiens",
+        "author": "Yuval Noah Harari",
+        "year": 2011,
+        "price": 14.99
+      }
+    ]
+  }
+}`;
+            }
+            convert();
+        });
+
+        document.getElementById('pasteBtn').addEventListener('click', async () => {
+            try {
+                input.value = await navigator.clipboard.readText();
+                convert();
+            } catch (e) {
+                messageEl.innerHTML = '<div class="error">Failed to paste from clipboard</div>';
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            input.value = '';
+            output.value = '';
+            messageEl.innerHTML = '';
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(output.value);
+            const btn = document.getElementById('copyBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const ext = mode === 'xml-to-json' ? 'json' : 'xml';
+            const type = mode === 'xml-to-json' ? 'application/json' : 'text/xml';
+            const blob = new Blob([output.value], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `converted.${ext}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        input.addEventListener('input', convert);
+        document.getElementById('preserveAttrs').addEventListener('change', convert);
+        document.getElementById('indent').addEventListener('change', convert);
+    </script>
+</body>
+</html>

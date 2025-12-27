@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Name Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .control-group {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .control-label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        select:focus, input:focus { outline: none; border-color: #4ecdc4; }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .checkbox-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: #4ecdc4;
+        }
+        .checkbox-item label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            color: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+        .generate-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+        }
+        .results {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .results-title { color: #888; font-size: 0.9rem; }
+        .results-actions { display: flex; gap: 8px; }
+        .action-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .names-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .name-card {
+            background: rgba(78, 205, 196, 0.05);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .name-card:hover {
+            background: rgba(78, 205, 196, 0.1);
+            transform: translateY(-2px);
+        }
+        .name-card.selected {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+        .name-text {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .name-meta {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        .favorites {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .favorites-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .favorites-title { color: #888; font-size: 0.9rem; }
+        .favorites-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .favorite-tag {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .favorite-tag .remove {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .favorite-tag .remove:hover { opacity: 1; }
+        .empty-state {
+            text-align: center;
+            color: #555;
+            padding: 24px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Name Generator</h1>
+        <p class="subtitle">Generate random names for characters, babies, usernames, and more.</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">Name Type</label>
+                <select id="nameType">
+                    <option value="full">Full Names</option>
+                    <option value="first">First Names Only</option>
+                    <option value="last">Last Names Only</option>
+                    <option value="fantasy">Fantasy Names</option>
+                    <option value="username">Usernames</option>
+                    <option value="band">Band Names</option>
+                    <option value="company">Company Names</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Gender (for human names)</label>
+                <select id="gender">
+                    <option value="any">Any</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="neutral">Gender Neutral</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Number of Names</label>
+                <input type="number" id="count" value="12" min="1" max="50">
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Options</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="alliteration">
+                        <label for="alliteration">Alliterative</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="unique" checked>
+                        <label for="unique">Unique Only</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="generate-btn" id="generateBtn">Generate Names</button>
+
+        <div class="results">
+            <div class="results-header">
+                <span class="results-title">Generated Names (click to favorite)</span>
+                <div class="results-actions">
+                    <button class="action-btn" id="copyAllBtn">Copy All</button>
+                    <button class="action-btn" id="regenerateBtn">Regenerate</button>
+                </div>
+            </div>
+            <div class="names-grid" id="namesGrid">
+                <div class="empty-state">Click generate to create names</div>
+            </div>
+
+            <div class="favorites">
+                <div class="favorites-header">
+                    <span class="favorites-title">Favorites</span>
+                    <button class="action-btn" id="copyFavsBtn">Copy Favorites</button>
+                </div>
+                <div class="favorites-list" id="favoritesList">
+                    <div class="empty-state" style="padding: 12px;">No favorites yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firstNamesMale = ['James', 'John', 'Robert', 'Michael', 'William', 'David', 'Joseph', 'Charles', 'Thomas', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Steven', 'Paul', 'Andrew', 'Joshua', 'Kenneth', 'Kevin', 'Brian', 'George', 'Timothy', 'Ronald', 'Edward', 'Jason', 'Jeffrey', 'Ryan', 'Jacob', 'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott', 'Brandon', 'Benjamin', 'Samuel', 'Raymond', 'Gregory', 'Frank', 'Alexander', 'Patrick', 'Jack', 'Dennis', 'Jerry', 'Tyler', 'Aaron', 'Jose'];
+        const firstNamesFemale = ['Mary', 'Patricia', 'Jennifer', 'Linda', 'Elizabeth', 'Barbara', 'Susan', 'Jessica', 'Sarah', 'Karen', 'Lisa', 'Nancy', 'Betty', 'Margaret', 'Sandra', 'Ashley', 'Kimberly', 'Emily', 'Donna', 'Michelle', 'Dorothy', 'Carol', 'Amanda', 'Melissa', 'Deborah', 'Stephanie', 'Rebecca', 'Sharon', 'Laura', 'Cynthia', 'Kathleen', 'Amy', 'Angela', 'Shirley', 'Anna', 'Brenda', 'Pamela', 'Emma', 'Nicole', 'Helen', 'Samantha', 'Katherine', 'Christine', 'Debra', 'Rachel', 'Carolyn', 'Janet', 'Catherine', 'Maria', 'Heather'];
+        const firstNamesNeutral = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Avery', 'Quinn', 'Sage', 'Rowan', 'Phoenix', 'River', 'Skyler', 'Dakota', 'Reese', 'Finley', 'Hayden', 'Emerson', 'Cameron', 'Drew', 'Blake', 'Parker', 'Peyton', 'Charlie', 'Elliot', 'Sawyer', 'August', 'Remy', 'Kai'];
+        const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts'];
+
+        const fantasyPrefixes = ['Ael', 'Bran', 'Cael', 'Dra', 'El', 'Fae', 'Gal', 'Ith', 'Ky', 'Lor', 'Mal', 'Nor', 'Ori', 'Pyr', 'Quin', 'Rav', 'Syl', 'Thal', 'Val', 'Zar', 'Ash', 'Bel', 'Cor', 'Dar', 'Eri', 'Fen', 'Grim', 'Hel', 'Isa', 'Jax'];
+        const fantasySuffixes = ['wyn', 'dor', 'iel', 'ith', 'or', 'an', 'en', 'ara', 'ius', 'eon', 'ax', 'ix', 'on', 'us', 'ia', 'eth', 'oth', 'rin', 'las', 'mir', 'ven', 'dris', 'thor', 'gar', 'mond', 'rick', 'wald', 'bert', 'stein', 'dale'];
+
+        const usernameAdjectives = ['Epic', 'Dark', 'Shadow', 'Cosmic', 'Cyber', 'Neon', 'Pixel', 'Turbo', 'Ultra', 'Mega', 'Super', 'Hyper', 'Ninja', 'Stealth', 'Quantum', 'Swift', 'Blazing', 'Frozen', 'Silent', 'Wild'];
+        const usernameNouns = ['Wolf', 'Dragon', 'Phoenix', 'Tiger', 'Hawk', 'Raven', 'Storm', 'Thunder', 'Flame', 'Frost', 'Knight', 'Wizard', 'Ninja', 'Samurai', 'Gamer', 'Coder', 'Hunter', 'Warrior', 'Legend', 'Master'];
+
+        const bandAdjectives = ['Electric', 'Midnight', 'Velvet', 'Crimson', 'Sonic', 'Neon', 'Silver', 'Golden', 'Cosmic', 'Atomic', 'Dark', 'Bright', 'Wild', 'Silent', 'Broken', 'Flying', 'Rolling', 'Screaming', 'Whispering', 'Dancing'];
+        const bandNouns = ['Dreams', 'Echoes', 'Shadows', 'Flames', 'Stars', 'Waves', 'Thunder', 'Lightning', 'Ghosts', 'Angels', 'Devils', 'Tigers', 'Wolves', 'Ravens', 'Roses', 'Thorns', 'Skies', 'Nights', 'Days', 'Souls'];
+
+        const companyPrefixes = ['Tech', 'Digi', 'Inno', 'Syn', 'Omni', 'Neo', 'Pro', 'Meta', 'Hyper', 'Ultra', 'Flex', 'Swift', 'Smart', 'Next', 'Prime'];
+        const companySuffixes = ['Corp', 'Labs', 'Works', 'Hub', 'Soft', 'Logic', 'Wave', 'Link', 'Net', 'Sync', 'Flow', 'Verse', 'Sphere', 'Bridge', 'Path'];
+
+        let favorites = [];
+        let currentNames = [];
+
+        // Load settings from URL
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('type')) document.getElementById('nameType').value = params.get('type');
+            if (params.get('gender')) document.getElementById('gender').value = params.get('gender');
+            if (params.get('count')) document.getElementById('count').value = params.get('count');
+            if (params.get('alliteration') === 'true') document.getElementById('alliteration').checked = true;
+            if (params.get('unique') === 'false') document.getElementById('unique').checked = false;
+        }
+
+        // Update URL with current settings
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('type', document.getElementById('nameType').value);
+            params.set('gender', document.getElementById('gender').value);
+            params.set('count', document.getElementById('count').value);
+            if (document.getElementById('alliteration').checked) params.set('alliteration', 'true');
+            if (!document.getElementById('unique').checked) params.set('unique', 'false');
+            const newURL = window.location.pathname + '?' + params.toString();
+            window.history.replaceState({}, '', newURL);
+        }
+
+        function random(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function generateName(type, gender, alliteration) {
+            let name = '';
+            let meta = '';
+
+            switch (type) {
+                case 'full': {
+                    let firstName;
+                    if (gender === 'male') firstName = random(firstNamesMale);
+                    else if (gender === 'female') firstName = random(firstNamesFemale);
+                    else if (gender === 'neutral') firstName = random(firstNamesNeutral);
+                    else firstName = random([...firstNamesMale, ...firstNamesFemale, ...firstNamesNeutral]);
+
+                    let lastName = random(lastNames);
+                    if (alliteration) {
+                        const letter = firstName[0];
+                        const matching = lastNames.filter(n => n[0] === letter);
+                        if (matching.length > 0) lastName = random(matching);
+                    }
+                    name = `${firstName} ${lastName}`;
+                    meta = gender === 'any' ? '' : gender;
+                    break;
+                }
+                case 'first': {
+                    if (gender === 'male') name = random(firstNamesMale);
+                    else if (gender === 'female') name = random(firstNamesFemale);
+                    else if (gender === 'neutral') name = random(firstNamesNeutral);
+                    else name = random([...firstNamesMale, ...firstNamesFemale, ...firstNamesNeutral]);
+                    break;
+                }
+                case 'last':
+                    name = random(lastNames);
+                    break;
+                case 'fantasy': {
+                    const prefix = random(fantasyPrefixes);
+                    let suffix = random(fantasySuffixes);
+                    if (alliteration) {
+                        const letter = prefix[0].toLowerCase();
+                        const matching = fantasySuffixes.filter(s => s[0] === letter);
+                        if (matching.length > 0) suffix = random(matching);
+                    }
+                    name = prefix + suffix;
+                    meta = 'fantasy';
+                    break;
+                }
+                case 'username': {
+                    const adj = random(usernameAdjectives);
+                    let noun = random(usernameNouns);
+                    if (alliteration) {
+                        const letter = adj[0];
+                        const matching = usernameNouns.filter(n => n[0] === letter);
+                        if (matching.length > 0) noun = random(matching);
+                    }
+                    const num = Math.random() > 0.5 ? Math.floor(Math.random() * 999) : '';
+                    name = adj + noun + num;
+                    meta = 'username';
+                    break;
+                }
+                case 'band': {
+                    const adj = random(bandAdjectives);
+                    let noun = random(bandNouns);
+                    if (alliteration) {
+                        const letter = adj[0];
+                        const matching = bandNouns.filter(n => n[0] === letter);
+                        if (matching.length > 0) noun = random(matching);
+                    }
+                    const prefix = Math.random() > 0.7 ? 'The ' : '';
+                    name = prefix + adj + ' ' + noun;
+                    meta = 'band';
+                    break;
+                }
+                case 'company': {
+                    const prefix = random(companyPrefixes);
+                    const suffix = random(companySuffixes);
+                    name = prefix + suffix;
+                    meta = 'company';
+                    break;
+                }
+            }
+
+            return { name, meta };
+        }
+
+        function generate() {
+            const type = document.getElementById('nameType').value;
+            const gender = document.getElementById('gender').value;
+            const count = parseInt(document.getElementById('count').value) || 12;
+            const alliteration = document.getElementById('alliteration').checked;
+            const unique = document.getElementById('unique').checked;
+
+            currentNames = [];
+            const used = new Set();
+
+            while (currentNames.length < count) {
+                const result = generateName(type, gender, alliteration);
+                if (unique && used.has(result.name)) continue;
+                used.add(result.name);
+                currentNames.push(result);
+            }
+
+            renderNames();
+        }
+
+        function renderNames() {
+            const grid = document.getElementById('namesGrid');
+            grid.innerHTML = currentNames.map((item, i) => `
+                <div class="name-card ${favorites.includes(item.name) ? 'selected' : ''}" data-index="${i}">
+                    <div class="name-text">${item.name}</div>
+                    ${item.meta ? `<div class="name-meta">${item.meta}</div>` : ''}
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.name-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const name = currentNames[card.dataset.index].name;
+                    toggleFavorite(name);
+                    card.classList.toggle('selected');
+                });
+            });
+        }
+
+        function toggleFavorite(name) {
+            const idx = favorites.indexOf(name);
+            if (idx === -1) {
+                favorites.push(name);
+            } else {
+                favorites.splice(idx, 1);
+            }
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const list = document.getElementById('favoritesList');
+            if (favorites.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 12px;">No favorites yet</div>';
+                return;
+            }
+            list.innerHTML = favorites.map(name => `
+                <span class="favorite-tag">
+                    ${name}
+                    <span class="remove" data-name="${name}">×</span>
+                </span>
+            `).join('');
+
+            list.querySelectorAll('.remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFavorite(btn.dataset.name);
+                    renderNames();
+                });
+            });
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            generate();
+            updateURL();
+        });
+        document.getElementById('regenerateBtn').addEventListener('click', generate);
+
+        // Update URL when settings change
+        document.getElementById('nameType').addEventListener('change', updateURL);
+        document.getElementById('gender').addEventListener('change', updateURL);
+        document.getElementById('count').addEventListener('change', updateURL);
+        document.getElementById('alliteration').addEventListener('change', updateURL);
+        document.getElementById('unique').addEventListener('change', updateURL);
+
+        document.getElementById('copyAllBtn').addEventListener('click', () => {
+            const text = currentNames.map(n => n.name).join('\n');
+            navigator.clipboard.writeText(text);
+            const btn = document.getElementById('copyAllBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy All', 1500);
+        });
+
+        document.getElementById('copyFavsBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(favorites.join('\n'));
+            const btn = document.getElementById('copyFavsBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy Favorites', 1500);
+        });
+
+        // Initialize
+        loadFromURL();
+        generate();
+    </script>
+</body>
+</html>

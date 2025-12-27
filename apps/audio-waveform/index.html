@@ -72,15 +72,19 @@
         }
         .style-controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 16px;
             margin-bottom: 24px;
+        }
+        @media (max-width: 700px) {
+            .style-controls { grid-template-columns: 1fr; }
         }
         .control-group {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
             padding: 16px;
+            overflow: hidden;
         }
         .control-group h3 {
             color: #888;
@@ -90,38 +94,44 @@
         .control-row {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 12px;
         }
         .control-row:last-child { margin-bottom: 0; }
         .control-row label {
             color: #666;
             font-size: 0.85rem;
-            min-width: 60px;
+            min-width: 50px;
+            flex-shrink: 0;
         }
         .control-row input[type="range"] {
             flex: 1;
+            min-width: 0;
             accent-color: #4ecdc4;
+            height: 4px;
         }
         .control-row input[type="color"] {
-            width: 40px;
-            height: 30px;
+            width: 36px;
+            height: 28px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             background: transparent;
+            flex-shrink: 0;
         }
         .control-row input[type="number"] {
-            width: 70px;
+            width: 65px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.15);
             color: #fff;
-            padding: 6px 10px;
+            padding: 6px 8px;
             border-radius: 4px;
             font-size: 0.85rem;
+            flex-shrink: 0;
         }
         .control-row select {
             flex: 1;
+            min-width: 0;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.15);
             color: #fff;
@@ -132,8 +142,14 @@
         .control-row .value {
             color: #4ecdc4;
             font-size: 0.85rem;
-            min-width: 40px;
+            min-width: 20px;
             text-align: right;
+            flex-shrink: 0;
+        }
+        .control-row span:not(.value) {
+            color: #666;
+            font-size: 0.85rem;
+            flex-shrink: 0;
         }
         .color-presets {
             display: flex;

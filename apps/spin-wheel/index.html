@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin the Wheel - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+        }
+        @media (max-width: 800px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+        .wheel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .wheel-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+        canvas {
+            display: block;
+            cursor: pointer;
+            transition: filter 0.3s;
+        }
+        canvas.spinning {
+            cursor: not-allowed;
+        }
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #fff;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            z-index: 10;
+        }
+        .spin-btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            color: #fff;
+            padding: 16px 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+        .spin-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+        }
+        .spin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 24px;
+            text-align: center;
+        }
+        .result-label { color: #888; font-size: 0.9rem; margin-bottom: 8px; }
+        .result-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            padding: 16px 24px;
+            background: rgba(78, 205, 196, 0.1);
+            border: 2px solid rgba(78, 205, 196, 0.3);
+            border-radius: 12px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .sidebar-title {
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 16px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        textarea:focus { outline: none; border-color: #4ecdc4; }
+        textarea::placeholder { color: #555; }
+        .sidebar-btn {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        .sidebar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .presets {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .preset-title { color: #666; font-size: 0.8rem; margin-bottom: 8px; }
+        .preset-btn {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        .preset-btn:hover { background: rgba(78, 205, 196, 0.2); }
+        .history {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .history-title { color: #666; font-size: 0.8rem; margin-bottom: 8px; }
+        .history-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .history-item {
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        .share-link {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .share-btn {
+            width: 100%;
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .share-btn:hover { background: rgba(78, 205, 196, 0.2); }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Spin the Wheel</h1>
+        <p class="subtitle">Add your options and let fate decide!</p>
+
+        <div class="main-layout">
+            <div class="wheel-section">
+                <div class="wheel-container">
+                    <div class="pointer"></div>
+                    <canvas id="wheel" width="400" height="400"></canvas>
+                </div>
+                <button class="spin-btn" id="spinBtn">SPIN!</button>
+                <div class="result">
+                    <div class="result-label">Result</div>
+                    <div class="result-value" id="result">Click spin to start</div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="sidebar-title">Wheel Options</div>
+                <textarea id="optionsInput" placeholder="Enter one option per line...">Pizza
+Burger
+Sushi
+Tacos
+Salad
+Pasta</textarea>
+                <button class="sidebar-btn" id="updateBtn">Update Wheel</button>
+                <button class="sidebar-btn" id="shuffleBtn">Shuffle Order</button>
+
+                <div class="presets">
+                    <div class="preset-title">Quick Presets</div>
+                    <button class="preset-btn" data-preset="yesno">Yes / No</button>
+                    <button class="preset-btn" data-preset="numbers">1-10</button>
+                    <button class="preset-btn" data-preset="days">Weekdays</button>
+                    <button class="preset-btn" data-preset="food">Food</button>
+                </div>
+
+                <div class="share-link">
+                    <button class="share-btn" id="shareBtn">Copy Share Link</button>
+                </div>
+
+                <div class="history">
+                    <div class="history-title">Recent Results</div>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const optionsInput = document.getElementById('optionsInput');
+        const resultEl = document.getElementById('result');
+        const historyList = document.getElementById('historyList');
+
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+            '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
+            '#BB8FCE', '#85C1E9', '#F8B500', '#58D68D'
+        ];
+
+        let options = [];
+        let spinning = false;
+        let currentRotation = 0;
+        let history = [];
+
+        // Load from URL params
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const urlOptions = params.get('options');
+            if (urlOptions) {
+                optionsInput.value = urlOptions.split(',').map(o => decodeURIComponent(o.trim())).join('\n');
+            }
+        }
+
+        // Update URL with current options
+        function updateURL() {
+            const opts = getOptions();
+            const params = new URLSearchParams();
+            if (opts.length > 0 && opts[0] !== 'Add options') {
+                params.set('options', opts.map(o => encodeURIComponent(o)).join(','));
+            }
+            const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newURL);
+        }
+
+        function getOptions() {
+            return optionsInput.value
+                .split('\n')
+                .map(o => o.trim())
+                .filter(o => o.length > 0);
+        }
+
+        function drawWheel() {
+            options = getOptions();
+            if (options.length === 0) {
+                options = ['Add options'];
+            }
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 10;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const sliceAngle = (2 * Math.PI) / options.length;
+
+            // Draw wheel rotated so first slice starts at top
+            options.forEach((option, i) => {
+                // Start from -PI/2 (top) so slice 0 is at the top when rotation is 0
+                const startAngle = -Math.PI / 2 + currentRotation + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#1a1a2e';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw text
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 14px system-ui';
+
+                // Truncate long text
+                let text = option;
+                if (text.length > 15) {
+                    text = text.substring(0, 14) + '…';
+                }
+
+                ctx.fillText(text, radius - 20, 5);
+                ctx.restore();
+            });
+
+            // Draw center circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function spin() {
+            if (spinning || options.length < 2) return;
+
+            spinning = true;
+            spinBtn.disabled = true;
+            canvas.classList.add('spinning');
+            resultEl.textContent = 'Spinning...';
+
+            const spinDuration = 4000 + Math.random() * 2000;
+            const totalRotation = 5 * 2 * Math.PI + Math.random() * 2 * Math.PI;
+            const startRotation = currentRotation;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / spinDuration, 1);
+
+                // Easing function (ease out cubic)
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                currentRotation = startRotation + totalRotation * easeOut;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    spinning = false;
+                    spinBtn.disabled = false;
+                    canvas.classList.remove('spinning');
+
+                    // Calculate winner - pointer is at top
+                    // The wheel is drawn with slice 0 starting at -PI/2 + currentRotation
+                    // So after rotation, the slice at the pointer (top, -PI/2) is:
+                    const sliceAngle = (2 * Math.PI) / options.length;
+                    // Normalize rotation to 0 to 2*PI
+                    const normalizedRotation = ((currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                    // The winning slice is the one that rotated to be under the pointer
+                    // Since we rotate clockwise (positive), we go backwards through slices
+                    const winnerIndex = Math.floor((options.length - (normalizedRotation / sliceAngle) % options.length)) % options.length;
+                    const winner = options[winnerIndex];
+
+                    resultEl.textContent = winner;
+                    addToHistory(winner);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function addToHistory(result) {
+            history.unshift(result);
+            if (history.length > 10) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = history.map((item, i) =>
+                `<div class="history-item">${i + 1}. ${item}</div>`
+            ).join('');
+        }
+
+        const presets = {
+            yesno: ['Yes', 'No'],
+            numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+            days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            food: ['Pizza', 'Burger', 'Sushi', 'Tacos', 'Salad', 'Pasta', 'Ramen', 'Thai']
+        };
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                optionsInput.value = presets[btn.dataset.preset].join('\n');
+                drawWheel();
+                updateURL();
+            });
+        });
+
+        document.getElementById('updateBtn').addEventListener('click', () => {
+            drawWheel();
+            updateURL();
+        });
+
+        document.getElementById('shuffleBtn').addEventListener('click', () => {
+            const opts = getOptions();
+            for (let i = opts.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [opts[i], opts[j]] = [opts[j], opts[i]];
+            }
+            optionsInput.value = opts.join('\n');
+            drawWheel();
+            updateURL();
+        });
+
+        document.getElementById('shareBtn').addEventListener('click', () => {
+            updateURL();
+            navigator.clipboard.writeText(window.location.href);
+            const btn = document.getElementById('shareBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy Share Link', 1500);
+        });
+
+        spinBtn.addEventListener('click', spin);
+        canvas.addEventListener('click', spin);
+
+        optionsInput.addEventListener('input', () => {
+            clearTimeout(optionsInput.debounce);
+            optionsInput.debounce = setTimeout(() => {
+                drawWheel();
+                updateURL();
+            }, 300);
+        });
+
+        // Initialize
+        loadFromURL();
+        drawWheel();
+    </script>
+</body>
+</html>

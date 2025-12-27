@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Showcase - Interactive Demos</title>
+    <title>Apps by AI</title>
     <style>
         * {
             margin: 0;
@@ -329,11 +329,11 @@
 <body>
     <header>
         <div class="header-left">
-            <h1>AI Showcase</h1>
-            <p class="subtitle">Interactive demos showcasing what AI can create</p>
+            <h1>Apps by AI</h1>
+            <p class="subtitle">A Collection of AI-generated Apps</p>
         </div>
         <div class="header-search">
-            <input type="text" class="search-input" id="search" placeholder="Search demos...">
+            <input type="text" class="search-input" id="search" placeholder="Search apps...">
         </div>
     </header>
 
@@ -363,6 +363,55 @@
         let selectedCategory = null;
         let searchQuery = '';
 
+        // Load filters from URL params
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+
+            if (params.get('category')) {
+                selectedCategory = params.get('category');
+            }
+
+            if (params.get('tags')) {
+                params.get('tags').split(',').forEach(tag => {
+                    selectedTags.add(decodeURIComponent(tag.trim()));
+                });
+            }
+
+            if (params.get('q')) {
+                searchQuery = params.get('q');
+                document.getElementById('search').value = searchQuery;
+            }
+
+            if (params.get('tags_open') === 'true') {
+                document.getElementById('tagsToggle').classList.remove('collapsed');
+                document.getElementById('tagFilters').classList.remove('collapsed');
+            }
+        }
+
+        // Update URL with current filters
+        function updateURL() {
+            const params = new URLSearchParams();
+
+            if (selectedCategory) {
+                params.set('category', selectedCategory);
+            }
+
+            if (selectedTags.size > 0) {
+                params.set('tags', Array.from(selectedTags).map(t => encodeURIComponent(t)).join(','));
+            }
+
+            if (searchQuery) {
+                params.set('q', searchQuery);
+            }
+
+            if (!document.getElementById('tagFilters').classList.contains('collapsed')) {
+                params.set('tags_open', 'true');
+            }
+
+            const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newURL);
+        }
+
         async function loadApps() {
             try {
                 const response = await fetch('metadata.json');
@@ -380,8 +429,10 @@
                 allApps.forEach(app => app.tags.forEach(tag => tagSet.add(tag)));
                 allTags = Array.from(tagSet).sort();
 
+                loadFromURL();
                 renderCategoryFilters();
                 renderTagFilters();
+                applyActiveStates();
                 filterAndRender();
             } catch (error) {
                 console.error('Failed to load metadata:', error);
@@ -391,6 +442,20 @@
                     </div>
                 `;
             }
+        }
+
+        function applyActiveStates() {
+            // Apply active state to category
+            if (selectedCategory) {
+                const catBtn = document.querySelector(`.category-filter[data-category="${selectedCategory}"]`);
+                if (catBtn) catBtn.classList.add('active');
+            }
+
+            // Apply active state to tags
+            selectedTags.forEach(tag => {
+                const tagBtn = document.querySelector(`.tag-filter[data-tag="${tag}"]`);
+                if (tagBtn) tagBtn.classList.add('active');
+            });
         }
 
         function renderCategoryFilters() {
@@ -418,6 +483,7 @@
                     document.querySelectorAll('.tag-filter').forEach(btn => btn.classList.remove('active'));
 
                     filterAndRender();
+                    updateURL();
                 }
             });
         }
@@ -439,6 +505,7 @@
                         e.target.classList.add('active');
                     }
                     filterAndRender();
+                    updateURL();
                 }
             });
         }
@@ -489,7 +556,7 @@
             // Update results count
             const countEl = document.getElementById('resultsCount');
             if (searchQuery || selectedCategory || selectedTags.size > 0) {
-                countEl.textContent = `Showing ${filtered.length} of ${allApps.length} demos`;
+                countEl.textContent = `Showing ${filtered.length} of ${allApps.length} apps`;
             } else {
                 countEl.textContent = '';
             }
@@ -501,7 +568,7 @@
             if (apps.length === 0) {
                 gallery.innerHTML = `
                     <div class="empty-state">
-                        <p>No matching demos found.</p>
+                        <p>No matching apps found.</p>
                     </div>
                 `;
                 return;
@@ -538,6 +605,7 @@
         document.getElementById('search').addEventListener('input', e => {
             searchQuery = e.target.value;
             filterAndRender();
+            updateURL();
         });
 
         // Tags toggle
@@ -546,6 +614,7 @@
             const tags = document.getElementById('tagFilters');
             toggle.classList.toggle('collapsed');
             tags.classList.toggle('collapsed');
+            updateURL();
         });
 
         loadApps();

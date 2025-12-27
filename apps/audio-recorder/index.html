@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recorder - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .recorder-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .visualizer-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        canvas {
+            width: 100%;
+            height: 120px;
+            display: block;
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+        .timer.recording {
+            color: #ff6b6b;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 24px;
+            height: 20px;
+        }
+        .status.recording {
+            color: #ff6b6b;
+        }
+        .status.recording::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .control-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .control-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+        .control-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .record-btn {
+            background: linear-gradient(135deg, #ff6b6b, #c44569);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        .record-btn.recording {
+            background: linear-gradient(135deg, #ff6b6b, #c44569);
+            animation: record-pulse 1s infinite;
+        }
+        @keyframes record-pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(255, 107, 107, 0.6); }
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .pause-btn {
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-icon {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .recordings {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .recordings-title {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        .recording-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(78, 205, 196, 0.05);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .recording-item:last-child {
+            margin-bottom: 0;
+        }
+        .recording-info {
+            flex: 1;
+        }
+        .recording-name {
+            color: #fff;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .recording-meta {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .recording-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .action-btn.playing {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+        .action-btn.download {
+            background: rgba(78, 205, 196, 0.1);
+            border-color: rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+        }
+        .action-btn.delete {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #555;
+            padding: 32px;
+        }
+
+        .permission-error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .format-select {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .format-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .format-btn.active {
+            background: rgba(78, 205, 196, 0.15);
+            border-color: rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Audio Recorder</h1>
+        <p class="subtitle">Record audio from your microphone and save it as a file.</p>
+
+        <div class="recorder-card">
+            <div id="permissionError" class="permission-error" style="display: none;">
+                Microphone access denied. Please allow microphone access to record audio.
+            </div>
+
+            <div class="visualizer-container">
+                <canvas id="visualizer"></canvas>
+            </div>
+
+            <div class="timer" id="timer">00:00</div>
+            <div class="status" id="status">Click record to start</div>
+
+            <div class="format-select">
+                <button class="format-btn active" data-format="webm">WebM</button>
+                <button class="format-btn" data-format="wav">WAV</button>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn pause-btn" id="pauseBtn" disabled title="Pause">
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <rect x="6" y="4" width="4" height="16" fill="white"/>
+                        <rect x="14" y="4" width="4" height="16" fill="white"/>
+                    </svg>
+                </button>
+                <button class="control-btn record-btn" id="recordBtn" title="Record">
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="8" fill="white"/>
+                    </svg>
+                </button>
+                <button class="control-btn stop-btn" id="stopBtn" disabled title="Stop">
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <rect x="6" y="6" width="12" height="12" fill="white"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="recordings">
+            <div class="recordings-title">Recordings</div>
+            <div id="recordingsList">
+                <div class="empty-state">No recordings yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let animationId = null;
+        let stream = null;
+        let chunks = [];
+        let recordings = [];
+        let startTime = null;
+        let pausedTime = 0;
+        let timerInterval = null;
+        let isRecording = false;
+        let isPaused = false;
+        let selectedFormat = 'webm';
+
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const timerEl = document.getElementById('timer');
+        const statusEl = document.getElementById('status');
+        const recordingsList = document.getElementById('recordingsList');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Format selection
+        document.querySelectorAll('.format-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedFormat = btn.dataset.format;
+            });
+        });
+
+        // Draw visualizer
+        function drawVisualizer() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (analyser && isRecording && !isPaused) {
+                analyser.getByteTimeDomainData(dataArray);
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.beginPath();
+
+                const sliceWidth = width / dataArray.length;
+                let x = 0;
+
+                for (let i = 0; i < dataArray.length; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = (v * height) / 2;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
+                }
+
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+            } else {
+                // Draw flat line when not recording
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+                ctx.lineTo(width, height / 2);
+                ctx.stroke();
+            }
+
+            animationId = requestAnimationFrame(drawVisualizer);
+        }
+
+        // Format time
+        function formatTime(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update timer
+        function updateTimer() {
+            if (isRecording && !isPaused) {
+                const elapsed = Date.now() - startTime + pausedTime;
+                timerEl.textContent = formatTime(elapsed);
+            }
+        }
+
+        // Start recording
+        async function startRecording() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                document.getElementById('permissionError').style.display = 'none';
+
+                // Set up audio context for visualization
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 2048;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                // Set up media recorder
+                const mimeType = selectedFormat === 'webm' ? 'audio/webm' : 'audio/wav';
+                const options = MediaRecorder.isTypeSupported(mimeType) ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, options);
+                chunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        chunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: selectedFormat === 'webm' ? 'audio/webm' : 'audio/wav' });
+                    const duration = formatTime(Date.now() - startTime + pausedTime);
+                    addRecording(blob, duration);
+                    cleanup();
+                };
+
+                mediaRecorder.start(100);
+                isRecording = true;
+                isPaused = false;
+                startTime = Date.now();
+                pausedTime = 0;
+
+                recordBtn.classList.add('recording');
+                stopBtn.disabled = false;
+                pauseBtn.disabled = false;
+                timerEl.classList.add('recording');
+                statusEl.classList.add('recording');
+                statusEl.textContent = 'Recording...';
+
+                timerInterval = setInterval(updateTimer, 100);
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                document.getElementById('permissionError').style.display = 'block';
+            }
+        }
+
+        // Pause recording
+        function pauseRecording() {
+            if (mediaRecorder && isRecording) {
+                if (isPaused) {
+                    // Resume
+                    mediaRecorder.resume();
+                    isPaused = false;
+                    startTime = Date.now();
+                    statusEl.textContent = 'Recording...';
+                    statusEl.classList.add('recording');
+                    pauseBtn.innerHTML = `
+                        <svg class="btn-icon" viewBox="0 0 24 24">
+                            <rect x="6" y="4" width="4" height="16" fill="white"/>
+                            <rect x="14" y="4" width="4" height="16" fill="white"/>
+                        </svg>
+                    `;
+                } else {
+                    // Pause
+                    mediaRecorder.pause();
+                    isPaused = true;
+                    pausedTime += Date.now() - startTime;
+                    statusEl.textContent = 'Paused';
+                    statusEl.classList.remove('recording');
+                    pauseBtn.innerHTML = `
+                        <svg class="btn-icon" viewBox="0 0 24 24">
+                            <polygon points="5,3 19,12 5,21" fill="white"/>
+                        </svg>
+                    `;
+                }
+            }
+        }
+
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+        }
+
+        // Cleanup
+        function cleanup() {
+            isRecording = false;
+            isPaused = false;
+            clearInterval(timerInterval);
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            recordBtn.classList.remove('recording');
+            stopBtn.disabled = true;
+            pauseBtn.disabled = true;
+            timerEl.classList.remove('recording');
+            statusEl.classList.remove('recording');
+            statusEl.textContent = 'Click record to start';
+            pauseBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" fill="white"/>
+                    <rect x="14" y="4" width="4" height="16" fill="white"/>
+                </svg>
+            `;
+        }
+
+        // Add recording to list
+        function addRecording(blob, duration) {
+            const url = URL.createObjectURL(blob);
+            const recording = {
+                id: Date.now(),
+                url,
+                blob,
+                duration,
+                name: `Recording ${recordings.length + 1}`,
+                format: selectedFormat,
+                date: new Date().toLocaleTimeString()
+            };
+            recordings.unshift(recording);
+            renderRecordings();
+        }
+
+        // Render recordings list
+        function renderRecordings() {
+            if (recordings.length === 0) {
+                recordingsList.innerHTML = '<div class="empty-state">No recordings yet</div>';
+                return;
+            }
+
+            recordingsList.innerHTML = recordings.map(rec => `
+                <div class="recording-item" data-id="${rec.id}">
+                    <div class="recording-info">
+                        <div class="recording-name">${rec.name}</div>
+                        <div class="recording-meta">${rec.duration} • ${rec.format.toUpperCase()} • ${rec.date}</div>
+                    </div>
+                    <div class="recording-actions">
+                        <button class="action-btn play-btn" data-id="${rec.id}">Play</button>
+                        <button class="action-btn download" data-id="${rec.id}">Download</button>
+                        <button class="action-btn delete" data-id="${rec.id}">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            recordingsList.querySelectorAll('.play-btn').forEach(btn => {
+                btn.addEventListener('click', () => playRecording(parseInt(btn.dataset.id)));
+            });
+            recordingsList.querySelectorAll('.download').forEach(btn => {
+                btn.addEventListener('click', () => downloadRecording(parseInt(btn.dataset.id)));
+            });
+            recordingsList.querySelectorAll('.delete').forEach(btn => {
+                btn.addEventListener('click', () => deleteRecording(parseInt(btn.dataset.id)));
+            });
+        }
+
+        let currentAudio = null;
+        let currentPlayingId = null;
+
+        function playRecording(id) {
+            const recording = recordings.find(r => r.id === id);
+            if (!recording) return;
+
+            const btn = recordingsList.querySelector(`.play-btn[data-id="${id}"]`);
+
+            if (currentAudio && currentPlayingId === id) {
+                // Stop current playback
+                currentAudio.pause();
+                currentAudio = null;
+                currentPlayingId = null;
+                btn.textContent = 'Play';
+                btn.classList.remove('playing');
+                return;
+            }
+
+            // Stop any other playback
+            if (currentAudio) {
+                currentAudio.pause();
+                const prevBtn = recordingsList.querySelector(`.play-btn[data-id="${currentPlayingId}"]`);
+                if (prevBtn) {
+                    prevBtn.textContent = 'Play';
+                    prevBtn.classList.remove('playing');
+                }
+            }
+
+            currentAudio = new Audio(recording.url);
+            currentPlayingId = id;
+            btn.textContent = 'Stop';
+            btn.classList.add('playing');
+
+            currentAudio.onended = () => {
+                btn.textContent = 'Play';
+                btn.classList.remove('playing');
+                currentAudio = null;
+                currentPlayingId = null;
+            };
+
+            currentAudio.play();
+        }
+
+        function downloadRecording(id) {
+            const recording = recordings.find(r => r.id === id);
+            if (!recording) return;
+
+            const a = document.createElement('a');
+            a.href = recording.url;
+            a.download = `${recording.name}.${recording.format}`;
+            a.click();
+        }
+
+        function deleteRecording(id) {
+            const idx = recordings.findIndex(r => r.id === id);
+            if (idx !== -1) {
+                URL.revokeObjectURL(recordings[idx].url);
+                recordings.splice(idx, 1);
+                renderRecordings();
+            }
+        }
+
+        // Event listeners
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                // Already recording, do nothing (use stop button)
+            } else {
+                startRecording();
+            }
+        });
+
+        stopBtn.addEventListener('click', stopRecording);
+        pauseBtn.addEventListener('click', pauseRecording);
+
+        // Start visualizer
+        drawVisualizer();
+    </script>
+</body>
+</html>
