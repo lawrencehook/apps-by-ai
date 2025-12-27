@@ -1389,5 +1389,18 @@
         "category": "Audio",
         "tags": ["recording", "microphone", "utility"],
         "link": "https://en.wikipedia.org/wiki/Audio_signal_recording"
+    },
+    {
+        "id": "system-info",
+        "title": "System Info Dashboard",
+        "description": "View your hardware specs: GPU, CPU cores, RAM, battery, network, and browser capabilities.",
+        "path": "apps/system-info/index.html",
+        "emoji": "💻",
+        "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "dateCreated": "2024-12-26",
+        "model": "Claude Opus 4.5",
+        "category": "Developer",
+        "tags": ["hardware", "browser", "system"],
+        "link": "https://en.wikipedia.org/wiki/WebGL"
     }
 ]

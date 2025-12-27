@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Info Dashboard - Apps by AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #888; font-size: 0.9rem; }
+        .info-value {
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9rem;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-word;
+        }
+        .info-value.warn { color: #ffa502; }
+        .info-value.error { color: #ff6b6b; }
+        .info-value.success { color: #4ecdc4; }
+        .battery-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .battery-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s, background 0.3s;
+        }
+        .full-width { grid-column: 1 / -1; }
+        .gpu-name {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .unavailable {
+            color: #666;
+            font-style: italic;
+        }
+        .refresh-btn {
+            background: rgba(78, 205, 196, 0.15);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 24px;
+        }
+        .refresh-btn:hover {
+            background: rgba(78, 205, 196, 0.25);
+        }
+        .note {
+            color: #555;
+            font-size: 0.75rem;
+            margin-top: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>System Info Dashboard</h1>
+        <p class="subtitle">Hardware and browser information detected via Web APIs.</p>
+
+        <div class="grid">
+            <!-- GPU -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">🎮</div>
+                    <div class="card-title">Graphics (GPU)</div>
+                </div>
+                <div class="gpu-name" id="gpuName">Detecting...</div>
+                <div class="info-row">
+                    <span class="info-label">Vendor</span>
+                    <span class="info-value" id="gpuVendor">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">WebGL Version</span>
+                    <span class="info-value" id="webglVersion">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Max Texture Size</span>
+                    <span class="info-value" id="maxTexture">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">WebGPU Support</span>
+                    <span class="info-value" id="webgpuSupport">-</span>
+                </div>
+            </div>
+
+            <!-- CPU -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #4ecdc4 0%, #556270 100%);">🖥️</div>
+                    <div class="card-title">Processor (CPU)</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Logical Cores</span>
+                    <span class="info-value" id="cpuCores">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Architecture</span>
+                    <span class="info-value" id="cpuArch">-</span>
+                </div>
+            </div>
+
+            <!-- Memory -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">💾</div>
+                    <div class="card-title">Memory (RAM)</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Device Memory</span>
+                    <span class="info-value" id="deviceMemory">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">JS Heap Limit</span>
+                    <span class="info-value" id="heapLimit">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">JS Heap Used</span>
+                    <span class="info-value" id="heapUsed">-</span>
+                </div>
+            </div>
+
+            <!-- Battery -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🔋</div>
+                    <div class="card-title">Battery</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Level</span>
+                    <span class="info-value" id="batteryLevel">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="batteryStatus">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Time Remaining</span>
+                    <span class="info-value" id="batteryTime">-</span>
+                </div>
+                <div class="battery-bar">
+                    <div class="battery-fill" id="batteryFill" style="width: 0%; background: #4ecdc4;"></div>
+                </div>
+            </div>
+
+            <!-- Network -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);">🌐</div>
+                    <div class="card-title">Network</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Connection</span>
+                    <span class="info-value" id="netType">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Effective Type</span>
+                    <span class="info-value" id="netEffective">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Downlink</span>
+                    <span class="info-value" id="netDownlink">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">RTT</span>
+                    <span class="info-value" id="netRtt">-</span>
+                </div>
+            </div>
+
+            <!-- Display -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #ff6b6b 0%, #ffa502 100%);">🖼️</div>
+                    <div class="card-title">Display</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Screen Resolution</span>
+                    <span class="info-value" id="screenRes">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Viewport Size</span>
+                    <span class="info-value" id="viewport">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Device Pixel Ratio</span>
+                    <span class="info-value" id="pixelRatio">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Color Depth</span>
+                    <span class="info-value" id="colorDepth">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">HDR Support</span>
+                    <span class="info-value" id="hdrSupport">-</span>
+                </div>
+            </div>
+
+            <!-- Browser -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #1a1a2e 0%, #4a4a6a 100%);">🧭</div>
+                    <div class="card-title">Browser</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Browser</span>
+                    <span class="info-value" id="browserName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Platform</span>
+                    <span class="info-value" id="platform">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Language</span>
+                    <span class="info-value" id="language">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Cookies Enabled</span>
+                    <span class="info-value" id="cookies">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Do Not Track</span>
+                    <span class="info-value" id="dnt">-</span>
+                </div>
+            </div>
+
+            <!-- Storage -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #ffe66d 0%, #4ecdc4 100%);">📦</div>
+                    <div class="card-title">Storage</div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Quota</span>
+                    <span class="info-value" id="storageQuota">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Used</span>
+                    <span class="info-value" id="storageUsed">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Persistent Storage</span>
+                    <span class="info-value" id="storagePersist">-</span>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">🧩</div>
+                    <div class="card-title">API Support</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">WebGL</span>
+                        <span class="info-value" id="hasWebGL">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">WebGPU</span>
+                        <span class="info-value" id="hasWebGPU">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">WebRTC</span>
+                        <span class="info-value" id="hasWebRTC">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Web Audio</span>
+                        <span class="info-value" id="hasWebAudio">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">WebSocket</span>
+                        <span class="info-value" id="hasWebSocket">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Service Worker</span>
+                        <span class="info-value" id="hasSW">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Web Bluetooth</span>
+                        <span class="info-value" id="hasBluetooth">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Gamepad</span>
+                        <span class="info-value" id="hasGamepad">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Speech Recognition</span>
+                        <span class="info-value" id="hasSpeech">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Geolocation</span>
+                        <span class="info-value" id="hasGeo">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Notifications</span>
+                        <span class="info-value" id="hasNotifications">-</span>
+                    </div>
+                    <div class="info-row" style="border: none;">
+                        <span class="info-label">Clipboard</span>
+                        <span class="info-value" id="hasClipboard">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="refresh-btn" onclick="gatherInfo()">Refresh Info</button>
+        </div>
+
+        <p class="note">Some values may be approximate or unavailable depending on browser privacy settings.</p>
+    </div>
+
+    <script>
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function setSupport(id, supported) {
+            const el = document.getElementById(id);
+            el.textContent = supported ? 'Yes' : 'No';
+            el.className = 'info-value ' + (supported ? 'success' : 'error');
+        }
+
+        async function gatherInfo() {
+            // GPU Info via WebGL
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                        const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                        document.getElementById('gpuName').textContent = renderer || 'Unknown GPU';
+                        document.getElementById('gpuVendor').textContent = vendor || 'Unknown';
+                    } else {
+                        document.getElementById('gpuName').textContent = gl.getParameter(gl.RENDERER);
+                        document.getElementById('gpuVendor').textContent = gl.getParameter(gl.VENDOR);
+                    }
+                    document.getElementById('webglVersion').textContent = gl instanceof WebGL2RenderingContext ? 'WebGL 2.0' : 'WebGL 1.0';
+                    document.getElementById('maxTexture').textContent = gl.getParameter(gl.MAX_TEXTURE_SIZE) + ' px';
+                } else {
+                    document.getElementById('gpuName').innerHTML = '<span class="unavailable">WebGL not available</span>';
+                }
+            } catch (e) {
+                document.getElementById('gpuName').innerHTML = '<span class="unavailable">Could not detect GPU</span>';
+            }
+
+            // WebGPU
+            if (navigator.gpu) {
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (adapter) {
+                        document.getElementById('webgpuSupport').textContent = 'Supported';
+                        document.getElementById('webgpuSupport').className = 'info-value success';
+                    } else {
+                        document.getElementById('webgpuSupport').textContent = 'No adapter';
+                        document.getElementById('webgpuSupport').className = 'info-value warn';
+                    }
+                } catch (e) {
+                    document.getElementById('webgpuSupport').textContent = 'Error';
+                    document.getElementById('webgpuSupport').className = 'info-value error';
+                }
+            } else {
+                document.getElementById('webgpuSupport').textContent = 'Not supported';
+                document.getElementById('webgpuSupport').className = 'info-value error';
+            }
+
+            // CPU
+            document.getElementById('cpuCores').textContent = navigator.hardwareConcurrency || 'Unknown';
+
+            // Try to detect architecture from userAgent
+            const ua = navigator.userAgent;
+            let arch = 'Unknown';
+            if (ua.includes('arm64') || ua.includes('aarch64')) arch = 'ARM64';
+            else if (ua.includes('arm')) arch = 'ARM';
+            else if (ua.includes('x86_64') || ua.includes('x64') || ua.includes('Win64') || ua.includes('WOW64')) arch = 'x86_64';
+            else if (ua.includes('x86') || ua.includes('i686') || ua.includes('i386')) arch = 'x86';
+            else if (navigator.platform) {
+                if (navigator.platform.includes('Mac') && navigator.userAgent.includes('Mac OS X')) {
+                    // Check for Apple Silicon
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl');
+                    if (gl) {
+                        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                        if (debugInfo) {
+                            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                            if (renderer.includes('Apple M')) arch = 'ARM64 (Apple Silicon)';
+                            else arch = 'x86_64 (Intel)';
+                        }
+                    }
+                }
+            }
+            document.getElementById('cpuArch').textContent = arch;
+
+            // Memory
+            if (navigator.deviceMemory) {
+                document.getElementById('deviceMemory').textContent = navigator.deviceMemory + ' GB (approx)';
+            } else {
+                document.getElementById('deviceMemory').innerHTML = '<span class="unavailable">Not available</span>';
+            }
+
+            if (performance.memory) {
+                document.getElementById('heapLimit').textContent = formatBytes(performance.memory.jsHeapSizeLimit);
+                document.getElementById('heapUsed').textContent = formatBytes(performance.memory.usedJSHeapSize);
+            } else {
+                document.getElementById('heapLimit').innerHTML = '<span class="unavailable">Not available</span>';
+                document.getElementById('heapUsed').innerHTML = '<span class="unavailable">Not available</span>';
+            }
+
+            // Battery
+            if (navigator.getBattery) {
+                try {
+                    const battery = await navigator.getBattery();
+                    const updateBattery = () => {
+                        const level = Math.round(battery.level * 100);
+                        document.getElementById('batteryLevel').textContent = level + '%';
+                        document.getElementById('batteryStatus').textContent = battery.charging ? 'Charging' : 'Discharging';
+                        document.getElementById('batteryStatus').className = 'info-value ' + (battery.charging ? 'success' : '');
+
+                        const fill = document.getElementById('batteryFill');
+                        fill.style.width = level + '%';
+                        if (level > 50) fill.style.background = '#4ecdc4';
+                        else if (level > 20) fill.style.background = '#ffa502';
+                        else fill.style.background = '#ff6b6b';
+
+                        if (battery.charging && battery.chargingTime !== Infinity) {
+                            const mins = Math.round(battery.chargingTime / 60);
+                            document.getElementById('batteryTime').textContent = mins + ' min to full';
+                        } else if (!battery.charging && battery.dischargingTime !== Infinity) {
+                            const mins = Math.round(battery.dischargingTime / 60);
+                            const hours = Math.floor(mins / 60);
+                            const remMins = mins % 60;
+                            document.getElementById('batteryTime').textContent = hours + 'h ' + remMins + 'm remaining';
+                        } else {
+                            document.getElementById('batteryTime').textContent = '-';
+                        }
+                    };
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                    battery.addEventListener('chargingchange', updateBattery);
+                } catch (e) {
+                    document.getElementById('batteryLevel').innerHTML = '<span class="unavailable">Not available</span>';
+                }
+            } else {
+                document.getElementById('batteryLevel').innerHTML = '<span class="unavailable">Not available</span>';
+                document.getElementById('batteryStatus').innerHTML = '<span class="unavailable">-</span>';
+                document.getElementById('batteryTime').innerHTML = '<span class="unavailable">-</span>';
+            }
+
+            // Network
+            if (navigator.connection) {
+                const conn = navigator.connection;
+                document.getElementById('netType').textContent = conn.type || 'Unknown';
+                document.getElementById('netEffective').textContent = conn.effectiveType || 'Unknown';
+                document.getElementById('netDownlink').textContent = conn.downlink ? conn.downlink + ' Mbps' : 'Unknown';
+                document.getElementById('netRtt').textContent = conn.rtt ? conn.rtt + ' ms' : 'Unknown';
+            } else {
+                document.getElementById('netType').innerHTML = '<span class="unavailable">API not available</span>';
+                document.getElementById('netEffective').innerHTML = '<span class="unavailable">-</span>';
+                document.getElementById('netDownlink').innerHTML = '<span class="unavailable">-</span>';
+                document.getElementById('netRtt').innerHTML = '<span class="unavailable">-</span>';
+            }
+
+            // Display
+            document.getElementById('screenRes').textContent = screen.width + ' × ' + screen.height;
+            document.getElementById('viewport').textContent = window.innerWidth + ' × ' + window.innerHeight;
+            document.getElementById('pixelRatio').textContent = window.devicePixelRatio.toFixed(2) + 'x';
+            document.getElementById('colorDepth').textContent = screen.colorDepth + '-bit';
+
+            const hdr = window.matchMedia('(dynamic-range: high)').matches;
+            document.getElementById('hdrSupport').textContent = hdr ? 'Yes' : 'No';
+            document.getElementById('hdrSupport').className = 'info-value ' + (hdr ? 'success' : '');
+
+            // Browser
+            let browserName = 'Unknown';
+            if (ua.includes('Firefox')) browserName = 'Firefox';
+            else if (ua.includes('Edg/')) browserName = 'Edge';
+            else if (ua.includes('Chrome')) browserName = 'Chrome';
+            else if (ua.includes('Safari')) browserName = 'Safari';
+            else if (ua.includes('Opera')) browserName = 'Opera';
+            document.getElementById('browserName').textContent = browserName;
+            document.getElementById('platform').textContent = navigator.platform || 'Unknown';
+            document.getElementById('language').textContent = navigator.language;
+            document.getElementById('cookies').textContent = navigator.cookieEnabled ? 'Yes' : 'No';
+            document.getElementById('dnt').textContent = navigator.doNotTrack === '1' ? 'Enabled' : 'Disabled';
+
+            // Storage
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    document.getElementById('storageQuota').textContent = formatBytes(estimate.quota);
+                    document.getElementById('storageUsed').textContent = formatBytes(estimate.usage);
+                } catch (e) {
+                    document.getElementById('storageQuota').innerHTML = '<span class="unavailable">Error</span>';
+                }
+            } else {
+                document.getElementById('storageQuota').innerHTML = '<span class="unavailable">Not available</span>';
+                document.getElementById('storageUsed').innerHTML = '<span class="unavailable">-</span>';
+            }
+
+            if (navigator.storage && navigator.storage.persisted) {
+                const persisted = await navigator.storage.persisted();
+                document.getElementById('storagePersist').textContent = persisted ? 'Yes' : 'No';
+            } else {
+                document.getElementById('storagePersist').innerHTML = '<span class="unavailable">-</span>';
+            }
+
+            // API Support
+            setSupport('hasWebGL', !!document.createElement('canvas').getContext('webgl'));
+            setSupport('hasWebGPU', !!navigator.gpu);
+            setSupport('hasWebRTC', !!window.RTCPeerConnection);
+            setSupport('hasWebAudio', !!(window.AudioContext || window.webkitAudioContext));
+            setSupport('hasWebSocket', !!window.WebSocket);
+            setSupport('hasSW', 'serviceWorker' in navigator);
+            setSupport('hasBluetooth', !!navigator.bluetooth);
+            setSupport('hasGamepad', 'getGamepads' in navigator);
+            setSupport('hasSpeech', !!(window.SpeechRecognition || window.webkitSpeechRecognition));
+            setSupport('hasGeo', 'geolocation' in navigator);
+            setSupport('hasNotifications', 'Notification' in window);
+            setSupport('hasClipboard', !!navigator.clipboard);
+        }
+
+        gatherInfo();
+
+        // Update viewport on resize
+        window.addEventListener('resize', () => {
+            document.getElementById('viewport').textContent = window.innerWidth + ' × ' + window.innerHeight;
+        });
+    </script>
+</body>
+</html>
