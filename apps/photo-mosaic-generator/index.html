@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Mosaic Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.8rem; }
+        h1 span { color: #ff6b6b; }
+        .back-link {
+            color: #888;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        .sidebar {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            height: fit-content;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 12px;
+            margin-top: 20px;
+        }
+        .section-title:first-child { margin-top: 0; }
+
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.02);
+        }
+        .upload-zone:hover {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
+        .upload-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .upload-zone svg {
+            width: 48px;
+            height: 48px;
+            stroke: #666;
+            margin-bottom: 12px;
+        }
+        .upload-zone p { color: #888; font-size: 14px; }
+        .upload-zone input { display: none; }
+
+        .preview-thumb {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: none;
+        }
+        .preview-thumb.visible { display: block; }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .option-row label {
+            font-size: 13px;
+            color: #ccc;
+        }
+        .option-row .value {
+            font-size: 12px;
+            color: #4ecdc4;
+            margin-left: 8px;
+        }
+
+        input[type="range"] {
+            width: 140px;
+            accent-color: #ff6b6b;
+        }
+
+        select {
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,107,107,0.3); }
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            margin-top: 10px;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: none;
+        }
+
+        .canvas-area {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .canvas-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .canvas-title { font-size: 1.1rem; font-weight: 500; }
+
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .zoom-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            margin: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.2); box-shadow: none; transform: none; }
+        .zoom-label { font-size: 13px; color: #888; min-width: 50px; text-align: center; }
+
+        .canvas-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        #mosaicCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 60px;
+        }
+        .empty-state svg { width: 100px; height: 100px; margin-bottom: 20px; opacity: 0.3; }
+        .empty-state p { margin-bottom: 8px; }
+
+        .progress-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 15, 26, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .progress-overlay.visible { display: flex; }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+        .progress-ring circle {
+            fill: none;
+            stroke-width: 8;
+        }
+        .progress-ring .bg { stroke: rgba(255,255,255,0.1); }
+        .progress-ring .progress {
+            stroke: url(#progressGradient);
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 0.1s;
+        }
+
+        .progress-text {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .progress-status { color: #888; font-size: 14px; }
+
+        .tile-palette {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        .tile-preview {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .stats {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+        .stat-row:last-child { margin-bottom: 0; }
+        .stat-value { color: #4ecdc4; }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Photo <span>Mosaic</span> Generator</h1>
+            <a href="../../index.html" class="back-link">Back</a>
+        </header>
+
+        <div class="main-layout">
+            <div class="sidebar">
+                <div class="section-title">Upload Image</div>
+                <div class="upload-zone" id="uploadZone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p>Drop image here or click to upload</p>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                <img id="previewThumb" class="preview-thumb" alt="Preview">
+
+                <div class="section-title">Tile Style</div>
+                <div class="option-row">
+                    <label>Tile Type</label>
+                    <select id="tileType">
+                        <option value="emoji">Emoji</option>
+                        <option value="circles">Circles</option>
+                        <option value="squares">Squares</option>
+                        <option value="triangles">Triangles</option>
+                        <option value="hearts">Hearts</option>
+                        <option value="ascii">ASCII Art</option>
+                        <option value="dots">Halftone Dots</option>
+                    </select>
+                </div>
+
+                <div class="option-row">
+                    <label>Resolution<span class="value" id="resValue">50</span></label>
+                    <input type="range" id="resolution" min="20" max="150" value="50">
+                </div>
+
+                <div class="option-row">
+                    <label>Color Mode</label>
+                    <select id="colorMode">
+                        <option value="original">Original Colors</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="duotone">Duotone</option>
+                        <option value="posterize">Posterized</option>
+                    </select>
+                </div>
+
+                <div class="section-title">Emoji Palette</div>
+                <div class="tile-palette" id="emojiPalette"></div>
+
+                <button id="generateBtn" disabled>Generate Mosaic</button>
+                <button class="btn-secondary" id="downloadBtn" disabled>Download PNG</button>
+
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat-row">
+                        <span>Total Tiles</span>
+                        <span class="stat-value" id="statTiles">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Tile Size</span>
+                        <span class="stat-value" id="statTileSize">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Output Size</span>
+                        <span class="stat-value" id="statOutput">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-area">
+                <div class="canvas-header">
+                    <span class="canvas-title">Mosaic Preview</span>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomOut()">-</button>
+                        <span class="zoom-label" id="zoomLabel">100%</span>
+                        <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    </div>
+                </div>
+
+                <div class="canvas-container" id="canvasContainer">
+                    <div class="empty-state" id="emptyState">
+                        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1">
+                            <rect x="10" y="10" width="20" height="20" rx="2"/>
+                            <rect x="40" y="10" width="20" height="20" rx="2"/>
+                            <rect x="70" y="10" width="20" height="20" rx="2"/>
+                            <rect x="10" y="40" width="20" height="20" rx="2"/>
+                            <rect x="40" y="40" width="20" height="20" rx="2"/>
+                            <rect x="70" y="40" width="20" height="20" rx="2"/>
+                            <rect x="10" y="70" width="20" height="20" rx="2"/>
+                            <rect x="40" y="70" width="20" height="20" rx="2"/>
+                            <rect x="70" y="70" width="20" height="20" rx="2"/>
+                        </svg>
+                        <p>Upload an image to create a mosaic</p>
+                        <p style="font-size: 12px; color: #555;">Supports JPG, PNG, WebP</p>
+                    </div>
+
+                    <canvas id="mosaicCanvas" style="display: none;"></canvas>
+
+                    <div class="progress-overlay" id="progressOverlay">
+                        <svg class="progress-ring" viewBox="0 0 120 120">
+                            <defs>
+                                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#ff6b6b"/>
+                                    <stop offset="100%" stop-color="#4ecdc4"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="bg" cx="60" cy="60" r="52"/>
+                            <circle class="progress" id="progressCircle" cx="60" cy="60" r="52"
+                                stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+                        </svg>
+                        <div class="progress-text" id="progressText">0%</div>
+                        <div class="progress-status" id="progressStatus">Preparing...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Emoji sets for different moods/colors
+        const emojiSets = {
+            default: ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚪', '⚫', '🟤', '💛', '💚', '💙', '💜', '🖤', '🤍', '🧡'],
+            nature: ['🌲', '🌳', '🌴', '🌵', '🌿', '🍀', '🍁', '🍂', '🌸', '🌺', '🌻', '🌼', '🌷', '💐', '🌹', '🥀'],
+            food: ['🍎', '🍊', '🍋', '🍇', '🍓', '🫐', '🍑', '🍒', '🥝', '🍌', '🍉', '🥭', '🍍', '🥥', '🥑', '🍆'],
+            space: ['⭐', '🌟', '✨', '💫', '🌙', '🌑', '🌕', '☀️', '🔥', '💥', '❄️', '💧', '🌈', '☁️', '⚡', '🌀'],
+            hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖'],
+            faces: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😎', '🥳']
+        };
+
+        const asciiChars = '@%#*+=-:. ';
+        const asciiCharsDark = ' .:-=+*#%@';
+
+        let sourceImage = null;
+        let zoomLevel = 1;
+        let currentSet = 'default';
+
+        // Elements
+        const uploadZone = document.getElementById('uploadZone');
+        const imageInput = document.getElementById('imageInput');
+        const previewThumb = document.getElementById('previewThumb');
+        const canvas = document.getElementById('mosaicCanvas');
+        const ctx = canvas.getContext('2d');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressOverlay = document.getElementById('progressOverlay');
+
+        // Initialize emoji palette
+        function initEmojiPalette() {
+            const palette = document.getElementById('emojiPalette');
+            const emojis = emojiSets.default.slice(0, 16);
+            palette.innerHTML = emojis.map(e => `<div class="tile-preview">${e}</div>`).join('');
+        }
+        initEmojiPalette();
+
+        // File upload handling
+        uploadZone.addEventListener('click', () => imageInput.click());
+
+        uploadZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        imageInput.addEventListener('change', e => {
+            if (e.target.files[0]) {
+                loadImage(e.target.files[0]);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    sourceImage = img;
+                    previewThumb.src = e.target.result;
+                    previewThumb.classList.add('visible');
+                    generateBtn.disabled = false;
+                    document.getElementById('emptyState').style.display = 'none';
+                    canvas.style.display = 'block';
+
+                    // Auto-generate preview
+                    generateMosaic();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Range input feedback
+        document.getElementById('resolution').addEventListener('input', e => {
+            document.getElementById('resValue').textContent = e.target.value;
+        });
+
+        // Tile type change updates palette preview
+        document.getElementById('tileType').addEventListener('change', updatePalettePreview);
+
+        function updatePalettePreview() {
+            const type = document.getElementById('tileType').value;
+            const palette = document.getElementById('emojiPalette');
+
+            if (type === 'emoji') {
+                palette.style.display = 'grid';
+                initEmojiPalette();
+            } else if (type === 'ascii') {
+                palette.style.display = 'grid';
+                palette.innerHTML = asciiChars.split('').map(c =>
+                    `<div class="tile-preview" style="font-family: monospace; font-size: 20px; color: #fff;">${c === ' ' ? '&nbsp;' : c}</div>`
+                ).join('');
+            } else {
+                palette.style.display = 'none';
+            }
+        }
+
+        // Generate mosaic
+        generateBtn.addEventListener('click', generateMosaic);
+
+        async function generateMosaic() {
+            if (!sourceImage) return;
+
+            const resolution = parseInt(document.getElementById('resolution').value);
+            const tileType = document.getElementById('tileType').value;
+            const colorMode = document.getElementById('colorMode').value;
+
+            // Show progress
+            progressOverlay.classList.add('visible');
+            updateProgress(0, 'Analyzing image...');
+
+            await delay(50);
+
+            // Calculate dimensions
+            const aspectRatio = sourceImage.width / sourceImage.height;
+            const cols = resolution;
+            const rows = Math.round(resolution / aspectRatio);
+
+            // Create sampling canvas
+            const sampleCanvas = document.createElement('canvas');
+            const sampleCtx = sampleCanvas.getContext('2d');
+            sampleCanvas.width = cols;
+            sampleCanvas.height = rows;
+            sampleCtx.drawImage(sourceImage, 0, 0, cols, rows);
+            const imageData = sampleCtx.getImageData(0, 0, cols, rows);
+
+            updateProgress(20, 'Preparing tiles...');
+            await delay(50);
+
+            // Set output canvas size
+            const tileSize = tileType === 'emoji' ? 24 : tileType === 'ascii' ? 12 : 16;
+            canvas.width = cols * tileSize;
+            canvas.height = rows * tileSize;
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Font setup
+            if (tileType === 'emoji') {
+                ctx.font = `${tileSize - 2}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+            } else if (tileType === 'ascii') {
+                ctx.font = `${tileSize}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+            }
+
+            const totalTiles = cols * rows;
+            let tilesDrawn = 0;
+
+            // Process in chunks for smooth progress updates
+            const chunkSize = 100;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const idx = (y * cols + x) * 4;
+                    let r = imageData.data[idx];
+                    let g = imageData.data[idx + 1];
+                    let b = imageData.data[idx + 2];
+
+                    // Apply color mode
+                    [r, g, b] = applyColorMode(r, g, b, colorMode);
+
+                    const brightness = (r + g + b) / 3 / 255;
+                    const color = `rgb(${r}, ${g}, ${b})`;
+
+                    const px = x * tileSize;
+                    const py = y * tileSize;
+
+                    switch (tileType) {
+                        case 'emoji':
+                            const emoji = getEmojiForColor(r, g, b, brightness);
+                            ctx.fillText(emoji, px + tileSize / 2, py + tileSize / 2 + 2);
+                            break;
+
+                        case 'circles':
+                            const circleRadius = (tileSize / 2 - 1) * (0.3 + brightness * 0.7);
+                            ctx.beginPath();
+                            ctx.arc(px + tileSize / 2, py + tileSize / 2, circleRadius, 0, Math.PI * 2);
+                            ctx.fillStyle = color;
+                            ctx.fill();
+                            break;
+
+                        case 'squares':
+                            const squareSize = tileSize * (0.3 + brightness * 0.7);
+                            const offset = (tileSize - squareSize) / 2;
+                            ctx.fillStyle = color;
+                            ctx.fillRect(px + offset, py + offset, squareSize, squareSize);
+                            break;
+
+                        case 'triangles':
+                            const triSize = tileSize * (0.4 + brightness * 0.6);
+                            const triOffset = (tileSize - triSize) / 2;
+                            ctx.beginPath();
+                            ctx.moveTo(px + tileSize / 2, py + triOffset);
+                            ctx.lineTo(px + triOffset, py + tileSize - triOffset);
+                            ctx.lineTo(px + tileSize - triOffset, py + tileSize - triOffset);
+                            ctx.closePath();
+                            ctx.fillStyle = color;
+                            ctx.fill();
+                            break;
+
+                        case 'hearts':
+                            drawHeart(ctx, px + tileSize / 2, py + tileSize / 2, tileSize * 0.4 * (0.5 + brightness * 0.5), color);
+                            break;
+
+                        case 'ascii':
+                            const charIdx = Math.floor(brightness * (asciiCharsDark.length - 1));
+                            ctx.fillStyle = color;
+                            ctx.fillText(asciiCharsDark[charIdx], px + tileSize / 2, py + tileSize / 2);
+                            break;
+
+                        case 'dots':
+                            const dotRadius = (tileSize / 2) * Math.sqrt(1 - brightness);
+                            if (dotRadius > 0.5) {
+                                ctx.beginPath();
+                                ctx.arc(px + tileSize / 2, py + tileSize / 2, dotRadius, 0, Math.PI * 2);
+                                ctx.fillStyle = color;
+                                ctx.fill();
+                            }
+                            break;
+                    }
+
+                    tilesDrawn++;
+
+                    if (tilesDrawn % chunkSize === 0) {
+                        const progress = 20 + (tilesDrawn / totalTiles) * 75;
+                        updateProgress(progress, `Drawing tiles... ${tilesDrawn}/${totalTiles}`);
+                        await delay(0);
+                    }
+                }
+            }
+
+            updateProgress(100, 'Complete!');
+            await delay(300);
+
+            progressOverlay.classList.remove('visible');
+            downloadBtn.disabled = false;
+
+            // Update stats
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('statTiles').textContent = `${cols} x ${rows} = ${totalTiles.toLocaleString()}`;
+            document.getElementById('statTileSize').textContent = `${tileSize} x ${tileSize}px`;
+            document.getElementById('statOutput').textContent = `${canvas.width} x ${canvas.height}px`;
+
+            applyZoom();
+        }
+
+        function applyColorMode(r, g, b, mode) {
+            switch (mode) {
+                case 'grayscale':
+                    const gray = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
+                    return [gray, gray, gray];
+
+                case 'duotone':
+                    const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+                    // Dark: deep purple, Light: coral
+                    const dark = [74, 20, 140];
+                    const light = [255, 107, 107];
+                    return [
+                        Math.round(dark[0] + (light[0] - dark[0]) * lum),
+                        Math.round(dark[1] + (light[1] - dark[1]) * lum),
+                        Math.round(dark[2] + (light[2] - dark[2]) * lum)
+                    ];
+
+                case 'posterize':
+                    const levels = 4;
+                    return [
+                        Math.round(Math.round(r / 255 * levels) / levels * 255),
+                        Math.round(Math.round(g / 255 * levels) / levels * 255),
+                        Math.round(Math.round(b / 255 * levels) / levels * 255)
+                    ];
+
+                default:
+                    return [r, g, b];
+            }
+        }
+
+        function getEmojiForColor(r, g, b, brightness) {
+            const emojis = emojiSets.default;
+
+            // Map color to emoji
+            if (brightness < 0.1) return '⚫';
+            if (brightness > 0.9) return '⚪';
+
+            // Determine dominant color
+            const max = Math.max(r, g, b);
+            const saturation = max > 0 ? (max - Math.min(r, g, b)) / max : 0;
+
+            if (saturation < 0.2) {
+                // Grayscale
+                if (brightness < 0.3) return '⚫';
+                if (brightness < 0.5) return '🟤';
+                if (brightness < 0.7) return '⚪';
+                return '⚪';
+            }
+
+            // Color detection
+            if (r > g && r > b) {
+                if (g > b * 1.5) return brightness > 0.6 ? '🟡' : '🟠';
+                return brightness > 0.5 ? '🟠' : '🔴';
+            }
+            if (g > r && g > b) {
+                return brightness > 0.5 ? '💚' : '🟢';
+            }
+            if (b > r && b > g) {
+                if (r > g * 1.3) return '🟣';
+                return brightness > 0.5 ? '💙' : '🔵';
+            }
+
+            // Mixed colors
+            if (r > 200 && g > 200) return '🟡';
+            if (r > 200 && b > 200) return '🟣';
+            if (g > 200 && b > 200) return '💙';
+
+            return '⚪';
+        }
+
+        function drawHeart(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y + size * 0.3);
+            ctx.bezierCurveTo(x, y - size * 0.3, x - size, y - size * 0.3, x - size, y + size * 0.1);
+            ctx.bezierCurveTo(x - size, y + size * 0.6, x, y + size, x, y + size);
+            ctx.bezierCurveTo(x, y + size, x + size, y + size * 0.6, x + size, y + size * 0.1);
+            ctx.bezierCurveTo(x + size, y - size * 0.3, x, y - size * 0.3, x, y + size * 0.3);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function updateProgress(percent, status) {
+            const circle = document.getElementById('progressCircle');
+            const circumference = 326.7;
+            const offset = circumference - (percent / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            document.getElementById('progressText').textContent = Math.round(percent) + '%';
+            document.getElementById('progressStatus').textContent = status;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Zoom controls
+        function zoomIn() {
+            zoomLevel = Math.min(3, zoomLevel + 0.25);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(0.25, zoomLevel - 0.25);
+            applyZoom();
+        }
+
+        function applyZoom() {
+            canvas.style.transform = `scale(${zoomLevel})`;
+            canvas.style.transformOrigin = 'center center';
+            document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
+        }
+
+        // Download
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'mosaic.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walkthrough Creator - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            height: 100vh;
+        }
+
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-left, .sidebar-right {
+                display: none;
+            }
+            .sidebar-left.mobile-open, .sidebar-right.mobile-open {
+                display: block;
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                width: 300px;
+            }
+            .sidebar-left.mobile-open { left: 0; }
+            .sidebar-right.mobile-open { right: 0; }
+        }
+
+        /* Left Sidebar - Steps List */
+        .sidebar-left {
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .steps-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .step-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .step-item.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .step-item.cover-page {
+            border-left: 3px solid #764ba2;
+        }
+
+        .step-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #667eea;
+        }
+
+        .step-item .drag-handle {
+            cursor: grab;
+            color: #555;
+            font-size: 1.2em;
+        }
+
+        .step-thumb {
+            width: 50px;
+            height: 35px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .step-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .step-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .step-info .step-number {
+            font-size: 0.75em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .step-info .step-title {
+            font-size: 0.85em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .step-item .delete-btn {
+            opacity: 0;
+            background: rgba(234, 84, 85, 0.2);
+            border: none;
+            color: #ea5455;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .step-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .add-step-btn {
+            margin: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .add-step-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Main Canvas Area */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            background: #0d0d12;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 3px;
+            padding: 0 10px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.1em;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .tool-btn[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background: #222;
+            color: #fff;
+            font-size: 0.75em;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-top: 5px;
+        }
+
+        .color-picker-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .color-picker-btn:hover {
+            border-color: #fff;
+        }
+
+        #annotationColor {
+            opacity: 0;
+            position: absolute;
+            width: 28px;
+            height: 28px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px;
+            background: repeating-conic-gradient(#1a1a1a 0% 25%, #151515 0% 50%) 50% / 20px 20px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #fff;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+        }
+
+        #mainCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .no-image-placeholder {
+            width: 800px;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #666;
+            border-radius: 4px;
+        }
+
+        .no-image-placeholder svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .no-image-placeholder p {
+            margin-bottom: 10px;
+        }
+
+        /* Right Sidebar - Properties */
+        .sidebar-right {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .properties-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-section h3 {
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9em;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .callout-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .callout-option {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .callout-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .callout-option.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            color: #fff;
+        }
+
+        /* Export Panel */
+        .export-section {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .export-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .export-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Cover Page Editor */
+        .cover-editor {
+            padding: 60px;
+            background: #fff;
+            color: #333;
+            min-height: 500px;
+            border-radius: 4px;
+            width: 800px;
+        }
+
+        .cover-editor .cover-title {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+        }
+
+        .cover-editor .cover-subtitle {
+            font-size: 1.3em;
+            color: #666;
+            margin-bottom: 40px;
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+        }
+
+        .cover-editor .cover-meta {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .cover-editor .cover-meta input {
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            color: #666;
+            outline: none;
+        }
+
+        .cover-logo-area {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cover-logo-area:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .cover-logo-area img {
+            max-height: 80px;
+            max-width: 200px;
+        }
+
+        /* Annotations on canvas */
+        .annotation {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        /* Back link */
+        .back-link {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9em;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .back-link:hover {
+            color: #764ba2;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .modal-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* File input styling */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-input-label:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Mobile menu buttons */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            z-index: 99;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .mobile-menu-btn.left { left: 20px; }
+            .mobile-menu-btn.right { right: 20px; }
+        }
+
+        /* Step number badges */
+        .step-badge {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            cursor: move;
+        }
+
+        /* Dropdown in toolbar */
+        .stroke-width-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #aaa;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        /* Slider */
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="app-container">
+        <!-- Left Sidebar - Steps List -->
+        <div class="sidebar-left" id="sidebarLeft">
+            <div class="sidebar-header">
+                <h1>Walkthrough Creator</h1>
+                <p>Create step-by-step guides</p>
+            </div>
+            <div class="steps-list" id="stepsList"></div>
+            <button class="add-step-btn" id="addStepBtn">+ Add Step</button>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="main-area">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="selectTool" title="Select (V)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="arrowTool" title="Arrow (A)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="rectTool" title="Rectangle (R)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="circleTool" title="Circle (C)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="lineTool" title="Line (L)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="19" x2="19" y2="5"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="textTool" title="Text (T)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4 7 4 4 20 4 20 7"/>
+                            <line x1="12" y1="4" x2="12" y2="20"/>
+                            <line x1="8" y1="20" x2="16" y2="20"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="numberTool" title="Step Number (N)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold">1</text>
+                        </svg>
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="blurTool" title="Blur/Redact (B)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="3" y1="15" x2="21" y2="15"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                            <line x1="15" y1="3" x2="15" y2="21"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="highlightTool" title="Highlight (H)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="8" width="18" height="8" fill="currentColor" opacity="0.3"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <div style="position: relative;">
+                        <button class="color-picker-btn" id="colorBtn" style="background: #e74c3c;"></button>
+                        <input type="color" id="annotationColor" value="#e74c3c">
+                    </div>
+                    <select class="stroke-width-select" id="strokeWidth">
+                        <option value="2">2px</option>
+                        <option value="3" selected>3px</option>
+                        <option value="4">4px</option>
+                        <option value="6">6px</option>
+                        <option value="8">8px</option>
+                    </select>
+                </div>
+                <div class="toolbar-group">
+                    <button class="tool-btn" id="undoBtn" title="Undo (Ctrl+Z)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 10h10a5 5 0 0 1 0 10H9"/>
+                            <polyline points="7 6 3 10 7 14"/>
+                        </svg>
+                    </button>
+                    <button class="tool-btn" id="redoBtn" title="Redo (Ctrl+Y)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10H11a5 5 0 0 0 0 10h4"/>
+                            <polyline points="17 6 21 10 17 14"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="canvas-container" id="canvasContainer">
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <div class="no-image-placeholder" id="placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <p>Add a screenshot to get started</p>
+                        <p style="font-size: 0.9em; color: #999;">Click "Add Step" or drag an image here</p>
+                    </div>
+                    <canvas id="mainCanvas" style="display: none;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar - Properties -->
+        <div class="sidebar-right" id="sidebarRight">
+            <div class="properties-panel">
+                <div class="panel-section" id="stepProperties">
+                    <h3>Step Properties</h3>
+                    <div class="form-group">
+                        <label>Step Title</label>
+                        <input type="text" id="stepTitle" placeholder="e.g., Click the File menu">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="stepDescription" placeholder="Explain what the user should do..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Callout Type</label>
+                        <div class="callout-options">
+                            <div class="callout-option active" data-type="none">None</div>
+                            <div class="callout-option" data-type="tip">Tip</div>
+                            <div class="callout-option" data-type="warning">Warning</div>
+                            <div class="callout-option" data-type="note">Note</div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="calloutTextGroup" style="display: none;">
+                        <label>Callout Text</label>
+                        <textarea id="calloutText" placeholder="Additional tip or warning..."></textarea>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="coverProperties" style="display: none;">
+                    <h3>Cover Page</h3>
+                    <div class="form-group">
+                        <label>Document Title</label>
+                        <input type="text" id="coverTitle" placeholder="How to...">
+                    </div>
+                    <div class="form-group">
+                        <label>Subtitle</label>
+                        <input type="text" id="coverSubtitle" placeholder="A step-by-step guide">
+                    </div>
+                    <div class="form-group">
+                        <label>Author</label>
+                        <input type="text" id="coverAuthor" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="text" id="coverDate" placeholder="December 2024">
+                    </div>
+                    <div class="form-group">
+                        <label>Logo</label>
+                        <div class="file-input-wrapper">
+                            <div class="file-input-label" id="logoLabel">
+                                <span>Click to upload logo</span>
+                            </div>
+                            <input type="file" id="logoInput" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>Image</h3>
+                    <div class="file-input-wrapper">
+                        <div class="file-input-label">
+                            <span>Upload or replace screenshot</span>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*">
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-section">
+                <button class="export-btn" id="exportPdfBtn">Export as PDF</button>
+                <button class="export-btn secondary" id="saveProjectBtn">Save Project</button>
+                <button class="export-btn secondary" id="loadProjectBtn">Load Project</button>
+                <input type="file" id="loadProjectInput" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu buttons -->
+    <button class="mobile-menu-btn left" id="mobileLeftBtn">☰</button>
+    <button class="mobile-menu-btn right" id="mobileRightBtn">⚙</button>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // ============ State ============
+        const state = {
+            steps: [],
+            currentStepIndex: -1,
+            currentTool: 'select',
+            annotationColor: '#e74c3c',
+            strokeWidth: 3,
+            isDrawing: false,
+            drawStart: { x: 0, y: 0 },
+            history: [],
+            historyIndex: -1,
+            draggedStepIndex: -1,
+            coverPage: {
+                enabled: true,
+                title: 'How to Guide',
+                subtitle: 'A step-by-step walkthrough',
+                author: '',
+                date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                logo: null
+            }
+        };
+
+        // ============ DOM Elements ============
+        const elements = {
+            stepsList: document.getElementById('stepsList'),
+            addStepBtn: document.getElementById('addStepBtn'),
+            mainCanvas: document.getElementById('mainCanvas'),
+            canvasWrapper: document.getElementById('canvasWrapper'),
+            canvasContainer: document.getElementById('canvasContainer'),
+            placeholder: document.getElementById('placeholder'),
+
+            // Tools
+            selectTool: document.getElementById('selectTool'),
+            arrowTool: document.getElementById('arrowTool'),
+            rectTool: document.getElementById('rectTool'),
+            circleTool: document.getElementById('circleTool'),
+            lineTool: document.getElementById('lineTool'),
+            textTool: document.getElementById('textTool'),
+            numberTool: document.getElementById('numberTool'),
+            blurTool: document.getElementById('blurTool'),
+            highlightTool: document.getElementById('highlightTool'),
+
+            annotationColor: document.getElementById('annotationColor'),
+            colorBtn: document.getElementById('colorBtn'),
+            strokeWidth: document.getElementById('strokeWidth'),
+            undoBtn: document.getElementById('undoBtn'),
+            redoBtn: document.getElementById('redoBtn'),
+
+            // Properties
+            stepTitle: document.getElementById('stepTitle'),
+            stepDescription: document.getElementById('stepDescription'),
+            calloutOptions: document.querySelectorAll('.callout-option'),
+            calloutTextGroup: document.getElementById('calloutTextGroup'),
+            calloutText: document.getElementById('calloutText'),
+            stepProperties: document.getElementById('stepProperties'),
+            coverProperties: document.getElementById('coverProperties'),
+
+            // Cover
+            coverTitle: document.getElementById('coverTitle'),
+            coverSubtitle: document.getElementById('coverSubtitle'),
+            coverAuthor: document.getElementById('coverAuthor'),
+            coverDate: document.getElementById('coverDate'),
+            logoInput: document.getElementById('logoInput'),
+            logoLabel: document.getElementById('logoLabel'),
+
+            // Image
+            imageInput: document.getElementById('imageInput'),
+
+            // Export
+            exportPdfBtn: document.getElementById('exportPdfBtn'),
+            saveProjectBtn: document.getElementById('saveProjectBtn'),
+            loadProjectBtn: document.getElementById('loadProjectBtn'),
+            loadProjectInput: document.getElementById('loadProjectInput'),
+
+            // Mobile
+            sidebarLeft: document.getElementById('sidebarLeft'),
+            sidebarRight: document.getElementById('sidebarRight'),
+            mobileLeftBtn: document.getElementById('mobileLeftBtn'),
+            mobileRightBtn: document.getElementById('mobileRightBtn'),
+
+            toast: document.getElementById('toast')
+        };
+
+        const ctx = elements.mainCanvas.getContext('2d');
+
+        // ============ Initialize ============
+        function init() {
+            // Add cover page
+            addCoverPage();
+
+            // Set up event listeners
+            setupToolListeners();
+            setupPropertyListeners();
+            setupCanvasListeners();
+            setupFileListeners();
+            setupExportListeners();
+            setupMobileListeners();
+            setupKeyboardShortcuts();
+            setupDragAndDrop();
+
+            renderStepsList();
+            selectStep(0);
+        }
+
+        // ============ Steps Management ============
+        function addCoverPage() {
+            state.steps.unshift({
+                type: 'cover',
+                ...state.coverPage
+            });
+        }
+
+        function addStep() {
+            const stepNumber = state.steps.filter(s => s.type !== 'cover').length + 1;
+            state.steps.push({
+                type: 'step',
+                number: stepNumber,
+                title: `Step ${stepNumber}`,
+                description: '',
+                calloutType: 'none',
+                calloutText: '',
+                image: null,
+                annotations: []
+            });
+
+            renderStepsList();
+            selectStep(state.steps.length - 1);
+        }
+
+        function deleteStep(index) {
+            if (state.steps[index].type === 'cover') {
+                state.coverPage.enabled = false;
+            }
+            state.steps.splice(index, 1);
+
+            // Renumber steps
+            let stepNum = 1;
+            state.steps.forEach(step => {
+                if (step.type === 'step') {
+                    step.number = stepNum++;
+                }
+            });
+
+            renderStepsList();
+            if (state.currentStepIndex >= state.steps.length) {
+                selectStep(state.steps.length - 1);
+            } else {
+                selectStep(state.currentStepIndex);
+            }
+        }
+
+        function selectStep(index) {
+            if (index < 0 || index >= state.steps.length) return;
+
+            state.currentStepIndex = index;
+            const step = state.steps[index];
+
+            // Update UI
+            document.querySelectorAll('.step-item').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+
+            if (step.type === 'cover') {
+                elements.stepProperties.style.display = 'none';
+                elements.coverProperties.style.display = 'block';
+                elements.coverTitle.value = step.title;
+                elements.coverSubtitle.value = step.subtitle;
+                elements.coverAuthor.value = step.author;
+                elements.coverDate.value = step.date;
+                renderCoverPage();
+            } else {
+                elements.stepProperties.style.display = 'block';
+                elements.coverProperties.style.display = 'none';
+                elements.stepTitle.value = step.title;
+                elements.stepDescription.value = step.description;
+                elements.calloutText.value = step.calloutText || '';
+
+                elements.calloutOptions.forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.type === step.calloutType);
+                });
+                elements.calloutTextGroup.style.display = step.calloutType !== 'none' ? 'block' : 'none';
+
+                renderStep();
+            }
+
+            // Reset history for this step
+            state.history = [];
+            state.historyIndex = -1;
+        }
+
+        function renderStepsList() {
+            elements.stepsList.innerHTML = state.steps.map((step, i) => {
+                if (step.type === 'cover') {
+                    return `
+                        <div class="step-item cover-page ${i === state.currentStepIndex ? 'active' : ''}"
+                             data-index="${i}" draggable="true">
+                            <span class="drag-handle">⋮⋮</span>
+                            <div class="step-thumb" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.2em;">
+                                📄
+                            </div>
+                            <div class="step-info">
+                                <div class="step-number">COVER</div>
+                                <div class="step-title">${step.title || 'Cover Page'}</div>
+                            </div>
+                            <button class="delete-btn" data-index="${i}">×</button>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="step-item ${i === state.currentStepIndex ? 'active' : ''}"
+                             data-index="${i}" draggable="true">
+                            <span class="drag-handle">⋮⋮</span>
+                            <div class="step-thumb">
+                                ${step.image ? `<img src="${step.image}" alt="">` : ''}
+                            </div>
+                            <div class="step-info">
+                                <div class="step-number">STEP ${step.number}</div>
+                                <div class="step-title">${step.title || 'Untitled'}</div>
+                            </div>
+                            <button class="delete-btn" data-index="${i}">×</button>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // Add click listeners
+            document.querySelectorAll('.step-item').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('delete-btn')) {
+                        selectStep(parseInt(el.dataset.index));
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteStep(parseInt(btn.dataset.index));
+                });
+            });
+
+            // Add drag listeners
+            setupStepDragListeners();
+        }
+
+        function setupStepDragListeners() {
+            const items = document.querySelectorAll('.step-item');
+
+            items.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    state.draggedStepIndex = parseInt(item.dataset.index);
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    state.draggedStepIndex = -1;
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const targetIndex = parseInt(item.dataset.index);
+                    if (targetIndex !== state.draggedStepIndex) {
+                        item.style.borderTop = '2px solid #667eea';
+                    }
+                });
+
+                item.addEventListener('dragleave', () => {
+                    item.style.borderTop = '';
+                });
+
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    item.style.borderTop = '';
+                    const targetIndex = parseInt(item.dataset.index);
+
+                    if (targetIndex !== state.draggedStepIndex && state.draggedStepIndex >= 0) {
+                        const [movedStep] = state.steps.splice(state.draggedStepIndex, 1);
+                        state.steps.splice(targetIndex, 0, movedStep);
+
+                        // Renumber steps
+                        let stepNum = 1;
+                        state.steps.forEach(step => {
+                            if (step.type === 'step') {
+                                step.number = stepNum++;
+                            }
+                        });
+
+                        renderStepsList();
+                        selectStep(targetIndex);
+                    }
+                });
+            });
+        }
+
+        // ============ Rendering ============
+        function renderCoverPage() {
+            elements.placeholder.style.display = 'none';
+            elements.mainCanvas.style.display = 'none';
+
+            // Create or update cover page display
+            let coverEl = document.getElementById('coverDisplay');
+            if (!coverEl) {
+                coverEl = document.createElement('div');
+                coverEl.id = 'coverDisplay';
+                coverEl.className = 'cover-editor';
+                elements.canvasWrapper.appendChild(coverEl);
+            }
+            coverEl.style.display = 'block';
+
+            const step = state.steps[state.currentStepIndex];
+            coverEl.innerHTML = `
+                ${step.logo ? `<img src="${step.logo}" style="max-height: 60px; margin-bottom: 30px;">` : ''}
+                <h1 style="font-size: 2.5em; color: #1a1a2e; margin-bottom: 15px;">${step.title || 'Document Title'}</h1>
+                <p style="font-size: 1.3em; color: #666; margin-bottom: 40px;">${step.subtitle || 'Subtitle'}</p>
+                <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #eee; color: #888;">
+                    ${step.author ? `<p>Author: ${step.author}</p>` : ''}
+                    ${step.date ? `<p>${step.date}</p>` : ''}
+                </div>
+            `;
+        }
+
+        function renderStep() {
+            const coverEl = document.getElementById('coverDisplay');
+            if (coverEl) coverEl.style.display = 'none';
+
+            const step = state.steps[state.currentStepIndex];
+
+            if (!step || !step.image) {
+                elements.placeholder.style.display = 'flex';
+                elements.mainCanvas.style.display = 'none';
+                return;
+            }
+
+            elements.placeholder.style.display = 'none';
+            elements.mainCanvas.style.display = 'block';
+
+            const img = new Image();
+            img.onload = () => {
+                elements.mainCanvas.width = img.width;
+                elements.mainCanvas.height = img.height;
+
+                ctx.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                // Draw annotations
+                drawAnnotations(step.annotations);
+            };
+            img.src = step.image;
+        }
+
+        function drawAnnotations(annotations) {
+            if (!annotations) return;
+
+            annotations.forEach(ann => {
+                ctx.save();
+                ctx.strokeStyle = ann.color;
+                ctx.fillStyle = ann.color;
+                ctx.lineWidth = ann.strokeWidth || 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                switch (ann.type) {
+                    case 'arrow':
+                        drawArrow(ann.x1, ann.y1, ann.x2, ann.y2);
+                        break;
+                    case 'rect':
+                        ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
+                        break;
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.ellipse(ann.x + ann.width/2, ann.y + ann.height/2,
+                                   Math.abs(ann.width/2), Math.abs(ann.height/2), 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                    case 'line':
+                        ctx.beginPath();
+                        ctx.moveTo(ann.x1, ann.y1);
+                        ctx.lineTo(ann.x2, ann.y2);
+                        ctx.stroke();
+                        break;
+                    case 'text':
+                        ctx.font = `${ann.fontSize || 18}px -apple-system, BlinkMacSystemFont, sans-serif`;
+                        ctx.fillText(ann.text, ann.x, ann.y);
+                        break;
+                    case 'number':
+                        drawStepNumber(ann.x, ann.y, ann.number);
+                        break;
+                    case 'blur':
+                        applyBlur(ann.x, ann.y, ann.width, ann.height);
+                        break;
+                    case 'highlight':
+                        ctx.globalAlpha = 0.3;
+                        ctx.fillRect(ann.x, ann.y, ann.width, ann.height);
+                        ctx.globalAlpha = 1;
+                        break;
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawArrow(x1, y1, x2, y2) {
+            const headLength = 15;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawStepNumber(x, y, number) {
+            const radius = 16;
+
+            // Draw circle background
+            const gradient = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Draw white border
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw number
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(number.toString(), x, y);
+        }
+
+        function applyBlur(x, y, width, height) {
+            // Get image data
+            const imageData = ctx.getImageData(x, y, width, height);
+            const data = imageData.data;
+
+            // Pixelate effect (simpler than blur)
+            const pixelSize = 10;
+            for (let py = 0; py < height; py += pixelSize) {
+                for (let px = 0; px < width; px += pixelSize) {
+                    const i = (py * width + px) * 4;
+                    const r = data[i], g = data[i + 1], b = data[i + 2];
+
+                    for (let y2 = py; y2 < py + pixelSize && y2 < height; y2++) {
+                        for (let x2 = px; x2 < px + pixelSize && x2 < width; x2++) {
+                            const j = (y2 * width + x2) * 4;
+                            data[j] = r;
+                            data[j + 1] = g;
+                            data[j + 2] = b;
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, x, y);
+        }
+
+        // ============ Tool Listeners ============
+        function setupToolListeners() {
+            const toolButtons = {
+                select: elements.selectTool,
+                arrow: elements.arrowTool,
+                rect: elements.rectTool,
+                circle: elements.circleTool,
+                line: elements.lineTool,
+                text: elements.textTool,
+                number: elements.numberTool,
+                blur: elements.blurTool,
+                highlight: elements.highlightTool
+            };
+
+            Object.entries(toolButtons).forEach(([tool, btn]) => {
+                btn.addEventListener('click', () => {
+                    state.currentTool = tool;
+                    Object.values(toolButtons).forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            elements.annotationColor.addEventListener('input', (e) => {
+                state.annotationColor = e.target.value;
+                elements.colorBtn.style.background = e.target.value;
+            });
+
+            elements.colorBtn.addEventListener('click', () => {
+                elements.annotationColor.click();
+            });
+
+            elements.strokeWidth.addEventListener('change', (e) => {
+                state.strokeWidth = parseInt(e.target.value);
+            });
+
+            elements.undoBtn.addEventListener('click', undo);
+            elements.redoBtn.addEventListener('click', redo);
+        }
+
+        // ============ Canvas Listeners ============
+        function setupCanvasListeners() {
+            elements.mainCanvas.addEventListener('mousedown', startDrawing);
+            elements.mainCanvas.addEventListener('mousemove', drawing);
+            elements.mainCanvas.addEventListener('mouseup', endDrawing);
+            elements.mainCanvas.addEventListener('mouseleave', endDrawing);
+        }
+
+        function getCanvasPos(e) {
+            const rect = elements.mainCanvas.getBoundingClientRect();
+            const scaleX = elements.mainCanvas.width / rect.width;
+            const scaleY = elements.mainCanvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            if (state.currentTool === 'select') return;
+
+            const step = state.steps[state.currentStepIndex];
+            if (!step || step.type === 'cover' || !step.image) return;
+
+            state.isDrawing = true;
+            state.drawStart = getCanvasPos(e);
+
+            if (state.currentTool === 'text') {
+                const text = prompt('Enter text:');
+                if (text) {
+                    saveHistory();
+                    step.annotations.push({
+                        type: 'text',
+                        x: state.drawStart.x,
+                        y: state.drawStart.y,
+                        text: text,
+                        color: state.annotationColor,
+                        fontSize: 18
+                    });
+                    renderStep();
+                }
+                state.isDrawing = false;
+            } else if (state.currentTool === 'number') {
+                const nextNum = (step.annotations.filter(a => a.type === 'number').length) + 1;
+                saveHistory();
+                step.annotations.push({
+                    type: 'number',
+                    x: state.drawStart.x,
+                    y: state.drawStart.y,
+                    number: nextNum,
+                    color: state.annotationColor
+                });
+                renderStep();
+                state.isDrawing = false;
+            }
+        }
+
+        function drawing(e) {
+            if (!state.isDrawing || state.currentTool === 'select' ||
+                state.currentTool === 'text' || state.currentTool === 'number') return;
+
+            const step = state.steps[state.currentStepIndex];
+            if (!step || !step.image) return;
+
+            const pos = getCanvasPos(e);
+
+            // Render base image + existing annotations
+            renderStep();
+
+            // Draw preview
+            ctx.save();
+            ctx.strokeStyle = state.annotationColor;
+            ctx.fillStyle = state.annotationColor;
+            ctx.lineWidth = state.strokeWidth;
+            ctx.setLineDash([5, 5]);
+
+            switch (state.currentTool) {
+                case 'arrow':
+                    drawArrow(state.drawStart.x, state.drawStart.y, pos.x, pos.y);
+                    break;
+                case 'rect':
+                    ctx.strokeRect(state.drawStart.x, state.drawStart.y,
+                                  pos.x - state.drawStart.x, pos.y - state.drawStart.y);
+                    break;
+                case 'circle':
+                    const rx = Math.abs(pos.x - state.drawStart.x) / 2;
+                    const ry = Math.abs(pos.y - state.drawStart.y) / 2;
+                    const cx = state.drawStart.x + (pos.x - state.drawStart.x) / 2;
+                    const cy = state.drawStart.y + (pos.y - state.drawStart.y) / 2;
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+                case 'line':
+                    ctx.beginPath();
+                    ctx.moveTo(state.drawStart.x, state.drawStart.y);
+                    ctx.lineTo(pos.x, pos.y);
+                    ctx.stroke();
+                    break;
+                case 'blur':
+                case 'highlight':
+                    ctx.setLineDash([]);
+                    ctx.strokeRect(state.drawStart.x, state.drawStart.y,
+                                  pos.x - state.drawStart.x, pos.y - state.drawStart.y);
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        function endDrawing(e) {
+            if (!state.isDrawing || state.currentTool === 'select' ||
+                state.currentTool === 'text' || state.currentTool === 'number') {
+                state.isDrawing = false;
+                return;
+            }
+
+            const step = state.steps[state.currentStepIndex];
+            if (!step || !step.image) {
+                state.isDrawing = false;
+                return;
+            }
+
+            const pos = getCanvasPos(e);
+            saveHistory();
+
+            const annotation = {
+                type: state.currentTool,
+                color: state.annotationColor,
+                strokeWidth: state.strokeWidth
+            };
+
+            switch (state.currentTool) {
+                case 'arrow':
+                case 'line':
+                    annotation.x1 = state.drawStart.x;
+                    annotation.y1 = state.drawStart.y;
+                    annotation.x2 = pos.x;
+                    annotation.y2 = pos.y;
+                    break;
+                case 'rect':
+                case 'circle':
+                case 'blur':
+                case 'highlight':
+                    annotation.x = Math.min(state.drawStart.x, pos.x);
+                    annotation.y = Math.min(state.drawStart.y, pos.y);
+                    annotation.width = Math.abs(pos.x - state.drawStart.x);
+                    annotation.height = Math.abs(pos.y - state.drawStart.y);
+                    break;
+            }
+
+            step.annotations.push(annotation);
+            state.isDrawing = false;
+            renderStep();
+        }
+
+        // ============ History ============
+        function saveHistory() {
+            const step = state.steps[state.currentStepIndex];
+            if (!step) return;
+
+            state.history = state.history.slice(0, state.historyIndex + 1);
+            state.history.push(JSON.stringify(step.annotations));
+            state.historyIndex = state.history.length - 1;
+        }
+
+        function undo() {
+            if (state.historyIndex <= 0) return;
+
+            const step = state.steps[state.currentStepIndex];
+            if (!step || step.type === 'cover') return;
+
+            state.historyIndex--;
+            step.annotations = JSON.parse(state.history[state.historyIndex]);
+            renderStep();
+        }
+
+        function redo() {
+            if (state.historyIndex >= state.history.length - 1) return;
+
+            const step = state.steps[state.currentStepIndex];
+            if (!step || step.type === 'cover') return;
+
+            state.historyIndex++;
+            step.annotations = JSON.parse(state.history[state.historyIndex]);
+            renderStep();
+        }
+
+        // ============ Property Listeners ============
+        function setupPropertyListeners() {
+            elements.stepTitle.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step && step.type === 'step') {
+                    step.title = elements.stepTitle.value;
+                    renderStepsList();
+                }
+            });
+
+            elements.stepDescription.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step) step.description = elements.stepDescription.value;
+            });
+
+            elements.calloutOptions.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    elements.calloutOptions.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+
+                    const step = state.steps[state.currentStepIndex];
+                    if (step) {
+                        step.calloutType = opt.dataset.type;
+                        elements.calloutTextGroup.style.display = opt.dataset.type !== 'none' ? 'block' : 'none';
+                    }
+                });
+            });
+
+            elements.calloutText.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step) step.calloutText = elements.calloutText.value;
+            });
+
+            // Cover properties
+            elements.coverTitle.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step && step.type === 'cover') {
+                    step.title = elements.coverTitle.value;
+                    renderCoverPage();
+                    renderStepsList();
+                }
+            });
+
+            elements.coverSubtitle.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step && step.type === 'cover') {
+                    step.subtitle = elements.coverSubtitle.value;
+                    renderCoverPage();
+                }
+            });
+
+            elements.coverAuthor.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step && step.type === 'cover') {
+                    step.author = elements.coverAuthor.value;
+                    renderCoverPage();
+                }
+            });
+
+            elements.coverDate.addEventListener('input', () => {
+                const step = state.steps[state.currentStepIndex];
+                if (step && step.type === 'cover') {
+                    step.date = elements.coverDate.value;
+                    renderCoverPage();
+                }
+            });
+        }
+
+        // ============ File Listeners ============
+        function setupFileListeners() {
+            elements.imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const step = state.steps[state.currentStepIndex];
+                    if (step && step.type === 'step') {
+                        step.image = event.target.result;
+                        step.annotations = [];
+                        state.history = [];
+                        state.historyIndex = -1;
+                        renderStep();
+                        renderStepsList();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            elements.logoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const step = state.steps[state.currentStepIndex];
+                    if (step && step.type === 'cover') {
+                        step.logo = event.target.result;
+                        renderCoverPage();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ============ Drag and Drop ============
+        function setupDragAndDrop() {
+            elements.canvasContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+
+            elements.canvasContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+
+                if (file && file.type.startsWith('image/')) {
+                    const step = state.steps[state.currentStepIndex];
+
+                    if (!step || step.type === 'cover') {
+                        // Add new step
+                        addStep();
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const currentStep = state.steps[state.currentStepIndex];
+                        if (currentStep && currentStep.type === 'step') {
+                            currentStep.image = event.target.result;
+                            currentStep.annotations = [];
+                            renderStep();
+                            renderStepsList();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // ============ Export ============
+        function setupExportListeners() {
+            elements.exportPdfBtn.addEventListener('click', exportToPDF);
+
+            elements.saveProjectBtn.addEventListener('click', () => {
+                const project = {
+                    version: 1,
+                    steps: state.steps,
+                    coverPage: state.coverPage
+                };
+
+                const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `walkthrough-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showToast('Project saved!');
+            });
+
+            elements.loadProjectBtn.addEventListener('click', () => {
+                elements.loadProjectInput.click();
+            });
+
+            elements.loadProjectInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const project = JSON.parse(event.target.result);
+                        state.steps = project.steps;
+                        state.coverPage = project.coverPage || state.coverPage;
+                        renderStepsList();
+                        selectStep(0);
+                        showToast('Project loaded!');
+                    } catch (err) {
+                        showToast('Error loading project');
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        async function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+
+            // A4 dimensions in mm
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 20;
+            const contentWidth = pageWidth - margin * 2;
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            let isFirstPage = true;
+
+            for (const step of state.steps) {
+                if (!isFirstPage) {
+                    pdf.addPage();
+                }
+                isFirstPage = false;
+
+                if (step.type === 'cover') {
+                    // Cover page
+                    pdf.setFillColor(102, 126, 234);
+                    pdf.rect(0, 0, pageWidth, 8, 'F');
+
+                    let yPos = 60;
+
+                    if (step.logo) {
+                        try {
+                            pdf.addImage(step.logo, 'PNG', margin, yPos, 40, 20);
+                            yPos += 35;
+                        } catch (e) {}
+                    }
+
+                    pdf.setFontSize(32);
+                    pdf.setTextColor(26, 26, 46);
+                    pdf.text(step.title || 'Document Title', margin, yPos);
+                    yPos += 15;
+
+                    pdf.setFontSize(16);
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.text(step.subtitle || '', margin, yPos);
+                    yPos += 40;
+
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 15;
+
+                    pdf.setFontSize(12);
+                    if (step.author) {
+                        pdf.text(`Author: ${step.author}`, margin, yPos);
+                        yPos += 8;
+                    }
+                    if (step.date) {
+                        pdf.text(step.date, margin, yPos);
+                    }
+
+                } else {
+                    // Step page
+                    let yPos = margin;
+
+                    // Step header
+                    pdf.setFillColor(102, 126, 234);
+                    pdf.roundedRect(margin, yPos, 50, 10, 2, 2, 'F');
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(255, 255, 255);
+                    pdf.text(`Step ${step.number}`, margin + 5, yPos + 7);
+                    yPos += 20;
+
+                    // Title
+                    pdf.setFontSize(18);
+                    pdf.setTextColor(26, 26, 46);
+                    pdf.text(step.title || 'Untitled Step', margin, yPos);
+                    yPos += 12;
+
+                    // Description
+                    if (step.description) {
+                        pdf.setFontSize(11);
+                        pdf.setTextColor(80, 80, 80);
+                        const lines = pdf.splitTextToSize(step.description, contentWidth);
+                        pdf.text(lines, margin, yPos);
+                        yPos += lines.length * 5 + 8;
+                    }
+
+                    // Image with annotations
+                    if (step.image) {
+                        // Render image with annotations to a temporary canvas
+                        const tempCanvas = document.createElement('canvas');
+                        const tempCtx = tempCanvas.getContext('2d');
+
+                        const img = await loadImage(step.image);
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
+                        tempCtx.drawImage(img, 0, 0);
+
+                        // Draw annotations
+                        step.annotations.forEach(ann => {
+                            tempCtx.save();
+                            tempCtx.strokeStyle = ann.color;
+                            tempCtx.fillStyle = ann.color;
+                            tempCtx.lineWidth = ann.strokeWidth || 3;
+                            tempCtx.lineCap = 'round';
+                            tempCtx.lineJoin = 'round';
+
+                            switch (ann.type) {
+                                case 'arrow':
+                                    drawArrowOnCtx(tempCtx, ann.x1, ann.y1, ann.x2, ann.y2);
+                                    break;
+                                case 'rect':
+                                    tempCtx.strokeRect(ann.x, ann.y, ann.width, ann.height);
+                                    break;
+                                case 'circle':
+                                    tempCtx.beginPath();
+                                    tempCtx.ellipse(ann.x + ann.width/2, ann.y + ann.height/2,
+                                                   Math.abs(ann.width/2), Math.abs(ann.height/2), 0, 0, Math.PI * 2);
+                                    tempCtx.stroke();
+                                    break;
+                                case 'line':
+                                    tempCtx.beginPath();
+                                    tempCtx.moveTo(ann.x1, ann.y1);
+                                    tempCtx.lineTo(ann.x2, ann.y2);
+                                    tempCtx.stroke();
+                                    break;
+                                case 'text':
+                                    tempCtx.font = `${ann.fontSize || 18}px sans-serif`;
+                                    tempCtx.fillText(ann.text, ann.x, ann.y);
+                                    break;
+                                case 'number':
+                                    drawStepNumberOnCtx(tempCtx, ann.x, ann.y, ann.number);
+                                    break;
+                                case 'blur':
+                                    applyBlurOnCtx(tempCtx, ann.x, ann.y, ann.width, ann.height);
+                                    break;
+                                case 'highlight':
+                                    tempCtx.globalAlpha = 0.3;
+                                    tempCtx.fillRect(ann.x, ann.y, ann.width, ann.height);
+                                    tempCtx.globalAlpha = 1;
+                                    break;
+                            }
+                            tempCtx.restore();
+                        });
+
+                        const imgData = tempCanvas.toDataURL('image/png');
+                        const aspectRatio = img.height / img.width;
+                        const imgWidth = contentWidth;
+                        const imgHeight = imgWidth * aspectRatio;
+
+                        // Check if image fits, scale down if needed
+                        const maxImgHeight = pageHeight - yPos - margin - 30;
+                        const finalWidth = imgHeight > maxImgHeight ? maxImgHeight / aspectRatio : imgWidth;
+                        const finalHeight = imgHeight > maxImgHeight ? maxImgHeight : imgHeight;
+
+                        pdf.addImage(imgData, 'PNG', margin, yPos, finalWidth, finalHeight);
+                        yPos += finalHeight + 10;
+                    }
+
+                    // Callout
+                    if (step.calloutType !== 'none' && step.calloutText) {
+                        const calloutColors = {
+                            tip: [39, 174, 96],
+                            warning: [241, 196, 15],
+                            note: [52, 152, 219]
+                        };
+                        const color = calloutColors[step.calloutType] || [100, 100, 100];
+
+                        pdf.setFillColor(...color);
+                        pdf.rect(margin, yPos, 3, 15, 'F');
+
+                        pdf.setFontSize(10);
+                        pdf.setTextColor(...color);
+                        pdf.text(step.calloutType.toUpperCase(), margin + 6, yPos + 5);
+
+                        pdf.setTextColor(80, 80, 80);
+                        const calloutLines = pdf.splitTextToSize(step.calloutText, contentWidth - 10);
+                        pdf.text(calloutLines, margin + 6, yPos + 12);
+                    }
+                }
+            }
+
+            pdf.save(`walkthrough-${Date.now()}.pdf`);
+            showToast('PDF exported!');
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        function drawArrowOnCtx(ctx, x1, y1, x2, y2) {
+            const headLength = 15;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawStepNumberOnCtx(ctx, x, y, number) {
+            const radius = 16;
+            const gradient = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(number.toString(), x, y);
+        }
+
+        function applyBlurOnCtx(ctx, x, y, width, height) {
+            const imageData = ctx.getImageData(x, y, width, height);
+            const data = imageData.data;
+            const pixelSize = 10;
+
+            for (let py = 0; py < height; py += pixelSize) {
+                for (let px = 0; px < width; px += pixelSize) {
+                    const i = (py * width + px) * 4;
+                    const r = data[i], g = data[i + 1], b = data[i + 2];
+
+                    for (let y2 = py; y2 < py + pixelSize && y2 < height; y2++) {
+                        for (let x2 = px; x2 < px + pixelSize && x2 < width; x2++) {
+                            const j = (y2 * width + x2) * 4;
+                            data[j] = r;
+                            data[j + 1] = g;
+                            data[j + 2] = b;
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, x, y);
+        }
+
+        // ============ Mobile ============
+        function setupMobileListeners() {
+            elements.mobileLeftBtn.addEventListener('click', () => {
+                elements.sidebarLeft.classList.toggle('mobile-open');
+                elements.sidebarRight.classList.remove('mobile-open');
+            });
+
+            elements.mobileRightBtn.addEventListener('click', () => {
+                elements.sidebarRight.classList.toggle('mobile-open');
+                elements.sidebarLeft.classList.remove('mobile-open');
+            });
+        }
+
+        // ============ Keyboard Shortcuts ============
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') {
+                        e.preventDefault();
+                        undo();
+                    } else if (e.key === 'y') {
+                        e.preventDefault();
+                        redo();
+                    } else if (e.key === 's') {
+                        e.preventDefault();
+                        elements.saveProjectBtn.click();
+                    }
+                } else {
+                    switch (e.key.toLowerCase()) {
+                        case 'v': elements.selectTool.click(); break;
+                        case 'a': elements.arrowTool.click(); break;
+                        case 'r': elements.rectTool.click(); break;
+                        case 'c': elements.circleTool.click(); break;
+                        case 'l': elements.lineTool.click(); break;
+                        case 't': elements.textTool.click(); break;
+                        case 'n': elements.numberTool.click(); break;
+                        case 'b': elements.blurTool.click(); break;
+                        case 'h': elements.highlightTool.click(); break;
+                    }
+                }
+            });
+        }
+
+        // ============ Toast ============
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => elements.toast.classList.remove('show'), 2500);
+        }
+
+        // ============ Initialize ============
+        elements.addStepBtn.addEventListener('click', addStep);
+        init();
+    </script>
+</body>
+</html>

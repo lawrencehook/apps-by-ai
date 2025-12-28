@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Diagram Builder - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a12;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        h1 { font-size: 1.4rem; font-weight: 500; }
+        h1 span { color: #00d4ff; }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.15); }
+        .btn-primary {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+        .btn-primary:hover { background: rgba(0, 212, 255, 0.3); }
+        .btn-danger {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .back-link {
+            color: #888;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+        }
+        .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        /* Components Panel */
+        .components-panel {
+            background: rgba(255,255,255,0.02);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .component-item {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            transition: all 0.2s;
+            padding: 8px;
+        }
+        .component-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+        .component-item:active { cursor: grabbing; }
+        .component-item svg {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 6px;
+        }
+        .component-item span {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+        }
+
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #circuitCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .canvas-tools {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(10, 10, 18, 0.9);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #888;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .tool-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+        .tool-btn svg { width: 20px; height: 20px; }
+
+        /* Properties Panel */
+        .properties-panel {
+            background: rgba(255,255,255,0.02);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .prop-section {
+            margin-bottom: 20px;
+        }
+
+        .prop-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prop-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .prop-value {
+            font-size: 13px;
+            color: #00d4ff;
+        }
+
+        .prop-input {
+            width: 100px;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 13px;
+            text-align: right;
+        }
+        .prop-input:focus { outline: none; border-color: #00d4ff; }
+
+        .simulation-status {
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .simulation-status.error {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+        .simulation-status .status-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+        .simulation-status.error .status-title { color: #ff6b6b; }
+        .simulation-status .status-message {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .readings {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .reading-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .reading-item:last-child { border-bottom: none; }
+        .reading-label { font-size: 12px; color: #888; }
+        .reading-value { font-size: 14px; font-weight: 500; color: #4ecdc4; }
+
+        .no-selection {
+            text-align: center;
+            color: #555;
+            padding: 40px 20px;
+            font-size: 13px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+        }
+        .tooltip.visible { opacity: 1; }
+
+        @media (max-width: 1000px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            .components-panel, .properties-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Circuit <span>Diagram</span> Builder</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="toggleSimulation()">
+                    <span id="simBtnText">Start Simulation</span>
+                </button>
+                <button class="btn" onclick="clearCircuit()">Clear</button>
+                <button class="btn" onclick="exportSVG()">Export SVG</button>
+                <a href="../../index.html" class="back-link">Back</a>
+            </div>
+        </header>
+
+        <div class="components-panel">
+            <div class="panel-title">Power Sources</div>
+            <div class="component-grid">
+                <div class="component-item" draggable="true" data-type="battery">
+                    <svg viewBox="0 0 60 30" fill="none" stroke="#00d4ff" stroke-width="2">
+                        <line x1="0" y1="15" x2="20" y2="15"/>
+                        <line x1="20" y1="5" x2="20" y2="25"/>
+                        <line x1="28" y1="10" x2="28" y2="20"/>
+                        <line x1="28" y1="15" x2="60" y2="15"/>
+                    </svg>
+                    <span>Battery</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="ground">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="#00d4ff" stroke-width="2">
+                        <line x1="20" y1="0" x2="20" y2="20"/>
+                        <line x1="8" y1="20" x2="32" y2="20"/>
+                        <line x1="12" y1="26" x2="28" y2="26"/>
+                        <line x1="16" y1="32" x2="24" y2="32"/>
+                    </svg>
+                    <span>Ground</span>
+                </div>
+            </div>
+
+            <div class="panel-title">Passive Components</div>
+            <div class="component-grid">
+                <div class="component-item" draggable="true" data-type="resistor">
+                    <svg viewBox="0 0 60 20" fill="none" stroke="#ff6b6b" stroke-width="2">
+                        <line x1="0" y1="10" x2="10" y2="10"/>
+                        <polyline points="10,10 14,2 22,18 30,2 38,18 46,2 50,10"/>
+                        <line x1="50" y1="10" x2="60" y2="10"/>
+                    </svg>
+                    <span>Resistor</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="capacitor">
+                    <svg viewBox="0 0 60 30" fill="none" stroke="#ffe66d" stroke-width="2">
+                        <line x1="0" y1="15" x2="25" y2="15"/>
+                        <line x1="25" y1="5" x2="25" y2="25"/>
+                        <line x1="35" y1="5" x2="35" y2="25"/>
+                        <line x1="35" y1="15" x2="60" y2="15"/>
+                    </svg>
+                    <span>Capacitor</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="inductor">
+                    <svg viewBox="0 0 60 20" fill="none" stroke="#a29bfe" stroke-width="2">
+                        <line x1="0" y1="10" x2="8" y2="10"/>
+                        <path d="M8,10 Q13,0 18,10 Q23,20 28,10 Q33,0 38,10 Q43,20 48,10"/>
+                        <line x1="48" y1="10" x2="60" y2="10"/>
+                    </svg>
+                    <span>Inductor</span>
+                </div>
+            </div>
+
+            <div class="panel-title">Semiconductors</div>
+            <div class="component-grid">
+                <div class="component-item" draggable="true" data-type="led">
+                    <svg viewBox="0 0 60 30" fill="none" stroke="#4ecdc4" stroke-width="2">
+                        <line x1="0" y1="15" x2="20" y2="15"/>
+                        <polygon points="20,5 20,25 40,15" fill="none"/>
+                        <line x1="40" y1="5" x2="40" y2="25"/>
+                        <line x1="40" y1="15" x2="60" y2="15"/>
+                        <line x1="35" y1="0" x2="45" y2="-5" stroke-width="1.5"/>
+                        <line x1="40" y1="2" x2="50" y2="-3" stroke-width="1.5"/>
+                    </svg>
+                    <span>LED</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="diode">
+                    <svg viewBox="0 0 60 30" fill="none" stroke="#fd79a8" stroke-width="2">
+                        <line x1="0" y1="15" x2="20" y2="15"/>
+                        <polygon points="20,5 20,25 40,15" fill="none"/>
+                        <line x1="40" y1="5" x2="40" y2="25"/>
+                        <line x1="40" y1="15" x2="60" y2="15"/>
+                    </svg>
+                    <span>Diode</span>
+                </div>
+            </div>
+
+            <div class="panel-title">Controls</div>
+            <div class="component-grid">
+                <div class="component-item" draggable="true" data-type="switch">
+                    <svg viewBox="0 0 60 30" fill="none" stroke="#fff" stroke-width="2">
+                        <line x1="0" y1="15" x2="15" y2="15"/>
+                        <circle cx="18" cy="15" r="3" fill="none"/>
+                        <line x1="21" y1="13" x2="42" y2="5"/>
+                        <circle cx="45" cy="15" r="3" fill="none"/>
+                        <line x1="48" y1="15" x2="60" y2="15"/>
+                    </svg>
+                    <span>Switch</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="bulb">
+                    <svg viewBox="0 0 60 40" fill="none" stroke="#ffe66d" stroke-width="2">
+                        <line x1="0" y1="20" x2="15" y2="20"/>
+                        <circle cx="30" cy="20" r="12" fill="none"/>
+                        <line x1="22" y1="14" x2="38" y2="26"/>
+                        <line x1="22" y1="26" x2="38" y2="14"/>
+                        <line x1="45" y1="20" x2="60" y2="20"/>
+                    </svg>
+                    <span>Bulb</span>
+                </div>
+            </div>
+
+            <div class="panel-title">Wiring</div>
+            <div class="component-grid">
+                <div class="component-item" draggable="true" data-type="wire_h">
+                    <svg viewBox="0 0 60 10" fill="none" stroke="#666" stroke-width="2">
+                        <line x1="0" y1="5" x2="60" y2="5"/>
+                    </svg>
+                    <span>Wire (H)</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="wire_v">
+                    <svg viewBox="0 0 10 60" fill="none" stroke="#666" stroke-width="2">
+                        <line x1="5" y1="0" x2="5" y2="60"/>
+                    </svg>
+                    <span>Wire (V)</span>
+                </div>
+                <div class="component-item" draggable="true" data-type="junction">
+                    <svg viewBox="0 0 30 30" fill="none">
+                        <circle cx="15" cy="15" r="5" fill="#00d4ff"/>
+                    </svg>
+                    <span>Junction</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            <canvas id="circuitCanvas"></canvas>
+
+            <div class="canvas-tools">
+                <div class="tool-btn active" data-tool="select" onclick="setTool('select')" title="Select">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                    </svg>
+                </div>
+                <div class="tool-btn" data-tool="wire" onclick="setTool('wire')" title="Draw Wire">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 20L20 4"/>
+                        <circle cx="4" cy="20" r="2"/>
+                        <circle cx="20" cy="4" r="2"/>
+                    </svg>
+                </div>
+                <div class="tool-btn" data-tool="delete" onclick="setTool('delete')" title="Delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                    </svg>
+                </div>
+                <div class="tool-btn" data-tool="rotate" onclick="rotateSelected()" title="Rotate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="properties-panel">
+            <div class="panel-title">Simulation</div>
+            <div class="simulation-status" id="simStatus">
+                <div class="status-title">Status</div>
+                <div class="status-message" id="simMessage">Ready - Add components and connect them</div>
+            </div>
+
+            <div class="prop-section" id="circuitReadings" style="display: none;">
+                <div class="panel-title">Circuit Readings</div>
+                <div class="readings">
+                    <div class="reading-item">
+                        <span class="reading-label">Voltage</span>
+                        <span class="reading-value" id="readingVoltage">0.00 V</span>
+                    </div>
+                    <div class="reading-item">
+                        <span class="reading-label">Current</span>
+                        <span class="reading-value" id="readingCurrent">0.00 mA</span>
+                    </div>
+                    <div class="reading-item">
+                        <span class="reading-label">Power</span>
+                        <span class="reading-value" id="readingPower">0.00 mW</span>
+                    </div>
+                    <div class="reading-item">
+                        <span class="reading-label">Resistance</span>
+                        <span class="reading-value" id="readingResistance">0.00 &Omega;</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prop-section" id="componentProps">
+                <div class="panel-title">Component Properties</div>
+                <div class="no-selection">Click a component to view its properties</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+
+        // Grid settings
+        const GRID_SIZE = 20;
+        const COMPONENT_SCALE = 3;
+
+        // State
+        let components = [];
+        let wires = [];
+        let selectedComponent = null;
+        let currentTool = 'select';
+        let isSimulating = false;
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let wireStart = null;
+
+        // Component definitions
+        const componentDefs = {
+            battery: { width: 60, height: 30, color: '#00d4ff', voltage: 9, connectors: [[0, 15], [60, 15]] },
+            ground: { width: 40, height: 40, color: '#00d4ff', connectors: [[20, 0]] },
+            resistor: { width: 60, height: 20, color: '#ff6b6b', resistance: 1000, connectors: [[0, 10], [60, 10]] },
+            capacitor: { width: 60, height: 30, color: '#ffe66d', capacitance: 100, connectors: [[0, 15], [60, 15]] },
+            inductor: { width: 60, height: 20, color: '#a29bfe', inductance: 10, connectors: [[0, 10], [60, 10]] },
+            led: { width: 60, height: 30, color: '#4ecdc4', forwardVoltage: 2, connectors: [[0, 15], [60, 15]] },
+            diode: { width: 60, height: 30, color: '#fd79a8', forwardVoltage: 0.7, connectors: [[0, 15], [60, 15]] },
+            switch: { width: 60, height: 30, color: '#fff', closed: false, connectors: [[0, 15], [60, 15]] },
+            bulb: { width: 60, height: 40, color: '#ffe66d', resistance: 100, connectors: [[0, 20], [60, 20]] },
+            wire_h: { width: 60, height: 10, color: '#666', connectors: [[0, 5], [60, 5]] },
+            wire_v: { width: 10, height: 60, color: '#666', connectors: [[5, 0], [5, 60]] },
+            junction: { width: 30, height: 30, color: '#00d4ff', connectors: [[15, 15]] }
+        };
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Drag and drop from palette
+            document.querySelectorAll('.component-item').forEach(item => {
+                item.addEventListener('dragstart', onDragStart);
+            });
+
+            container.addEventListener('dragover', e => e.preventDefault());
+            container.addEventListener('drop', onDrop);
+
+            // Canvas interactions
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('dblclick', onDoubleClick);
+
+            render();
+        }
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            render();
+        }
+
+        function onDragStart(e) {
+            e.dataTransfer.setData('componentType', e.target.closest('.component-item').dataset.type);
+        }
+
+        function onDrop(e) {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('componentType');
+            if (!type) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = snapToGrid(e.clientX - rect.left);
+            const y = snapToGrid(e.clientY - rect.top);
+
+            addComponent(type, x, y);
+        }
+
+        function snapToGrid(val) {
+            return Math.round(val / GRID_SIZE) * GRID_SIZE;
+        }
+
+        function addComponent(type, x, y) {
+            const def = componentDefs[type];
+            const component = {
+                id: Date.now(),
+                type,
+                x: x - def.width / 2,
+                y: y - def.height / 2,
+                width: def.width,
+                height: def.height,
+                rotation: 0,
+                ...def
+            };
+
+            // Copy default values
+            if (def.voltage) component.voltage = def.voltage;
+            if (def.resistance) component.resistance = def.resistance;
+            if (def.capacitance) component.capacitance = def.capacitance;
+            if (def.inductance) component.inductance = def.inductance;
+            if (def.forwardVoltage) component.forwardVoltage = def.forwardVoltage;
+            if (def.closed !== undefined) component.closed = def.closed;
+
+            components.push(component);
+            selectedComponent = component;
+            updatePropertiesPanel();
+            render();
+        }
+
+        function onMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentTool === 'wire') {
+                wireStart = { x: snapToGrid(x), y: snapToGrid(y) };
+                return;
+            }
+
+            // Check if clicking on a component
+            const clicked = components.find(c => isPointInComponent(x, y, c));
+
+            if (currentTool === 'delete' && clicked) {
+                components = components.filter(c => c !== clicked);
+                if (selectedComponent === clicked) selectedComponent = null;
+                updatePropertiesPanel();
+                render();
+                return;
+            }
+
+            if (clicked) {
+                selectedComponent = clicked;
+                isDragging = true;
+                dragOffset = {
+                    x: x - clicked.x,
+                    y: y - clicked.y
+                };
+                updatePropertiesPanel();
+            } else {
+                selectedComponent = null;
+                updatePropertiesPanel();
+            }
+
+            render();
+        }
+
+        function onMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (isDragging && selectedComponent) {
+                selectedComponent.x = snapToGrid(x - dragOffset.x);
+                selectedComponent.y = snapToGrid(y - dragOffset.y);
+                render();
+            }
+
+            if (wireStart) {
+                render();
+                // Draw preview wire
+                ctx.beginPath();
+                ctx.moveTo(wireStart.x, wireStart.y);
+                ctx.lineTo(snapToGrid(x), snapToGrid(y));
+                ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function onMouseUp(e) {
+            if (wireStart) {
+                const rect = canvas.getBoundingClientRect();
+                const x = snapToGrid(e.clientX - rect.left);
+                const y = snapToGrid(e.clientY - rect.top);
+
+                if (wireStart.x !== x || wireStart.y !== y) {
+                    wires.push({
+                        x1: wireStart.x,
+                        y1: wireStart.y,
+                        x2: x,
+                        y2: y
+                    });
+                }
+                wireStart = null;
+            }
+
+            isDragging = false;
+            render();
+        }
+
+        function onDoubleClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clicked = components.find(c => isPointInComponent(x, y, c));
+            if (clicked && clicked.type === 'switch') {
+                clicked.closed = !clicked.closed;
+                if (isSimulating) simulate();
+                render();
+            }
+        }
+
+        function isPointInComponent(x, y, c) {
+            return x >= c.x && x <= c.x + c.width &&
+                   y >= c.y && y <= c.y + c.height;
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tool === tool);
+            });
+        }
+
+        function rotateSelected() {
+            if (selectedComponent) {
+                selectedComponent.rotation = (selectedComponent.rotation + 90) % 360;
+                render();
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw wires
+            wires.forEach(wire => {
+                ctx.beginPath();
+                ctx.moveTo(wire.x1, wire.y1);
+                ctx.lineTo(wire.x2, wire.y2);
+                ctx.strokeStyle = isSimulating && wire.current ? '#00d4ff' : '#666';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Animated current flow
+                if (isSimulating && wire.current) {
+                    drawCurrentFlow(wire);
+                }
+            });
+
+            // Draw components
+            components.forEach(comp => {
+                drawComponent(comp, comp === selectedComponent);
+            });
+        }
+
+        function drawComponent(comp, isSelected) {
+            ctx.save();
+            ctx.translate(comp.x + comp.width / 2, comp.y + comp.height / 2);
+            ctx.rotate(comp.rotation * Math.PI / 180);
+            ctx.translate(-comp.width / 2, -comp.height / 2);
+
+            const glowColor = isSimulating && comp.active ? comp.color : null;
+
+            // Selection highlight
+            if (isSelected) {
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(-5, -5, comp.width + 10, comp.height + 10);
+                ctx.setLineDash([]);
+            }
+
+            // Glow effect when active
+            if (glowColor) {
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur = 15;
+            }
+
+            // Draw based on type
+            ctx.strokeStyle = comp.color;
+            ctx.fillStyle = comp.color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            switch (comp.type) {
+                case 'battery':
+                    ctx.beginPath();
+                    ctx.moveTo(0, comp.height / 2);
+                    ctx.lineTo(20, comp.height / 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(20, 5);
+                    ctx.lineTo(20, 25);
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(28, 10);
+                    ctx.lineTo(28, 20);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(28, comp.height / 2);
+                    ctx.lineTo(60, comp.height / 2);
+                    ctx.stroke();
+                    // + and - symbols
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('+', 12, 8);
+                    ctx.fillText('-', 32, 8);
+                    break;
+
+                case 'ground':
+                    ctx.beginPath();
+                    ctx.moveTo(20, 0);
+                    ctx.lineTo(20, 20);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(8, 20);
+                    ctx.lineTo(32, 20);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(12, 26);
+                    ctx.lineTo(28, 26);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(16, 32);
+                    ctx.lineTo(24, 32);
+                    ctx.stroke();
+                    break;
+
+                case 'resistor':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 10);
+                    ctx.lineTo(10, 10);
+                    ctx.lineTo(14, 2);
+                    ctx.lineTo(22, 18);
+                    ctx.lineTo(30, 2);
+                    ctx.lineTo(38, 18);
+                    ctx.lineTo(46, 2);
+                    ctx.lineTo(50, 10);
+                    ctx.lineTo(60, 10);
+                    ctx.stroke();
+                    break;
+
+                case 'capacitor':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 15);
+                    ctx.lineTo(25, 15);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(25, 5);
+                    ctx.lineTo(25, 25);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(35, 5);
+                    ctx.lineTo(35, 25);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(35, 15);
+                    ctx.lineTo(60, 15);
+                    ctx.stroke();
+                    break;
+
+                case 'inductor':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 10);
+                    ctx.lineTo(8, 10);
+                    ctx.stroke();
+                    for (let i = 0; i < 4; i++) {
+                        ctx.beginPath();
+                        ctx.arc(18 + i * 10, 10, 5, Math.PI, 0, false);
+                        ctx.stroke();
+                    }
+                    ctx.beginPath();
+                    ctx.moveTo(48, 10);
+                    ctx.lineTo(60, 10);
+                    ctx.stroke();
+                    break;
+
+                case 'led':
+                case 'diode':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 15);
+                    ctx.lineTo(20, 15);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(20, 5);
+                    ctx.lineTo(20, 25);
+                    ctx.lineTo(40, 15);
+                    ctx.closePath();
+                    if (isSimulating && comp.active) {
+                        ctx.fill();
+                    }
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(40, 5);
+                    ctx.lineTo(40, 25);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(40, 15);
+                    ctx.lineTo(60, 15);
+                    ctx.stroke();
+                    // Light rays for LED
+                    if (comp.type === 'led') {
+                        ctx.beginPath();
+                        ctx.moveTo(35, 0);
+                        ctx.lineTo(45, -5);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(40, 2);
+                        ctx.lineTo(50, -3);
+                        ctx.stroke();
+                    }
+                    break;
+
+                case 'switch':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 15);
+                    ctx.lineTo(15, 15);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(18, 15, 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    if (comp.closed) {
+                        ctx.beginPath();
+                        ctx.moveTo(21, 15);
+                        ctx.lineTo(42, 15);
+                        ctx.stroke();
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(21, 13);
+                        ctx.lineTo(42, 5);
+                        ctx.stroke();
+                    }
+                    ctx.beginPath();
+                    ctx.arc(45, 15, 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(48, 15);
+                    ctx.lineTo(60, 15);
+                    ctx.stroke();
+                    break;
+
+                case 'bulb':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 20);
+                    ctx.lineTo(15, 20);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(30, 20, 12, 0, Math.PI * 2);
+                    if (isSimulating && comp.active) {
+                        ctx.fillStyle = `rgba(255, 230, 109, ${comp.brightness || 0.3})`;
+                        ctx.fill();
+                    }
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(22, 14);
+                    ctx.lineTo(38, 26);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(22, 26);
+                    ctx.lineTo(38, 14);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(45, 20);
+                    ctx.lineTo(60, 20);
+                    ctx.stroke();
+                    break;
+
+                case 'wire_h':
+                    ctx.beginPath();
+                    ctx.moveTo(0, 5);
+                    ctx.lineTo(60, 5);
+                    ctx.stroke();
+                    break;
+
+                case 'wire_v':
+                    ctx.beginPath();
+                    ctx.moveTo(5, 0);
+                    ctx.lineTo(5, 60);
+                    ctx.stroke();
+                    break;
+
+                case 'junction':
+                    ctx.beginPath();
+                    ctx.arc(15, 15, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        let flowOffset = 0;
+        function drawCurrentFlow(wire) {
+            const dx = wire.x2 - wire.x1;
+            const dy = wire.y2 - wire.y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const dots = Math.floor(len / 15);
+
+            ctx.fillStyle = '#00d4ff';
+            for (let i = 0; i < dots; i++) {
+                const t = ((i / dots) + flowOffset) % 1;
+                const x = wire.x1 + dx * t;
+                const y = wire.y1 + dy * t;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function toggleSimulation() {
+            isSimulating = !isSimulating;
+            document.getElementById('simBtnText').textContent = isSimulating ? 'Stop Simulation' : 'Start Simulation';
+
+            if (isSimulating) {
+                simulate();
+                animateSimulation();
+            }
+        }
+
+        function simulate() {
+            // Simple circuit analysis
+            const batteries = components.filter(c => c.type === 'battery');
+            const resistors = components.filter(c => c.type === 'resistor');
+            const bulbs = components.filter(c => c.type === 'bulb');
+            const leds = components.filter(c => c.type === 'led');
+            const switches = components.filter(c => c.type === 'switch');
+
+            // Check if circuit is complete (simplified)
+            const allSwitchesClosed = switches.every(s => s.closed);
+
+            if (batteries.length === 0) {
+                updateSimStatus('error', 'No power source - add a battery');
+                return;
+            }
+
+            if (!allSwitchesClosed && switches.length > 0) {
+                updateSimStatus('error', 'Circuit open - close all switches');
+                components.forEach(c => c.active = false);
+                wires.forEach(w => w.current = false);
+                document.getElementById('circuitReadings').style.display = 'none';
+                return;
+            }
+
+            // Calculate total voltage and resistance
+            const totalVoltage = batteries.reduce((sum, b) => sum + b.voltage, 0);
+            const totalResistance = resistors.reduce((sum, r) => sum + r.resistance, 0) +
+                                   bulbs.reduce((sum, b) => sum + b.resistance, 0) +
+                                   leds.reduce((sum, l) => sum + 50, 0); // LED equivalent resistance
+
+            if (totalResistance === 0) {
+                updateSimStatus('error', 'Short circuit! Add resistance');
+                return;
+            }
+
+            const current = totalVoltage / totalResistance * 1000; // mA
+            const power = totalVoltage * (current / 1000) * 1000; // mW
+
+            // Activate components
+            components.forEach(c => {
+                c.active = true;
+                if (c.type === 'bulb') {
+                    c.brightness = Math.min(1, current / 100);
+                }
+            });
+
+            wires.forEach(w => w.current = true);
+
+            // Update readings
+            document.getElementById('circuitReadings').style.display = 'block';
+            document.getElementById('readingVoltage').textContent = totalVoltage.toFixed(2) + ' V';
+            document.getElementById('readingCurrent').textContent = current.toFixed(2) + ' mA';
+            document.getElementById('readingPower').textContent = power.toFixed(2) + ' mW';
+            document.getElementById('readingResistance').textContent = totalResistance.toFixed(0) + ' \u03A9';
+
+            updateSimStatus('success', `Circuit running - ${current.toFixed(1)}mA flowing`);
+        }
+
+        function updateSimStatus(type, message) {
+            const status = document.getElementById('simStatus');
+            status.className = 'simulation-status' + (type === 'error' ? ' error' : '');
+            document.getElementById('simMessage').textContent = message;
+        }
+
+        function animateSimulation() {
+            if (!isSimulating) return;
+
+            flowOffset += 0.02;
+            if (flowOffset > 1) flowOffset = 0;
+
+            render();
+            requestAnimationFrame(animateSimulation);
+        }
+
+        function updatePropertiesPanel() {
+            const propsDiv = document.getElementById('componentProps');
+
+            if (!selectedComponent) {
+                propsDiv.innerHTML = `
+                    <div class="panel-title">Component Properties</div>
+                    <div class="no-selection">Click a component to view its properties</div>
+                `;
+                return;
+            }
+
+            const comp = selectedComponent;
+            let propsHtml = `<div class="panel-title">${comp.type.charAt(0).toUpperCase() + comp.type.slice(1)} Properties</div>`;
+
+            propsHtml += `
+                <div class="prop-row">
+                    <span class="prop-label">Position</span>
+                    <span class="prop-value">${comp.x}, ${comp.y}</span>
+                </div>
+                <div class="prop-row">
+                    <span class="prop-label">Rotation</span>
+                    <span class="prop-value">${comp.rotation}°</span>
+                </div>
+            `;
+
+            if (comp.voltage !== undefined) {
+                propsHtml += `
+                    <div class="prop-row">
+                        <span class="prop-label">Voltage</span>
+                        <input type="number" class="prop-input" value="${comp.voltage}"
+                            onchange="updateComponentProp('voltage', this.value)"> V
+                    </div>
+                `;
+            }
+
+            if (comp.resistance !== undefined) {
+                propsHtml += `
+                    <div class="prop-row">
+                        <span class="prop-label">Resistance</span>
+                        <input type="number" class="prop-input" value="${comp.resistance}"
+                            onchange="updateComponentProp('resistance', this.value)"> \u03A9
+                    </div>
+                `;
+            }
+
+            if (comp.capacitance !== undefined) {
+                propsHtml += `
+                    <div class="prop-row">
+                        <span class="prop-label">Capacitance</span>
+                        <input type="number" class="prop-input" value="${comp.capacitance}"
+                            onchange="updateComponentProp('capacitance', this.value)"> \u03BCF
+                    </div>
+                `;
+            }
+
+            if (comp.inductance !== undefined) {
+                propsHtml += `
+                    <div class="prop-row">
+                        <span class="prop-label">Inductance</span>
+                        <input type="number" class="prop-input" value="${comp.inductance}"
+                            onchange="updateComponentProp('inductance', this.value)"> mH
+                    </div>
+                `;
+            }
+
+            if (comp.closed !== undefined) {
+                propsHtml += `
+                    <div class="prop-row">
+                        <span class="prop-label">State</span>
+                        <span class="prop-value">${comp.closed ? 'Closed' : 'Open'}</span>
+                    </div>
+                    <p style="font-size: 11px; color: #666; margin-top: 8px;">Double-click to toggle</p>
+                `;
+            }
+
+            propsDiv.innerHTML = propsHtml;
+        }
+
+        function updateComponentProp(prop, value) {
+            if (selectedComponent) {
+                selectedComponent[prop] = parseFloat(value);
+                if (isSimulating) simulate();
+            }
+        }
+
+        function clearCircuit() {
+            components = [];
+            wires = [];
+            selectedComponent = null;
+            isSimulating = false;
+            document.getElementById('simBtnText').textContent = 'Start Simulation';
+            document.getElementById('circuitReadings').style.display = 'none';
+            updateSimStatus('success', 'Ready - Add components and connect them');
+            updatePropertiesPanel();
+            render();
+        }
+
+        function exportSVG() {
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}" style="background: #0a0a12">`;
+
+            // Export wires
+            wires.forEach(w => {
+                svg += `<line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="#666" stroke-width="3"/>`;
+            });
+
+            // Export components (simplified)
+            components.forEach(c => {
+                svg += `<rect x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" fill="none" stroke="${c.color}" stroke-width="2"/>`;
+                svg += `<text x="${c.x + c.width/2}" y="${c.y + c.height/2}" fill="${c.color}" font-size="10" text-anchor="middle" dominant-baseline="middle">${c.type}</text>`;
+            });
+
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'circuit.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        init();
+    </script>
+</body>
+</html>

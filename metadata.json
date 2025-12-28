@@ -1623,5 +1623,57 @@
         "category": "Design",
         "tags": ["typography", "fonts", "design", "utility"],
         "link": "https://en.wikipedia.org/wiki/Typography"
+    },
+    {
+        "id": "walkthrough-creator",
+        "title": "Walkthrough Creator",
+        "description": "Create step-by-step tutorial guides with screenshots, annotations, and PDF export for knowledge sharing.",
+        "path": "apps/walkthrough-creator/index.html",
+        "emoji": "📋",
+        "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f5af19 100%)",
+        "dateCreated": "2024-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Utility",
+        "tags": ["tutorial", "documentation", "PDF", "screenshots", "guide"],
+        "link": "https://en.wikipedia.org/wiki/Tutorial"
+    },
+    {
+        "id": "data-story-builder",
+        "title": "Data Story Builder",
+        "description": "Create animated, interactive data visualizations from CSV/JSON with charts that morph between bar, line, pie, and area views.",
+        "path": "apps/data-story-builder/index.html",
+        "emoji": "📊",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #ff6b6b 50%, #ffe66d 100%)",
+        "dateCreated": "2024-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Visualization",
+        "tags": ["data", "charts", "animation", "interactive", "CSV", "JSON"],
+        "link": "https://en.wikipedia.org/wiki/Data_visualization"
+    },
+    {
+        "id": "photo-mosaic-generator",
+        "title": "Photo Mosaic Generator",
+        "description": "Transform images into stunning mosaics using emoji, shapes, ASCII art, or halftone dots with customizable resolution.",
+        "path": "apps/photo-mosaic-generator/index.html",
+        "emoji": "🖼️",
+        "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #ffe66d 100%)",
+        "dateCreated": "2024-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Images",
+        "tags": ["mosaic", "image", "art", "emoji", "creative"],
+        "link": "https://en.wikipedia.org/wiki/Photographic_mosaic"
+    },
+    {
+        "id": "circuit-diagram-builder",
+        "title": "Circuit Diagram Builder",
+        "description": "Design electronic circuits with drag-and-drop components and real-time simulation showing voltage, current, and power.",
+        "path": "apps/circuit-diagram-builder/index.html",
+        "emoji": "⚡",
+        "previewGradient": "linear-gradient(135deg, #00d4ff 0%, #0a0a12 50%, #ff6b6b 100%)",
+        "dateCreated": "2024-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Education",
+        "tags": ["electronics", "circuits", "simulation", "interactive", "engineering"],
+        "link": "https://en.wikipedia.org/wiki/Circuit_diagram"
     }
 ]
