@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaleidoscope - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 14px;
+            max-width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .controls h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls p {
+            color: #888;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            accent-color: #8338ec;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .control-group select option {
+            background: #1a1a2e;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #8338ec, #3a86ff);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(131, 56, 236, 0.4);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: color 0.2s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .color-inputs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .color-inputs input[type="color"] {
+            width: 100%;
+            height: 35px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #888;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: rgba(131, 56, 236, 0.3);
+            border-color: #8338ec;
+            color: #fff;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-label {
+            display: block;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            text-align: center;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-label:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .webcam-status {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #00d4ff;
+            text-align: center;
+            display: none;
+        }
+
+        .webcam-status.error {
+            background: rgba(255, 0, 110, 0.1);
+            color: #ff006e;
+        }
+
+        #hiddenVideo {
+            display: none;
+        }
+
+        .instructions {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .instructions p {
+            margin-bottom: 4px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <video id="hiddenVideo" autoplay playsinline></video>
+
+    <div class="controls">
+        <h1>Kaleidoscope</h1>
+        <p>Create mesmerizing symmetrical patterns from images, webcam, or mouse drawing.</p>
+
+        <div class="control-group">
+            <label>Source</label>
+            <div class="toggle-group">
+                <button class="toggle-btn active" data-source="draw" onclick="setSource('draw')">Draw</button>
+                <button class="toggle-btn" data-source="webcam" onclick="setSource('webcam')">Webcam</button>
+                <button class="toggle-btn" data-source="image" onclick="setSource('image')">Image</button>
+            </div>
+        </div>
+
+        <div id="imageUpload" style="display: none;">
+            <div class="file-input-wrapper">
+                <label class="file-label">
+                    Click or drag to upload image
+                    <input type="file" id="imageInput" accept="image/*">
+                </label>
+            </div>
+        </div>
+
+        <div class="webcam-status" id="webcamStatus"></div>
+
+        <div class="control-group">
+            <label>Symmetry Segments: <span id="segmentsValue">8</span></label>
+            <input type="range" id="segments" min="2" max="24" value="8">
+        </div>
+
+        <div class="control-group">
+            <label>Rotation Speed: <span id="rotationValue">0.5</span></label>
+            <input type="range" id="rotation" min="0" max="2" value="0.5" step="0.1">
+        </div>
+
+        <div class="control-group">
+            <label>Zoom: <span id="zoomValue">1.0</span></label>
+            <input type="range" id="zoom" min="0.5" max="3" value="1" step="0.1">
+        </div>
+
+        <div class="control-group">
+            <label>Brush Size: <span id="brushValue">20</span></label>
+            <input type="range" id="brushSize" min="5" max="100" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>Color Palette</label>
+            <div class="color-inputs">
+                <input type="color" id="color1" value="#ff006e">
+                <input type="color" id="color2" value="#8338ec">
+                <input type="color" id="color3" value="#3a86ff">
+                <input type="color" id="color4" value="#00d4ff">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="clearCanvas()">Clear</button>
+            <button onclick="saveImage()">Save</button>
+            <button class="secondary" onclick="randomizeColors()">Random Colors</button>
+        </div>
+
+        <div class="instructions">
+            <p>Draw with mouse to create patterns</p>
+            <p>Scroll to zoom in/out</p>
+        </div>
+    </div>
+
+    <a href="../../index.html" class="back-link">← Back to Gallery</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const video = document.getElementById('hiddenVideo');
+
+        // Create offscreen canvas for source content
+        const sourceCanvas = document.createElement('canvas');
+        const sourceCtx = sourceCanvas.getContext('2d');
+
+        let width, height, centerX, centerY;
+        let segments = 8;
+        let rotationSpeed = 0.5;
+        let zoom = 1;
+        let brushSize = 20;
+        let currentRotation = 0;
+        let isDrawing = false;
+        let lastX, lastY;
+        let source = 'draw';
+        let colors = ['#ff006e', '#8338ec', '#3a86ff', '#00d4ff'];
+        let colorIndex = 0;
+        let uploadedImage = null;
+        let webcamStream = null;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+
+            sourceCanvas.width = width;
+            sourceCanvas.height = height;
+
+            if (source === 'draw') {
+                sourceCtx.fillStyle = '#000';
+                sourceCtx.fillRect(0, 0, width, height);
+            }
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+
+        function setSource(newSource) {
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.source === newSource);
+            });
+
+            source = newSource;
+
+            document.getElementById('imageUpload').style.display = newSource === 'image' ? 'block' : 'none';
+
+            const webcamStatus = document.getElementById('webcamStatus');
+
+            if (newSource === 'webcam') {
+                startWebcam();
+            } else {
+                stopWebcam();
+                webcamStatus.style.display = 'none';
+            }
+
+            if (newSource === 'draw') {
+                sourceCtx.fillStyle = '#000';
+                sourceCtx.fillRect(0, 0, width, height);
+            }
+        }
+
+        async function startWebcam() {
+            const webcamStatus = document.getElementById('webcamStatus');
+
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                video.srcObject = webcamStream;
+                webcamStatus.textContent = 'Webcam active';
+                webcamStatus.classList.remove('error');
+                webcamStatus.style.display = 'block';
+            } catch (err) {
+                webcamStatus.textContent = 'Could not access webcam: ' + err.message;
+                webcamStatus.classList.add('error');
+                webcamStatus.style.display = 'block';
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function draw(e) {
+            if (!isDrawing || source !== 'draw') return;
+
+            const pos = getMousePos(e);
+
+            sourceCtx.strokeStyle = colors[colorIndex];
+            sourceCtx.lineWidth = brushSize;
+            sourceCtx.lineCap = 'round';
+            sourceCtx.lineJoin = 'round';
+
+            sourceCtx.beginPath();
+            sourceCtx.moveTo(lastX, lastY);
+            sourceCtx.lineTo(pos.x, pos.y);
+            sourceCtx.stroke();
+
+            lastX = pos.x;
+            lastY = pos.y;
+
+            // Cycle colors for rainbow effect
+            colorIndex = (colorIndex + 0.05) % colors.length;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (source !== 'draw') return;
+            isDrawing = true;
+            const pos = getMousePos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+        });
+
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            if (source !== 'draw') return;
+            e.preventDefault();
+            isDrawing = true;
+            const touch = e.touches[0];
+            const pos = getMousePos(touch);
+            lastX = pos.x;
+            lastY = pos.y;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing || source !== 'draw') return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            draw(touch);
+        });
+
+        canvas.addEventListener('touchend', () => isDrawing = false);
+
+        // Zoom with scroll
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoom = Math.max(0.5, Math.min(3, zoom - e.deltaY * 0.001));
+            document.getElementById('zoom').value = zoom;
+            document.getElementById('zoomValue').textContent = zoom.toFixed(1);
+        });
+
+        function drawKaleidoscope() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Update source canvas for webcam/image
+            if (source === 'webcam' && video.readyState >= 2) {
+                sourceCtx.drawImage(video, 0, 0, width, height);
+            } else if (source === 'image' && uploadedImage) {
+                const scale = Math.max(width / uploadedImage.width, height / uploadedImage.height);
+                const w = uploadedImage.width * scale;
+                const h = uploadedImage.height * scale;
+                sourceCtx.drawImage(uploadedImage, (width - w) / 2, (height - h) / 2, w, h);
+            }
+
+            const angleStep = (Math.PI * 2) / segments;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentRotation);
+            ctx.scale(zoom, zoom);
+
+            for (let i = 0; i < segments; i++) {
+                ctx.save();
+                ctx.rotate(angleStep * i);
+
+                // Create clipping path for this segment
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.max(width, height), 0);
+                ctx.arc(0, 0, Math.max(width, height), 0, angleStep);
+                ctx.closePath();
+                ctx.clip();
+
+                // Draw the source, mirroring every other segment
+                if (i % 2 === 0) {
+                    ctx.scale(1, 1);
+                } else {
+                    ctx.scale(1, -1);
+                }
+
+                ctx.drawImage(sourceCanvas, -centerX, -centerY);
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+
+            currentRotation += rotationSpeed * 0.01;
+            requestAnimationFrame(drawKaleidoscope);
+        }
+
+        function clearCanvas() {
+            sourceCtx.fillStyle = '#000';
+            sourceCtx.fillRect(0, 0, width, height);
+        }
+
+        function saveImage() {
+            const link = document.createElement('a');
+            link.download = 'kaleidoscope.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function randomizeColors() {
+            colors = colors.map(() => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
+            document.getElementById('color1').value = colors[0];
+            document.getElementById('color2').value = colors[1];
+            document.getElementById('color3').value = colors[2];
+            document.getElementById('color4').value = colors[3];
+        }
+
+        // Event listeners for controls
+        document.getElementById('segments').addEventListener('input', (e) => {
+            segments = parseInt(e.target.value);
+            document.getElementById('segmentsValue').textContent = segments;
+        });
+
+        document.getElementById('rotation').addEventListener('input', (e) => {
+            rotationSpeed = parseFloat(e.target.value);
+            document.getElementById('rotationValue').textContent = rotationSpeed.toFixed(1);
+        });
+
+        document.getElementById('zoom').addEventListener('input', (e) => {
+            zoom = parseFloat(e.target.value);
+            document.getElementById('zoomValue').textContent = zoom.toFixed(1);
+        });
+
+        document.getElementById('brushSize').addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brushValue').textContent = brushSize;
+        });
+
+        ['color1', 'color2', 'color3', 'color4'].forEach((id, index) => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                colors[index] = e.target.value;
+            });
+        });
+
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedImage = new Image();
+                    uploadedImage.onload = () => {
+                        document.querySelector('.file-label').textContent = file.name;
+                    };
+                    uploadedImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Drag and drop support
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                setSource('image');
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedImage = new Image();
+                    uploadedImage.src = event.target.result;
+                    document.querySelector('.file-label').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Start animation
+        drawKaleidoscope();
+    </script>
+</body>
+</html>

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Globe Visualizer - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        canvas { display: block; cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            min-width: 240px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px; transition: all 0.2s;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        button.active { background: rgba(100, 200, 255, 0.3); border-color: rgba(100, 200, 255, 0.5); }
+        .control-group { margin-bottom: 14px; }
+        .control-group label { display: block; margin-bottom: 6px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .control-group input[type="range"] { width: 100%; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .stats {
+            position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 12px 16px; border-radius: 8px; color: #666; font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .data-layer {
+            display: flex; align-items: center; padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-layer:last-child { border-bottom: none; }
+        .data-layer input { margin-right: 10px; }
+        .data-layer span { font-size: 13px; }
+        .color-dot {
+            width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>3D Globe Visualizer</h1>
+        <p>Interactive Earth with data overlays. Drag to rotate, scroll to zoom.</p>
+
+        <div class="control-group">
+            <label>Data Layers</label>
+            <div class="data-layer">
+                <input type="checkbox" id="showCities" checked>
+                <span class="color-dot" style="background: #ffcc00;"></span>
+                <span>Major Cities</span>
+            </div>
+            <div class="data-layer">
+                <input type="checkbox" id="showFlights">
+                <span class="color-dot" style="background: #00ff88;"></span>
+                <span>Flight Paths</span>
+            </div>
+            <div class="data-layer">
+                <input type="checkbox" id="showQuakes">
+                <span class="color-dot" style="background: #ff4444;"></span>
+                <span>Earthquake Zones</span>
+            </div>
+            <div class="data-layer">
+                <input type="checkbox" id="showGrid">
+                <span class="color-dot" style="background: #4488ff;"></span>
+                <span>Lat/Long Grid</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Rotation Speed: <span id="speedLabel">0.2</span></label>
+            <input type="range" id="speed" min="0" max="2" step="0.1" value="0.2">
+        </div>
+
+        <div class="control-group">
+            <label>Globe Style</label>
+            <button id="styleReal" class="active">Realistic</button>
+            <button id="styleWire">Wireframe</button>
+            <button id="styleGlow">Neon Glow</button>
+        </div>
+
+        <div class="control-group">
+            <button id="resetView">Reset View</button>
+        </div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="stats" id="stats">Hover over a location for details</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const stats = document.getElementById('stats');
+
+        let width, height, centerX, centerY, radius;
+        let rotationX = 0.3;
+        let rotationY = 0;
+        let autoRotateSpeed = 0.002;
+        let zoom = 1;
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+        let globeStyle = 'real';
+
+        // Major world cities with lat/long
+        const cities = [
+            { name: 'New York', lat: 40.7128, lon: -74.0060, pop: 8.3 },
+            { name: 'London', lat: 51.5074, lon: -0.1278, pop: 8.9 },
+            { name: 'Tokyo', lat: 35.6762, lon: 139.6503, pop: 13.9 },
+            { name: 'Paris', lat: 48.8566, lon: 2.3522, pop: 2.1 },
+            { name: 'Sydney', lat: -33.8688, lon: 151.2093, pop: 5.3 },
+            { name: 'Dubai', lat: 25.2048, lon: 55.2708, pop: 3.3 },
+            { name: 'Singapore', lat: 1.3521, lon: 103.8198, pop: 5.6 },
+            { name: 'Los Angeles', lat: 34.0522, lon: -118.2437, pop: 4.0 },
+            { name: 'Mumbai', lat: 19.0760, lon: 72.8777, pop: 12.4 },
+            { name: 'São Paulo', lat: -23.5505, lon: -46.6333, pop: 12.3 },
+            { name: 'Cairo', lat: 30.0444, lon: 31.2357, pop: 9.5 },
+            { name: 'Moscow', lat: 55.7558, lon: 37.6173, pop: 11.9 },
+            { name: 'Beijing', lat: 39.9042, lon: 116.4074, pop: 21.5 },
+            { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729, pop: 6.7 },
+            { name: 'Cape Town', lat: -33.9249, lon: 18.4241, pop: 4.6 },
+            { name: 'Mexico City', lat: 19.4326, lon: -99.1332, pop: 8.8 },
+            { name: 'Toronto', lat: 43.6532, lon: -79.3832, pop: 2.7 },
+            { name: 'Berlin', lat: 52.5200, lon: 13.4050, pop: 3.6 },
+            { name: 'Bangkok', lat: 13.7563, lon: 100.5018, pop: 8.3 },
+            { name: 'Seoul', lat: 37.5665, lon: 126.9780, pop: 9.7 }
+        ];
+
+        // Flight paths (city pairs)
+        const flights = [
+            [0, 1], [0, 2], [1, 3], [2, 6], [0, 12], [1, 11],
+            [4, 6], [5, 8], [9, 13], [10, 5], [0, 15], [1, 17],
+            [2, 18], [6, 12], [3, 11], [14, 1], [16, 0], [7, 2]
+        ];
+
+        // Earthquake zones (lat, lon, intensity)
+        const quakeZones = [
+            { lat: 35.6, lon: 139.6, intensity: 0.9, name: 'Japan Trench' },
+            { lat: -33.4, lon: -70.6, intensity: 0.85, name: 'Chile Coast' },
+            { lat: 37.7, lon: -122.4, intensity: 0.7, name: 'San Andreas' },
+            { lat: 28.2, lon: 84.1, intensity: 0.8, name: 'Nepal Himalayas' },
+            { lat: -6.2, lon: 106.8, intensity: 0.75, name: 'Indonesia' },
+            { lat: 38.0, lon: 23.7, intensity: 0.6, name: 'Greece' },
+            { lat: 40.4, lon: 49.8, intensity: 0.65, name: 'Azerbaijan' },
+            { lat: -41.2, lon: 174.7, intensity: 0.7, name: 'New Zealand' }
+        ];
+
+        // Continent outlines (simplified)
+        const continents = [
+            // North America
+            [[-170, 65], [-140, 70], [-95, 70], [-75, 45], [-80, 25], [-90, 20], [-105, 20], [-120, 35], [-125, 50], [-170, 65]],
+            // South America
+            [[-80, 10], [-35, -5], [-35, -20], [-55, -55], [-75, -55], [-82, -5], [-80, 10]],
+            // Europe
+            [[-10, 35], [-10, 60], [30, 70], [60, 70], [50, 45], [30, 35], [-10, 35]],
+            // Africa
+            [[-20, 35], [35, 35], [50, 10], [50, -35], [20, -35], [-20, 0], [-20, 35]],
+            // Asia
+            [[60, 70], [180, 70], [145, 45], [120, 25], [95, 10], [65, 25], [50, 45], [60, 70]],
+            // Australia
+            [[115, -10], [155, -10], [155, -40], [115, -40], [115, -10]]
+        ];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            radius = Math.min(width, height) * 0.35 * zoom;
+        }
+
+        function latLonTo3D(lat, lon) {
+            const latRad = lat * Math.PI / 180;
+            const lonRad = lon * Math.PI / 180;
+
+            const x = Math.cos(latRad) * Math.sin(lonRad);
+            const y = Math.sin(latRad);
+            const z = Math.cos(latRad) * Math.cos(lonRad);
+
+            return { x, y, z };
+        }
+
+        function rotate3D(point) {
+            // Rotate around Y axis (longitude rotation)
+            let x = point.x * Math.cos(rotationY) - point.z * Math.sin(rotationY);
+            let z = point.x * Math.sin(rotationY) + point.z * Math.cos(rotationY);
+            let y = point.y;
+
+            // Rotate around X axis (latitude rotation)
+            const y2 = y * Math.cos(rotationX) - z * Math.sin(rotationX);
+            const z2 = y * Math.sin(rotationX) + z * Math.cos(rotationX);
+
+            return { x, y: y2, z: z2 };
+        }
+
+        function project(point) {
+            const rotated = rotate3D(point);
+            return {
+                x: centerX + rotated.x * radius,
+                y: centerY - rotated.y * radius,
+                z: rotated.z,
+                visible: rotated.z > 0
+            };
+        }
+
+        function drawGlobe() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw starfield background
+            drawStars();
+
+            // Draw globe base
+            if (globeStyle === 'real') {
+                const gradient = ctx.createRadialGradient(
+                    centerX - radius * 0.3, centerY - radius * 0.3, 0,
+                    centerX, centerY, radius
+                );
+                gradient.addColorStop(0, '#1a3a5c');
+                gradient.addColorStop(0.5, '#0d2137');
+                gradient.addColorStop(1, '#051525');
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            } else if (globeStyle === 'glow') {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 20, 40, 0.8)';
+                ctx.fill();
+                ctx.shadowColor = '#00aaff';
+                ctx.shadowBlur = 30;
+                ctx.strokeStyle = '#00aaff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(100, 150, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Draw continents
+            drawContinents();
+
+            // Draw grid
+            if (document.getElementById('showGrid').checked) {
+                drawGrid();
+            }
+
+            // Draw data layers
+            if (document.getElementById('showQuakes').checked) {
+                drawQuakeZones();
+            }
+            if (document.getElementById('showFlights').checked) {
+                drawFlights();
+            }
+            if (document.getElementById('showCities').checked) {
+                drawCities();
+            }
+
+            // Atmosphere glow
+            if (globeStyle === 'real' || globeStyle === 'glow') {
+                const atmosphereGradient = ctx.createRadialGradient(
+                    centerX, centerY, radius * 0.95,
+                    centerX, centerY, radius * 1.15
+                );
+                atmosphereGradient.addColorStop(0, 'rgba(100, 180, 255, 0.15)');
+                atmosphereGradient.addColorStop(0.5, 'rgba(100, 180, 255, 0.05)');
+                atmosphereGradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 1.15, 0, Math.PI * 2);
+                ctx.fillStyle = atmosphereGradient;
+                ctx.fill();
+            }
+        }
+
+        function drawStars() {
+            if (!window.stars) {
+                window.stars = [];
+                for (let i = 0; i < 200; i++) {
+                    window.stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        size: Math.random() * 1.5,
+                        alpha: Math.random() * 0.5 + 0.2
+                    });
+                }
+            }
+            ctx.fillStyle = '#fff';
+            for (const star of window.stars) {
+                ctx.globalAlpha = star.alpha;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawContinents() {
+            ctx.strokeStyle = globeStyle === 'glow' ? '#00ff88' :
+                              globeStyle === 'wire' ? 'rgba(100, 180, 255, 0.6)' : '#2d5a3d';
+            ctx.lineWidth = globeStyle === 'glow' ? 1.5 : 2;
+            if (globeStyle === 'glow') {
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 10;
+            }
+
+            for (const continent of continents) {
+                ctx.beginPath();
+                let started = false;
+                let prevVisible = false;
+
+                for (let i = 0; i < continent.length; i++) {
+                    const [lon, lat] = continent[i];
+                    const point3D = latLonTo3D(lat, lon);
+                    const proj = project(point3D);
+
+                    if (proj.visible) {
+                        if (!started || !prevVisible) {
+                            ctx.moveTo(proj.x, proj.y);
+                            started = true;
+                        } else {
+                            ctx.lineTo(proj.x, proj.y);
+                        }
+                    }
+                    prevVisible = proj.visible;
+                }
+                ctx.stroke();
+
+                // Fill continents for realistic style
+                if (globeStyle === 'real') {
+                    ctx.fillStyle = 'rgba(34, 85, 51, 0.6)';
+                    ctx.fill();
+                }
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = globeStyle === 'glow' ? 'rgba(68, 136, 255, 0.4)' : 'rgba(68, 136, 255, 0.15)';
+            ctx.lineWidth = 0.5;
+
+            // Latitude lines
+            for (let lat = -80; lat <= 80; lat += 20) {
+                ctx.beginPath();
+                for (let lon = -180; lon <= 180; lon += 5) {
+                    const point3D = latLonTo3D(lat, lon);
+                    const proj = project(point3D);
+                    if (proj.visible) {
+                        if (lon === -180) ctx.moveTo(proj.x, proj.y);
+                        else ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Longitude lines
+            for (let lon = -180; lon < 180; lon += 30) {
+                ctx.beginPath();
+                for (let lat = -90; lat <= 90; lat += 5) {
+                    const point3D = latLonTo3D(lat, lon);
+                    const proj = project(point3D);
+                    if (proj.visible) {
+                        if (lat === -90) ctx.moveTo(proj.x, proj.y);
+                        else ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawCities() {
+            for (const city of cities) {
+                const point3D = latLonTo3D(city.lat, city.lon);
+                const proj = project(point3D);
+
+                if (proj.visible) {
+                    const size = 3 + city.pop / 5;
+
+                    // Glow effect
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, size * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 200, 50, 0.2)';
+                    ctx.fill();
+
+                    // City dot
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.fill();
+
+                    // City name
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.font = '11px system-ui';
+                    ctx.fillText(city.name, proj.x + size + 4, proj.y + 4);
+                }
+            }
+        }
+
+        function drawFlights() {
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            for (const [from, to] of flights) {
+                const city1 = cities[from];
+                const city2 = cities[to];
+
+                const point1 = latLonTo3D(city1.lat, city1.lon);
+                const point2 = latLonTo3D(city2.lat, city2.lon);
+                const proj1 = project(point1);
+                const proj2 = project(point2);
+
+                if (proj1.visible && proj2.visible) {
+                    // Draw curved arc
+                    ctx.beginPath();
+                    const midX = (proj1.x + proj2.x) / 2;
+                    const midY = (proj1.y + proj2.y) / 2;
+                    const dist = Math.sqrt((proj2.x - proj1.x) ** 2 + (proj2.y - proj1.y) ** 2);
+                    const curveHeight = dist * 0.2;
+
+                    ctx.moveTo(proj1.x, proj1.y);
+                    ctx.quadraticCurveTo(midX, midY - curveHeight, proj2.x, proj2.y);
+                    ctx.stroke();
+
+                    // Animated plane dot
+                    const t = (Date.now() % 3000) / 3000;
+                    const planeX = proj1.x + (proj2.x - proj1.x) * t;
+                    const planeY = proj1.y + (proj2.y - proj1.y) * t - curveHeight * 4 * t * (1 - t);
+
+                    ctx.beginPath();
+                    ctx.arc(planeX, planeY, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fill();
+                }
+            }
+            ctx.setLineDash([]);
+        }
+
+        function drawQuakeZones() {
+            for (const zone of quakeZones) {
+                const point3D = latLonTo3D(zone.lat, zone.lon);
+                const proj = project(point3D);
+
+                if (proj.visible) {
+                    const baseSize = 20 * zone.intensity;
+                    const pulseSize = baseSize + Math.sin(Date.now() / 200) * 5;
+
+                    // Pulsing ring
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, pulseSize, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 68, 68, ${0.5 * zone.intensity})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Inner circle
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff4444';
+                    ctx.fill();
+                }
+            }
+        }
+
+        function animate() {
+            rotationY += autoRotateSpeed;
+            drawGlobe();
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                rotationY += deltaX * 0.005;
+                rotationX += deltaY * 0.005;
+                rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+
+            // Hover detection for cities
+            let hoveredCity = null;
+            for (const city of cities) {
+                const point3D = latLonTo3D(city.lat, city.lon);
+                const proj = project(point3D);
+                if (proj.visible) {
+                    const dist = Math.sqrt((e.clientX - proj.x) ** 2 + (e.clientY - proj.y) ** 2);
+                    if (dist < 15) {
+                        hoveredCity = city;
+                        break;
+                    }
+                }
+            }
+            if (hoveredCity) {
+                stats.innerHTML = `<strong>${hoveredCity.name}</strong><br>Pop: ${hoveredCity.pop}M | Lat: ${hoveredCity.lat.toFixed(2)}° Lon: ${hoveredCity.lon.toFixed(2)}°`;
+            } else {
+                stats.textContent = 'Hover over a city for details';
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            zoom *= e.deltaY > 0 ? 0.95 : 1.05;
+            zoom = Math.max(0.5, Math.min(2.5, zoom));
+            radius = Math.min(width, height) * 0.35 * zoom;
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            autoRotateSpeed = parseFloat(e.target.value) / 100;
+            document.getElementById('speedLabel').textContent = e.target.value;
+        });
+
+        document.getElementById('resetView').addEventListener('click', () => {
+            rotationX = 0.3;
+            rotationY = 0;
+            zoom = 1;
+            radius = Math.min(width, height) * 0.35;
+        });
+
+        ['styleReal', 'styleWire', 'styleGlow'].forEach(id => {
+            document.getElementById(id).addEventListener('click', e => {
+                document.querySelectorAll('.control-group button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                globeStyle = id.replace('style', '').toLowerCase();
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            resize();
+            window.stars = null; // Regenerate stars on resize
+        });
+
+        resize();
+        animate();
+    </script>
+</body>
+</html>

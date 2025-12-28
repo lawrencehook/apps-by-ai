@@ -47,8 +47,8 @@ while true; do
 Current apps include: utilities (calculators, converters, generators), visualizations (fractals, simulations, algorithms), and tools (PDF, image, audio manipulation).
 
 TASK: Brainstorm 5 NEW app ideas that DO NOT already exist in the ./apps folder. Prioritize by:
-1. Visual impact - apps that look impressive and demonstrate capability
-2. Utility - apps that solve real problems people have
+1. Utility - apps that solve real problems people have
+2. Visual impact - apps that look impressive and demonstrate capability
 
 For each idea, provide:
 - App name (kebab-case, e.g., 'particle-system')
@@ -59,7 +59,7 @@ First, check the existing ./apps folder to avoid duplicates. Then output your 5 
 
 Output format:
 ### TOP 5 NEW APP IDEAS
-1. **app-name**: Description - [Visual: X/10, Utility: Y/10]
+1. **app-name**: Description - [Utility: X/10, Visual: Y/10]
 2. ...
 
 Be creative but realistic - these should be implementable as single-page web apps."
