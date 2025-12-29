@@ -686,13 +686,20 @@
                         <option value="up" selected>Up (1-3-5)</option>
                         <option value="up+oct">Up + Octave (1-3-5-8)</option>
                         <option value="down">Down (5-3-1)</option>
-                        <option value="down+oct">Down + Octave (8-5-3-1)</option>
+                        <option value="down+oct">Down + Oct (8-5-3-1)</option>
                         <option value="updown">Up-Down</option>
-                        <option value="updown+oct">Up-Down + Octave</option>
-                        <option value="alberti">Alberti Bass (1-5-3-5)</option>
+                        <option value="updown+oct">Up-Down + Oct</option>
+                        <option value="alberti">Alberti (1-5-3-5)</option>
                         <option value="pedal">Pedal (1-3-1-5-1)</option>
                         <option value="broken">Broken (1-5-3-8)</option>
                         <option value="twooctave">Two Octaves</option>
+                        <option value="rolled">Rolled (harp)</option>
+                        <option value="waltz">Waltz (1-3-5-3)</option>
+                        <option value="gallop">Gallop (1-1-5)</option>
+                        <option value="tremolo">Tremolo (1-5-1-5)</option>
+                        <option value="cascade">Cascade (waterfall)</option>
+                        <option value="boogie">Boogie (1-3-5-6)</option>
+                        <option value="spiral">Spiral (1-3-5-3-5-8)</option>
                         <option value="random">Random</option>
                     </select>
                 </div>
@@ -787,7 +794,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="caps-indicator" id="capsIndicator">Chord Mode</span>
-                    <div class="grid-hint">Click=arpeggio | Right-click=chord | Dbl-click=fav | CapsLock=chord mode</div>
+                    <div class="grid-hint">Click=arpeggio | Right-click=chord | Alt+click=fav</div>
                 </div>
             </div>
             <div class="arpeggio-grid" id="arpeggioGrid"></div>
@@ -948,6 +955,7 @@
         let currentKey = null; // { root: 0-11, mode: 'major'|'minor' }
         let diatonicBindings = {}; // Maps keyboard keys to chords when key is selected
         let capsLockOn = false; // Track caps lock for chord mode
+
 
         // Keyboard keys for diatonic chords (home row + nearby keys)
         // Maps to scale degrees: I, ii, iii, IV, V, vi, vii°
@@ -1123,6 +1131,53 @@
                 case 'twooctave':
                     // Two full octaves: 1-3-5-8-10-12-15
                     return [...notes, ...twoOctUp];
+
+                case 'rolled':
+                    // Rolled chord (harp-style): all notes quick succession, then hold
+                    return [...notes, octave, octave]; // Extra octave for sustain feel
+
+                case 'waltz':
+                    // Waltz: 1-3-5-3 (oom-pah-pah feel)
+                    if (notes.length >= 3) {
+                        return [notes[0], notes[1], notes[2], notes[1]];
+                    }
+                    return notes;
+
+                case 'gallop':
+                    // Gallop: short-short-long (1-1-5)
+                    if (notes.length >= 3) {
+                        return [notes[0], notes[0], notes[2], notes[0], notes[0], notes[2]];
+                    }
+                    return notes;
+
+                case 'tremolo':
+                    // Tremolo: rapid alternation between root and fifth
+                    if (notes.length >= 3) {
+                        return [notes[0], notes[2], notes[0], notes[2], notes[0], notes[2], notes[0], notes[2]];
+                    }
+                    return notes;
+
+                case 'cascade':
+                    // Cascade: up then up from 3rd, then up from 5th (waterfall)
+                    if (notes.length >= 3) {
+                        return [notes[0], notes[1], notes[2], notes[1], notes[2], octave, notes[2], octave, octave + (notes[1] - notes[0])];
+                    }
+                    return [...notes, ...twoOctUp];
+
+                case 'boogie':
+                    // Boogie-woogie: 1-3-5-6-5-3 pattern
+                    if (notes.length >= 3) {
+                        const sixth = notes[2] + 2; // Add major 6th above 5th
+                        return [notes[0], notes[1], notes[2], sixth, notes[2], notes[1]];
+                    }
+                    return notes;
+
+                case 'spiral':
+                    // Spiral: weaving up pattern 1-3-5-3-5-8
+                    if (notes.length >= 3) {
+                        return [notes[0], notes[1], notes[2], notes[1], notes[2], octave];
+                    }
+                    return [...notes, octave];
 
                 case 'random':
                     const withOct = [...notes, octave];
