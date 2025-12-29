@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Screenshot - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card h3 {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+        .control-group:last-child { margin-bottom: 0; }
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: rgba(100, 150, 255, 0.5);
+        }
+
+        .color-picker-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .theme-btn {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .theme-btn:hover { transform: scale(1.05); }
+        .theme-btn.active { border-color: #4a90ff; }
+        .theme-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #4a90ff;
+        }
+        .range-value {
+            font-size: 13px;
+            color: #888;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4a90ff;
+        }
+        .checkbox-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group .btn { flex: 1; }
+
+        /* Preview Area */
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .preview-wrapper {
+            padding: 60px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+            min-height: 400px;
+            transition: background 0.3s;
+        }
+        .code-window {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            transition: all 0.3s;
+        }
+        .window-header {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .window-dot.red { background: #ff5f56; }
+        .window-dot.yellow { background: #ffbd2e; }
+        .window-dot.green { background: #27ca3f; }
+        .window-title {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+        }
+        .code-content {
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 2;
+        }
+        .code-content pre {
+            margin: 0;
+            white-space: pre;
+        }
+        .line-numbers {
+            display: inline-block;
+            text-align: right;
+            padding-right: 16px;
+            margin-right: 16px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            user-select: none;
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* Code Input */
+        .code-input-wrapper {
+            width: 100%;
+            max-width: 700px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: rgba(100, 150, 255, 0.5);
+        }
+
+        /* Background presets */
+        .bg-preset {
+            width: 100%;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .bg-preset:hover { transform: scale(1.02); }
+        .bg-preset.active { border-color: #4a90ff; }
+
+        .bg-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        /* Export canvas (hidden) */
+        #exportCanvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Code Screenshot</h1>
+        <p class="subtitle">Create beautiful screenshots of your code for sharing on social media.</p>
+
+        <div class="main-layout">
+            <div class="sidebar">
+                <!-- Theme -->
+                <div class="card">
+                    <h3>Theme</h3>
+                    <div class="theme-grid" id="themeGrid"></div>
+                </div>
+
+                <!-- Background -->
+                <div class="card">
+                    <h3>Background</h3>
+                    <div class="bg-grid" id="bgGrid"></div>
+                    <div class="control-group" style="margin-top: 16px;">
+                        <label>Custom Gradient</label>
+                        <div class="color-picker-row">
+                            <input type="color" id="bgColor1" value="#667eea">
+                            <input type="color" id="bgColor2" value="#764ba2">
+                            <select id="bgAngle" style="flex: 1;">
+                                <option value="135">↘ 135°</option>
+                                <option value="90">↓ 90°</option>
+                                <option value="180">→ 180°</option>
+                                <option value="45">↗ 45°</option>
+                                <option value="0">↑ 0°</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Window Style -->
+                <div class="card">
+                    <h3>Window</h3>
+                    <div class="control-group">
+                        <label>Title</label>
+                        <input type="text" id="windowTitle" placeholder="untitled.js">
+                    </div>
+                    <div class="control-group">
+                        <label>Padding</label>
+                        <div class="range-row">
+                            <input type="range" id="padding" min="20" max="100" value="60">
+                            <span class="range-value" id="paddingValue">60px</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Border Radius</label>
+                        <div class="range-row">
+                            <input type="range" id="borderRadius" min="0" max="24" value="12">
+                            <span class="range-value" id="borderRadiusValue">12px</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Shadow</label>
+                        <div class="range-row">
+                            <input type="range" id="shadowSize" min="0" max="100" value="50">
+                            <span class="range-value" id="shadowValue">50</span>
+                        </div>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="showLineNumbers" checked>
+                        <span class="checkbox-label">Show line numbers</span>
+                    </div>
+                </div>
+
+                <!-- Language -->
+                <div class="card">
+                    <h3>Language</h3>
+                    <select id="language">
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="python">Python</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="json">JSON</option>
+                        <option value="rust">Rust</option>
+                        <option value="go">Go</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="ruby">Ruby</option>
+                        <option value="php">PHP</option>
+                        <option value="swift">Swift</option>
+                        <option value="kotlin">Kotlin</option>
+                        <option value="sql">SQL</option>
+                        <option value="shell">Shell/Bash</option>
+                        <option value="yaml">YAML</option>
+                        <option value="markdown">Markdown</option>
+                        <option value="plaintext">Plain Text</option>
+                    </select>
+                </div>
+
+                <!-- Export -->
+                <div class="card">
+                    <h3>Export</h3>
+                    <div class="control-group">
+                        <label>Scale</label>
+                        <select id="exportScale">
+                            <option value="1">1x</option>
+                            <option value="2" selected>2x</option>
+                            <option value="3">3x</option>
+                        </select>
+                    </div>
+                    <div class="btn-group" style="margin-top: 12px;">
+                        <button class="btn btn-primary" id="downloadBtn">Download PNG</button>
+                        <button class="btn btn-secondary" id="copyBtn">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-container">
+                <div class="preview-wrapper" id="previewWrapper">
+                    <div class="code-window" id="codeWindow">
+                        <div class="window-header" id="windowHeader">
+                            <div class="window-dot red"></div>
+                            <div class="window-dot yellow"></div>
+                            <div class="window-dot green"></div>
+                            <span class="window-title" id="titleDisplay"></span>
+                        </div>
+                        <div class="code-content" id="codeContent">
+                            <pre id="codeDisplay"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-input-wrapper">
+                    <textarea id="codeInput" placeholder="Paste your code here...">function greet(name) {
+  const greeting = `Hello, ${name}!`;
+  console.log(greeting);
+  return greeting;
+}
+
+// Usage
+greet("World");</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="exportCanvas"></canvas>
+
+    <script>
+        // Themes
+        const themes = {
+            'monokai': {
+                name: 'Monokai',
+                bg: '#272822',
+                header: '#1e1f1c',
+                text: '#f8f8f2',
+                keyword: '#f92672',
+                string: '#e6db74',
+                number: '#ae81ff',
+                comment: '#75715e',
+                function: '#a6e22e',
+                operator: '#f8f8f2'
+            },
+            'dracula': {
+                name: 'Dracula',
+                bg: '#282a36',
+                header: '#21222c',
+                text: '#f8f8f2',
+                keyword: '#ff79c6',
+                string: '#f1fa8c',
+                number: '#bd93f9',
+                comment: '#6272a4',
+                function: '#50fa7b',
+                operator: '#ff79c6'
+            },
+            'nord': {
+                name: 'Nord',
+                bg: '#2e3440',
+                header: '#242933',
+                text: '#d8dee9',
+                keyword: '#81a1c1',
+                string: '#a3be8c',
+                number: '#b48ead',
+                comment: '#616e88',
+                function: '#88c0d0',
+                operator: '#81a1c1'
+            },
+            'github-dark': {
+                name: 'GitHub Dark',
+                bg: '#0d1117',
+                header: '#161b22',
+                text: '#c9d1d9',
+                keyword: '#ff7b72',
+                string: '#a5d6ff',
+                number: '#79c0ff',
+                comment: '#8b949e',
+                function: '#d2a8ff',
+                operator: '#ff7b72'
+            },
+            'one-dark': {
+                name: 'One Dark',
+                bg: '#282c34',
+                header: '#21252b',
+                text: '#abb2bf',
+                keyword: '#c678dd',
+                string: '#98c379',
+                number: '#d19a66',
+                comment: '#5c6370',
+                function: '#61afef',
+                operator: '#56b6c2'
+            },
+            'solarized': {
+                name: 'Solarized',
+                bg: '#002b36',
+                header: '#073642',
+                text: '#839496',
+                keyword: '#859900',
+                string: '#2aa198',
+                number: '#d33682',
+                comment: '#586e75',
+                function: '#268bd2',
+                operator: '#93a1a1'
+            },
+            'night-owl': {
+                name: 'Night Owl',
+                bg: '#011627',
+                header: '#0b2942',
+                text: '#d6deeb',
+                keyword: '#c792ea',
+                string: '#ecc48d',
+                number: '#f78c6c',
+                comment: '#637777',
+                function: '#82aaff',
+                operator: '#7fdbca'
+            },
+            'synthwave': {
+                name: 'Synthwave',
+                bg: '#262335',
+                header: '#1e1a2e',
+                text: '#ffffff',
+                keyword: '#ff7edb',
+                string: '#ff8b39',
+                number: '#f97e72',
+                comment: '#848bbd',
+                function: '#36f9f6',
+                operator: '#ff7edb'
+            }
+        };
+
+        // Background presets
+        const backgrounds = [
+            { name: 'Purple', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+            { name: 'Ocean', gradient: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)' },
+            { name: 'Sunset', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+            { name: 'Mint', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
+            { name: 'Fire', gradient: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' },
+            { name: 'Night', gradient: 'linear-gradient(135deg, #232526 0%, #414345 100%)' }
+        ];
+
+        // State
+        let currentTheme = 'monokai';
+        let currentBg = backgrounds[0].gradient;
+
+        // DOM Elements
+        const codeInput = document.getElementById('codeInput');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const codeContent = document.getElementById('codeContent');
+        const codeWindow = document.getElementById('codeWindow');
+        const windowHeader = document.getElementById('windowHeader');
+        const previewWrapper = document.getElementById('previewWrapper');
+        const titleDisplay = document.getElementById('titleDisplay');
+
+        // Initialize themes
+        function initThemes() {
+            const grid = document.getElementById('themeGrid');
+            grid.innerHTML = Object.entries(themes).map(([key, theme]) => `
+                <div class="theme-btn ${key === currentTheme ? 'active' : ''}"
+                     data-theme="${key}"
+                     style="background: ${theme.bg};"
+                     title="${theme.name}">
+                    <style>.theme-btn[data-theme="${key}"]::after { background: ${theme.keyword}; }</style>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentTheme = btn.dataset.theme;
+                    grid.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updatePreview();
+                });
+            });
+        }
+
+        // Initialize backgrounds
+        function initBackgrounds() {
+            const grid = document.getElementById('bgGrid');
+            grid.innerHTML = backgrounds.map((bg, i) => `
+                <div class="bg-preset ${i === 0 ? 'active' : ''}"
+                     data-index="${i}"
+                     style="background: ${bg.gradient};"
+                     title="${bg.name}">
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.bg-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentBg = backgrounds[btn.dataset.index].gradient;
+                    grid.querySelectorAll('.bg-preset').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updatePreview();
+                });
+            });
+        }
+
+        // Simple syntax highlighting
+        function highlight(code, lang) {
+            // Escape HTML
+            code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            const theme = themes[currentTheme];
+
+            // Keywords by language
+            const keywords = {
+                javascript: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'extends', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'throw', 'new', 'this', 'true', 'false', 'null', 'undefined', 'typeof', 'instanceof'],
+                typescript: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'extends', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'throw', 'new', 'this', 'true', 'false', 'null', 'undefined', 'typeof', 'instanceof', 'interface', 'type', 'enum', 'implements', 'private', 'public', 'protected', 'readonly'],
+                python: ['def', 'class', 'if', 'elif', 'else', 'for', 'while', 'return', 'import', 'from', 'as', 'try', 'except', 'finally', 'raise', 'with', 'pass', 'break', 'continue', 'lambda', 'and', 'or', 'not', 'in', 'is', 'True', 'False', 'None', 'self', 'async', 'await'],
+                html: ['html', 'head', 'body', 'div', 'span', 'p', 'a', 'img', 'script', 'style', 'link', 'meta', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'form', 'input', 'button', 'label', 'select', 'option', 'textarea'],
+                css: ['color', 'background', 'margin', 'padding', 'border', 'font', 'display', 'position', 'width', 'height', 'flex', 'grid', 'transform', 'transition', 'animation'],
+                rust: ['fn', 'let', 'mut', 'const', 'if', 'else', 'match', 'loop', 'while', 'for', 'in', 'return', 'struct', 'enum', 'impl', 'trait', 'pub', 'use', 'mod', 'self', 'Self', 'true', 'false', 'Some', 'None', 'Ok', 'Err'],
+                go: ['func', 'package', 'import', 'var', 'const', 'if', 'else', 'for', 'range', 'return', 'struct', 'interface', 'type', 'map', 'chan', 'go', 'defer', 'select', 'case', 'default', 'true', 'false', 'nil'],
+                default: ['if', 'else', 'for', 'while', 'return', 'function', 'class', 'import', 'export', 'true', 'false', 'null', 'undefined']
+            };
+
+            const langKeywords = keywords[lang] || keywords.default;
+
+            // Comments
+            code = code.replace(/(\/\/.*$)/gm, `<span style="color:${theme.comment}">$1</span>`);
+            code = code.replace(/(#.*$)/gm, `<span style="color:${theme.comment}">$1</span>`);
+            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, `<span style="color:${theme.comment}">$1</span>`);
+
+            // Strings
+            code = code.replace(/("(?:[^"\\]|\\.)*")/g, `<span style="color:${theme.string}">$1</span>`);
+            code = code.replace(/('(?:[^'\\]|\\.)*')/g, `<span style="color:${theme.string}">$1</span>`);
+            code = code.replace(/(`(?:[^`\\]|\\.)*`)/g, `<span style="color:${theme.string}">$1</span>`);
+
+            // Numbers
+            code = code.replace(/\b(\d+\.?\d*)\b/g, `<span style="color:${theme.number}">$1</span>`);
+
+            // Keywords
+            langKeywords.forEach(kw => {
+                const regex = new RegExp(`\\b(${kw})\\b`, 'g');
+                code = code.replace(regex, `<span style="color:${theme.keyword}">$1</span>`);
+            });
+
+            // Function calls
+            code = code.replace(/(\w+)(\s*\()/g, `<span style="color:${theme.function}">$1</span>$2`);
+
+            return code;
+        }
+
+        // Update preview
+        function updatePreview() {
+            const code = codeInput.value;
+            const lang = document.getElementById('language').value;
+            const showLineNumbers = document.getElementById('showLineNumbers').checked;
+            const theme = themes[currentTheme];
+            const padding = document.getElementById('padding').value;
+            const borderRadius = document.getElementById('borderRadius').value;
+            const shadowSize = document.getElementById('shadowSize').value;
+            const title = document.getElementById('windowTitle').value;
+
+            // Background
+            previewWrapper.style.background = currentBg;
+            previewWrapper.style.padding = `${padding}px`;
+
+            // Window styling
+            codeWindow.style.borderRadius = `${borderRadius}px`;
+            codeWindow.style.boxShadow = `0 ${shadowSize / 2}px ${shadowSize}px -${shadowSize / 4}px rgba(0, 0, 0, 0.5)`;
+            codeContent.style.background = theme.bg;
+            codeContent.style.color = theme.text;
+            windowHeader.style.background = theme.header;
+
+            // Title
+            titleDisplay.textContent = title || '';
+
+            // Code with line numbers
+            const lines = code.split('\n');
+            let html = '';
+
+            if (showLineNumbers) {
+                const lineNumbers = lines.map((_, i) => i + 1).join('\n');
+                html = `<span class="line-numbers">${lineNumbers}</span>`;
+            }
+
+            html += highlight(code, lang);
+            codeDisplay.innerHTML = html;
+        }
+
+        // Export to image
+        async function exportImage(download = true) {
+            const scale = parseInt(document.getElementById('exportScale').value);
+            const canvas = document.getElementById('exportCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Get dimensions
+            const wrapper = previewWrapper;
+            const rect = wrapper.getBoundingClientRect();
+
+            canvas.width = rect.width * scale;
+            canvas.height = rect.height * scale;
+            ctx.scale(scale, scale);
+
+            // Draw background gradient
+            const bgStyle = getComputedStyle(wrapper).background;
+            const gradientMatch = bgStyle.match(/linear-gradient\((\d+)deg,\s*([^,]+),\s*([^)]+)\)/);
+
+            if (gradientMatch) {
+                const angle = parseInt(gradientMatch[1]) * Math.PI / 180;
+                const x1 = rect.width / 2 - Math.cos(angle) * rect.width;
+                const y1 = rect.height / 2 - Math.sin(angle) * rect.height;
+                const x2 = rect.width / 2 + Math.cos(angle) * rect.width;
+                const y2 = rect.height / 2 + Math.sin(angle) * rect.height;
+
+                const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                gradient.addColorStop(0, gradientMatch[2].trim().split(' ')[0]);
+                gradient.addColorStop(1, gradientMatch[3].trim().split(' ')[0]);
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = '#667eea';
+            }
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            // Draw code window
+            const theme = themes[currentTheme];
+            const padding = parseInt(document.getElementById('padding').value);
+            const borderRadius = parseInt(document.getElementById('borderRadius').value);
+            const windowRect = codeWindow.getBoundingClientRect();
+            const offsetX = (rect.width - windowRect.width) / 2;
+            const offsetY = (rect.height - windowRect.height) / 2;
+
+            // Shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 40;
+            ctx.shadowOffsetY = 20;
+
+            // Window background
+            roundRect(ctx, offsetX, offsetY, windowRect.width, windowRect.height, borderRadius);
+            ctx.fillStyle = theme.bg;
+            ctx.fill();
+
+            ctx.shadowColor = 'transparent';
+
+            // Header
+            const headerHeight = 32;
+            ctx.fillStyle = theme.header;
+            roundRectTop(ctx, offsetX, offsetY, windowRect.width, headerHeight, borderRadius);
+            ctx.fill();
+
+            // Dots
+            const dotY = offsetY + 16;
+            const dots = [
+                { x: offsetX + 16, color: '#ff5f56' },
+                { x: offsetX + 36, color: '#ffbd2e' },
+                { x: offsetX + 56, color: '#27ca3f' }
+            ];
+            dots.forEach(dot => {
+                ctx.beginPath();
+                ctx.arc(dot.x, dotY, 6, 0, Math.PI * 2);
+                ctx.fillStyle = dot.color;
+                ctx.fill();
+            });
+
+            // Title
+            const title = document.getElementById('windowTitle').value;
+            if (title) {
+                ctx.font = '12px system-ui, sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.textAlign = 'center';
+                ctx.fillText(title, offsetX + windowRect.width / 2, dotY + 4);
+            }
+
+            // Code text
+            const codeX = offsetX + 20;
+            const codeY = offsetY + headerHeight + 30;
+            const lineHeight = 22;
+            const code = codeInput.value;
+            const lines = code.split('\n');
+            const showLineNumbers = document.getElementById('showLineNumbers').checked;
+
+            ctx.font = '14px "SF Mono", "Fira Code", Monaco, Consolas, monospace';
+            ctx.textAlign = 'left';
+
+            lines.forEach((line, i) => {
+                const y = codeY + i * lineHeight;
+
+                if (showLineNumbers) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.fillText(String(i + 1).padStart(2, ' '), codeX, y);
+                }
+
+                // Simple render (no syntax highlighting in canvas)
+                ctx.fillStyle = theme.text;
+                ctx.fillText(line, codeX + (showLineNumbers ? 50 : 0), y);
+            });
+
+            // Export
+            if (download) {
+                const link = document.createElement('a');
+                link.download = 'code-screenshot.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } else {
+                canvas.toBlob(async blob => {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        const btn = document.getElementById('copyBtn');
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => btn.textContent = 'Copy', 2000);
+                    } catch (err) {
+                        alert('Failed to copy to clipboard');
+                    }
+                });
+            }
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function roundRectTop(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // Event Listeners
+        codeInput.addEventListener('input', updatePreview);
+        document.getElementById('language').addEventListener('change', updatePreview);
+        document.getElementById('showLineNumbers').addEventListener('change', updatePreview);
+        document.getElementById('windowTitle').addEventListener('input', updatePreview);
+
+        document.getElementById('padding').addEventListener('input', e => {
+            document.getElementById('paddingValue').textContent = `${e.target.value}px`;
+            updatePreview();
+        });
+        document.getElementById('borderRadius').addEventListener('input', e => {
+            document.getElementById('borderRadiusValue').textContent = `${e.target.value}px`;
+            updatePreview();
+        });
+        document.getElementById('shadowSize').addEventListener('input', e => {
+            document.getElementById('shadowValue').textContent = e.target.value;
+            updatePreview();
+        });
+
+        // Custom background colors
+        ['bgColor1', 'bgColor2', 'bgAngle'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                const c1 = document.getElementById('bgColor1').value;
+                const c2 = document.getElementById('bgColor2').value;
+                const angle = document.getElementById('bgAngle').value;
+                currentBg = `linear-gradient(${angle}deg, ${c1} 0%, ${c2} 100%)`;
+                document.querySelectorAll('.bg-preset').forEach(b => b.classList.remove('active'));
+                updatePreview();
+            });
+        });
+
+        // Export buttons
+        document.getElementById('downloadBtn').addEventListener('click', () => exportImage(true));
+        document.getElementById('copyBtn').addEventListener('click', () => exportImage(false));
+
+        // Initialize
+        initThemes();
+        initBackgrounds();
+        updatePreview();
+    </script>
+</body>
+</html>

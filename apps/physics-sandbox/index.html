@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Sandbox - AI Showcase</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a12;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .toolbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 0 16px;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        .toolbar-group:first-of-type { border-left: none; }
+
+        .toolbar-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tool-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .tool-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+
+        .tool-btn .icon { font-size: 16px; }
+
+        .action-btn {
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+        .action-btn:hover { background: rgba(255, 107, 107, 0.25); }
+
+        .back-link {
+            margin-left: auto;
+            color: #888;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        #canvas-container {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #0a0a12 0%, #1a1a2e 100%);
+        }
+
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+            pointer-events: none;
+        }
+        .instructions span { color: #4ecdc4; }
+
+        .stats {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #888;
+        }
+        .stats-row { display: flex; justify-content: space-between; gap: 20px; }
+        .stats-value { color: #4ecdc4; }
+
+        /* Color picker */
+        .color-picker {
+            display: flex;
+            gap: 4px;
+        }
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.1s;
+        }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: #fff; }
+
+        /* Slider */
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .slider-group input[type="range"] {
+            width: 80px;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider-value {
+            font-size: 12px;
+            color: #4ecdc4;
+            min-width: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <span class="toolbar-title">Physics Sandbox</span>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Shape</span>
+            <button class="tool-btn active" data-tool="circle"><span class="icon">⬤</span> Circle</button>
+            <button class="tool-btn" data-tool="box"><span class="icon">◼</span> Box</button>
+            <button class="tool-btn" data-tool="triangle"><span class="icon">▲</span> Triangle</button>
+            <button class="tool-btn" data-tool="polygon"><span class="icon">⬡</span> Polygon</button>
+        </div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Mode</span>
+            <button class="tool-btn" data-mode="static"><span class="icon">📌</span> Static</button>
+            <button class="tool-btn" data-mode="drag"><span class="icon">✋</span> Drag</button>
+        </div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Size</span>
+            <div class="slider-group">
+                <input type="range" id="sizeSlider" min="10" max="80" value="30">
+                <span class="slider-value" id="sizeValue">30</span>
+            </div>
+        </div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Color</span>
+            <div class="color-picker" id="colorPicker"></div>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="tool-btn action-btn" id="clearBtn"><span class="icon">🗑️</span> Clear</button>
+            <button class="tool-btn" id="gravityBtn"><span class="icon">⬇️</span> Gravity</button>
+            <button class="tool-btn" id="pauseBtn"><span class="icon">⏸️</span> Pause</button>
+        </div>
+
+        <a href="../../index.html" class="back-link">Back</a>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="instructions">
+        <span>Click</span> to drop shapes | <span>Drag</span> to throw with velocity | <span>Static mode</span> creates fixed obstacles
+    </div>
+
+    <div class="stats">
+        <div class="stats-row">
+            <span>Bodies:</span>
+            <span class="stats-value" id="bodyCount">0</span>
+        </div>
+    </div>
+
+    <script>
+        const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint, Events, Body, Vector } = Matter;
+
+        // Colors
+        const COLORS = [
+            '#ff6b6b', '#ffd93d', '#6bcb77', '#4ecdc4',
+            '#4d96ff', '#9b59b6', '#ff8a5c', '#ea8685'
+        ];
+
+        // State
+        let currentTool = 'circle';
+        let currentMode = 'dynamic';
+        let currentSize = 30;
+        let currentColor = COLORS[3];
+        let isPaused = false;
+        let gravityEnabled = true;
+        let isDragging = false;
+        let dragStart = null;
+        let dragBody = null;
+
+        // Matter.js setup
+        const container = document.getElementById('canvas-container');
+        const width = window.innerWidth;
+        const height = window.innerHeight - 56;
+
+        const engine = Engine.create();
+        engine.gravity.y = 1;
+
+        const render = Render.create({
+            element: container,
+            engine: engine,
+            options: {
+                width: width,
+                height: height,
+                wireframes: false,
+                background: 'transparent',
+                pixelRatio: window.devicePixelRatio || 1
+            }
+        });
+
+        // Create boundaries
+        const wallOptions = {
+            isStatic: true,
+            render: { fillStyle: '#1a1a2e' },
+            friction: 0.3
+        };
+
+        const ground = Bodies.rectangle(width / 2, height + 30, width + 100, 60, wallOptions);
+        const leftWall = Bodies.rectangle(-30, height / 2, 60, height + 100, wallOptions);
+        const rightWall = Bodies.rectangle(width + 30, height / 2, 60, height + 100, wallOptions);
+
+        Composite.add(engine.world, [ground, leftWall, rightWall]);
+
+        // Mouse constraint for dragging existing bodies
+        const mouse = Mouse.create(render.canvas);
+        const mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: { visible: false }
+            }
+        });
+
+        render.mouse = mouse;
+
+        // Custom event handling
+        let mouseDownPos = null;
+        let isCreatingBody = false;
+
+        render.canvas.addEventListener('mousedown', (e) => {
+            const pos = { x: e.offsetX, y: e.offsetY };
+            mouseDownPos = pos;
+
+            // Check if we're clicking on an existing body
+            const bodies = Composite.allBodies(engine.world);
+            const clickedBody = bodies.find(body => {
+                if (body.isStatic && body === ground || body === leftWall || body === rightWall) return false;
+                return Matter.Bounds.contains(body.bounds, pos) &&
+                       Matter.Vertices.contains(body.vertices, pos);
+            });
+
+            if (currentMode === 'drag' || clickedBody) {
+                // Let mouse constraint handle it
+                isCreatingBody = false;
+            } else {
+                isCreatingBody = true;
+                isDragging = true;
+                dragStart = pos;
+            }
+        });
+
+        render.canvas.addEventListener('mousemove', (e) => {
+            if (isDragging && isCreatingBody) {
+                // Could show preview here
+            }
+        });
+
+        render.canvas.addEventListener('mouseup', (e) => {
+            if (!isCreatingBody) {
+                isDragging = false;
+                return;
+            }
+
+            const pos = { x: e.offsetX, y: e.offsetY };
+            const velocity = {
+                x: (mouseDownPos.x - pos.x) * 0.05,
+                y: (mouseDownPos.y - pos.y) * 0.05
+            };
+
+            // Create body at mousedown position
+            createBody(mouseDownPos.x, mouseDownPos.y, velocity);
+
+            isDragging = false;
+            isCreatingBody = false;
+            mouseDownPos = null;
+        });
+
+        function createBody(x, y, velocity = { x: 0, y: 0 }) {
+            const options = {
+                isStatic: currentMode === 'static',
+                restitution: 0.6,
+                friction: 0.1,
+                frictionAir: 0.01,
+                render: {
+                    fillStyle: currentColor,
+                    strokeStyle: shadeColor(currentColor, -20),
+                    lineWidth: 2
+                }
+            };
+
+            let body;
+
+            switch (currentTool) {
+                case 'circle':
+                    body = Bodies.circle(x, y, currentSize, options);
+                    break;
+                case 'box':
+                    body = Bodies.rectangle(x, y, currentSize * 2, currentSize * 2, options);
+                    break;
+                case 'triangle':
+                    body = Bodies.polygon(x, y, 3, currentSize, options);
+                    break;
+                case 'polygon':
+                    const sides = Math.floor(Math.random() * 4) + 5; // 5-8 sides
+                    body = Bodies.polygon(x, y, sides, currentSize, options);
+                    break;
+            }
+
+            if (!options.isStatic) {
+                Body.setVelocity(body, velocity);
+                Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.2);
+            }
+
+            Composite.add(engine.world, body);
+            updateStats();
+        }
+
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 +
+                (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)
+            ).toString(16).slice(1);
+        }
+
+        function updateStats() {
+            const bodies = Composite.allBodies(engine.world);
+            const count = bodies.filter(b =>
+                b !== ground && b !== leftWall && b !== rightWall
+            ).length;
+            document.getElementById('bodyCount').textContent = count;
+        }
+
+        // Toolbar event handlers
+        document.querySelectorAll('[data-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+        });
+
+        document.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode === 'static' ? 'static' : 'dynamic';
+            });
+        });
+
+        document.getElementById('sizeSlider').addEventListener('input', (e) => {
+            currentSize = parseInt(e.target.value);
+            document.getElementById('sizeValue').textContent = currentSize;
+        });
+
+        // Color picker
+        const colorPicker = document.getElementById('colorPicker');
+        COLORS.forEach((color, i) => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch' + (color === currentColor ? ' active' : '');
+            swatch.style.backgroundColor = color;
+            swatch.addEventListener('click', () => {
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                currentColor = color;
+            });
+            colorPicker.appendChild(swatch);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            const bodies = Composite.allBodies(engine.world);
+            bodies.forEach(body => {
+                if (body !== ground && body !== leftWall && body !== rightWall) {
+                    Composite.remove(engine.world, body);
+                }
+            });
+            updateStats();
+        });
+
+        document.getElementById('gravityBtn').addEventListener('click', () => {
+            gravityEnabled = !gravityEnabled;
+            engine.gravity.y = gravityEnabled ? 1 : 0;
+            const btn = document.getElementById('gravityBtn');
+            btn.innerHTML = gravityEnabled ?
+                '<span class="icon">⬇️</span> Gravity' :
+                '<span class="icon">🚀</span> Zero-G';
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.innerHTML = isPaused ?
+                '<span class="icon">▶️</span> Play' :
+                '<span class="icon">⏸️</span> Pause';
+        });
+
+        // Run the engine
+        const runner = Runner.create();
+
+        Events.on(runner, 'beforeTick', () => {
+            if (isPaused) {
+                engine.timing.timeScale = 0;
+            } else {
+                engine.timing.timeScale = 1;
+            }
+        });
+
+        // Remove bodies that fall too far
+        Events.on(engine, 'afterUpdate', () => {
+            const bodies = Composite.allBodies(engine.world);
+            bodies.forEach(body => {
+                if (body.position.y > height + 200 && !body.isStatic) {
+                    Composite.remove(engine.world, body);
+                    updateStats();
+                }
+            });
+        });
+
+        Runner.run(runner, engine);
+        Render.run(render);
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight - 56;
+
+            render.canvas.width = newWidth;
+            render.canvas.height = newHeight;
+            render.options.width = newWidth;
+            render.options.height = newHeight;
+
+            // Update boundaries
+            Body.setPosition(ground, { x: newWidth / 2, y: newHeight + 30 });
+            Body.setPosition(rightWall, { x: newWidth + 30, y: newHeight / 2 });
+        });
+
+        // Add some initial bodies for fun
+        setTimeout(() => {
+            for (let i = 0; i < 5; i++) {
+                const x = 200 + i * 150;
+                const tools = ['circle', 'box', 'triangle', 'polygon'];
+                currentTool = tools[i % tools.length];
+                currentColor = COLORS[i % COLORS.length];
+                createBody(x, 100, { x: 0, y: 0 });
+            }
+            currentTool = 'circle';
+            currentColor = COLORS[3];
+        }, 500);
+    </script>
+</body>
+</html>

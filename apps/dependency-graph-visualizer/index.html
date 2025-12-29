@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Graph Visualizer - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        header {
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #a8edea, #fed6e3, #d299c2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel h2 {
+            font-size: 0.85rem;
+            color: #a8edea;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+            padding: 12px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #a8edea;
+        }
+
+        .file-type-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .file-type-tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #888;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .file-type-tab.active {
+            background: rgba(168, 237, 234, 0.2);
+            border-color: #a8edea;
+            color: #a8edea;
+        }
+
+        .file-type-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            border: none;
+            border-radius: 8px;
+            color: #0f0c29;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(168, 237, 234, 0.3);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .sample-data {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .sample-data a {
+            color: #a8edea;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .sample-data a:hover {
+            text-decoration: underline;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #a8edea;
+            margin-top: 4px;
+        }
+
+        .canvas-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-floating {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(15, 12, 41, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            color: #a8edea;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-version {
+            color: #fed6e3;
+            font-size: 11px;
+        }
+
+        .tooltip-deps {
+            color: #888;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .dep-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .dep-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+
+        .dep-name {
+            color: #e0e0e0;
+        }
+
+        .dep-connections {
+            color: #888;
+            font-size: 0.75rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 370px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: color 0.2s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                max-height: 50vh;
+            }
+            .back-link {
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back to Gallery</a>
+
+    <div class="container">
+        <div class="sidebar">
+            <header>
+                <h1>Dependency Graph Visualizer</h1>
+                <p>Visualize package dependencies as an interactive force-directed graph</p>
+            </header>
+
+            <div class="panel">
+                <h2>Input</h2>
+                <div class="file-type-tabs">
+                    <div class="file-type-tab active" data-type="package.json">package.json</div>
+                    <div class="file-type-tab" data-type="requirements.txt">requirements.txt</div>
+                </div>
+                <textarea id="inputText" placeholder="Paste your package.json or requirements.txt content here..."></textarea>
+                <button id="visualizeBtn">Visualize Dependencies</button>
+                <p class="sample-data">Or try with <a id="loadSample">sample data</a></p>
+            </div>
+
+            <div class="panel">
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Packages</div>
+                        <div class="stat-value" id="totalPackages">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Connections</div>
+                        <div class="stat-value" id="totalConnections">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Max Depth</div>
+                        <div class="stat-value" id="maxDepth">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Most Connected</div>
+                        <div class="stat-value" id="mostConnected">-</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #a8edea;"></div>
+                        <span>Direct deps</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fed6e3;"></div>
+                        <span>Dev deps</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d299c2;"></div>
+                        <span>Transitive</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>All Dependencies</h2>
+                <div class="dep-list" id="depList"></div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="graphCanvas"></canvas>
+            <div class="controls-floating">
+                <button class="control-btn" id="zoomInBtn">+</button>
+                <button class="control-btn" id="zoomOutBtn">−</button>
+                <button class="control-btn" id="resetViewBtn">⟲</button>
+            </div>
+            <div class="tooltip" id="tooltip" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let nodes = [];
+        let edges = [];
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let dragNode = null;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let hoveredNode = null;
+        let animationId = null;
+        let currentFileType = 'package.json';
+
+        const colors = {
+            direct: '#a8edea',
+            dev: '#fed6e3',
+            transitive: '#d299c2',
+            edge: 'rgba(255, 255, 255, 0.15)'
+        };
+
+        function resize() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+
+        function parsePackageJson(text) {
+            try {
+                const pkg = JSON.parse(text);
+                const nodeMap = new Map();
+                const edgeList = [];
+
+                // Root package
+                const rootName = pkg.name || 'root';
+                nodeMap.set(rootName, {
+                    id: rootName,
+                    name: rootName,
+                    version: pkg.version || '1.0.0',
+                    type: 'root',
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: 0,
+                    vy: 0,
+                    connections: 0
+                });
+
+                // Direct dependencies
+                if (pkg.dependencies) {
+                    Object.entries(pkg.dependencies).forEach(([name, version]) => {
+                        if (!nodeMap.has(name)) {
+                            nodeMap.set(name, {
+                                id: name,
+                                name,
+                                version: version.replace(/[\^~>=<]/g, ''),
+                                type: 'direct',
+                                x: canvas.width / 2 + (Math.random() - 0.5) * 400,
+                                y: canvas.height / 2 + (Math.random() - 0.5) * 400,
+                                vx: 0,
+                                vy: 0,
+                                connections: 0
+                            });
+                        }
+                        edgeList.push({ source: rootName, target: name, type: 'direct' });
+                        nodeMap.get(rootName).connections++;
+                        nodeMap.get(name).connections++;
+                    });
+                }
+
+                // Dev dependencies
+                if (pkg.devDependencies) {
+                    Object.entries(pkg.devDependencies).forEach(([name, version]) => {
+                        if (!nodeMap.has(name)) {
+                            nodeMap.set(name, {
+                                id: name,
+                                name,
+                                version: version.replace(/[\^~>=<]/g, ''),
+                                type: 'dev',
+                                x: canvas.width / 2 + (Math.random() - 0.5) * 400,
+                                y: canvas.height / 2 + (Math.random() - 0.5) * 400,
+                                vx: 0,
+                                vy: 0,
+                                connections: 0
+                            });
+                        }
+                        edgeList.push({ source: rootName, target: name, type: 'dev' });
+                        nodeMap.get(rootName).connections++;
+                        nodeMap.get(name).connections++;
+                    });
+                }
+
+                // Simulate some transitive dependencies (for visual effect)
+                const directDeps = Array.from(nodeMap.values()).filter(n => n.type === 'direct');
+                directDeps.forEach(dep => {
+                    // Add 1-3 fake transitive deps per direct dep
+                    const numTransitive = Math.floor(Math.random() * 3) + 1;
+                    for (let i = 0; i < numTransitive; i++) {
+                        const transName = `${dep.name}-sub-${i}`;
+                        nodeMap.set(transName, {
+                            id: transName,
+                            name: transName.split('-sub-')[0] + '-util',
+                            version: '1.0.0',
+                            type: 'transitive',
+                            x: dep.x + (Math.random() - 0.5) * 200,
+                            y: dep.y + (Math.random() - 0.5) * 200,
+                            vx: 0,
+                            vy: 0,
+                            connections: 0
+                        });
+                        edgeList.push({ source: dep.id, target: transName, type: 'transitive' });
+                        nodeMap.get(dep.id).connections++;
+                        nodeMap.get(transName).connections++;
+                    }
+                });
+
+                return { nodes: Array.from(nodeMap.values()), edges: edgeList };
+            } catch (e) {
+                console.error('Parse error:', e);
+                return { nodes: [], edges: [] };
+            }
+        }
+
+        function parseRequirementsTxt(text) {
+            const lines = text.trim().split('\n').filter(l => l.trim() && !l.startsWith('#'));
+            const nodeMap = new Map();
+            const edgeList = [];
+
+            nodeMap.set('project', {
+                id: 'project',
+                name: 'Your Project',
+                version: '1.0.0',
+                type: 'root',
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                vx: 0,
+                vy: 0,
+                connections: 0
+            });
+
+            lines.forEach(line => {
+                const match = line.match(/^([a-zA-Z0-9_-]+)([=<>!~]+)?(.+)?$/);
+                if (match) {
+                    const [, name, , version] = match;
+                    if (!nodeMap.has(name)) {
+                        nodeMap.set(name, {
+                            id: name,
+                            name,
+                            version: version || 'latest',
+                            type: 'direct',
+                            x: canvas.width / 2 + (Math.random() - 0.5) * 400,
+                            y: canvas.height / 2 + (Math.random() - 0.5) * 400,
+                            vx: 0,
+                            vy: 0,
+                            connections: 0
+                        });
+                        edgeList.push({ source: 'project', target: name, type: 'direct' });
+                        nodeMap.get('project').connections++;
+                        nodeMap.get(name).connections++;
+                    }
+                }
+            });
+
+            return { nodes: Array.from(nodeMap.values()), edges: edgeList };
+        }
+
+        function forceSimulation() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const strength = 0.01;
+            const repulsion = 5000;
+            const linkDistance = 120;
+            const damping = 0.9;
+
+            nodes.forEach(node => {
+                // Center gravity
+                node.vx += (centerX - node.x) * strength * 0.1;
+                node.vy += (centerY - node.y) * strength * 0.1;
+
+                // Repulsion between nodes
+                nodes.forEach(other => {
+                    if (node.id === other.id) return;
+                    const dx = node.x - other.x;
+                    const dy = node.y - other.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = repulsion / (dist * dist);
+                    node.vx += (dx / dist) * force * 0.01;
+                    node.vy += (dy / dist) * force * 0.01;
+                });
+            });
+
+            // Link attraction
+            edges.forEach(edge => {
+                const source = nodes.find(n => n.id === edge.source);
+                const target = nodes.find(n => n.id === edge.target);
+                if (!source || !target) return;
+
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = (dist - linkDistance) * strength;
+
+                source.vx += (dx / dist) * force;
+                source.vy += (dy / dist) * force;
+                target.vx -= (dx / dist) * force;
+                target.vy -= (dy / dist) * force;
+            });
+
+            // Apply velocities
+            nodes.forEach(node => {
+                if (node === dragNode) return;
+                node.vx *= damping;
+                node.vy *= damping;
+                node.x += node.vx;
+                node.y += node.vy;
+
+                // Boundary constraints
+                const padding = 50;
+                node.x = Math.max(padding, Math.min(canvas.width - padding, node.x));
+                node.y = Math.max(padding, Math.min(canvas.height - padding, node.y));
+            });
+        }
+
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#0f0c29';
+            ctx.fillRect(0, 0, w, h);
+
+            if (nodes.length === 0) {
+                ctx.fillStyle = '#888';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Paste package.json or requirements.txt and click "Visualize"', w / 2, h / 2);
+                return;
+            }
+
+            ctx.save();
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+
+            // Draw edges
+            edges.forEach(edge => {
+                const source = nodes.find(n => n.id === edge.source);
+                const target = nodes.find(n => n.id === edge.target);
+                if (!source || !target) return;
+
+                ctx.beginPath();
+                ctx.moveTo(source.x, source.y);
+                ctx.lineTo(target.x, target.y);
+                ctx.strokeStyle = edge.type === 'dev' ? 'rgba(254, 214, 227, 0.2)' :
+                                  edge.type === 'transitive' ? 'rgba(210, 153, 194, 0.15)' :
+                                  'rgba(168, 237, 234, 0.25)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                const isHovered = hoveredNode === node;
+                const radius = node.type === 'root' ? 25 :
+                              node.type === 'transitive' ? 8 :
+                              12 + Math.min(node.connections, 10);
+
+                // Glow effect
+                if (isHovered || node.type === 'root') {
+                    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius * 2);
+                    const color = node.type === 'root' ? '#fff' :
+                                  node.type === 'dev' ? colors.dev :
+                                  node.type === 'transitive' ? colors.transitive :
+                                  colors.direct;
+                    gradient.addColorStop(0, color + '40');
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+
+                let fillColor;
+                if (node.type === 'root') {
+                    fillColor = '#fff';
+                } else if (node.type === 'dev') {
+                    fillColor = colors.dev;
+                } else if (node.type === 'transitive') {
+                    fillColor = colors.transitive;
+                } else {
+                    fillColor = colors.direct;
+                }
+
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Label for larger nodes
+                if (radius > 10 || isHovered) {
+                    ctx.font = `${isHovered ? 'bold ' : ''}11px sans-serif`;
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const labelY = node.y + radius + 14;
+                    const label = node.name.length > 15 ? node.name.substring(0, 12) + '...' : node.name;
+
+                    // Background for label
+                    const metrics = ctx.measureText(label);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    ctx.fillRect(node.x - metrics.width / 2 - 4, labelY - 8, metrics.width + 8, 16);
+
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(label, node.x, labelY);
+                }
+            });
+
+            ctx.restore();
+        }
+
+        function animate() {
+            forceSimulation();
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function updateStats() {
+            document.getElementById('totalPackages').textContent = nodes.length;
+            document.getElementById('totalConnections').textContent = edges.length;
+
+            // Calculate max depth (simple BFS from root)
+            const root = nodes.find(n => n.type === 'root');
+            if (root) {
+                const depths = { [root.id]: 0 };
+                const queue = [root.id];
+                let maxDepth = 0;
+
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    const currentDepth = depths[current];
+
+                    edges.forEach(edge => {
+                        if (edge.source === current && !depths.hasOwnProperty(edge.target)) {
+                            depths[edge.target] = currentDepth + 1;
+                            maxDepth = Math.max(maxDepth, currentDepth + 1);
+                            queue.push(edge.target);
+                        }
+                    });
+                }
+
+                document.getElementById('maxDepth').textContent = maxDepth;
+            }
+
+            // Most connected
+            const mostConnected = nodes.reduce((max, node) =>
+                node.connections > (max?.connections || 0) ? node : max, null);
+            if (mostConnected) {
+                const name = mostConnected.name.length > 8 ?
+                    mostConnected.name.substring(0, 6) + '..' : mostConnected.name;
+                document.getElementById('mostConnected').textContent = name;
+            }
+
+            // Dep list
+            const depList = document.getElementById('depList');
+            const sortedNodes = [...nodes]
+                .filter(n => n.type !== 'root')
+                .sort((a, b) => b.connections - a.connections);
+
+            depList.innerHTML = sortedNodes.map(node => `
+                <div class="dep-item">
+                    <span class="dep-name">${node.name}</span>
+                    <span class="dep-connections">${node.connections} conn</span>
+                </div>
+            `).join('');
+        }
+
+        function visualize() {
+            const text = document.getElementById('inputText').value;
+            if (!text.trim()) return;
+
+            cancelAnimationFrame(animationId);
+
+            const parsed = currentFileType === 'package.json' ?
+                parsePackageJson(text) : parseRequirementsTxt(text);
+
+            nodes = parsed.nodes;
+            edges = parsed.edges;
+
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+
+            updateStats();
+            animate();
+        }
+
+        function loadSampleData() {
+            if (currentFileType === 'package.json') {
+                document.getElementById('inputText').value = JSON.stringify({
+                    "name": "my-awesome-app",
+                    "version": "2.1.0",
+                    "dependencies": {
+                        "react": "^18.2.0",
+                        "react-dom": "^18.2.0",
+                        "react-router-dom": "^6.8.0",
+                        "axios": "^1.3.0",
+                        "lodash": "^4.17.21",
+                        "date-fns": "^2.29.0",
+                        "zustand": "^4.3.0"
+                    },
+                    "devDependencies": {
+                        "typescript": "^4.9.0",
+                        "vite": "^4.1.0",
+                        "eslint": "^8.33.0",
+                        "prettier": "^2.8.0",
+                        "vitest": "^0.28.0"
+                    }
+                }, null, 2);
+            } else {
+                document.getElementById('inputText').value = `# Python dependencies
+flask==2.2.3
+requests>=2.28.0
+numpy~=1.24.0
+pandas>=1.5.0
+sqlalchemy==2.0.0
+celery>=5.2.0
+redis==4.5.0
+pytest>=7.2.0
+black==23.1.0`;
+            }
+            visualize();
+        }
+
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panX) / zoom;
+            const y = (e.clientY - rect.top - panY) / zoom;
+
+            lastMouseX = e.clientX - rect.left;
+            lastMouseY = e.clientY - rect.top;
+
+            if (isDragging && dragNode) {
+                dragNode.x = x;
+                dragNode.y = y;
+                dragNode.vx = 0;
+                dragNode.vy = 0;
+                return;
+            }
+
+            if (isDragging && !dragNode) {
+                panX += e.movementX;
+                panY += e.movementY;
+                return;
+            }
+
+            // Check for hover
+            hoveredNode = null;
+            for (const node of nodes) {
+                const radius = node.type === 'root' ? 25 :
+                              node.type === 'transitive' ? 8 : 12;
+                const dist = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+                if (dist < radius * 1.5) {
+                    hoveredNode = node;
+                    break;
+                }
+            }
+
+            if (hoveredNode) {
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+                tooltip.innerHTML = `
+                    <div class="tooltip-title">${hoveredNode.name}</div>
+                    <div class="tooltip-version">v${hoveredNode.version}</div>
+                    <div class="tooltip-deps">${hoveredNode.connections} connection${hoveredNode.connections !== 1 ? 's' : ''}</div>
+                `;
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = isDragging ? 'grabbing' : 'default';
+            }
+        }
+
+        function handleMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panX) / zoom;
+            const y = (e.clientY - rect.top - panY) / zoom;
+
+            // Check if clicking on a node
+            for (const node of nodes) {
+                const radius = node.type === 'root' ? 25 :
+                              node.type === 'transitive' ? 8 : 12;
+                const dist = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+                if (dist < radius * 1.5) {
+                    dragNode = node;
+                    break;
+                }
+            }
+
+            isDragging = true;
+            canvas.style.cursor = 'grabbing';
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            dragNode = null;
+            canvas.style.cursor = 'default';
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(0.3, Math.min(3, zoom * zoomFactor));
+
+            // Zoom towards mouse position
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            panX = mouseX - (mouseX - panX) * (newZoom / zoom);
+            panY = mouseY - (mouseY - panY) * (newZoom / zoom);
+
+            zoom = newZoom;
+        }
+
+        // Event listeners
+        document.getElementById('visualizeBtn').addEventListener('click', visualize);
+        document.getElementById('loadSample').addEventListener('click', loadSampleData);
+
+        document.querySelectorAll('.file-type-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.file-type-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFileType = tab.dataset.type;
+                document.getElementById('inputText').placeholder =
+                    `Paste your ${currentFileType} content here...`;
+            });
+        });
+
+        document.getElementById('zoomInBtn').addEventListener('click', () => {
+            zoom = Math.min(3, zoom * 1.2);
+        });
+
+        document.getElementById('zoomOutBtn').addEventListener('click', () => {
+            zoom = Math.max(0.3, zoom * 0.8);
+        });
+
+        document.getElementById('resetViewBtn').addEventListener('click', () => {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+        });
+
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mouseup', handleMouseUp);
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            dragNode = null;
+            hoveredNode = null;
+            tooltip.style.display = 'none';
+        });
+        canvas.addEventListener('wheel', handleWheel);
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>

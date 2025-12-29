@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blueprint Annotation Tool - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: rgba(0,0,0,0.5);
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 12px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .toolbar-group:last-child { border-right: none; }
+        .toolbar-group label { color: #888; font-size: 0.8rem; white-space: nowrap; }
+
+        .tool-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .tool-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+        .tool-btn svg { width: 16px; height: 16px; }
+
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.danger {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: rgba(255, 107, 107, 0.4);
+            color: #ff6b6b;
+        }
+        button.danger:hover { background: rgba(255, 107, 107, 0.3); }
+
+        select, input[type="number"], input[type="color"] {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        input[type="number"] { width: 70px; }
+        input[type="color"] {
+            width: 32px; height: 32px; padding: 2px; cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .spacer { flex: 1; }
+
+        .editor-container {
+            display: flex;
+            gap: 20px;
+        }
+        .canvas-wrapper {
+            flex: 1;
+            background: #1a1a1f;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+        }
+        .sidebar-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .sidebar-title {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .annotation-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .annotation-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 4px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .annotation-item:hover { background: rgba(255,255,255,0.05); }
+        .annotation-item.selected {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+        .annotation-icon { font-size: 1rem; }
+        .annotation-text {
+            flex: 1;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .annotation-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 1rem;
+        }
+        .annotation-item:hover .annotation-delete { opacity: 1; }
+
+        .instructions {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        .instructions li { margin-bottom: 6px; }
+
+        .hidden { display: none !important; }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px;
+            border-radius: 6px;
+        }
+        .zoom-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .zoom-btn:hover { background: rgba(255,255,255,0.2); }
+        .zoom-level {
+            color: #888;
+            font-size: 0.8rem;
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .editor-container { flex-direction: column; }
+            .sidebar { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Blueprint Annotation Tool</h1>
+        <p class="subtitle">Upload floor plans and add measurements, labels, and annotations</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop a blueprint or floor plan here</div>
+            <div class="drop-zone-hint">Supports PNG, JPEG, WebP, GIF</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="hidden" id="editorPanel">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button class="tool-btn active" data-tool="select" title="Select & Move">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+                        </svg>
+                        Select
+                    </button>
+                    <button class="tool-btn" data-tool="measure" title="Measurement Line">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 6H3M21 6v12M3 6v12M21 18H3M6 6v12M18 6v12"/>
+                        </svg>
+                        Measure
+                    </button>
+                    <button class="tool-btn" data-tool="label" title="Text Label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+                        </svg>
+                        Label
+                    </button>
+                    <button class="tool-btn" data-tool="arrow" title="Arrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                        Arrow
+                    </button>
+                    <button class="tool-btn" data-tool="rectangle" title="Rectangle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        </svg>
+                        Rect
+                    </button>
+                    <button class="tool-btn" data-tool="circle" title="Circle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/>
+                        </svg>
+                        Circle
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <label>Color:</label>
+                    <input type="color" id="colorPicker" value="#ff6b6b">
+                </div>
+
+                <div class="toolbar-group">
+                    <label>Width:</label>
+                    <input type="number" id="lineWidth" value="2" min="1" max="10">
+                </div>
+
+                <div class="toolbar-group">
+                    <label>Scale:</label>
+                    <input type="number" id="scaleValue" value="1" min="0.01" step="0.01" style="width: 60px;">
+                    <select id="scaleUnit">
+                        <option value="m">m</option>
+                        <option value="ft">ft</option>
+                        <option value="in">in</option>
+                        <option value="cm">cm</option>
+                    </select>
+                    <span style="color:#666; font-size:0.75rem;">/100px</span>
+                </div>
+
+                <span class="spacer"></span>
+
+                <button id="exportPng">Export PNG</button>
+                <button id="exportPdf" class="secondary">Export PDF</button>
+                <button id="clearAll" class="secondary danger">Clear All</button>
+                <button id="newImage" class="secondary">New Image</button>
+            </div>
+
+            <div class="editor-container">
+                <div class="canvas-wrapper">
+                    <canvas id="canvas"></canvas>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoomOut">−</button>
+                        <span class="zoom-level" id="zoomLevel">100%</span>
+                        <button class="zoom-btn" id="zoomIn">+</button>
+                        <button class="zoom-btn" id="zoomFit">⊡</button>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Annotations</div>
+                        <div class="annotation-list" id="annotationList">
+                            <div style="color:#666; font-size:0.85rem; text-align:center; padding:20px;">
+                                No annotations yet
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Instructions</div>
+                        <ul class="instructions">
+                            <li><strong>Measure:</strong> Click and drag to create measurement lines with real dimensions</li>
+                            <li><strong>Label:</strong> Click to place text labels</li>
+                            <li><strong>Arrow:</strong> Click and drag to draw arrows</li>
+                            <li><strong>Shapes:</strong> Click and drag for rectangles/circles</li>
+                            <li><strong>Scale:</strong> Set scale factor (e.g., 1m per 100px)</li>
+                            <li><strong>Select:</strong> Click annotation to select, drag to move</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // State
+        let currentTool = 'select';
+        let annotations = [];
+        let selectedAnnotation = null;
+        let isDrawing = false;
+        let startX = 0, startY = 0;
+        let loadedImage = null;
+        let zoom = 1;
+        let panX = 0, panY = 0;
+        let isPanning = false;
+        let lastPanX = 0, lastPanY = 0;
+
+        // DOM Elements
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const annotationList = document.getElementById('annotationList');
+
+        // Tool buttons
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                canvas.style.cursor = currentTool === 'select' ? 'default' : 'crosshair';
+            });
+        });
+
+        // File handling
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                loadedImage = new Image();
+                loadedImage.onload = () => {
+                    initCanvas();
+                    dropZone.classList.add('hidden');
+                    editorPanel.classList.remove('hidden');
+                };
+                loadedImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initCanvas() {
+            const wrapper = canvas.parentElement;
+            const maxW = wrapper.clientWidth || 800;
+            const maxH = 600;
+
+            const imgRatio = loadedImage.width / loadedImage.height;
+            let w = loadedImage.width;
+            let h = loadedImage.height;
+
+            if (w > maxW) {
+                w = maxW;
+                h = w / imgRatio;
+            }
+            if (h > maxH) {
+                h = maxH;
+                w = h * imgRatio;
+            }
+
+            canvas.width = loadedImage.width;
+            canvas.height = loadedImage.height;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+
+            zoom = w / loadedImage.width;
+            updateZoomDisplay();
+            render();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw image
+            if (loadedImage) {
+                ctx.drawImage(loadedImage, 0, 0);
+            }
+
+            // Draw annotations
+            annotations.forEach((ann, idx) => {
+                const isSelected = selectedAnnotation === idx;
+                drawAnnotation(ann, isSelected);
+            });
+
+            // Draw in-progress annotation
+            if (isDrawing && currentTool !== 'select' && currentTool !== 'label') {
+                const tempAnn = createTempAnnotation();
+                if (tempAnn) drawAnnotation(tempAnn, false);
+            }
+        }
+
+        function drawAnnotation(ann, isSelected) {
+            ctx.save();
+            ctx.strokeStyle = ann.color;
+            ctx.fillStyle = ann.color;
+            ctx.lineWidth = ann.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const selectionPadding = 5;
+
+            switch (ann.type) {
+                case 'measure':
+                    drawMeasureLine(ann);
+                    break;
+                case 'label':
+                    drawLabel(ann);
+                    break;
+                case 'arrow':
+                    drawArrow(ann);
+                    break;
+                case 'rectangle':
+                    ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
+                    break;
+                case 'circle':
+                    ctx.beginPath();
+                    ctx.ellipse(ann.x + ann.width/2, ann.y + ann.height/2,
+                               Math.abs(ann.width/2), Math.abs(ann.height/2), 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+            }
+
+            // Draw selection handles
+            if (isSelected) {
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+
+                const bounds = getAnnotationBounds(ann);
+                ctx.strokeRect(bounds.x - selectionPadding, bounds.y - selectionPadding,
+                              bounds.width + selectionPadding * 2, bounds.height + selectionPadding * 2);
+                ctx.setLineDash([]);
+            }
+
+            ctx.restore();
+        }
+
+        function drawMeasureLine(ann) {
+            const dx = ann.x2 - ann.x1;
+            const dy = ann.y2 - ann.y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(ann.x1, ann.y1);
+            ctx.lineTo(ann.x2, ann.y2);
+            ctx.stroke();
+
+            // End caps
+            const capSize = 10;
+            const perpAngle = angle + Math.PI / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(ann.x1 + Math.cos(perpAngle) * capSize, ann.y1 + Math.sin(perpAngle) * capSize);
+            ctx.lineTo(ann.x1 - Math.cos(perpAngle) * capSize, ann.y1 - Math.sin(perpAngle) * capSize);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(ann.x2 + Math.cos(perpAngle) * capSize, ann.y2 + Math.sin(perpAngle) * capSize);
+            ctx.lineTo(ann.x2 - Math.cos(perpAngle) * capSize, ann.y2 - Math.sin(perpAngle) * capSize);
+            ctx.stroke();
+
+            // Measurement text
+            const scale = parseFloat(document.getElementById('scaleValue').value) || 1;
+            const unit = document.getElementById('scaleUnit').value;
+            const realLength = (length / 100) * scale;
+            const text = realLength.toFixed(2) + ' ' + unit;
+
+            ctx.save();
+            ctx.translate((ann.x1 + ann.x2) / 2, (ann.y1 + ann.y2) / 2);
+
+            let textAngle = angle;
+            if (textAngle > Math.PI / 2) textAngle -= Math.PI;
+            if (textAngle < -Math.PI / 2) textAngle += Math.PI;
+            ctx.rotate(textAngle);
+
+            ctx.font = 'bold 14px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(-textWidth/2 - 4, -20, textWidth + 8, 18);
+
+            ctx.fillStyle = ann.color;
+            ctx.fillText(text, 0, -5);
+            ctx.restore();
+        }
+
+        function drawLabel(ann) {
+            ctx.font = 'bold 16px system-ui';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            const text = ann.text || 'Label';
+            const metrics = ctx.measureText(text);
+            const padding = 6;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(ann.x - padding, ann.y - padding,
+                        metrics.width + padding * 2, 20 + padding * 2);
+
+            ctx.fillStyle = ann.color;
+            ctx.fillText(text, ann.x, ann.y);
+        }
+
+        function drawArrow(ann) {
+            const dx = ann.x2 - ann.x1;
+            const dy = ann.y2 - ann.y1;
+            const angle = Math.atan2(dy, dx);
+            const headLength = 15;
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(ann.x1, ann.y1);
+            ctx.lineTo(ann.x2, ann.y2);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ann.x2, ann.y2);
+            ctx.lineTo(ann.x2 - headLength * Math.cos(angle - Math.PI/6),
+                      ann.y2 - headLength * Math.sin(angle - Math.PI/6));
+            ctx.moveTo(ann.x2, ann.y2);
+            ctx.lineTo(ann.x2 - headLength * Math.cos(angle + Math.PI/6),
+                      ann.y2 - headLength * Math.sin(angle + Math.PI/6));
+            ctx.stroke();
+        }
+
+        function getAnnotationBounds(ann) {
+            switch (ann.type) {
+                case 'measure':
+                case 'arrow':
+                    return {
+                        x: Math.min(ann.x1, ann.x2),
+                        y: Math.min(ann.y1, ann.y2),
+                        width: Math.abs(ann.x2 - ann.x1),
+                        height: Math.abs(ann.y2 - ann.y1)
+                    };
+                case 'label':
+                    ctx.font = 'bold 16px system-ui';
+                    const metrics = ctx.measureText(ann.text || 'Label');
+                    return { x: ann.x, y: ann.y, width: metrics.width + 12, height: 32 };
+                case 'rectangle':
+                case 'circle':
+                    return { x: ann.x, y: ann.y, width: ann.width, height: ann.height };
+            }
+            return { x: 0, y: 0, width: 0, height: 0 };
+        }
+
+        function createTempAnnotation() {
+            const color = document.getElementById('colorPicker').value;
+            const lineWidth = parseInt(document.getElementById('lineWidth').value);
+            const currentX = lastMouseX;
+            const currentY = lastMouseY;
+
+            switch (currentTool) {
+                case 'measure':
+                    return { type: 'measure', x1: startX, y1: startY, x2: currentX, y2: currentY, color, lineWidth };
+                case 'arrow':
+                    return { type: 'arrow', x1: startX, y1: startY, x2: currentX, y2: currentY, color, lineWidth };
+                case 'rectangle':
+                    return {
+                        type: 'rectangle',
+                        x: Math.min(startX, currentX),
+                        y: Math.min(startY, currentY),
+                        width: Math.abs(currentX - startX),
+                        height: Math.abs(currentY - startY),
+                        color, lineWidth
+                    };
+                case 'circle':
+                    return {
+                        type: 'circle',
+                        x: Math.min(startX, currentX),
+                        y: Math.min(startY, currentY),
+                        width: Math.abs(currentX - startX),
+                        height: Math.abs(currentY - startY),
+                        color, lineWidth
+                    };
+            }
+            return null;
+        }
+
+        let lastMouseX = 0, lastMouseY = 0;
+        let dragOffsetX = 0, dragOffsetY = 0;
+        let isDragging = false;
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const coords = getCanvasCoords(e);
+            lastMouseX = coords.x;
+            lastMouseY = coords.y;
+            startX = coords.x;
+            startY = coords.y;
+
+            if (currentTool === 'select') {
+                // Check if clicking on an annotation
+                let found = -1;
+                for (let i = annotations.length - 1; i >= 0; i--) {
+                    const bounds = getAnnotationBounds(annotations[i]);
+                    if (coords.x >= bounds.x - 10 && coords.x <= bounds.x + bounds.width + 10 &&
+                        coords.y >= bounds.y - 10 && coords.y <= bounds.y + bounds.height + 10) {
+                        found = i;
+                        break;
+                    }
+                }
+
+                if (found >= 0) {
+                    selectedAnnotation = found;
+                    isDragging = true;
+                    const bounds = getAnnotationBounds(annotations[found]);
+                    dragOffsetX = coords.x - bounds.x;
+                    dragOffsetY = coords.y - bounds.y;
+                } else {
+                    selectedAnnotation = null;
+                }
+                updateAnnotationList();
+                render();
+            } else if (currentTool === 'label') {
+                const text = prompt('Enter label text:', 'Label');
+                if (text) {
+                    const color = document.getElementById('colorPicker').value;
+                    const lineWidth = parseInt(document.getElementById('lineWidth').value);
+                    annotations.push({ type: 'label', x: coords.x, y: coords.y, text, color, lineWidth });
+                    updateAnnotationList();
+                    render();
+                }
+            } else {
+                isDrawing = true;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const coords = getCanvasCoords(e);
+            lastMouseX = coords.x;
+            lastMouseY = coords.y;
+
+            if (isDragging && selectedAnnotation !== null) {
+                const ann = annotations[selectedAnnotation];
+                const newX = coords.x - dragOffsetX;
+                const newY = coords.y - dragOffsetY;
+                const bounds = getAnnotationBounds(ann);
+                const dx = newX - bounds.x;
+                const dy = newY - bounds.y;
+
+                if (ann.type === 'measure' || ann.type === 'arrow') {
+                    ann.x1 += dx;
+                    ann.y1 += dy;
+                    ann.x2 += dx;
+                    ann.y2 += dy;
+                } else {
+                    ann.x = newX;
+                    ann.y = newY;
+                }
+                render();
+            } else if (isDrawing) {
+                render();
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (isDrawing && currentTool !== 'select' && currentTool !== 'label') {
+                const ann = createTempAnnotation();
+                if (ann) {
+                    // Minimum size check
+                    const bounds = getAnnotationBounds(ann);
+                    if (bounds.width > 5 || bounds.height > 5) {
+                        annotations.push(ann);
+                        updateAnnotationList();
+                    }
+                }
+            }
+
+            isDrawing = false;
+            isDragging = false;
+            render();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                render();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedAnnotation !== null && !e.target.matches('input')) {
+                    annotations.splice(selectedAnnotation, 1);
+                    selectedAnnotation = null;
+                    updateAnnotationList();
+                    render();
+                }
+            }
+            if (e.key === 'Escape') {
+                selectedAnnotation = null;
+                isDrawing = false;
+                updateAnnotationList();
+                render();
+            }
+        });
+
+        function updateAnnotationList() {
+            if (annotations.length === 0) {
+                annotationList.innerHTML = '<div style="color:#666; font-size:0.85rem; text-align:center; padding:20px;">No annotations yet</div>';
+                return;
+            }
+
+            const icons = {
+                measure: '📏',
+                label: '🏷️',
+                arrow: '➡️',
+                rectangle: '⬜',
+                circle: '⭕'
+            };
+
+            annotationList.innerHTML = annotations.map((ann, idx) => {
+                let text = '';
+                switch (ann.type) {
+                    case 'measure':
+                        const dx = ann.x2 - ann.x1;
+                        const dy = ann.y2 - ann.y1;
+                        const length = Math.sqrt(dx*dx + dy*dy);
+                        const scale = parseFloat(document.getElementById('scaleValue').value) || 1;
+                        const unit = document.getElementById('scaleUnit').value;
+                        text = `${((length / 100) * scale).toFixed(2)} ${unit}`;
+                        break;
+                    case 'label':
+                        text = ann.text;
+                        break;
+                    default:
+                        text = ann.type.charAt(0).toUpperCase() + ann.type.slice(1);
+                }
+
+                return `
+                    <div class="annotation-item ${selectedAnnotation === idx ? 'selected' : ''}" data-idx="${idx}">
+                        <span class="annotation-icon">${icons[ann.type]}</span>
+                        <span class="annotation-text">${text}</span>
+                        <button class="annotation-delete" data-idx="${idx}">×</button>
+                    </div>
+                `;
+            }).join('');
+
+            // Event listeners
+            annotationList.querySelectorAll('.annotation-item').forEach(item => {
+                item.addEventListener('click', e => {
+                    if (!e.target.classList.contains('annotation-delete')) {
+                        selectedAnnotation = parseInt(item.dataset.idx);
+                        updateAnnotationList();
+                        render();
+                    }
+                });
+            });
+
+            annotationList.querySelectorAll('.annotation-delete').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const idx = parseInt(btn.dataset.idx);
+                    annotations.splice(idx, 1);
+                    if (selectedAnnotation === idx) selectedAnnotation = null;
+                    else if (selectedAnnotation > idx) selectedAnnotation--;
+                    updateAnnotationList();
+                    render();
+                });
+            });
+        }
+
+        // Scale change updates measurements
+        document.getElementById('scaleValue').addEventListener('input', () => {
+            updateAnnotationList();
+            render();
+        });
+        document.getElementById('scaleUnit').addEventListener('change', () => {
+            updateAnnotationList();
+            render();
+        });
+
+        // Zoom controls
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+        }
+
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoom = Math.min(3, zoom * 1.2);
+            canvas.style.width = (canvas.width * zoom) + 'px';
+            canvas.style.height = (canvas.height * zoom) + 'px';
+            updateZoomDisplay();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoom = Math.max(0.1, zoom / 1.2);
+            canvas.style.width = (canvas.width * zoom) + 'px';
+            canvas.style.height = (canvas.height * zoom) + 'px';
+            updateZoomDisplay();
+        });
+
+        document.getElementById('zoomFit').addEventListener('click', () => {
+            initCanvas();
+        });
+
+        // Export PNG
+        document.getElementById('exportPng').addEventListener('click', () => {
+            selectedAnnotation = null;
+            render();
+
+            const link = document.createElement('a');
+            link.download = 'annotated-blueprint.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Export PDF
+        document.getElementById('exportPdf').addEventListener('click', () => {
+            selectedAnnotation = null;
+            render();
+
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+
+            // Determine orientation
+            const orientation = imgWidth > imgHeight ? 'l' : 'p';
+            const pdf = new jsPDF(orientation, 'px', [imgWidth, imgHeight]);
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save('annotated-blueprint.pdf');
+        });
+
+        // Clear all
+        document.getElementById('clearAll').addEventListener('click', () => {
+            if (confirm('Clear all annotations?')) {
+                annotations = [];
+                selectedAnnotation = null;
+                updateAnnotationList();
+                render();
+            }
+        });
+
+        // New image
+        document.getElementById('newImage').addEventListener('click', () => {
+            if (annotations.length > 0 && !confirm('Start over with a new image? Current annotations will be lost.')) {
+                return;
+            }
+            annotations = [];
+            selectedAnnotation = null;
+            loadedImage = null;
+            fileInput.value = '';
+            editorPanel.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

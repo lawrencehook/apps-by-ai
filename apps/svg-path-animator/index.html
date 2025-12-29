@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Path Animator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+        }
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card h3 {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+        .control-group:last-child { margin-bottom: 0; }
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        select, input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea {
+            min-height: 100px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(100, 150, 255, 0.5);
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #4a90ff;
+        }
+        .range-value {
+            font-size: 13px;
+            color: #888;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4a90ff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group .btn { flex: 1; }
+
+        /* Canvas Area */
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-wrapper {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            position: relative;
+        }
+        #svgCanvas {
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .drawing-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        /* Preset shapes */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .preset-btn {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 8px;
+        }
+        .preset-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+        }
+        .preset-btn.active {
+            border-color: #4a90ff;
+            background: rgba(74, 144, 255, 0.1);
+        }
+        .preset-btn svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Playback controls */
+        .playback-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        }
+        .play-btn svg {
+            fill: white;
+            width: 20px;
+            height: 20px;
+        }
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .control-btn svg {
+            fill: #888;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            flex: 1;
+            max-width: 300px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.05s;
+        }
+
+        /* Code output */
+        .code-output {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            color: #a0a0a0;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.06); }
+        .tab.active {
+            background: rgba(100, 150, 255, 0.1);
+            border-color: rgba(100, 150, 255, 0.3);
+            color: #fff;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>SVG Path Animator</h1>
+        <p class="subtitle">Draw or import SVG paths and create mesmerizing line-drawing animations.</p>
+
+        <div class="main-layout">
+            <div class="sidebar">
+                <!-- Presets -->
+                <div class="card">
+                    <h3>Preset Shapes</h3>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </div>
+
+                <!-- Path Input -->
+                <div class="card">
+                    <h3>SVG Path</h3>
+                    <div class="control-group">
+                        <label>Path Data (d attribute)</label>
+                        <textarea id="pathInput" placeholder="M 10 10 L 50 50..."></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="clearBtn">Clear</button>
+                        <button class="btn btn-primary" id="applyPathBtn">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Animation Settings -->
+                <div class="card">
+                    <h3>Animation</h3>
+                    <div class="control-group">
+                        <label>Duration</label>
+                        <div class="range-row">
+                            <input type="range" id="duration" min="0.5" max="10" step="0.1" value="2">
+                            <span class="range-value" id="durationValue">2.0s</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Easing</label>
+                        <select id="easing">
+                            <option value="linear">Linear</option>
+                            <option value="easeInOut" selected>Ease In Out</option>
+                            <option value="easeIn">Ease In</option>
+                            <option value="easeOut">Ease Out</option>
+                            <option value="easeInQuad">Ease In Quad</option>
+                            <option value="easeOutQuad">Ease Out Quad</option>
+                            <option value="easeInCubic">Ease In Cubic</option>
+                            <option value="easeOutCubic">Ease Out Cubic</option>
+                            <option value="easeInOutCubic">Ease In Out Cubic</option>
+                            <option value="easeInElastic">Elastic In</option>
+                            <option value="easeOutElastic">Elastic Out</option>
+                            <option value="easeOutBounce">Bounce</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Direction</label>
+                        <select id="direction">
+                            <option value="normal">Normal</option>
+                            <option value="reverse">Reverse</option>
+                            <option value="alternate">Alternate</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="loopAnim" checked>
+                        <label for="loopAnim" style="margin-bottom: 0;">Loop animation</label>
+                    </div>
+                </div>
+
+                <!-- Stroke Settings -->
+                <div class="card">
+                    <h3>Stroke</h3>
+                    <div class="control-group">
+                        <label>Color</label>
+                        <div class="color-row">
+                            <input type="color" id="strokeColor" value="#667eea">
+                            <input type="text" id="strokeColorText" value="#667eea" style="flex: 1;">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Width</label>
+                        <div class="range-row">
+                            <input type="range" id="strokeWidth" min="1" max="20" step="0.5" value="3">
+                            <span class="range-value" id="strokeWidthValue">3px</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Line Cap</label>
+                        <select id="lineCap">
+                            <option value="round" selected>Round</option>
+                            <option value="butt">Butt</option>
+                            <option value="square">Square</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Line Join</label>
+                        <select id="lineJoin">
+                            <option value="round" selected>Round</option>
+                            <option value="miter">Miter</option>
+                            <option value="bevel">Bevel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Export -->
+                <div class="card">
+                    <h3>Export</h3>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="css">CSS</div>
+                        <div class="tab" data-tab="svg">SVG</div>
+                    </div>
+                    <div id="cssTab" class="tab-content active">
+                        <button class="btn btn-primary" id="copyCssBtn">Copy CSS Animation</button>
+                    </div>
+                    <div id="svgTab" class="tab-content">
+                        <button class="btn btn-primary" id="downloadSvgBtn">Download Animated SVG</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <svg id="svgCanvas" width="600" height="400" viewBox="0 0 600 400">
+                        <path id="animatedPath" fill="none" stroke="#667eea" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <div class="drawing-hint" id="drawingHint">Click and drag to draw a path</div>
+                </div>
+
+                <div class="playback-controls">
+                    <button class="control-btn" id="resetBtn" title="Reset">
+                        <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                    </button>
+                    <button class="play-btn" id="playBtn" title="Play/Pause">
+                        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Generated Code</h3>
+                    <div class="code-output" id="codeOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Preset paths
+        const presets = [
+            {
+                name: 'Signature',
+                path: 'M 50 200 C 80 100, 120 100, 150 200 C 180 300, 220 300, 250 200 L 280 200 M 300 150 L 300 250 M 320 150 C 380 150, 380 250, 320 250',
+                viewBox: '0 0 400 350'
+            },
+            {
+                name: 'Heart',
+                path: 'M 300 150 C 300 100, 250 50, 200 100 C 150 50, 100 100, 100 150 C 100 250, 200 300, 200 350 C 200 300, 300 250, 300 150 Z',
+                viewBox: '0 0 400 400'
+            },
+            {
+                name: 'Star',
+                path: 'M 200 50 L 230 150 L 350 150 L 255 210 L 290 320 L 200 250 L 110 320 L 145 210 L 50 150 L 170 150 Z',
+                viewBox: '0 0 400 370'
+            },
+            {
+                name: 'Infinity',
+                path: 'M 200 200 C 120 100, 40 100, 40 200 C 40 300, 120 300, 200 200 C 280 100, 360 100, 360 200 C 360 300, 280 300, 200 200',
+                viewBox: '0 0 400 400'
+            },
+            {
+                name: 'Spiral',
+                path: 'M 200 200 C 200 180, 220 180, 220 200 C 220 230, 180 230, 180 200 C 180 160, 240 160, 240 200 C 240 260, 160 260, 160 200 C 160 140, 260 140, 260 200 C 260 280, 140 280, 140 200 C 140 120, 280 120, 280 200',
+                viewBox: '0 0 400 400'
+            },
+            {
+                name: 'Check',
+                path: 'M 80 200 L 160 280 L 320 120',
+                viewBox: '0 0 400 400'
+            },
+            {
+                name: 'Arrow',
+                path: 'M 50 200 L 300 200 M 250 150 L 300 200 L 250 250',
+                viewBox: '0 0 350 400'
+            },
+            {
+                name: 'Wave',
+                path: 'M 20 200 Q 80 100, 140 200 T 260 200 T 380 200',
+                viewBox: '0 0 400 400'
+            }
+        ];
+
+        // State
+        let isPlaying = false;
+        let animationId = null;
+        let progress = 0;
+        let pathLength = 0;
+        let isDrawing = false;
+        let drawnPoints = [];
+
+        // DOM Elements
+        const svg = document.getElementById('svgCanvas');
+        const path = document.getElementById('animatedPath');
+        const pathInput = document.getElementById('pathInput');
+        const progressBar = document.getElementById('progressBar');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const codeOutput = document.getElementById('codeOutput');
+        const drawingHint = document.getElementById('drawingHint');
+
+        // Easing functions
+        const easings = {
+            linear: t => t,
+            easeIn: t => t * t,
+            easeOut: t => t * (2 - t),
+            easeInOut: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+            easeInQuad: t => t * t,
+            easeOutQuad: t => t * (2 - t),
+            easeInCubic: t => t * t * t,
+            easeOutCubic: t => (--t) * t * t + 1,
+            easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+            easeInElastic: t => t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3)),
+            easeOutElastic: t => t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1,
+            easeOutBounce: t => {
+                const n1 = 7.5625, d1 = 2.75;
+                if (t < 1 / d1) return n1 * t * t;
+                if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+                if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+                return n1 * (t -= 2.625 / d1) * t + 0.984375;
+            }
+        };
+
+        // Initialize presets
+        function initPresets() {
+            const grid = document.getElementById('presetGrid');
+            grid.innerHTML = presets.map((preset, i) => `
+                <div class="preset-btn" data-index="${i}" title="${preset.name}">
+                    <svg viewBox="${preset.viewBox}">
+                        <path d="${preset.path}" fill="none" stroke="#888" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = presets[btn.dataset.index];
+                    pathInput.value = preset.path;
+                    const vb = preset.viewBox.split(' ').map(Number);
+                    svg.setAttribute('viewBox', preset.viewBox);
+                    svg.setAttribute('width', vb[2]);
+                    svg.setAttribute('height', vb[3]);
+                    applyPath();
+                    grid.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    drawingHint.style.display = 'none';
+                });
+            });
+        }
+
+        // Apply path from input
+        function applyPath() {
+            const d = pathInput.value.trim();
+            if (!d) return;
+
+            path.setAttribute('d', d);
+            pathLength = path.getTotalLength();
+            path.style.strokeDasharray = pathLength;
+            path.style.strokeDashoffset = pathLength;
+
+            progress = 0;
+            updateProgress();
+            updateCode();
+        }
+
+        // Update stroke progress
+        function updateProgress() {
+            const direction = document.getElementById('direction').value;
+            let offset;
+
+            if (direction === 'reverse') {
+                offset = -pathLength * (1 - progress);
+            } else {
+                offset = pathLength * (1 - progress);
+            }
+
+            path.style.strokeDashoffset = offset;
+            progressBar.style.width = `${progress * 100}%`;
+        }
+
+        // Animation loop
+        function animate(startTime) {
+            if (!isPlaying) return;
+
+            const duration = parseFloat(document.getElementById('duration').value) * 1000;
+            const easing = document.getElementById('easing').value;
+            const direction = document.getElementById('direction').value;
+            const loop = document.getElementById('loopAnim').checked;
+
+            const elapsed = Date.now() - startTime;
+            let t = Math.min(elapsed / duration, 1);
+
+            // Apply easing
+            const easedT = easings[easing](t);
+
+            // Handle direction
+            if (direction === 'alternate') {
+                const cycle = Math.floor(elapsed / duration);
+                if (cycle % 2 === 1) {
+                    progress = 1 - easedT;
+                } else {
+                    progress = easedT;
+                }
+            } else {
+                progress = easedT;
+            }
+
+            updateProgress();
+
+            if (t >= 1) {
+                if (loop) {
+                    animationId = requestAnimationFrame(() => animate(Date.now()));
+                } else {
+                    stopAnimation();
+                }
+            } else {
+                animationId = requestAnimationFrame(() => animate(startTime));
+            }
+        }
+
+        function startAnimation() {
+            if (pathLength === 0) return;
+            isPlaying = true;
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            animate(Date.now() - (progress * parseFloat(document.getElementById('duration').value) * 1000));
+        }
+
+        function stopAnimation() {
+            isPlaying = false;
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function resetAnimation() {
+            stopAnimation();
+            progress = 0;
+            updateProgress();
+        }
+
+        // Update code output
+        function updateCode() {
+            const d = pathInput.value.trim();
+            const duration = document.getElementById('duration').value;
+            const easing = document.getElementById('easing').value;
+            const strokeColor = document.getElementById('strokeColor').value;
+            const strokeWidth = document.getElementById('strokeWidth').value;
+            const lineCap = document.getElementById('lineCap').value;
+            const lineJoin = document.getElementById('lineJoin').value;
+
+            const cssEasing = {
+                linear: 'linear',
+                easeIn: 'ease-in',
+                easeOut: 'ease-out',
+                easeInOut: 'ease-in-out',
+                easeInQuad: 'cubic-bezier(0.55, 0.085, 0.68, 0.53)',
+                easeOutQuad: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                easeInCubic: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+                easeOutCubic: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+                easeInOutCubic: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+                easeInElastic: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+                easeOutElastic: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                easeOutBounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+            };
+
+            const code = `/* SVG Path Animation */
+.animated-path {
+  stroke: ${strokeColor};
+  stroke-width: ${strokeWidth}px;
+  stroke-linecap: ${lineCap};
+  stroke-linejoin: ${lineJoin};
+  fill: none;
+  stroke-dasharray: ${Math.round(pathLength)};
+  stroke-dashoffset: ${Math.round(pathLength)};
+  animation: draw ${duration}s ${cssEasing[easing]} forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Path data: d="${d.substring(0, 50)}${d.length > 50 ? '...' : ''}" */`;
+
+            codeOutput.textContent = code;
+        }
+
+        // Drawing functionality
+        function startDrawing(e) {
+            isDrawing = true;
+            drawnPoints = [];
+            const point = getPoint(e);
+            drawnPoints.push(point);
+            drawingHint.style.display = 'none';
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const point = getPoint(e);
+            drawnPoints.push(point);
+
+            // Convert points to path
+            if (drawnPoints.length > 1) {
+                let d = `M ${drawnPoints[0].x} ${drawnPoints[0].y}`;
+                for (let i = 1; i < drawnPoints.length; i++) {
+                    d += ` L ${drawnPoints[i].x} ${drawnPoints[i].y}`;
+                }
+                pathInput.value = d;
+                path.setAttribute('d', d);
+                pathLength = path.getTotalLength();
+                path.style.strokeDasharray = pathLength;
+                path.style.strokeDashoffset = 0;
+            }
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (drawnPoints.length > 2) {
+                // Smooth the path using Catmull-Rom spline
+                const smoothed = smoothPath(drawnPoints);
+                pathInput.value = smoothed;
+                path.setAttribute('d', smoothed);
+                pathLength = path.getTotalLength();
+                path.style.strokeDasharray = pathLength;
+                path.style.strokeDashoffset = pathLength;
+                progress = 0;
+                updateProgress();
+                updateCode();
+            }
+        }
+
+        function getPoint(e) {
+            const rect = svg.getBoundingClientRect();
+            const scaleX = svg.viewBox.baseVal.width / rect.width;
+            const scaleY = svg.viewBox.baseVal.height / rect.height;
+
+            if (e.touches) {
+                return {
+                    x: Math.round((e.touches[0].clientX - rect.left) * scaleX),
+                    y: Math.round((e.touches[0].clientY - rect.top) * scaleY)
+                };
+            }
+            return {
+                x: Math.round((e.clientX - rect.left) * scaleX),
+                y: Math.round((e.clientY - rect.top) * scaleY)
+            };
+        }
+
+        function smoothPath(points) {
+            if (points.length < 3) {
+                return `M ${points[0].x} ${points[0].y} L ${points[points.length-1].x} ${points[points.length-1].y}`;
+            }
+
+            // Reduce points for smoother curve
+            const reduced = [];
+            for (let i = 0; i < points.length; i += 3) {
+                reduced.push(points[i]);
+            }
+            if (reduced[reduced.length - 1] !== points[points.length - 1]) {
+                reduced.push(points[points.length - 1]);
+            }
+
+            let d = `M ${reduced[0].x} ${reduced[0].y}`;
+
+            for (let i = 0; i < reduced.length - 1; i++) {
+                const p0 = reduced[i === 0 ? i : i - 1];
+                const p1 = reduced[i];
+                const p2 = reduced[i + 1];
+                const p3 = reduced[i + 2 < reduced.length ? i + 2 : i + 1];
+
+                const cp1x = p1.x + (p2.x - p0.x) / 6;
+                const cp1y = p1.y + (p2.y - p0.y) / 6;
+                const cp2x = p2.x - (p3.x - p1.x) / 6;
+                const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+                d += ` C ${Math.round(cp1x)} ${Math.round(cp1y)}, ${Math.round(cp2x)} ${Math.round(cp2y)}, ${Math.round(p2.x)} ${Math.round(p2.y)}`;
+            }
+
+            return d;
+        }
+
+        // Event Listeners
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (isPlaying) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', resetAnimation);
+        document.getElementById('applyPathBtn').addEventListener('click', applyPath);
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            pathInput.value = '';
+            path.setAttribute('d', '');
+            pathLength = 0;
+            progress = 0;
+            stopAnimation();
+            updateProgress();
+            drawingHint.style.display = 'block';
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        });
+
+        // Stroke controls
+        document.getElementById('strokeColor').addEventListener('input', e => {
+            path.setAttribute('stroke', e.target.value);
+            document.getElementById('strokeColorText').value = e.target.value;
+            updateCode();
+        });
+        document.getElementById('strokeColorText').addEventListener('input', e => {
+            path.setAttribute('stroke', e.target.value);
+            document.getElementById('strokeColor').value = e.target.value;
+            updateCode();
+        });
+        document.getElementById('strokeWidth').addEventListener('input', e => {
+            path.setAttribute('stroke-width', e.target.value);
+            document.getElementById('strokeWidthValue').textContent = `${e.target.value}px`;
+            updateCode();
+        });
+        document.getElementById('lineCap').addEventListener('change', e => {
+            path.setAttribute('stroke-linecap', e.target.value);
+            updateCode();
+        });
+        document.getElementById('lineJoin').addEventListener('change', e => {
+            path.setAttribute('stroke-linejoin', e.target.value);
+            updateCode();
+        });
+
+        // Animation controls
+        document.getElementById('duration').addEventListener('input', e => {
+            document.getElementById('durationValue').textContent = `${parseFloat(e.target.value).toFixed(1)}s`;
+            updateCode();
+        });
+        document.getElementById('easing').addEventListener('change', updateCode);
+        document.getElementById('direction').addEventListener('change', updateCode);
+
+        // Progress bar scrubbing
+        document.getElementById('progressContainer').addEventListener('click', e => {
+            const rect = e.target.getBoundingClientRect();
+            progress = (e.clientX - rect.left) / rect.width;
+            updateProgress();
+        });
+
+        // Drawing events
+        svg.addEventListener('mousedown', startDrawing);
+        svg.addEventListener('mousemove', draw);
+        svg.addEventListener('mouseup', stopDrawing);
+        svg.addEventListener('mouseleave', stopDrawing);
+        svg.addEventListener('touchstart', e => { e.preventDefault(); startDrawing(e); });
+        svg.addEventListener('touchmove', e => { e.preventDefault(); draw(e); });
+        svg.addEventListener('touchend', stopDrawing);
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+            });
+        });
+
+        // Export buttons
+        document.getElementById('copyCssBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(codeOutput.textContent).then(() => {
+                const btn = document.getElementById('copyCssBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy CSS Animation', 2000);
+            });
+        });
+
+        document.getElementById('downloadSvgBtn').addEventListener('click', () => {
+            const d = pathInput.value.trim();
+            const duration = document.getElementById('duration').value;
+            const strokeColor = document.getElementById('strokeColor').value;
+            const strokeWidth = document.getElementById('strokeWidth').value;
+            const lineCap = document.getElementById('lineCap').value;
+            const lineJoin = document.getElementById('lineJoin').value;
+            const vb = svg.getAttribute('viewBox');
+
+            const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">
+  <style>
+    .animated-path {
+      stroke-dasharray: ${Math.round(pathLength)};
+      stroke-dashoffset: ${Math.round(pathLength)};
+      animation: draw ${duration}s ease-in-out forwards;
+    }
+    @keyframes draw {
+      to { stroke-dashoffset: 0; }
+    }
+  </style>
+  <path class="animated-path" d="${d}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="${lineCap}" stroke-linejoin="${lineJoin}"/>
+</svg>`;
+
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = 'animated-path.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        // Initialize
+        initPresets();
+
+        // Load first preset
+        pathInput.value = presets[0].path;
+        const vb = presets[0].viewBox.split(' ').map(Number);
+        svg.setAttribute('viewBox', presets[0].viewBox);
+        svg.setAttribute('width', vb[2]);
+        svg.setAttribute('height', vb[3]);
+        applyPath();
+        document.querySelector('.preset-btn').classList.add('active');
+        drawingHint.style.display = 'none';
+    </script>
+</body>
+</html>

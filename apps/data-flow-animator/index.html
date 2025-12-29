@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Flow Animator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        .header {
+            padding: 16px 24px;
+            background: rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        h1 { font-size: 1.3rem; color: #fff; }
+        .subtitle { color: #666; font-size: 0.85rem; }
+        .back-link {
+            position: fixed; top: 16px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(0,0,0,0.3);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+        }
+        .sidebar-title {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .node-palette {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .palette-node {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+        .palette-node:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .palette-node:active { cursor: grabbing; }
+        .palette-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        .palette-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.danger {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: rgba(255, 107, 107, 0.4);
+            color: #ff6b6b;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .setting-row label {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        input[type="range"] {
+            width: 100px;
+            accent-color: #4ecdc4;
+        }
+        input[type="color"] {
+            width: 32px;
+            height: 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .node {
+            position: absolute;
+            background: rgba(30, 30, 40, 0.95);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            min-width: 100px;
+            cursor: move;
+            user-select: none;
+            z-index: 10;
+            transition: box-shadow 0.2s;
+        }
+        .node:hover {
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+        .node.selected {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 25px rgba(78, 205, 196, 0.4);
+        }
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .node-icon { font-size: 1.2rem; }
+        .node-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .node-subtitle {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .port {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #4ecdc4;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: crosshair;
+            z-index: 11;
+        }
+        .port.input { left: -6px; top: 50%; transform: translateY(-50%); }
+        .port.output { right: -6px; top: 50%; transform: translateY(-50%); }
+        .port:hover {
+            transform: translateY(-50%) scale(1.3);
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.8);
+        }
+
+        .node-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: #ff6b6b;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .node:hover .node-delete { opacity: 1; }
+
+        .help-text {
+            font-size: 0.75rem;
+            color: #555;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="header">
+        <div>
+            <h1>Data Flow Animator</h1>
+            <p class="subtitle">Create animated system architecture diagrams</p>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Components</div>
+                <div class="node-palette">
+                    <div class="palette-node" data-type="client" draggable="true">
+                        <div class="palette-icon">💻</div>
+                        <div class="palette-label">Client</div>
+                    </div>
+                    <div class="palette-node" data-type="server" draggable="true">
+                        <div class="palette-icon">🖥️</div>
+                        <div class="palette-label">Server</div>
+                    </div>
+                    <div class="palette-node" data-type="database" draggable="true">
+                        <div class="palette-icon">🗄️</div>
+                        <div class="palette-label">Database</div>
+                    </div>
+                    <div class="palette-node" data-type="api" draggable="true">
+                        <div class="palette-icon">🔌</div>
+                        <div class="palette-label">API</div>
+                    </div>
+                    <div class="palette-node" data-type="cache" draggable="true">
+                        <div class="palette-icon">⚡</div>
+                        <div class="palette-label">Cache</div>
+                    </div>
+                    <div class="palette-node" data-type="queue" draggable="true">
+                        <div class="palette-icon">📬</div>
+                        <div class="palette-label">Queue</div>
+                    </div>
+                    <div class="palette-node" data-type="loadbalancer" draggable="true">
+                        <div class="palette-icon">⚖️</div>
+                        <div class="palette-label">Load Bal.</div>
+                    </div>
+                    <div class="palette-node" data-type="cdn" draggable="true">
+                        <div class="palette-icon">🌐</div>
+                        <div class="palette-label">CDN</div>
+                    </div>
+                    <div class="palette-node" data-type="worker" draggable="true">
+                        <div class="palette-icon">⚙️</div>
+                        <div class="palette-label">Worker</div>
+                    </div>
+                    <div class="palette-node" data-type="storage" draggable="true">
+                        <div class="palette-icon">📁</div>
+                        <div class="palette-label">Storage</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Animation</div>
+                <div class="setting-row">
+                    <label>Speed</label>
+                    <input type="range" id="animSpeed" min="0.5" max="3" step="0.1" value="1">
+                </div>
+                <div class="setting-row">
+                    <label>Particle Size</label>
+                    <input type="range" id="particleSize" min="3" max="12" step="1" value="6">
+                </div>
+                <div class="setting-row">
+                    <label>Particle Color</label>
+                    <input type="color" id="particleColor" value="#4ecdc4">
+                </div>
+                <div class="setting-row">
+                    <label>Trail Effect</label>
+                    <select id="trailEffect">
+                        <option value="glow">Glow</option>
+                        <option value="solid">Solid</option>
+                        <option value="fade">Fade</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Controls</div>
+                <div class="controls">
+                    <button id="toggleAnim">⏸ Pause Animation</button>
+                    <button id="exportGif" class="secondary">📷 Export as GIF</button>
+                    <button id="clearAll" class="secondary danger">🗑 Clear All</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Presets</div>
+                <div class="controls">
+                    <button id="preset1" class="secondary">Basic Web App</button>
+                    <button id="preset2" class="secondary">Microservices</button>
+                </div>
+            </div>
+
+            <div class="help-text">
+                <strong>How to use:</strong><br>
+                • Drag components to canvas<br>
+                • Connect ports by clicking<br>
+                • Click node to select/edit<br>
+                • Delete key to remove
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <div class="stats" id="stats">Nodes: 0 | Connections: 0</div>
+
+    <script>
+        // State
+        const nodes = [];
+        const connections = [];
+        let selectedNode = null;
+        let connectingFrom = null;
+        let isAnimating = true;
+        let animationTime = 0;
+
+        // Canvas setup
+        const canvasContainer = document.getElementById('canvasContainer');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvasContainer.clientWidth;
+            canvas.height = canvasContainer.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Node types configuration
+        const nodeTypes = {
+            client: { icon: '💻', label: 'Client', color: '#667eea' },
+            server: { icon: '🖥️', label: 'Server', color: '#4ecdc4' },
+            database: { icon: '🗄️', label: 'Database', color: '#f093fb' },
+            api: { icon: '🔌', label: 'API Gateway', color: '#ff6b6b' },
+            cache: { icon: '⚡', label: 'Cache', color: '#ffd93d' },
+            queue: { icon: '📬', label: 'Queue', color: '#6bcb77' },
+            loadbalancer: { icon: '⚖️', label: 'Load Balancer', color: '#4d96ff' },
+            cdn: { icon: '🌐', label: 'CDN', color: '#ff922b' },
+            worker: { icon: '⚙️', label: 'Worker', color: '#845ef7' },
+            storage: { icon: '📁', label: 'Storage', color: '#20c997' }
+        };
+
+        // Drag and drop from palette
+        document.querySelectorAll('.palette-node').forEach(el => {
+            el.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('nodeType', el.dataset.type);
+            });
+        });
+
+        canvasContainer.addEventListener('dragover', e => e.preventDefault());
+        canvasContainer.addEventListener('drop', e => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('nodeType');
+            if (type) {
+                const rect = canvasContainer.getBoundingClientRect();
+                createNode(type, e.clientX - rect.left - 60, e.clientY - rect.top - 30);
+            }
+        });
+
+        function createNode(type, x, y) {
+            const config = nodeTypes[type];
+            const id = 'node_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+            const node = {
+                id,
+                type,
+                x,
+                y,
+                width: 120,
+                height: 60,
+                label: config.label,
+                icon: config.icon,
+                color: config.color
+            };
+
+            nodes.push(node);
+            renderNodes();
+            updateStats();
+        }
+
+        function renderNodes() {
+            // Remove existing DOM nodes
+            document.querySelectorAll('.node').forEach(el => el.remove());
+
+            nodes.forEach(node => {
+                const el = document.createElement('div');
+                el.className = 'node' + (selectedNode === node ? ' selected' : '');
+                el.style.left = node.x + 'px';
+                el.style.top = node.y + 'px';
+                el.style.borderColor = node.color;
+                el.dataset.id = node.id;
+
+                el.innerHTML = `
+                    <div class="node-header">
+                        <span class="node-icon">${node.icon}</span>
+                        <span class="node-title">${node.label}</span>
+                    </div>
+                    <div class="node-subtitle">${node.type}</div>
+                    <div class="port input" data-port="input"></div>
+                    <div class="port output" data-port="output"></div>
+                    <div class="node-delete">×</div>
+                `;
+
+                // Store reference for measurements
+                node.element = el;
+
+                // Drag handling
+                let isDragging = false;
+                let dragOffsetX, dragOffsetY;
+
+                el.addEventListener('mousedown', e => {
+                    if (e.target.classList.contains('port') || e.target.classList.contains('node-delete')) return;
+
+                    isDragging = true;
+                    dragOffsetX = e.clientX - node.x;
+                    dragOffsetY = e.clientY - node.y;
+                    selectedNode = node;
+                    renderNodes();
+                });
+
+                document.addEventListener('mousemove', e => {
+                    if (isDragging) {
+                        node.x = e.clientX - dragOffsetX;
+                        node.y = e.clientY - dragOffsetY;
+                        el.style.left = node.x + 'px';
+                        el.style.top = node.y + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+
+                // Port connections
+                el.querySelectorAll('.port').forEach(port => {
+                    port.style.background = node.color;
+
+                    port.addEventListener('click', e => {
+                        e.stopPropagation();
+                        const portType = port.dataset.port;
+
+                        if (!connectingFrom) {
+                            if (portType === 'output') {
+                                connectingFrom = { node, port: portType };
+                                port.style.boxShadow = '0 0 15px ' + node.color;
+                            }
+                        } else {
+                            if (portType === 'input' && connectingFrom.node !== node) {
+                                // Create connection
+                                const exists = connections.some(c =>
+                                    c.from === connectingFrom.node.id && c.to === node.id
+                                );
+
+                                if (!exists) {
+                                    connections.push({
+                                        from: connectingFrom.node.id,
+                                        to: node.id,
+                                        color: connectingFrom.node.color
+                                    });
+                                    updateStats();
+                                }
+                            }
+                            // Reset
+                            document.querySelectorAll('.port').forEach(p => p.style.boxShadow = '');
+                            connectingFrom = null;
+                        }
+                    });
+                });
+
+                // Delete button
+                el.querySelector('.node-delete').addEventListener('click', e => {
+                    e.stopPropagation();
+                    deleteNode(node.id);
+                });
+
+                canvasContainer.appendChild(el);
+
+                // Update dimensions after render
+                requestAnimationFrame(() => {
+                    node.width = el.offsetWidth;
+                    node.height = el.offsetHeight;
+                });
+            });
+        }
+
+        function deleteNode(id) {
+            const idx = nodes.findIndex(n => n.id === id);
+            if (idx >= 0) {
+                nodes.splice(idx, 1);
+                // Remove related connections
+                for (let i = connections.length - 1; i >= 0; i--) {
+                    if (connections[i].from === id || connections[i].to === id) {
+                        connections.splice(i, 1);
+                    }
+                }
+                if (selectedNode && selectedNode.id === id) selectedNode = null;
+                renderNodes();
+                updateStats();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('stats').textContent =
+                `Nodes: ${nodes.length} | Connections: ${connections.length}`;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode && !e.target.matches('input')) {
+                deleteNode(selectedNode.id);
+            }
+            if (e.key === 'Escape') {
+                selectedNode = null;
+                connectingFrom = null;
+                document.querySelectorAll('.port').forEach(p => p.style.boxShadow = '');
+                renderNodes();
+            }
+        });
+
+        // Animation loop
+        function getNodeById(id) {
+            return nodes.find(n => n.id === id);
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const speed = parseFloat(document.getElementById('animSpeed').value);
+            const particleSize = parseInt(document.getElementById('particleSize').value);
+            const particleColor = document.getElementById('particleColor').value;
+            const trailEffect = document.getElementById('trailEffect').value;
+
+            if (isAnimating) {
+                animationTime += 0.016 * speed;
+            }
+
+            // Draw connections and particles
+            connections.forEach((conn, connIdx) => {
+                const fromNode = getNodeById(conn.from);
+                const toNode = getNodeById(conn.to);
+
+                if (!fromNode || !toNode) return;
+
+                // Connection points (right side of from, left side of to)
+                const x1 = fromNode.x + fromNode.width;
+                const y1 = fromNode.y + fromNode.height / 2;
+                const x2 = toNode.x;
+                const y2 = toNode.y + toNode.height / 2;
+
+                // Draw curved line
+                const midX = (x1 + x2) / 2;
+                const cp1x = midX;
+                const cp1y = y1;
+                const cp2x = midX;
+                const cp2y = y2;
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Animated particles
+                const numParticles = 3;
+                for (let i = 0; i < numParticles; i++) {
+                    let t = ((animationTime * 0.5 + i / numParticles + connIdx * 0.1) % 1);
+
+                    // Bezier curve position
+                    const mt = 1 - t;
+                    const px = mt*mt*mt*x1 + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*x2;
+                    const py = mt*mt*mt*y1 + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*y2;
+
+                    // Draw particle with effect
+                    if (trailEffect === 'glow') {
+                        const gradient = ctx.createRadialGradient(px, py, 0, px, py, particleSize * 3);
+                        gradient.addColorStop(0, particleColor);
+                        gradient.addColorStop(0.5, particleColor + '80');
+                        gradient.addColorStop(1, 'transparent');
+                        ctx.beginPath();
+                        ctx.arc(px, py, particleSize * 3, 0, Math.PI * 2);
+                        ctx.fillStyle = gradient;
+                        ctx.fill();
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, particleSize, 0, Math.PI * 2);
+                    ctx.fillStyle = particleColor;
+                    ctx.fill();
+
+                    if (trailEffect === 'fade') {
+                        // Draw trail
+                        for (let j = 1; j <= 5; j++) {
+                            const tt = Math.max(0, t - j * 0.03);
+                            const mtt = 1 - tt;
+                            const tpx = mtt*mtt*mtt*x1 + 3*mtt*mtt*tt*cp1x + 3*mtt*tt*tt*cp2x + tt*tt*tt*x2;
+                            const tpy = mtt*mtt*mtt*y1 + 3*mtt*mtt*tt*cp1y + 3*mtt*tt*tt*cp2y + tt*tt*tt*y2;
+
+                            ctx.beginPath();
+                            ctx.arc(tpx, tpy, particleSize * (1 - j * 0.15), 0, Math.PI * 2);
+                            ctx.fillStyle = particleColor + Math.floor(255 * (1 - j * 0.2)).toString(16).padStart(2, '0');
+                            ctx.fill();
+                        }
+                    }
+                }
+            });
+
+            // Draw connecting line preview
+            if (connectingFrom) {
+                const fromNode = connectingFrom.node;
+                const x1 = fromNode.x + fromNode.width;
+                const y1 = fromNode.y + fromNode.height / 2;
+
+                // We'd need mouse position here - simplified for now
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Toggle animation
+        document.getElementById('toggleAnim').addEventListener('click', function() {
+            isAnimating = !isAnimating;
+            this.textContent = isAnimating ? '⏸ Pause Animation' : '▶ Play Animation';
+        });
+
+        // Clear all
+        document.getElementById('clearAll').addEventListener('click', () => {
+            if (nodes.length === 0 || confirm('Clear all nodes and connections?')) {
+                nodes.length = 0;
+                connections.length = 0;
+                selectedNode = null;
+                renderNodes();
+                updateStats();
+            }
+        });
+
+        // Presets
+        document.getElementById('preset1').addEventListener('click', () => {
+            nodes.length = 0;
+            connections.length = 0;
+
+            createNode('client', 50, 200);
+            createNode('cdn', 220, 100);
+            createNode('loadbalancer', 220, 300);
+            createNode('server', 420, 200);
+            createNode('cache', 620, 100);
+            createNode('database', 620, 300);
+
+            setTimeout(() => {
+                const nodeIds = nodes.map(n => n.id);
+                connections.push(
+                    { from: nodeIds[0], to: nodeIds[1], color: nodeTypes.client.color },
+                    { from: nodeIds[0], to: nodeIds[2], color: nodeTypes.client.color },
+                    { from: nodeIds[1], to: nodeIds[3], color: nodeTypes.cdn.color },
+                    { from: nodeIds[2], to: nodeIds[3], color: nodeTypes.loadbalancer.color },
+                    { from: nodeIds[3], to: nodeIds[4], color: nodeTypes.server.color },
+                    { from: nodeIds[3], to: nodeIds[5], color: nodeTypes.server.color }
+                );
+                updateStats();
+            }, 100);
+        });
+
+        document.getElementById('preset2').addEventListener('click', () => {
+            nodes.length = 0;
+            connections.length = 0;
+
+            createNode('client', 50, 250);
+            createNode('api', 200, 250);
+            createNode('server', 380, 100);
+            createNode('server', 380, 250);
+            createNode('server', 380, 400);
+            createNode('queue', 560, 175);
+            createNode('worker', 740, 175);
+            createNode('database', 560, 325);
+            createNode('cache', 740, 325);
+
+            setTimeout(() => {
+                const nodeIds = nodes.map(n => n.id);
+                connections.push(
+                    { from: nodeIds[0], to: nodeIds[1], color: nodeTypes.client.color },
+                    { from: nodeIds[1], to: nodeIds[2], color: nodeTypes.api.color },
+                    { from: nodeIds[1], to: nodeIds[3], color: nodeTypes.api.color },
+                    { from: nodeIds[1], to: nodeIds[4], color: nodeTypes.api.color },
+                    { from: nodeIds[2], to: nodeIds[5], color: nodeTypes.server.color },
+                    { from: nodeIds[3], to: nodeIds[5], color: nodeTypes.server.color },
+                    { from: nodeIds[5], to: nodeIds[6], color: nodeTypes.queue.color },
+                    { from: nodeIds[3], to: nodeIds[7], color: nodeTypes.server.color },
+                    { from: nodeIds[4], to: nodeIds[7], color: nodeTypes.server.color },
+                    { from: nodeIds[7], to: nodeIds[8], color: nodeTypes.database.color }
+                );
+                updateStats();
+            }, 100);
+        });
+
+        // Export GIF (simplified - captures current frame as PNG)
+        document.getElementById('exportGif').addEventListener('click', () => {
+            // Create a composite canvas with both the connections and nodes
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            // Fill background
+            exportCtx.fillStyle = '#0a0a0f';
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+            // Draw the animation canvas
+            exportCtx.drawImage(canvas, 0, 0);
+
+            // Draw nodes as colored boxes
+            nodes.forEach(node => {
+                exportCtx.fillStyle = 'rgba(30, 30, 40, 0.95)';
+                exportCtx.strokeStyle = node.color;
+                exportCtx.lineWidth = 2;
+                exportCtx.beginPath();
+                exportCtx.roundRect(node.x, node.y, node.width, node.height, 12);
+                exportCtx.fill();
+                exportCtx.stroke();
+
+                // Node text
+                exportCtx.fillStyle = '#fff';
+                exportCtx.font = 'bold 14px system-ui';
+                exportCtx.textAlign = 'center';
+                exportCtx.fillText(node.icon + ' ' + node.label, node.x + node.width/2, node.y + node.height/2 + 5);
+            });
+
+            const link = document.createElement('a');
+            link.download = 'data-flow-diagram.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Canvas click to deselect
+        canvas.addEventListener('click', () => {
+            selectedNode = null;
+            connectingFrom = null;
+            document.querySelectorAll('.port').forEach(p => p.style.boxShadow = '');
+            renderNodes();
+        });
+    </script>
+</body>
+</html>

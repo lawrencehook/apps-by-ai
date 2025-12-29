@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume ATS Analyzer - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .input-section { grid-template-columns: 1fr; }
+        }
+
+        .input-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .input-label {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-label span {
+            font-size: 1.1rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 0.9rem;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+
+        textarea::placeholder {
+            color: #555;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 32px;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(78, 205, 196, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .score-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .score-circle svg {
+            transform: rotate(-90deg);
+        }
+
+        .score-circle .bg-ring {
+            fill: none;
+            stroke: rgba(255,255,255,0.1);
+            stroke-width: 12;
+        }
+
+        .score-circle .progress-ring {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease-out, stroke 0.3s;
+        }
+
+        .score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .score-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .keywords-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keywords-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .keyword-tag {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .keyword-tag.matched {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+
+        .keyword-tag.missing {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .keyword-tag .count {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-size: 0.75rem;
+        }
+
+        .suggestions-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .suggestion-icon.warning {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+        }
+
+        .suggestion-icon.error {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .suggestion-icon.success {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+        }
+
+        .suggestion-text {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .highlight-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .highlight-content {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .highlight-content .matched-word {
+            background: rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .info-box {
+            background: rgba(78, 205, 196, 0.05);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .info-title {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .info-text {
+            color: #888;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="container">
+        <h1>Resume ATS Analyzer</h1>
+        <p class="subtitle">Optimize your resume for Applicant Tracking Systems by matching keywords from job descriptions.</p>
+
+        <div class="input-section">
+            <div class="input-card">
+                <label class="input-label">
+                    <span>📄</span> Your Resume
+                </label>
+                <textarea id="resumeText" placeholder="Paste your resume text here...
+
+Example:
+John Doe
+Software Engineer
+
+Experience:
+- Developed React applications with TypeScript
+- Led agile sprints and code reviews
+- Built RESTful APIs using Node.js
+
+Skills: JavaScript, Python, AWS, Docker, Git"></textarea>
+            </div>
+            <div class="input-card">
+                <label class="input-label">
+                    <span>💼</span> Job Description
+                </label>
+                <textarea id="jobText" placeholder="Paste the job description here...
+
+Example:
+We're looking for a Senior Software Engineer with:
+- 5+ years experience with React and TypeScript
+- Strong knowledge of AWS services
+- Experience with CI/CD pipelines
+- Excellent communication skills
+- Agile/Scrum methodology experience"></textarea>
+            </div>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn">Analyze Match</button>
+
+        <div class="results-section" id="results">
+            <div class="score-card">
+                <div class="score-circle">
+                    <svg width="180" height="180">
+                        <circle class="bg-ring" cx="90" cy="90" r="78"></circle>
+                        <circle class="progress-ring" id="progressRing" cx="90" cy="90" r="78"
+                            stroke-dasharray="490" stroke-dashoffset="490"></circle>
+                    </svg>
+                    <div class="score-value" id="scoreValue">0%</div>
+                </div>
+                <div class="score-label">ATS Match Score</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="matchedCount" style="color: #4ecdc4;">0</div>
+                    <div class="metric-label">Keywords Matched</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="missingCount" style="color: #ff6b6b;">0</div>
+                    <div class="metric-label">Keywords Missing</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalKeywords" style="color: #f1c40f;">0</div>
+                    <div class="metric-label">Total Keywords</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="resumeWords" style="color: #9b59b6;">0</div>
+                    <div class="metric-label">Resume Words</div>
+                </div>
+            </div>
+
+            <div class="keywords-section">
+                <div class="section-title">
+                    <span style="color: #4ecdc4;">✓</span> Matched Keywords
+                </div>
+                <div class="keywords-grid" id="matchedKeywords"></div>
+            </div>
+
+            <div class="keywords-section">
+                <div class="section-title">
+                    <span style="color: #ff6b6b;">✗</span> Missing Keywords
+                </div>
+                <div class="keywords-grid" id="missingKeywords"></div>
+            </div>
+
+            <div class="suggestions-section">
+                <div class="section-title">
+                    <span>💡</span> Optimization Suggestions
+                </div>
+                <div id="suggestions"></div>
+            </div>
+
+            <div class="highlight-section">
+                <div class="section-title">
+                    <span>🔍</span> Resume with Highlighted Matches
+                </div>
+                <div class="highlight-content" id="highlightedResume"></div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-title">About ATS Optimization</div>
+                <div class="info-text">
+                    Applicant Tracking Systems (ATS) scan resumes for keywords matching job descriptions.
+                    A score above 70% typically means better chances of passing automated screening.
+                    Focus on naturally incorporating missing keywords that match your actual experience.
+                    Avoid keyword stuffing - ATS systems are getting smarter at detecting it.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Common stop words to filter out
+        const stopWords = new Set([
+            'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'have',
+            'in', 'is', 'it', 'of', 'on', 'or', 'that', 'the', 'to', 'was', 'were', 'will',
+            'with', 'you', 'your', 'we', 'our', 'they', 'their', 'this', 'these', 'those',
+            'can', 'could', 'would', 'should', 'may', 'might', 'must', 'shall', 'being',
+            'been', 'do', 'does', 'did', 'doing', 'done', 'get', 'got', 'getting', 'into',
+            'its', 'just', 'like', 'make', 'more', 'most', 'much', 'need', 'new', 'not',
+            'now', 'only', 'other', 'over', 'own', 'same', 'such', 'than', 'then', 'there',
+            'through', 'under', 'up', 'very', 'what', 'when', 'where', 'which', 'while',
+            'who', 'whom', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'some',
+            'any', 'no', 'nor', 'so', 'too', 'also', 'well', 'here', 'about', 'after',
+            'before', 'between', 'during', 'without', 'again', 'once', 'further', 'able',
+            'across', 'almost', 'already', 'although', 'always', 'among', 'amount', 'another',
+            'anyone', 'anything', 'around', 'away', 'back', 'become', 'becomes', 'becoming',
+            'behind', 'below', 'beside', 'besides', 'beyond', 'but', 'come', 'coming', 'day',
+            'days', 'down', 'either', 'else', 'enough', 'even', 'ever', 'everyone', 'everything',
+            'find', 'first', 'give', 'given', 'go', 'going', 'gone', 'good', 'great', 'had',
+            'having', 'help', 'him', 'his', 'her', 'hers', 'herself', 'himself', 'however',
+            'including', 'job', 'jobs', 'keep', 'last', 'least', 'less', 'let', 'long', 'look',
+            'looking', 'made', 'making', 'many', 'me', 'my', 'myself', 'never', 'next', 'often',
+            'one', 'ones', 'onto', 'out', 'part', 'per', 'place', 'please', 'put', 'rather',
+            'right', 'see', 'seem', 'seems', 'several', 'she', 'since', 'something', 'still',
+            'take', 'taken', 'taking', 'tell', 'thing', 'things', 'think', 'three', 'thus',
+            'time', 'times', 'together', 'toward', 'towards', 'two', 'upon', 'us', 'use',
+            'used', 'using', 'want', 'wanted', 'way', 'ways', 'whether', 'within', 'work',
+            'working', 'works', 'world', 'would', 'year', 'years', 'yet', 'etc', 'i.e', 'e.g'
+        ]);
+
+        // Tech skills and common job keywords to prioritize
+        const importantKeywords = new Set([
+            'javascript', 'typescript', 'python', 'java', 'c++', 'c#', 'ruby', 'go', 'rust',
+            'react', 'angular', 'vue', 'node', 'express', 'django', 'flask', 'spring',
+            'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'terraform',
+            'sql', 'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch',
+            'git', 'github', 'gitlab', 'bitbucket', 'jira', 'confluence',
+            'agile', 'scrum', 'kanban', 'devops', 'ci/cd', 'cicd',
+            'api', 'rest', 'restful', 'graphql', 'microservices', 'serverless',
+            'machine learning', 'ml', 'ai', 'deep learning', 'tensorflow', 'pytorch',
+            'data science', 'analytics', 'tableau', 'power bi', 'excel',
+            'html', 'css', 'sass', 'less', 'tailwind', 'bootstrap',
+            'testing', 'jest', 'mocha', 'selenium', 'cypress', 'junit',
+            'linux', 'unix', 'bash', 'shell', 'scripting',
+            'security', 'authentication', 'authorization', 'oauth', 'jwt',
+            'communication', 'leadership', 'teamwork', 'problem-solving', 'analytical',
+            'project management', 'stakeholder', 'cross-functional', 'collaboration',
+            'bachelor', 'master', 'phd', 'degree', 'certified', 'certification'
+        ]);
+
+        function extractKeywords(text) {
+            // Clean and normalize text
+            const normalized = text.toLowerCase()
+                .replace(/[^\w\s\-\/\+\#\.]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            // Extract words and phrases
+            const words = normalized.split(' ').filter(w => w.length > 1);
+            const keywordCounts = new Map();
+
+            // Single words
+            words.forEach(word => {
+                const cleaned = word.replace(/^[\-\.]+|[\-\.]+$/g, '');
+                if (cleaned.length > 1 && !stopWords.has(cleaned) && !/^\d+$/.test(cleaned)) {
+                    keywordCounts.set(cleaned, (keywordCounts.get(cleaned) || 0) + 1);
+                }
+            });
+
+            // Two-word phrases
+            for (let i = 0; i < words.length - 1; i++) {
+                const phrase = words[i] + ' ' + words[i + 1];
+                if (importantKeywords.has(phrase)) {
+                    keywordCounts.set(phrase, (keywordCounts.get(phrase) || 0) + 1);
+                }
+            }
+
+            return keywordCounts;
+        }
+
+        function analyzeMatch() {
+            const resumeText = document.getElementById('resumeText').value;
+            const jobText = document.getElementById('jobText').value;
+
+            if (!resumeText.trim() || !jobText.trim()) {
+                alert('Please enter both your resume and the job description.');
+                return;
+            }
+
+            // Extract keywords
+            const jobKeywords = extractKeywords(jobText);
+            const resumeKeywords = extractKeywords(resumeText);
+
+            // Filter job keywords by importance (frequency or known important terms)
+            const significantJobKeywords = new Map();
+            jobKeywords.forEach((count, keyword) => {
+                if (count > 1 || importantKeywords.has(keyword) || keyword.length > 4) {
+                    significantJobKeywords.set(keyword, count);
+                }
+            });
+
+            // Find matches and misses
+            const matched = [];
+            const missing = [];
+
+            significantJobKeywords.forEach((count, keyword) => {
+                const resumeCount = resumeKeywords.get(keyword) || 0;
+                if (resumeCount > 0) {
+                    matched.push({ keyword, jobCount: count, resumeCount });
+                } else {
+                    // Check for partial matches
+                    let found = false;
+                    resumeKeywords.forEach((_, resumeWord) => {
+                        if (resumeWord.includes(keyword) || keyword.includes(resumeWord)) {
+                            found = true;
+                        }
+                    });
+                    if (!found) {
+                        missing.push({ keyword, count });
+                    } else {
+                        matched.push({ keyword, jobCount: count, resumeCount: 1 });
+                    }
+                }
+            });
+
+            // Sort by importance
+            matched.sort((a, b) => {
+                const aImportant = importantKeywords.has(a.keyword) ? 1 : 0;
+                const bImportant = importantKeywords.has(b.keyword) ? 1 : 0;
+                return bImportant - aImportant || b.jobCount - a.jobCount;
+            });
+
+            missing.sort((a, b) => {
+                const aImportant = importantKeywords.has(a.keyword) ? 1 : 0;
+                const bImportant = importantKeywords.has(b.keyword) ? 1 : 0;
+                return bImportant - aImportant || b.count - a.count;
+            });
+
+            // Calculate score
+            const totalKeywords = significantJobKeywords.size;
+            const matchedCount = matched.length;
+            const score = totalKeywords > 0 ? Math.round((matchedCount / totalKeywords) * 100) : 0;
+
+            // Update UI
+            displayResults(score, matched, missing, resumeText, resumeKeywords.size);
+        }
+
+        function displayResults(score, matched, missing, resumeText, wordCount) {
+            document.getElementById('results').classList.add('visible');
+
+            // Animate score
+            const scoreValue = document.getElementById('scoreValue');
+            const progressRing = document.getElementById('progressRing');
+            const circumference = 2 * Math.PI * 78;
+
+            // Set color based on score
+            let color;
+            if (score >= 70) {
+                color = '#4ecdc4';
+            } else if (score >= 50) {
+                color = '#f1c40f';
+            } else {
+                color = '#ff6b6b';
+            }
+
+            progressRing.style.stroke = color;
+            scoreValue.style.color = color;
+
+            // Animate
+            let currentScore = 0;
+            const animate = setInterval(() => {
+                if (currentScore >= score) {
+                    clearInterval(animate);
+                    return;
+                }
+                currentScore++;
+                scoreValue.textContent = currentScore + '%';
+                const offset = circumference - (currentScore / 100) * circumference;
+                progressRing.style.strokeDashoffset = offset;
+            }, 20);
+
+            // Update metrics
+            document.getElementById('matchedCount').textContent = matched.length;
+            document.getElementById('missingCount').textContent = missing.length;
+            document.getElementById('totalKeywords').textContent = matched.length + missing.length;
+            document.getElementById('resumeWords').textContent = wordCount;
+
+            // Display matched keywords
+            const matchedContainer = document.getElementById('matchedKeywords');
+            matchedContainer.innerHTML = matched.slice(0, 30).map(m =>
+                `<span class="keyword-tag matched">${m.keyword}<span class="count">${m.resumeCount}x</span></span>`
+            ).join('');
+
+            // Display missing keywords
+            const missingContainer = document.getElementById('missingKeywords');
+            missingContainer.innerHTML = missing.slice(0, 20).map(m =>
+                `<span class="keyword-tag missing">${m.keyword}</span>`
+            ).join('');
+
+            // Generate suggestions
+            const suggestions = generateSuggestions(score, matched, missing, wordCount);
+            document.getElementById('suggestions').innerHTML = suggestions.map(s => `
+                <div class="suggestion-item">
+                    <div class="suggestion-icon ${s.type}">${s.icon}</div>
+                    <div class="suggestion-text">${s.text}</div>
+                </div>
+            `).join('');
+
+            // Highlight resume
+            let highlightedText = resumeText;
+            matched.forEach(m => {
+                const regex = new RegExp(`\\b(${m.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="matched-word">$1</span>');
+            });
+            document.getElementById('highlightedResume').innerHTML = highlightedText;
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateSuggestions(score, matched, missing, wordCount) {
+            const suggestions = [];
+
+            if (score < 50) {
+                suggestions.push({
+                    type: 'error',
+                    icon: '!',
+                    text: 'Your resume has a low match score. Consider tailoring it specifically for this role by incorporating more relevant keywords from the job description.'
+                });
+            } else if (score >= 70) {
+                suggestions.push({
+                    type: 'success',
+                    icon: '✓',
+                    text: 'Great match! Your resume aligns well with the job requirements. Focus on making sure your experience examples are strong.'
+                });
+            }
+
+            const importantMissing = missing.filter(m => importantKeywords.has(m.keyword));
+            if (importantMissing.length > 0) {
+                suggestions.push({
+                    type: 'warning',
+                    icon: '!',
+                    text: `Key technical skills missing: ${importantMissing.slice(0, 5).map(m => m.keyword).join(', ')}. Add these if you have relevant experience.`
+                });
+            }
+
+            if (wordCount < 100) {
+                suggestions.push({
+                    type: 'warning',
+                    icon: '!',
+                    text: 'Your resume seems quite short. Consider adding more details about your experience and achievements.'
+                });
+            } else if (wordCount > 800) {
+                suggestions.push({
+                    type: 'warning',
+                    icon: '!',
+                    text: 'Your resume is quite long. Consider condensing it to highlight the most relevant experience for this role.'
+                });
+            }
+
+            if (missing.length > matched.length) {
+                suggestions.push({
+                    type: 'error',
+                    icon: '!',
+                    text: 'More keywords are missing than matched. Review the job description carefully and incorporate relevant terms naturally.'
+                });
+            }
+
+            const softSkillsMissing = missing.filter(m =>
+                ['communication', 'leadership', 'teamwork', 'collaboration', 'problem-solving'].includes(m.keyword)
+            );
+            if (softSkillsMissing.length > 0) {
+                suggestions.push({
+                    type: 'warning',
+                    icon: '!',
+                    text: `Consider adding soft skills: ${softSkillsMissing.map(m => m.keyword).join(', ')}. Demonstrate these through concrete examples.`
+                });
+            }
+
+            suggestions.push({
+                type: 'success',
+                icon: '✓',
+                text: 'Remember to use action verbs (led, developed, implemented, achieved) to describe your accomplishments.'
+            });
+
+            return suggestions;
+        }
+
+        // Event listeners
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeMatch);
+
+        // Enable analyze button when both fields have content
+        const resumeInput = document.getElementById('resumeText');
+        const jobInput = document.getElementById('jobText');
+
+        function checkInputs() {
+            const hasContent = resumeInput.value.trim() && jobInput.value.trim();
+            document.getElementById('analyzeBtn').disabled = !hasContent;
+        }
+
+        resumeInput.addEventListener('input', checkInputs);
+        jobInput.addEventListener('input', checkInputs);
+        checkInputs();
+    </script>
+</body>
+</html>

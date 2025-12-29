@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to ASCII - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .controls-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 24px;
+        }
+        .control-section:last-child { margin-bottom: 0; }
+
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .upload-area:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+            background: rgba(102, 126, 234, 0.05);
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .upload-text {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 8px;
+            display: none;
+            margin-bottom: 16px;
+        }
+        .image-preview.visible { display: block; }
+
+        .control-row {
+            margin-bottom: 16px;
+        }
+        .control-row:last-child { margin-bottom: 0; }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .control-label {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        .control-value {
+            color: #4ecdc4;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        select option {
+            background: #1a1a2e;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .checkbox-label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        .btn:last-child { margin-bottom: 0; }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn:hover { transform: translateY(-1px); opacity: 0.9; }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-panel {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .output-title {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .output-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .copy-btn {
+            padding: 8px 16px;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            border-radius: 6px;
+            color: #4ecdc4;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .copy-btn.copied { background: rgba(78, 205, 196, 0.5); }
+
+        .ascii-output {
+            padding: 24px;
+            overflow: auto;
+            max-height: 80vh;
+            background: #000;
+        }
+        .ascii-art {
+            font-family: 'Courier New', 'Monaco', monospace;
+            font-size: 8px;
+            line-height: 1;
+            white-space: pre;
+            letter-spacing: 0;
+        }
+        .ascii-art.colored {
+            font-size: 6px;
+        }
+
+        .placeholder {
+            text-align: center;
+            padding: 80px 40px;
+            color: #444;
+        }
+        .placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        .placeholder-text {
+            font-size: 1.1rem;
+        }
+
+        .char-sets {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .char-set-btn {
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #aaa;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+        .char-set-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .char-set-btn.active {
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Image to ASCII</h1>
+        <p class="subtitle">Convert images to ASCII art with customizable characters and colors.</p>
+
+        <div class="main-layout">
+            <div class="controls-panel">
+                <div class="control-section">
+                    <div class="section-title">Image</div>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">🖼️</div>
+                        <div class="upload-text">Drop image here or click to upload</div>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" style="display:none">
+                    <img class="image-preview" id="imagePreview" alt="Preview">
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Resolution</div>
+                    <div class="control-row">
+                        <div class="control-header">
+                            <span class="control-label">Width (chars)</span>
+                            <span class="control-value" id="widthValue">120</span>
+                        </div>
+                        <input type="range" id="widthSlider" min="40" max="300" value="120">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Character Set</div>
+                    <div class="char-sets" id="charSets">
+                        <button class="char-set-btn active" data-chars=" .:-=+*#%@">Standard</button>
+                        <button class="char-set-btn" data-chars=" .'`^\",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$">Detailed</button>
+                        <button class="char-set-btn" data-chars=" ░▒▓█">Blocks</button>
+                        <button class="char-set-btn" data-chars=" ○◔◑◕●">Circles</button>
+                        <button class="char-set-btn" data-chars=" .oO@">Simple</button>
+                        <button class="char-set-btn" data-chars=" ╱╲╳">Lines</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Adjustments</div>
+                    <div class="control-row">
+                        <div class="control-header">
+                            <span class="control-label">Brightness</span>
+                            <span class="control-value" id="brightnessValue">0</span>
+                        </div>
+                        <input type="range" id="brightnessSlider" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-header">
+                            <span class="control-label">Contrast</span>
+                            <span class="control-value" id="contrastValue">0</span>
+                        </div>
+                        <input type="range" id="contrastSlider" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-row">
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="invertCheck">
+                            <label class="checkbox-label" for="invertCheck">Invert colors</label>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="colorCheck">
+                            <label class="checkbox-label" for="colorCheck">Colored output</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Output</div>
+                    <div class="control-row">
+                        <select id="bgSelect">
+                            <option value="dark">Dark background</option>
+                            <option value="light">Light background</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <button class="btn btn-primary" id="convertBtn" disabled>Convert to ASCII</button>
+                    <button class="btn btn-secondary" id="downloadBtn" disabled>Download as .txt</button>
+                </div>
+            </div>
+
+            <div class="output-panel">
+                <div class="output-header">
+                    <span class="output-title">ASCII Output</span>
+                    <div class="output-actions">
+                        <button class="copy-btn" id="copyBtn">Copy</button>
+                    </div>
+                </div>
+                <div class="ascii-output" id="asciiOutput">
+                    <div class="placeholder">
+                        <div class="placeholder-icon">✨</div>
+                        <div class="placeholder-text">Upload an image to see ASCII art</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const asciiOutput = document.getElementById('asciiOutput');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+
+        const widthSlider = document.getElementById('widthSlider');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const invertCheck = document.getElementById('invertCheck');
+        const colorCheck = document.getElementById('colorCheck');
+        const bgSelect = document.getElementById('bgSelect');
+
+        let currentImage = null;
+        let currentChars = ' .:-=+*#%@';
+        let currentAscii = '';
+
+        // Upload handling
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadImage(file);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentImage = new Image();
+                currentImage.onload = () => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.add('visible');
+                    convertBtn.disabled = false;
+                    convertToAscii();
+                };
+                currentImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Character set buttons
+        document.getElementById('charSets').addEventListener('click', (e) => {
+            const btn = e.target.closest('.char-set-btn');
+            if (btn) {
+                document.querySelectorAll('.char-set-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentChars = btn.dataset.chars;
+                if (currentImage) convertToAscii();
+            }
+        });
+
+        // Slider value displays
+        widthSlider.addEventListener('input', () => {
+            document.getElementById('widthValue').textContent = widthSlider.value;
+            if (currentImage) convertToAscii();
+        });
+
+        brightnessSlider.addEventListener('input', () => {
+            document.getElementById('brightnessValue').textContent = brightnessSlider.value;
+            if (currentImage) convertToAscii();
+        });
+
+        contrastSlider.addEventListener('input', () => {
+            document.getElementById('contrastValue').textContent = contrastSlider.value;
+            if (currentImage) convertToAscii();
+        });
+
+        invertCheck.addEventListener('change', () => {
+            if (currentImage) convertToAscii();
+        });
+
+        colorCheck.addEventListener('change', () => {
+            if (currentImage) convertToAscii();
+        });
+
+        bgSelect.addEventListener('change', () => {
+            const isDark = bgSelect.value === 'dark';
+            asciiOutput.style.background = isDark ? '#000' : '#fff';
+            if (currentImage) convertToAscii();
+        });
+
+        convertBtn.addEventListener('click', convertToAscii);
+
+        function convertToAscii() {
+            if (!currentImage) return;
+
+            const targetWidth = parseInt(widthSlider.value);
+            const aspectRatio = currentImage.height / currentImage.width;
+            const charAspect = 0.55; // Characters are taller than wide
+            const targetHeight = Math.round(targetWidth * aspectRatio * charAspect);
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            // Draw image to canvas
+            ctx.drawImage(currentImage, 0, 0, targetWidth, targetHeight);
+
+            const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+            const pixels = imageData.data;
+
+            const brightness = parseInt(brightnessSlider.value);
+            const contrast = parseInt(contrastSlider.value) / 100;
+            const invert = invertCheck.checked;
+            const colored = colorCheck.checked;
+            const isDarkBg = bgSelect.value === 'dark';
+
+            let ascii = '';
+            let htmlAscii = '';
+
+            for (let y = 0; y < targetHeight; y++) {
+                for (let x = 0; x < targetWidth; x++) {
+                    const idx = (y * targetWidth + x) * 4;
+                    let r = pixels[idx];
+                    let g = pixels[idx + 1];
+                    let b = pixels[idx + 2];
+
+                    // Apply brightness
+                    r = Math.min(255, Math.max(0, r + brightness));
+                    g = Math.min(255, Math.max(0, g + brightness));
+                    b = Math.min(255, Math.max(0, b + brightness));
+
+                    // Apply contrast
+                    const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+                    r = Math.min(255, Math.max(0, factor * (r - 128) + 128));
+                    g = Math.min(255, Math.max(0, factor * (g - 128) + 128));
+                    b = Math.min(255, Math.max(0, factor * (b - 128) + 128));
+
+                    // Calculate luminance
+                    let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                    if (invert) {
+                        gray = 255 - gray;
+                        r = 255 - r;
+                        g = 255 - g;
+                        b = 255 - b;
+                    }
+
+                    // Map to character
+                    const charIndex = Math.floor((gray / 255) * (currentChars.length - 1));
+                    const char = currentChars[charIndex];
+
+                    ascii += char;
+
+                    if (colored) {
+                        const color = isDarkBg ? `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})` :
+                                                 `rgb(${Math.round(r*0.8)},${Math.round(g*0.8)},${Math.round(b*0.8)})`;
+                        htmlAscii += `<span style="color:${color}">${char === ' ' ? '&nbsp;' : escapeHtml(char)}</span>`;
+                    } else {
+                        htmlAscii += char === ' ' ? '&nbsp;' : escapeHtml(char);
+                    }
+                }
+                ascii += '\n';
+                htmlAscii += '\n';
+            }
+
+            currentAscii = ascii;
+
+            const textColor = isDarkBg ? '#0f0' : '#000';
+            asciiOutput.innerHTML = `<pre class="ascii-art ${colored ? 'colored' : ''}" style="color: ${colored ? 'inherit' : textColor}">${htmlAscii}</pre>`;
+
+            downloadBtn.disabled = false;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        copyBtn.addEventListener('click', () => {
+            if (currentAscii) {
+                navigator.clipboard.writeText(currentAscii);
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (currentAscii) {
+                const blob = new Blob([currentAscii], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ascii-art.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        });
+
+        // Demo: load a sample gradient image
+        function createDemoImage() {
+            const demoCanvas = document.createElement('canvas');
+            demoCanvas.width = 200;
+            demoCanvas.height = 200;
+            const demoCtx = demoCanvas.getContext('2d');
+
+            // Create a gradient sphere
+            const gradient = demoCtx.createRadialGradient(100, 100, 0, 100, 100, 100);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.5, '#4ecdc4');
+            gradient.addColorStop(1, '#000000');
+
+            demoCtx.fillStyle = '#000';
+            demoCtx.fillRect(0, 0, 200, 200);
+            demoCtx.fillStyle = gradient;
+            demoCtx.beginPath();
+            demoCtx.arc(100, 100, 80, 0, Math.PI * 2);
+            demoCtx.fill();
+
+            currentImage = new Image();
+            currentImage.onload = () => {
+                imagePreview.src = demoCanvas.toDataURL();
+                imagePreview.classList.add('visible');
+                convertBtn.disabled = false;
+                convertToAscii();
+            };
+            currentImage.src = demoCanvas.toDataURL();
+        }
+
+        // Uncomment to auto-load demo
+        // createDemoImage();
+    </script>
+</body>
+</html>

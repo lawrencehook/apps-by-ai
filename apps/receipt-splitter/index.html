@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Splitter - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .card h2 {
+            font-size: 1rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* People Section */
+        .people-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .person-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .person-chip:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .person-chip.selected {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.5);
+        }
+        .person-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .person-name {
+            font-size: 14px;
+        }
+        .person-remove {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 2px;
+        }
+        .person-remove:hover { color: #ff6b6b; }
+
+        .add-person {
+            display: flex;
+            gap: 10px;
+        }
+        .add-person input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .add-person input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        .add-person input::placeholder { color: #555; }
+        .btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: rgba(78, 205, 196, 0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+            color: #888;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        /* Items Section */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr 90px auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .item-row input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .item-row input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        .item-row input::placeholder { color: #444; }
+        .item-price {
+            text-align: right;
+        }
+        .item-assignees {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            min-width: 100px;
+        }
+        .item-assignee {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: #000;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+        .item-assignee.assigned {
+            opacity: 1;
+        }
+        .item-assignee:hover {
+            transform: scale(1.1);
+        }
+        .item-remove {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+        .item-remove:hover { color: #ff6b6b; }
+
+        .add-item-row {
+            display: grid;
+            grid-template-columns: 1fr 90px auto;
+            gap: 12px;
+        }
+
+        /* Extras Section */
+        .extras-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .extra-input {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .extra-input label {
+            font-size: 12px;
+            color: #666;
+        }
+        .extra-input input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .extra-input input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+
+        /* Summary Section */
+        .summary-card {
+            grid-column: 1 / -1;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .person-summary {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .person-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .person-summary-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        .person-summary-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .person-summary-items {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .person-summary-breakdown {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .person-summary-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4ecdc4;
+            font-family: monospace;
+        }
+
+        /* Grand Total */
+        .grand-total {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .grand-total-label {
+            font-size: 16px;
+            color: #888;
+        }
+        .grand-total-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        /* Share Section */
+        .share-section {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #555;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Instructions */
+        .instructions {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Receipt Splitter</h1>
+        <p class="subtitle">Split bills fairly among friends. Add items, assign who had what, and get instant totals.</p>
+
+        <div class="main-grid">
+            <!-- People Section -->
+            <div class="card">
+                <h2>People</h2>
+                <p class="instructions">Add everyone who's splitting the bill, then click on names to select them for item assignment.</p>
+                <div class="people-list" id="peopleList"></div>
+                <div class="add-person">
+                    <input type="text" id="newPersonName" placeholder="Add a person..." maxlength="20">
+                    <button class="btn" id="addPersonBtn">Add</button>
+                </div>
+            </div>
+
+            <!-- Extras Section -->
+            <div class="card">
+                <h2>Tax & Tip</h2>
+                <p class="instructions">Enter tax and tip to split proportionally based on each person's subtotal.</p>
+                <div class="extras-grid">
+                    <div class="extra-input">
+                        <label>Tax Amount ($)</label>
+                        <input type="number" id="taxAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="extra-input">
+                        <label>Tip Amount ($)</label>
+                        <input type="number" id="tipAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="extra-input">
+                        <label>— OR Tip Percentage —</label>
+                        <input type="number" id="tipPercent" placeholder="18" step="1" min="0" max="100">
+                    </div>
+                    <div class="extra-input">
+                        <label>Other Fees ($)</label>
+                        <input type="number" id="otherFees" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Section -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Items</h2>
+                <p class="instructions">Add each item from the receipt. Click the colored circles to assign who ordered each item. Items can be split between multiple people.</p>
+                <div class="items-list" id="itemsList"></div>
+                <div class="add-item-row">
+                    <input type="text" id="newItemName" placeholder="Item name...">
+                    <input type="number" id="newItemPrice" placeholder="0.00" step="0.01" min="0" class="item-price">
+                    <button class="btn" id="addItemBtn">Add Item</button>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="card summary-card">
+                <h2>Summary</h2>
+                <div class="summary-grid" id="summaryGrid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🧾</div>
+                        <div>Add people and items to see the split</div>
+                    </div>
+                </div>
+                <div class="grand-total" id="grandTotal" style="display: none;">
+                    <span class="grand-total-label">Grand Total</span>
+                    <span class="grand-total-amount" id="grandTotalAmount">$0.00</span>
+                </div>
+                <div class="share-section">
+                    <button class="btn" id="copyResultsBtn">Copy Summary</button>
+                    <button class="btn btn-secondary" id="resetBtn">Reset All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        let people = [];
+        let items = [];
+        let selectedPeopleForAssignment = [];
+
+        const personColors = [
+            '#4ecdc4', '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3',
+            '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43', '#10ac84',
+            '#ee5a24', '#0abde3', '#c8d6e5', '#9b59b6', '#1abc9c'
+        ];
+
+        // DOM Elements
+        const peopleList = document.getElementById('peopleList');
+        const itemsList = document.getElementById('itemsList');
+        const summaryGrid = document.getElementById('summaryGrid');
+        const grandTotal = document.getElementById('grandTotal');
+        const grandTotalAmount = document.getElementById('grandTotalAmount');
+
+        // Initialize with sample data
+        function init() {
+            addPerson('You');
+            addPerson('Friend 1');
+            renderAll();
+        }
+
+        // People Functions
+        function addPerson(name) {
+            if (!name.trim()) return;
+            const id = Date.now() + Math.random();
+            const colorIndex = people.length % personColors.length;
+            people.push({ id, name: name.trim(), color: personColors[colorIndex] });
+            renderPeople();
+            renderItems();
+            calculateSummary();
+        }
+
+        function removePerson(id) {
+            people = people.filter(p => p.id !== id);
+            selectedPeopleForAssignment = selectedPeopleForAssignment.filter(pid => pid !== id);
+            items.forEach(item => {
+                item.assignees = item.assignees.filter(aid => aid !== id);
+            });
+            renderAll();
+        }
+
+        function togglePersonSelection(id) {
+            const index = selectedPeopleForAssignment.indexOf(id);
+            if (index === -1) {
+                selectedPeopleForAssignment.push(id);
+            } else {
+                selectedPeopleForAssignment.splice(index, 1);
+            }
+            renderPeople();
+        }
+
+        function renderPeople() {
+            peopleList.innerHTML = people.map(p => `
+                <div class="person-chip ${selectedPeopleForAssignment.includes(p.id) ? 'selected' : ''}"
+                     onclick="togglePersonSelection(${p.id})">
+                    <div class="person-color" style="background: ${p.color}"></div>
+                    <span class="person-name">${escapeHtml(p.name)}</span>
+                    <button class="person-remove" onclick="event.stopPropagation(); removePerson(${p.id})">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        // Items Functions
+        function addItem(name, price) {
+            if (!name.trim() || isNaN(price)) return;
+            const id = Date.now() + Math.random();
+            items.push({
+                id,
+                name: name.trim(),
+                price: parseFloat(price) || 0,
+                assignees: [...selectedPeopleForAssignment]
+            });
+            renderItems();
+            calculateSummary();
+        }
+
+        function removeItem(id) {
+            items = items.filter(i => i.id !== id);
+            renderItems();
+            calculateSummary();
+        }
+
+        function toggleItemAssignee(itemId, personId) {
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+            const index = item.assignees.indexOf(personId);
+            if (index === -1) {
+                item.assignees.push(personId);
+            } else {
+                item.assignees.splice(index, 1);
+            }
+            renderItems();
+            calculateSummary();
+        }
+
+        function updateItemName(id, name) {
+            const item = items.find(i => i.id === id);
+            if (item) item.name = name;
+            calculateSummary();
+        }
+
+        function updateItemPrice(id, price) {
+            const item = items.find(i => i.id === id);
+            if (item) item.price = parseFloat(price) || 0;
+            renderItems();
+            calculateSummary();
+        }
+
+        function renderItems() {
+            if (items.length === 0) {
+                itemsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🍽️</div>
+                        <div>Add items from your receipt</div>
+                    </div>
+                `;
+                return;
+            }
+
+            itemsList.innerHTML = items.map(item => `
+                <div class="item-row">
+                    <input type="text" value="${escapeHtml(item.name)}"
+                           onchange="updateItemName(${item.id}, this.value)" placeholder="Item name">
+                    <input type="number" value="${item.price.toFixed(2)}"
+                           onchange="updateItemPrice(${item.id}, this.value)"
+                           class="item-price" step="0.01" min="0">
+                    <div class="item-assignees">
+                        ${people.map(p => `
+                            <div class="item-assignee ${item.assignees.includes(p.id) ? 'assigned' : ''}"
+                                 style="background: ${p.color}"
+                                 onclick="toggleItemAssignee(${item.id}, ${p.id})"
+                                 title="${escapeHtml(p.name)}">
+                                ${p.name.charAt(0).toUpperCase()}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="item-remove" onclick="removeItem(${item.id})">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        // Summary Calculation
+        function calculateSummary() {
+            const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
+            let tip = parseFloat(document.getElementById('tipAmount').value) || 0;
+            const tipPercent = parseFloat(document.getElementById('tipPercent').value) || 0;
+            const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
+
+            // Calculate subtotals per person
+            const subtotals = {};
+            people.forEach(p => subtotals[p.id] = { items: [], subtotal: 0 });
+
+            items.forEach(item => {
+                if (item.assignees.length === 0) return;
+                const splitAmount = item.price / item.assignees.length;
+                item.assignees.forEach(assigneeId => {
+                    if (subtotals[assigneeId]) {
+                        subtotals[assigneeId].items.push({ name: item.name, amount: splitAmount });
+                        subtotals[assigneeId].subtotal += splitAmount;
+                    }
+                });
+            });
+
+            // Total subtotal (for proportional splitting)
+            const totalSubtotal = Object.values(subtotals).reduce((sum, s) => sum + s.subtotal, 0);
+
+            // Calculate tip from percentage if tipAmount is not set
+            if (tip === 0 && tipPercent > 0) {
+                tip = totalSubtotal * (tipPercent / 100);
+            }
+
+            const totalExtras = tax + tip + otherFees;
+
+            // Render summary
+            if (people.length === 0) {
+                summaryGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🧾</div>
+                        <div>Add people and items to see the split</div>
+                    </div>
+                `;
+                grandTotal.style.display = 'none';
+                return;
+            }
+
+            let grandTotalValue = 0;
+
+            summaryGrid.innerHTML = people.map(p => {
+                const data = subtotals[p.id];
+                const proportion = totalSubtotal > 0 ? data.subtotal / totalSubtotal : 0;
+                const extrasShare = totalExtras * proportion;
+                const total = data.subtotal + extrasShare;
+                grandTotalValue += total;
+
+                return `
+                    <div class="person-summary">
+                        <div class="person-summary-header">
+                            <div class="person-summary-color" style="background: ${p.color}"></div>
+                            <span class="person-summary-name">${escapeHtml(p.name)}</span>
+                        </div>
+                        <div class="person-summary-items">
+                            ${data.items.length} item${data.items.length !== 1 ? 's' : ''}
+                        </div>
+                        <div class="person-summary-breakdown">
+                            Subtotal: $${data.subtotal.toFixed(2)}
+                        </div>
+                        ${extrasShare > 0 ? `
+                            <div class="person-summary-breakdown">
+                                + Tax/Tip/Fees: $${extrasShare.toFixed(2)}
+                            </div>
+                        ` : ''}
+                        <div class="person-summary-total">$${total.toFixed(2)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            grandTotal.style.display = 'flex';
+            grandTotalAmount.textContent = `$${grandTotalValue.toFixed(2)}`;
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderAll() {
+            renderPeople();
+            renderItems();
+            calculateSummary();
+        }
+
+        // Event Listeners
+        document.getElementById('addPersonBtn').addEventListener('click', () => {
+            const input = document.getElementById('newPersonName');
+            addPerson(input.value);
+            input.value = '';
+        });
+
+        document.getElementById('newPersonName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const input = document.getElementById('newPersonName');
+                addPerson(input.value);
+                input.value = '';
+            }
+        });
+
+        document.getElementById('addItemBtn').addEventListener('click', () => {
+            const nameInput = document.getElementById('newItemName');
+            const priceInput = document.getElementById('newItemPrice');
+            addItem(nameInput.value, priceInput.value);
+            nameInput.value = '';
+            priceInput.value = '';
+            nameInput.focus();
+        });
+
+        document.getElementById('newItemName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('newItemPrice').focus();
+            }
+        });
+
+        document.getElementById('newItemPrice').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const nameInput = document.getElementById('newItemName');
+                const priceInput = document.getElementById('newItemPrice');
+                addItem(nameInput.value, priceInput.value);
+                nameInput.value = '';
+                priceInput.value = '';
+                nameInput.focus();
+            }
+        });
+
+        // Extras input listeners
+        ['taxAmount', 'tipAmount', 'tipPercent', 'otherFees'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateSummary);
+        });
+
+        // Tip percentage clears tip amount and vice versa
+        document.getElementById('tipAmount').addEventListener('input', () => {
+            document.getElementById('tipPercent').value = '';
+            calculateSummary();
+        });
+        document.getElementById('tipPercent').addEventListener('input', () => {
+            document.getElementById('tipAmount').value = '';
+            calculateSummary();
+        });
+
+        // Copy results
+        document.getElementById('copyResultsBtn').addEventListener('click', () => {
+            const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
+            let tip = parseFloat(document.getElementById('tipAmount').value) || 0;
+            const tipPercent = parseFloat(document.getElementById('tipPercent').value) || 0;
+            const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
+
+            const subtotals = {};
+            people.forEach(p => subtotals[p.id] = { items: [], subtotal: 0 });
+
+            items.forEach(item => {
+                if (item.assignees.length === 0) return;
+                const splitAmount = item.price / item.assignees.length;
+                item.assignees.forEach(assigneeId => {
+                    if (subtotals[assigneeId]) {
+                        subtotals[assigneeId].items.push({ name: item.name, amount: splitAmount });
+                        subtotals[assigneeId].subtotal += splitAmount;
+                    }
+                });
+            });
+
+            const totalSubtotal = Object.values(subtotals).reduce((sum, s) => sum + s.subtotal, 0);
+            if (tip === 0 && tipPercent > 0) {
+                tip = totalSubtotal * (tipPercent / 100);
+            }
+            const totalExtras = tax + tip + otherFees;
+
+            let text = '🧾 Receipt Split Summary\n';
+            text += '═══════════════════════\n\n';
+
+            let grandTotal = 0;
+            people.forEach(p => {
+                const data = subtotals[p.id];
+                const proportion = totalSubtotal > 0 ? data.subtotal / totalSubtotal : 0;
+                const extrasShare = totalExtras * proportion;
+                const total = data.subtotal + extrasShare;
+                grandTotal += total;
+
+                text += `${p.name}: $${total.toFixed(2)}\n`;
+                if (data.items.length > 0) {
+                    data.items.forEach(item => {
+                        text += `  • ${item.name}: $${item.amount.toFixed(2)}\n`;
+                    });
+                    if (extrasShare > 0) {
+                        text += `  + Tax/Tip/Fees: $${extrasShare.toFixed(2)}\n`;
+                    }
+                }
+                text += '\n';
+            });
+
+            text += `═══════════════════════\n`;
+            text += `Grand Total: $${grandTotal.toFixed(2)}\n`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyResultsBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy Summary', 2000);
+            });
+        });
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Reset all data?')) {
+                people = [];
+                items = [];
+                selectedPeopleForAssignment = [];
+                document.getElementById('taxAmount').value = '';
+                document.getElementById('tipAmount').value = '';
+                document.getElementById('tipPercent').value = '';
+                document.getElementById('otherFees').value = '';
+                init();
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

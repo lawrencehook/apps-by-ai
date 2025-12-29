@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Heatmap - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        button.recording {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+        }
+
+        .keyboard-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .key {
+            min-width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ccc;
+            transition: all 0.15s;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .key.pressed {
+            transform: scale(0.95);
+        }
+
+        .key .count {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+
+        .key.space { min-width: 300px; }
+        .key.backspace, .key.tab { min-width: 80px; }
+        .key.caps, .key.enter { min-width: 95px; }
+        .key.shift-left { min-width: 115px; }
+        .key.shift-right { min-width: 135px; }
+        .key.ctrl, .key.alt, .key.meta { min-width: 60px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 8px;
+        }
+
+        .top-keys {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .top-keys h3 {
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .top-keys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 12px;
+        }
+
+        .top-key-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .top-key-char {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .top-key-count {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .top-key-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .top-key-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .legend-gradient {
+            width: 200px;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.08) 0%,
+                #2d5aa0 25%,
+                #48dbfb 50%,
+                #feca57 75%,
+                #ff6b6b 100%
+            );
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: color 0.2s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .instruction {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .key {
+                min-width: 35px;
+                height: 40px;
+                font-size: 11px;
+            }
+            .key.space { min-width: 200px; }
+            .key.backspace, .key.tab { min-width: 55px; }
+            .key.caps, .key.enter { min-width: 65px; }
+            .key.shift-left { min-width: 75px; }
+            .key.shift-right { min-width: 90px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back to Gallery</a>
+
+    <div class="container">
+        <header>
+            <h1>Keyboard Heatmap</h1>
+            <p>Track your keystrokes and visualize your typing patterns</p>
+        </header>
+
+        <div class="controls">
+            <button id="recordBtn">Start Recording</button>
+            <button id="resetBtn" class="secondary">Reset Data</button>
+            <button id="exportBtn" class="secondary">Export Stats</button>
+        </div>
+
+        <p class="instruction" id="instruction">Click "Start Recording" and type anywhere to track your keystrokes</p>
+
+        <div class="keyboard-container">
+            <div class="keyboard" id="keyboard"></div>
+            <div class="legend">
+                <span>Less</span>
+                <div class="legend-gradient"></div>
+                <span>More</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Keystrokes</div>
+                <div class="stat-value" id="totalKeystrokes">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique Keys</div>
+                <div class="stat-value" id="uniqueKeys">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Keys per Minute</div>
+                <div class="stat-value" id="keysPerMinute">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Recording Time</div>
+                <div class="stat-value" id="recordingTime">0:00</div>
+            </div>
+        </div>
+
+        <div class="top-keys">
+            <h3>Most Used Keys</h3>
+            <div class="top-keys-grid" id="topKeysGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Keyboard layout - US QWERTY
+        const keyboardLayout = [
+            ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
+            ['Tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'],
+            ['CapsLock', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'Enter'],
+            ['ShiftLeft', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'ShiftRight'],
+            ['CtrlLeft', 'Meta', 'AltLeft', 'Space', 'AltRight', 'CtrlRight']
+        ];
+
+        const keyDisplayNames = {
+            'Backspace': '⌫',
+            'Tab': 'Tab',
+            'CapsLock': 'Caps',
+            'Enter': 'Enter',
+            'ShiftLeft': 'Shift',
+            'ShiftRight': 'Shift',
+            'CtrlLeft': 'Ctrl',
+            'CtrlRight': 'Ctrl',
+            'AltLeft': 'Alt',
+            'AltRight': 'Alt',
+            'Meta': '⌘',
+            'Space': 'Space'
+        };
+
+        const keyCssClasses = {
+            'Backspace': 'backspace',
+            'Tab': 'tab',
+            'CapsLock': 'caps',
+            'Enter': 'enter',
+            'ShiftLeft': 'shift-left',
+            'ShiftRight': 'shift-right',
+            'CtrlLeft': 'ctrl',
+            'CtrlRight': 'ctrl',
+            'AltLeft': 'alt',
+            'AltRight': 'alt',
+            'Meta': 'meta',
+            'Space': 'space'
+        };
+
+        let keyData = {};
+        let isRecording = false;
+        let startTime = null;
+        let recordingInterval = null;
+        let keyElements = {};
+
+        function initKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = '';
+
+            keyboardLayout.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+
+                row.forEach(key => {
+                    const keyDiv = document.createElement('div');
+                    const cssClass = keyCssClasses[key] || '';
+                    keyDiv.className = `key ${cssClass}`;
+                    keyDiv.dataset.key = key;
+
+                    const displayName = keyDisplayNames[key] || key;
+                    keyDiv.innerHTML = `
+                        <span>${displayName}</span>
+                        <span class="count">0</span>
+                    `;
+
+                    keyElements[key] = keyDiv;
+                    rowDiv.appendChild(keyDiv);
+                });
+
+                keyboard.appendChild(rowDiv);
+            });
+        }
+
+        function getHeatColor(intensity) {
+            // intensity is 0-1
+            if (intensity === 0) {
+                return 'rgba(255, 255, 255, 0.08)';
+            }
+
+            // Color scale: dark blue -> cyan -> yellow -> red
+            const colors = [
+                { r: 45, g: 90, b: 160 },   // Dark blue
+                { r: 72, g: 219, b: 251 },  // Cyan
+                { r: 254, g: 202, b: 87 },  // Yellow
+                { r: 255, g: 107, b: 107 }  // Red
+            ];
+
+            const segments = colors.length - 1;
+            const segment = Math.min(Math.floor(intensity * segments), segments - 1);
+            const segmentProgress = (intensity * segments) - segment;
+
+            const c1 = colors[segment];
+            const c2 = colors[segment + 1];
+
+            const r = Math.round(c1.r + (c2.r - c1.r) * segmentProgress);
+            const g = Math.round(c1.g + (c2.g - c1.g) * segmentProgress);
+            const b = Math.round(c1.b + (c2.b - c1.b) * segmentProgress);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function updateHeatmap() {
+            const maxCount = Math.max(...Object.values(keyData), 1);
+
+            Object.entries(keyElements).forEach(([key, element]) => {
+                const count = keyData[key] || 0;
+                const intensity = count / maxCount;
+                const color = getHeatColor(intensity);
+
+                element.style.background = color;
+                element.style.borderColor = intensity > 0.3 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)';
+                element.querySelector('.count').textContent = count;
+
+                if (intensity > 0.5) {
+                    element.style.color = '#1a1a2e';
+                } else {
+                    element.style.color = '#ccc';
+                }
+            });
+        }
+
+        function updateStats() {
+            const total = Object.values(keyData).reduce((a, b) => a + b, 0);
+            const unique = Object.keys(keyData).filter(k => keyData[k] > 0).length;
+
+            document.getElementById('totalKeystrokes').textContent = total.toLocaleString();
+            document.getElementById('uniqueKeys').textContent = unique;
+
+            if (startTime) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const minutes = elapsed / 60;
+                const kpm = minutes > 0 ? Math.round(total / minutes) : 0;
+                document.getElementById('keysPerMinute').textContent = kpm;
+
+                const mins = Math.floor(elapsed / 60);
+                const secs = Math.floor(elapsed % 60);
+                document.getElementById('recordingTime').textContent =
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            updateTopKeys();
+        }
+
+        function updateTopKeys() {
+            const grid = document.getElementById('topKeysGrid');
+            const sorted = Object.entries(keyData)
+                .filter(([k, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (sorted.length === 0) {
+                grid.innerHTML = '<div style="color: #666; grid-column: 1/-1;">No data yet</div>';
+                return;
+            }
+
+            const maxCount = sorted[0][1];
+
+            grid.innerHTML = sorted.map(([key, count]) => {
+                const displayName = keyDisplayNames[key] || key;
+                const percentage = (count / maxCount) * 100;
+                return `
+                    <div class="top-key-item">
+                        <div class="top-key-char">${displayName}</div>
+                        <div class="top-key-count">${count}</div>
+                        <div class="top-key-bar">
+                            <div class="top-key-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function normalizeKey(e) {
+            // Map event.code to our key names
+            const code = e.code;
+
+            if (code.startsWith('Key')) {
+                return code.replace('Key', '');
+            }
+            if (code.startsWith('Digit')) {
+                return code.replace('Digit', '');
+            }
+
+            const codeMap = {
+                'Backquote': '`',
+                'Minus': '-',
+                'Equal': '=',
+                'BracketLeft': '[',
+                'BracketRight': ']',
+                'Backslash': '\\',
+                'Semicolon': ';',
+                'Quote': "'",
+                'Comma': ',',
+                'Period': '.',
+                'Slash': '/',
+                'Space': 'Space',
+                'Backspace': 'Backspace',
+                'Tab': 'Tab',
+                'CapsLock': 'CapsLock',
+                'Enter': 'Enter',
+                'ShiftLeft': 'ShiftLeft',
+                'ShiftRight': 'ShiftRight',
+                'ControlLeft': 'CtrlLeft',
+                'ControlRight': 'CtrlRight',
+                'AltLeft': 'AltLeft',
+                'AltRight': 'AltRight',
+                'MetaLeft': 'Meta',
+                'MetaRight': 'Meta'
+            };
+
+            return codeMap[code] || null;
+        }
+
+        function handleKeyDown(e) {
+            if (!isRecording) return;
+
+            const key = normalizeKey(e);
+            if (!key || !keyElements[key]) return;
+
+            keyData[key] = (keyData[key] || 0) + 1;
+
+            const element = keyElements[key];
+            element.classList.add('pressed');
+            setTimeout(() => element.classList.remove('pressed'), 100);
+
+            updateHeatmap();
+            updateStats();
+        }
+
+        function toggleRecording() {
+            isRecording = !isRecording;
+            const btn = document.getElementById('recordBtn');
+            const instruction = document.getElementById('instruction');
+
+            if (isRecording) {
+                btn.textContent = 'Stop Recording';
+                btn.classList.add('recording');
+                instruction.textContent = 'Recording... Type anywhere on this page';
+                instruction.style.color = '#48dbfb';
+
+                if (!startTime) {
+                    startTime = Date.now();
+                }
+
+                recordingInterval = setInterval(updateStats, 1000);
+            } else {
+                btn.textContent = 'Resume Recording';
+                btn.classList.remove('recording');
+                instruction.textContent = 'Recording paused. Click "Resume Recording" to continue';
+                instruction.style.color = '#feca57';
+
+                clearInterval(recordingInterval);
+            }
+        }
+
+        function resetData() {
+            keyData = {};
+            startTime = null;
+            isRecording = false;
+            clearInterval(recordingInterval);
+
+            const btn = document.getElementById('recordBtn');
+            btn.textContent = 'Start Recording';
+            btn.classList.remove('recording');
+
+            document.getElementById('instruction').textContent =
+                'Click "Start Recording" and type anywhere to track your keystrokes';
+            document.getElementById('instruction').style.color = '#666';
+
+            document.getElementById('totalKeystrokes').textContent = '0';
+            document.getElementById('uniqueKeys').textContent = '0';
+            document.getElementById('keysPerMinute').textContent = '0';
+            document.getElementById('recordingTime').textContent = '0:00';
+
+            updateHeatmap();
+            updateTopKeys();
+        }
+
+        function exportStats() {
+            const total = Object.values(keyData).reduce((a, b) => a + b, 0);
+            const sorted = Object.entries(keyData)
+                .filter(([k, v]) => v > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            let text = 'Keyboard Heatmap Statistics\n';
+            text += '=' .repeat(40) + '\n\n';
+            text += `Total Keystrokes: ${total}\n`;
+            text += `Unique Keys Used: ${sorted.length}\n`;
+
+            if (startTime) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const minutes = elapsed / 60;
+                text += `Recording Time: ${Math.floor(elapsed / 60)}m ${Math.floor(elapsed % 60)}s\n`;
+                text += `Keys per Minute: ${Math.round(total / minutes)}\n`;
+            }
+
+            text += '\nKey Frequency:\n';
+            text += '-'.repeat(40) + '\n';
+
+            sorted.forEach(([key, count]) => {
+                const displayName = keyDisplayNames[key] || key;
+                const percentage = ((count / total) * 100).toFixed(1);
+                text += `${displayName.padEnd(12)} ${count.toString().padStart(6)} (${percentage}%)\n`;
+            });
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'keyboard-heatmap-stats.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Event listeners
+        document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+        document.getElementById('resetBtn').addEventListener('click', resetData);
+        document.getElementById('exportBtn').addEventListener('click', exportStats);
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Initialize
+        initKeyboard();
+        updateHeatmap();
+        updateTopKeys();
+    </script>
+</body>
+</html>

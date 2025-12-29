@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Commit Visualizer - AI Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #c9d1d9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #58a6ff, #a371f7, #3fb950);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: #8b949e;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #30363d;
+        }
+
+        .panel h2 {
+            font-size: 1rem;
+            color: #58a6ff;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #c9d1d9;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            padding: 12px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #238636, #2ea043);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(35, 134, 54, 0.4);
+        }
+
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+
+        button.secondary:hover {
+            background: #30363d;
+            box-shadow: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 600px;
+            border: 1px solid #30363d;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #30363d;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #58a6ff;
+            margin-top: 4px;
+        }
+
+        .contributor-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .contributor {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: background 0.2s;
+        }
+
+        .contributor:hover {
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        .contributor-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .contributor-info {
+            flex: 1;
+        }
+
+        .contributor-name {
+            font-weight: 600;
+            color: #c9d1d9;
+            font-size: 0.9rem;
+        }
+
+        .contributor-commits {
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 16px;
+            background: rgba(22, 27, 34, 0.9);
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            transition: color 0.2s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: #c9d1d9;
+        }
+
+        .sample-data {
+            font-size: 0.8rem;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+
+        .sample-data a {
+            color: #58a6ff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .sample-data a:hover {
+            text-decoration: underline;
+        }
+
+        .heatmap-container {
+            margin-top: 20px;
+        }
+
+        .heatmap-title {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(52, 1fr);
+            gap: 2px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            background: #161b22;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #1f2428;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .legend-scale {
+            display: flex;
+            gap: 2px;
+        }
+
+        .legend-cell {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back to Gallery</a>
+
+    <div class="container">
+        <header>
+            <h1>Git Commit Visualizer</h1>
+            <p>Visualize your git history as an interactive branching timeline</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2>Paste Git Log</h2>
+                <textarea id="gitLogInput" placeholder="Paste your git log output here...
+
+Use: git log --oneline --graph --all --date=short --format='%h|%ad|%an|%s'
+
+Or just paste any standard git log output!"></textarea>
+                <button id="visualizeBtn">Visualize Commits</button>
+                <button id="clearBtn" class="secondary">Clear</button>
+                <p class="sample-data">Or try with <a id="loadSample">sample data</a></p>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Commits</div>
+                        <div class="stat-value" id="totalCommits">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Contributors</div>
+                        <div class="stat-value" id="totalContributors">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Branches</div>
+                        <div class="stat-value" id="totalBranches">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Timespan</div>
+                        <div class="stat-value" id="timespan">-</div>
+                    </div>
+                </div>
+
+                <div class="contributor-list" id="contributorList"></div>
+
+                <div class="heatmap-container">
+                    <div class="heatmap-title">Contribution Activity</div>
+                    <div class="heatmap" id="heatmap"></div>
+                    <div class="legend">
+                        <span>Less</span>
+                        <div class="legend-scale">
+                            <div class="legend-cell" style="background: #161b22;"></div>
+                            <div class="legend-cell" style="background: #0e4429;"></div>
+                            <div class="legend-cell" style="background: #006d32;"></div>
+                            <div class="legend-cell" style="background: #26a641;"></div>
+                            <div class="legend-cell" style="background: #39d353;"></div>
+                        </div>
+                        <span>More</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="commitCanvas"></canvas>
+                <div class="tooltip" id="tooltip" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('commitCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let commits = [];
+        let contributors = {};
+        let branches = [];
+        let hoveredCommit = null;
+        let scrollOffset = 0;
+        let maxScroll = 0;
+
+        const colors = [
+            '#58a6ff', '#a371f7', '#3fb950', '#f0883e', '#f85149',
+            '#a5d6ff', '#d2a8ff', '#7ee787', '#ffc68e', '#ffa198',
+            '#79c0ff', '#c297ff', '#56d364', '#ffab70', '#ff7b72'
+        ];
+
+        function resize() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+
+        function parseGitLog(logText) {
+            const lines = logText.trim().split('\n').filter(line => line.trim());
+            const parsedCommits = [];
+            const branchSet = new Set();
+            const contribs = {};
+
+            // Parse different git log formats
+            let currentBranch = 0;
+            let branchStack = [0];
+
+            for (const line of lines) {
+                // Try custom format: hash|date|author|message
+                const customMatch = line.match(/([a-f0-9]+)\|(\d{4}-\d{2}-\d{2})\|(.+?)\|(.+)/);
+                if (customMatch) {
+                    const [, hash, date, author, message] = customMatch;
+                    const commit = {
+                        hash,
+                        date: new Date(date),
+                        author: author.trim(),
+                        message: message.trim(),
+                        branch: 0
+                    };
+                    parsedCommits.push(commit);
+                    contribs[author.trim()] = (contribs[author.trim()] || 0) + 1;
+                    continue;
+                }
+
+                // Try standard oneline with graph
+                const graphMatch = line.match(/^([|\\\/*\s]+)?([a-f0-9]{7,40})\s+(.+)/);
+                if (graphMatch) {
+                    const [, graph, hash, rest] = graphMatch;
+
+                    // Parse graph characters to determine branch
+                    if (graph) {
+                        const pipeCount = (graph.match(/\|/g) || []).length;
+                        const hasSlash = graph.includes('/') || graph.includes('\\');
+                        const hasAsterisk = graph.includes('*');
+
+                        if (hasSlash && hasAsterisk) {
+                            currentBranch = Math.max(0, currentBranch - 1);
+                        } else if (graph.includes('|\\') || graph.includes('| \\')) {
+                            currentBranch++;
+                            branchSet.add(currentBranch);
+                        }
+                    }
+
+                    // Try to extract date from message or use incrementing fake date
+                    let date = new Date();
+                    date.setDate(date.getDate() - parsedCommits.length);
+
+                    let author = 'Unknown';
+                    let message = rest;
+
+                    // Try extracting author if format includes it
+                    const authorMatch = rest.match(/\((.+?)\)\s*(.+)/);
+                    if (authorMatch) {
+                        author = authorMatch[1];
+                        message = authorMatch[2];
+                    }
+
+                    const commit = {
+                        hash,
+                        date,
+                        author,
+                        message: message.trim(),
+                        branch: currentBranch
+                    };
+
+                    parsedCommits.push(commit);
+                    contribs[author] = (contribs[author] || 0) + 1;
+                    branchSet.add(currentBranch);
+                    continue;
+                }
+
+                // Simple hash message format
+                const simpleMatch = line.match(/^([a-f0-9]{7,40})\s+(.+)/);
+                if (simpleMatch) {
+                    const [, hash, message] = simpleMatch;
+                    let date = new Date();
+                    date.setDate(date.getDate() - parsedCommits.length);
+
+                    const commit = {
+                        hash,
+                        date,
+                        author: 'Unknown',
+                        message: message.trim(),
+                        branch: 0
+                    };
+                    parsedCommits.push(commit);
+                    contribs['Unknown'] = (contribs['Unknown'] || 0) + 1;
+                }
+            }
+
+            return { commits: parsedCommits, contributors: contribs, branches: Array.from(branchSet) };
+        }
+
+        function generateHeatmap() {
+            const heatmap = document.getElementById('heatmap');
+            heatmap.innerHTML = '';
+
+            // Create 52 weeks x 7 days grid
+            const commitsByWeek = {};
+            const now = new Date();
+
+            commits.forEach(commit => {
+                const weekAgo = Math.floor((now - commit.date) / (7 * 24 * 60 * 60 * 1000));
+                if (weekAgo >= 0 && weekAgo < 52) {
+                    commitsByWeek[51 - weekAgo] = (commitsByWeek[51 - weekAgo] || 0) + 1;
+                }
+            });
+
+            const maxCommits = Math.max(...Object.values(commitsByWeek), 1);
+
+            for (let week = 0; week < 52; week++) {
+                const count = commitsByWeek[week] || 0;
+                const intensity = count / maxCommits;
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+
+                if (count === 0) {
+                    cell.style.background = '#161b22';
+                } else if (intensity < 0.25) {
+                    cell.style.background = '#0e4429';
+                } else if (intensity < 0.5) {
+                    cell.style.background = '#006d32';
+                } else if (intensity < 0.75) {
+                    cell.style.background = '#26a641';
+                } else {
+                    cell.style.background = '#39d353';
+                }
+
+                cell.title = `${count} commits`;
+                heatmap.appendChild(cell);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalCommits').textContent = commits.length;
+            document.getElementById('totalContributors').textContent = Object.keys(contributors).length;
+            document.getElementById('totalBranches').textContent = Math.max(1, branches.length);
+
+            if (commits.length > 0) {
+                const dates = commits.map(c => c.date).sort((a, b) => a - b);
+                const days = Math.ceil((dates[dates.length - 1] - dates[0]) / (24 * 60 * 60 * 1000));
+                if (days <= 30) {
+                    document.getElementById('timespan').textContent = `${days}d`;
+                } else if (days <= 365) {
+                    document.getElementById('timespan').textContent = `${Math.round(days / 30)}mo`;
+                } else {
+                    document.getElementById('timespan').textContent = `${(days / 365).toFixed(1)}y`;
+                }
+            } else {
+                document.getElementById('timespan').textContent = '-';
+            }
+
+            // Update contributor list
+            const contribList = document.getElementById('contributorList');
+            const sortedContribs = Object.entries(contributors)
+                .sort((a, b) => b[1] - a[1]);
+
+            contribList.innerHTML = sortedContribs.map(([name, count], i) => `
+                <div class="contributor">
+                    <div class="contributor-avatar" style="background: ${colors[i % colors.length]}">
+                        ${name.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="contributor-info">
+                        <div class="contributor-name">${name}</div>
+                        <div class="contributor-commits">${count} commit${count !== 1 ? 's' : ''}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, w, h);
+
+            if (commits.length === 0) {
+                ctx.fillStyle = '#8b949e';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Paste git log and click "Visualize Commits"', w / 2, h / 2);
+                return;
+            }
+
+            const padding = 60;
+            const nodeRadius = 12;
+            const verticalSpacing = 50;
+            const branchSpacing = 40;
+
+            maxScroll = Math.max(0, commits.length * verticalSpacing - h + padding * 2);
+
+            ctx.save();
+            ctx.translate(0, -scrollOffset);
+
+            // Draw connections first
+            for (let i = 0; i < commits.length - 1; i++) {
+                const y1 = padding + i * verticalSpacing;
+                const y2 = padding + (i + 1) * verticalSpacing;
+                const x1 = padding + commits[i].branch * branchSpacing;
+                const x2 = padding + commits[i + 1].branch * branchSpacing;
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+
+                if (x1 !== x2) {
+                    // Curved connection for branch
+                    ctx.bezierCurveTo(
+                        x1, y1 + verticalSpacing * 0.3,
+                        x2, y2 - verticalSpacing * 0.3,
+                        x2, y2
+                    );
+                } else {
+                    ctx.lineTo(x2, y2);
+                }
+
+                ctx.strokeStyle = colors[commits[i].branch % colors.length];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw commit nodes
+            commits.forEach((commit, i) => {
+                const x = padding + commit.branch * branchSpacing;
+                const y = padding + i * verticalSpacing;
+
+                const isHovered = hoveredCommit === i;
+                const radius = isHovered ? nodeRadius * 1.3 : nodeRadius;
+
+                // Glow effect
+                if (isHovered) {
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
+                    gradient.addColorStop(0, colors[commit.branch % colors.length] + '40');
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Node
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = isHovered ? '#fff' : colors[commit.branch % colors.length];
+                ctx.fill();
+
+                ctx.strokeStyle = '#0d1117';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Hash label
+                ctx.font = '12px Monaco, monospace';
+                ctx.fillStyle = '#8b949e';
+                ctx.textAlign = 'left';
+                ctx.fillText(commit.hash.substring(0, 7), x + nodeRadius + 12, y - 8);
+
+                // Message
+                ctx.font = '13px sans-serif';
+                ctx.fillStyle = '#c9d1d9';
+                const maxWidth = w - x - nodeRadius - padding - 20;
+                let message = commit.message;
+                if (ctx.measureText(message).width > maxWidth) {
+                    while (ctx.measureText(message + '...').width > maxWidth && message.length > 0) {
+                        message = message.slice(0, -1);
+                    }
+                    message += '...';
+                }
+                ctx.fillText(message, x + nodeRadius + 12, y + 8);
+
+                // Author indicator
+                const authorColor = colors[Object.keys(contributors).indexOf(commit.author) % colors.length];
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#0d1117';
+                ctx.fill();
+            });
+
+            ctx.restore();
+
+            // Draw scroll indicator
+            if (maxScroll > 0) {
+                const scrollbarHeight = Math.max(30, (h / (h + maxScroll)) * h);
+                const scrollbarY = (scrollOffset / maxScroll) * (h - scrollbarHeight);
+
+                ctx.fillStyle = '#30363d';
+                ctx.fillRect(w - 8, scrollbarY, 4, scrollbarHeight);
+            }
+        }
+
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top + scrollOffset;
+
+            const padding = 60;
+            const verticalSpacing = 50;
+            const branchSpacing = 40;
+            const nodeRadius = 12;
+
+            hoveredCommit = null;
+
+            for (let i = 0; i < commits.length; i++) {
+                const cx = padding + commits[i].branch * branchSpacing;
+                const cy = padding + i * verticalSpacing;
+
+                const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                if (dist < nodeRadius * 1.5) {
+                    hoveredCommit = i;
+                    break;
+                }
+            }
+
+            if (hoveredCommit !== null) {
+                const commit = commits[hoveredCommit];
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+                tooltip.innerHTML = `
+                    <strong>${commit.hash}</strong><br>
+                    <span style="color: #8b949e">${commit.author}</span><br>
+                    <span style="color: #58a6ff">${commit.date.toLocaleDateString()}</span><br>
+                    ${commit.message}
+                `;
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+
+            draw();
+        }
+
+        function handleScroll(e) {
+            e.preventDefault();
+            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset + e.deltaY));
+            draw();
+        }
+
+        function visualize() {
+            const logText = document.getElementById('gitLogInput').value;
+            if (!logText.trim()) return;
+
+            const parsed = parseGitLog(logText);
+            commits = parsed.commits;
+            contributors = parsed.contributors;
+            branches = parsed.branches;
+            scrollOffset = 0;
+
+            updateStats();
+            generateHeatmap();
+            draw();
+        }
+
+        function loadSampleData() {
+            const sampleLog = `a1b2c3d|2024-12-15|Alice|Initial commit: project setup
+b2c3d4e|2024-12-16|Bob|Add user authentication module
+c3d4e5f|2024-12-17|Alice|Implement login page
+d4e5f6a|2024-12-18|Charlie|Add unit tests for auth
+e5f6a7b|2024-12-19|Alice|Fix password validation bug
+f6a7b8c|2024-12-20|Bob|Add dashboard component
+a7b8c9d|2024-12-21|Charlie|Refactor database queries
+b8c9d0e|2024-12-22|Alice|Implement user profile page
+c9d0e1f|2024-12-23|Bob|Add API rate limiting
+d0e1f2a|2024-12-24|Charlie|Performance optimizations
+e1f2a3b|2024-12-25|Alice|Fix navigation bug
+f2a3b4c|2024-12-26|Bob|Add dark mode support
+a3b4c5d|2024-12-27|Charlie|Update documentation
+b4c5d6e|2024-12-28|Alice|Prepare v1.0 release`;
+
+            document.getElementById('gitLogInput').value = sampleLog;
+            visualize();
+        }
+
+        // Event listeners
+        document.getElementById('visualizeBtn').addEventListener('click', visualize);
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('gitLogInput').value = '';
+            commits = [];
+            contributors = {};
+            branches = [];
+            updateStats();
+            document.getElementById('heatmap').innerHTML = '';
+            draw();
+        });
+        document.getElementById('loadSample').addEventListener('click', loadSampleData);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('wheel', handleScroll);
+        canvas.addEventListener('mouseleave', () => {
+            hoveredCommit = null;
+            tooltip.style.display = 'none';
+            draw();
+        });
+
+        window.addEventListener('resize', resize);
+        resize();
+    </script>
+</body>
+</html>
