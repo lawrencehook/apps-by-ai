@@ -8,7 +8,7 @@
         "previewGradient": "linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)",
         "dateCreated": "2025-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Audio",
+        "category": "Music",
         "tags": ["music", "arpeggio", "chords", "synthesizer", "piano", "harmony", "interactive"]
     },
     {
@@ -20,7 +20,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #a855f7 50%, #4ecdc4 100%)",
         "dateCreated": "2025-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Audio",
+        "category": "Music",
         "tags": ["midi", "music", "drums", "dj", "synthesizer", "sequencer", "production", "808", "909"]
     },
     {
@@ -617,8 +617,8 @@
         "previewGradient": "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
-        "category": "Audio",
-        "tags": ["interactive", "visualization"],
+        "category": "Music",
+        "tags": ["interactive", "visualization", "synthesizer", "music"],
         "link": "https://en.wikipedia.org/wiki/Synthesizer"
     },
     {
@@ -1787,7 +1787,7 @@
         "previewGradient": "linear-gradient(135deg, #ff0080 0%, #8000ff 50%, #00ffff 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Audio",
+        "category": "Music",
         "tags": ["visualization", "music", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Music_visualization"
     },
@@ -1943,7 +1943,7 @@
         "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #1a1a2e 50%, #ff6b6b 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Audio",
+        "category": "Music",
         "tags": ["music", "chords", "visualization", "interactive", "piano", "guitar"],
         "link": "https://en.wikipedia.org/wiki/Chord_(music)"
     },
