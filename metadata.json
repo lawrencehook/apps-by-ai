@@ -1,5 +1,29 @@
 [
     {
+        "id": "arpeggios",
+        "title": "Arpeggios",
+        "description": "Interactive chord arpeggiator with a 12x12 grid of all root notes and chord types. Configure waveform, pattern, speed, octave, and effects globally, then click any cell to play beautiful arpeggios.",
+        "path": "apps/arpeggios/index.html",
+        "emoji": "🎶",
+        "previewGradient": "linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)",
+        "dateCreated": "2025-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Audio",
+        "tags": ["music", "arpeggio", "chords", "synthesizer", "piano", "harmony", "interactive"]
+    },
+    {
+        "id": "midi-pad",
+        "title": "MIDI Pad",
+        "description": "Professional 16-pad MIDI controller with synthesized drum kits (TR-808, TR-909), synths, bass, and FX. Features full sequencer with recording, quantization, BPM control, pattern export, real-time visualization, and external MIDI controller support.",
+        "path": "apps/midi-pad/index.html",
+        "emoji": "🎛️",
+        "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #a855f7 50%, #4ecdc4 100%)",
+        "dateCreated": "2025-12-28",
+        "model": "Claude Opus 4.5",
+        "category": "Audio",
+        "tags": ["midi", "music", "drums", "dj", "synthesizer", "sequencer", "production", "808", "909"]
+    },
+    {
         "id": "git-commit-visualizer",
         "title": "Git Commit Visualizer",
         "description": "Paste your git log output and see your commit history as an interactive branching timeline with contributor heatmaps, stats, and scrollable navigation.",
