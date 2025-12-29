@@ -237,6 +237,13 @@
             color: #888;
         }
 
+        .header-key {
+            display: block;
+            font-size: 7px;
+            color: #4ecdc4;
+            opacity: 0.6;
+        }
+
         /* Row Labels (Chord Types) */
         .row-label {
             display: flex;
@@ -812,9 +819,11 @@
                 </div>
                 <div class="now-playing-notes" id="nowPlayingNotes">Click a chord to play</div>
                 <div class="keyboard-shortcuts">
+                    <span class="key-hint">QWERTY...] = key</span>
                     <span class="key-hint">ASDFGHJKL; = diatonic</span>
                     <span class="key-hint">1-0 = favorites</span>
-                    <span class="key-hint">CapsLock = chord mode</span>
+                    <span class="key-hint">Alt+click = add fav</span>
+                    <span class="key-hint">CapsLock = chords</span>
                 </div>
             </div>
         </div>
@@ -944,6 +953,10 @@
         // Maps to scale degrees: I, ii, iii, IV, V, vi, vii°
         const DIATONIC_KEYS = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon'];
         const DIATONIC_KEY_LABELS = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';'];
+
+        // Q row for root notes (12 keys = 12 semitones)
+        const ROOT_KEYS = ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'BracketLeft', 'BracketRight'];
+        const ROOT_LABELS = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']'];
 
         // Diatonic chord formulas (scale degrees and chord qualities)
         // Major scale: I(M) ii(m) iii(m) IV(M) V(M) vi(m) vii(dim)
@@ -1248,11 +1261,11 @@
             corner.className = 'row-label';
             headerRow.appendChild(corner);
 
-            // Root note headers
+            // Root note headers with Q-row key labels
             NOTE_NAMES.forEach((note, i) => {
                 const header = document.createElement('div');
                 header.className = 'column-header' + (note.includes('#') ? ' sharp' : '');
-                header.textContent = note;
+                header.innerHTML = `${note}<span class="header-key">${ROOT_LABELS[i]}</span>`;
                 headerRow.appendChild(header);
             });
 
@@ -1287,10 +1300,15 @@
                     keyLabel.className = 'key-binding';
                     cell.appendChild(keyLabel);
 
-                    // Left click - arpeggio (or chord if caps lock)
+                    // Left click - arpeggio (or chord if caps lock), Alt+click - add to favorites
                     cell.addEventListener('mousedown', (e) => {
                         if (e.button === 0) { // Left click only
-                            handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
+                            if (e.altKey) {
+                                e.preventDefault();
+                                addToFavorites(rootIndex, chordType);
+                            } else {
+                                handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
+                            }
                         }
                     });
                     cell.addEventListener('mouseup', () => handleCellRelease(cell));
@@ -1301,12 +1319,6 @@
                         e.preventDefault();
                         handleCellTrigger(cell, rootIndex, chordType, e, true);
                         setTimeout(() => handleCellRelease(cell), 300);
-                    });
-
-                    // Double click - add to favorites
-                    cell.addEventListener('dblclick', (e) => {
-                        e.preventDefault();
-                        addToFavorites(rootIndex, chordType);
                     });
 
                     // Touch events
@@ -1686,7 +1698,7 @@
                     return;
                 }
 
-                // Diatonic chord keys (A S D F G H J) when a key is selected
+                // Diatonic chord keys (A S D F G H J K L ;) when a key is selected
                 if (diatonicBindings[e.code]) {
                     e.preventDefault();
                     const { root, chordType } = diatonicBindings[e.code];
@@ -1705,6 +1717,19 @@
                         cell.classList.add('active');
                         setTimeout(() => cell.classList.remove('active'), 300);
                     }
+                    return;
+                }
+
+                // Q row changes key signature (Q=C, W=C#, E=D, etc.)
+                const rootIndex = ROOT_KEYS.indexOf(e.code);
+                if (rootIndex !== -1) {
+                    e.preventDefault();
+                    const mode = currentKey ? currentKey.mode : 'major';
+                    const keyValue = `${rootIndex}-${mode}`;
+                    document.getElementById('keySignature').value = keyValue;
+                    currentKey = { root: rootIndex, mode };
+                    updateKeyHighlighting();
+                    updateURL();
                 }
             });
 
