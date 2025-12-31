@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Room Planner - AI Showcase</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+        .back-link:hover { color: #fff; }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 15, 20, 0.95);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h1 {
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.8rem;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .room-settings {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-label {
+            display: block;
+            color: #888;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-row input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .input-row input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+
+        .input-row span {
+            color: #666;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .furniture-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .furniture-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .furniture-item:hover {
+            background: rgba(78, 205, 196, 0.1);
+            border-color: rgba(78, 205, 196, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .furniture-item.selected {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+
+        .furniture-icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .furniture-name {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .controls-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .control-btn.danger {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .control-btn.danger:hover {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .view-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .view-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            color: #fff;
+        }
+
+        .view-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+
+        .selected-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.85);
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: none;
+            min-width: 200px;
+        }
+
+        .selected-info.visible {
+            display: block;
+        }
+
+        .selected-info h3 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #4ecdc4;
+        }
+
+        .selected-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .selected-controls button {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .selected-controls button:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .delete-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #888;
+            max-width: 280px;
+        }
+
+        .instructions kbd {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .color-picker-row label {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .color-picker-row input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h1>3D Room Planner</h1>
+            <p class="subtitle">Design your space in 3D</p>
+
+            <div class="section-title">Room Dimensions</div>
+            <div class="room-settings">
+                <div class="input-group">
+                    <label class="input-label">Size (feet)</label>
+                    <div class="input-row">
+                        <input type="number" id="roomWidth" value="20" min="5" max="50">
+                        <span>×</span>
+                        <input type="number" id="roomDepth" value="15" min="5" max="50">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Ceiling Height</label>
+                    <div class="input-row">
+                        <input type="number" id="roomHeight" value="10" min="7" max="20">
+                        <span>ft</span>
+                    </div>
+                </div>
+                <div class="color-picker-row">
+                    <label>Wall Color:</label>
+                    <input type="color" id="wallColor" value="#e8e4df">
+                </div>
+                <div class="color-picker-row">
+                    <label>Floor Color:</label>
+                    <input type="color" id="floorColor" value="#8b7355">
+                </div>
+            </div>
+
+            <div class="section-title">Add Furniture</div>
+            <div class="furniture-grid" id="furnitureGrid">
+                <div class="furniture-item" data-type="sofa">
+                    <div class="furniture-icon">🛋️</div>
+                    <div class="furniture-name">Sofa</div>
+                </div>
+                <div class="furniture-item" data-type="chair">
+                    <div class="furniture-icon">🪑</div>
+                    <div class="furniture-name">Chair</div>
+                </div>
+                <div class="furniture-item" data-type="table">
+                    <div class="furniture-icon">🪵</div>
+                    <div class="furniture-name">Table</div>
+                </div>
+                <div class="furniture-item" data-type="bed">
+                    <div class="furniture-icon">🛏️</div>
+                    <div class="furniture-name">Bed</div>
+                </div>
+                <div class="furniture-item" data-type="desk">
+                    <div class="furniture-icon">🖥️</div>
+                    <div class="furniture-name">Desk</div>
+                </div>
+                <div class="furniture-item" data-type="bookshelf">
+                    <div class="furniture-icon">📚</div>
+                    <div class="furniture-name">Bookshelf</div>
+                </div>
+                <div class="furniture-item" data-type="lamp">
+                    <div class="furniture-icon">💡</div>
+                    <div class="furniture-name">Lamp</div>
+                </div>
+                <div class="furniture-item" data-type="plant">
+                    <div class="furniture-icon">🌿</div>
+                    <div class="furniture-name">Plant</div>
+                </div>
+                <div class="furniture-item" data-type="rug">
+                    <div class="furniture-icon">🟫</div>
+                    <div class="furniture-name">Rug</div>
+                </div>
+                <div class="furniture-item" data-type="tv">
+                    <div class="furniture-icon">📺</div>
+                    <div class="furniture-name">TV Stand</div>
+                </div>
+            </div>
+
+            <div class="section-title">Actions</div>
+            <div class="controls-section">
+                <button class="control-btn" id="resetCamera">Reset Camera</button>
+                <button class="control-btn danger" id="clearAll">Clear All Furniture</button>
+            </div>
+        </div>
+
+        <div class="view-container">
+            <div id="canvas-container"></div>
+
+            <div class="selected-info" id="selectedInfo">
+                <h3 id="selectedName">Selected: Sofa</h3>
+                <div class="selected-controls">
+                    <button id="rotateLeft">↺ Rotate</button>
+                    <button id="rotateRight">↻ Rotate</button>
+                </div>
+                <button class="delete-btn" id="deleteSelected">Delete</button>
+            </div>
+
+            <div class="instructions">
+                <strong>Controls:</strong><br>
+                <kbd>Click</kbd> furniture to select<br>
+                <kbd>Drag</kbd> to move furniture<br>
+                <kbd>Right-click + Drag</kbd> to rotate view<br>
+                <kbd>Scroll</kbd> to zoom
+            </div>
+
+            <div class="view-controls">
+                <button class="view-btn active" data-view="perspective">3D View</button>
+                <button class="view-btn" data-view="top">Top View</button>
+                <button class="view-btn" data-view="front">Front View</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Scene setup
+        let scene, camera, renderer, controls;
+        let room, floor, walls = [];
+        let furniture = [];
+        let selectedObject = null;
+        let isDragging = false;
+        let isRotating = false;
+        let mouse = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+        let plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        let planeIntersect = new THREE.Vector3();
+        let offset = new THREE.Vector3();
+
+        // Room dimensions (in scene units, 1 unit = 1 foot)
+        let roomWidth = 20;
+        let roomDepth = 15;
+        let roomHeight = 10;
+
+        // Furniture definitions
+        const furnitureDefs = {
+            sofa: { w: 7, h: 3, d: 3, color: 0x6b8e9f, name: 'Sofa' },
+            chair: { w: 2.5, h: 3, d: 2.5, color: 0x9b7653, name: 'Chair' },
+            table: { w: 4, h: 2.5, d: 3, color: 0x5c4033, name: 'Table' },
+            bed: { w: 6.5, h: 2, d: 7, color: 0xdcdcdc, name: 'Bed' },
+            desk: { w: 5, h: 2.5, d: 2.5, color: 0x8b7355, name: 'Desk' },
+            bookshelf: { w: 4, h: 6, d: 1.5, color: 0x654321, name: 'Bookshelf' },
+            lamp: { w: 1.5, h: 5, d: 1.5, color: 0xf5deb3, name: 'Lamp' },
+            plant: { w: 1.5, h: 4, d: 1.5, color: 0x228b22, name: 'Plant' },
+            rug: { w: 8, h: 0.1, d: 6, color: 0xb22222, name: 'Rug' },
+            tv: { w: 5, h: 2, d: 1.5, color: 0x2f2f2f, name: 'TV Stand' }
+        };
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(25, 20, 25);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -25;
+            directionalLight.shadow.camera.right = 25;
+            directionalLight.shadow.camera.top = 25;
+            directionalLight.shadow.camera.bottom = -25;
+            scene.add(directionalLight);
+
+            // Create room
+            createRoom();
+
+            // Grid helper (subtle)
+            const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x333333);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+
+            // Event listeners
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onMouseWheel);
+            renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+            window.addEventListener('resize', onWindowResize);
+
+            // Start animation
+            animate();
+        }
+
+        function createRoom() {
+            // Clear existing room
+            walls.forEach(w => scene.remove(w));
+            walls = [];
+            if (floor) scene.remove(floor);
+
+            roomWidth = parseFloat(document.getElementById('roomWidth').value) || 20;
+            roomDepth = parseFloat(document.getElementById('roomDepth').value) || 15;
+            roomHeight = parseFloat(document.getElementById('roomHeight').value) || 10;
+
+            const wallColor = document.getElementById('wallColor').value;
+            const floorColor = document.getElementById('floorColor').value;
+
+            // Floor
+            const floorGeom = new THREE.PlaneGeometry(roomWidth, roomDepth);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: floorColor,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            floor = new THREE.Mesh(floorGeom, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Wall material
+            const wallMat = new THREE.MeshStandardMaterial({
+                color: wallColor,
+                roughness: 0.9,
+                metalness: 0,
+                side: THREE.DoubleSide
+            });
+
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(roomWidth, roomHeight),
+                wallMat
+            );
+            backWall.position.set(0, roomHeight / 2, -roomDepth / 2);
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+            walls.push(backWall);
+
+            // Left wall
+            const leftWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(roomDepth, roomHeight),
+                wallMat.clone()
+            );
+            leftWall.position.set(-roomWidth / 2, roomHeight / 2, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            leftWall.receiveShadow = true;
+            scene.add(leftWall);
+            walls.push(leftWall);
+
+            // Right wall (partially transparent for viewing)
+            const rightWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(roomDepth, roomHeight),
+                new THREE.MeshStandardMaterial({
+                    color: wallColor,
+                    roughness: 0.9,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide
+                })
+            );
+            rightWall.position.set(roomWidth / 2, roomHeight / 2, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+            walls.push(rightWall);
+        }
+
+        function createFurniture(type) {
+            const def = furnitureDefs[type];
+            if (!def) return;
+
+            // Create furniture geometry
+            let geometry, mesh;
+
+            if (type === 'lamp') {
+                // Lamp: base + pole + shade
+                const group = new THREE.Group();
+
+                const base = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.5, 0.6, 0.3, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x2f2f2f })
+                );
+                base.position.y = 0.15;
+                group.add(base);
+
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 4, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x444444 })
+                );
+                pole.position.y = 2.3;
+                group.add(pole);
+
+                const shade = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.8, 1.2, 16, 1, true),
+                    new THREE.MeshStandardMaterial({
+                        color: 0xf5deb3,
+                        side: THREE.DoubleSide,
+                        emissive: 0xf5deb3,
+                        emissiveIntensity: 0.2
+                    })
+                );
+                shade.position.y = 4.5;
+                shade.rotation.x = Math.PI;
+                group.add(shade);
+
+                mesh = group;
+            } else if (type === 'plant') {
+                const group = new THREE.Group();
+
+                const pot = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.5, 0.4, 0.8, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+                );
+                pot.position.y = 0.4;
+                group.add(pot);
+
+                const plant = new THREE.Mesh(
+                    new THREE.SphereGeometry(1, 16, 12),
+                    new THREE.MeshStandardMaterial({ color: 0x228b22 })
+                );
+                plant.position.y = 2;
+                plant.scale.set(1, 1.5, 1);
+                group.add(plant);
+
+                mesh = group;
+            } else if (type === 'sofa') {
+                const group = new THREE.Group();
+
+                // Base
+                const base = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w, 1.5, def.d),
+                    new THREE.MeshStandardMaterial({ color: def.color })
+                );
+                base.position.y = 0.75;
+                group.add(base);
+
+                // Back
+                const back = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w, 1.5, 0.5),
+                    new THREE.MeshStandardMaterial({ color: def.color })
+                );
+                back.position.set(0, 2.25, -def.d / 2 + 0.25);
+                group.add(back);
+
+                // Arms
+                const armGeom = new THREE.BoxGeometry(0.5, 1, def.d);
+                const leftArm = new THREE.Mesh(armGeom, new THREE.MeshStandardMaterial({ color: def.color }));
+                leftArm.position.set(-def.w / 2 + 0.25, 1.5, 0);
+                group.add(leftArm);
+
+                const rightArm = new THREE.Mesh(armGeom, new THREE.MeshStandardMaterial({ color: def.color }));
+                rightArm.position.set(def.w / 2 - 0.25, 1.5, 0);
+                group.add(rightArm);
+
+                mesh = group;
+            } else if (type === 'bed') {
+                const group = new THREE.Group();
+
+                // Base/mattress
+                const mattress = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w, 1, def.d),
+                    new THREE.MeshStandardMaterial({ color: def.color })
+                );
+                mattress.position.y = 1;
+                group.add(mattress);
+
+                // Frame
+                const frame = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w + 0.3, 0.5, def.d + 0.3),
+                    new THREE.MeshStandardMaterial({ color: 0x5c4033 })
+                );
+                frame.position.y = 0.25;
+                group.add(frame);
+
+                // Headboard
+                const headboard = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w + 0.3, 2, 0.3),
+                    new THREE.MeshStandardMaterial({ color: 0x5c4033 })
+                );
+                headboard.position.set(0, 2, -def.d / 2 - 0.15);
+                group.add(headboard);
+
+                // Pillows
+                const pillow = new THREE.Mesh(
+                    new THREE.BoxGeometry(2, 0.4, 1.2),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff })
+                );
+                pillow.position.set(-1.5, 1.7, -def.d / 2 + 1);
+                group.add(pillow);
+
+                const pillow2 = pillow.clone();
+                pillow2.position.x = 1.5;
+                group.add(pillow2);
+
+                mesh = group;
+            } else if (type === 'tv') {
+                const group = new THREE.Group();
+
+                // Stand
+                const stand = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w, 1.5, def.d),
+                    new THREE.MeshStandardMaterial({ color: def.color })
+                );
+                stand.position.y = 0.75;
+                group.add(stand);
+
+                // TV Screen
+                const tv = new THREE.Mesh(
+                    new THREE.BoxGeometry(def.w - 0.5, 2.5, 0.2),
+                    new THREE.MeshStandardMaterial({ color: 0x111111 })
+                );
+                tv.position.set(0, 2.75, 0);
+                group.add(tv);
+
+                // Screen
+                const screen = new THREE.Mesh(
+                    new THREE.PlaneGeometry(def.w - 0.8, 2.2),
+                    new THREE.MeshStandardMaterial({
+                        color: 0x1a1a2e,
+                        emissive: 0x1a1a2e,
+                        emissiveIntensity: 0.3
+                    })
+                );
+                screen.position.set(0, 2.75, 0.11);
+                group.add(screen);
+
+                mesh = group;
+            } else {
+                // Default box furniture
+                geometry = new THREE.BoxGeometry(def.w, def.h, def.d);
+                const material = new THREE.MeshStandardMaterial({
+                    color: def.color,
+                    roughness: 0.7,
+                    metalness: 0.1
+                });
+                mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = def.h / 2;
+            }
+
+            // Position in center of room
+            if (mesh.isGroup) {
+                mesh.position.set(0, 0, 0);
+            }
+
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { type, name: def.name, def };
+
+            // Enable shadow for all children
+            mesh.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            scene.add(mesh);
+            furniture.push(mesh);
+
+            selectObject(mesh);
+        }
+
+        function selectObject(obj) {
+            // Deselect previous
+            if (selectedObject) {
+                selectedObject.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                    }
+                });
+            }
+
+            selectedObject = obj;
+
+            if (obj) {
+                obj.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        child.material.emissive = new THREE.Color(0x4ecdc4);
+                        child.material.emissiveIntensity = 0.2;
+                    }
+                });
+
+                document.getElementById('selectedInfo').classList.add('visible');
+                document.getElementById('selectedName').textContent = 'Selected: ' + obj.userData.name;
+            } else {
+                document.getElementById('selectedInfo').classList.remove('visible');
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedObject) {
+                scene.remove(selectedObject);
+                furniture = furniture.filter(f => f !== selectedObject);
+                selectObject(null);
+            }
+        }
+
+        function onMouseDown(event) {
+            if (event.button === 2) {
+                isRotating = true;
+                return;
+            }
+
+            mouse.x = (event.offsetX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(furniture, true);
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj.parent && !furniture.includes(obj)) {
+                    obj = obj.parent;
+                }
+
+                if (furniture.includes(obj)) {
+                    selectObject(obj);
+                    isDragging = true;
+
+                    raycaster.ray.intersectPlane(plane, planeIntersect);
+                    offset.copy(planeIntersect).sub(obj.position);
+                }
+            } else {
+                selectObject(null);
+            }
+        }
+
+        function onMouseMove(event) {
+            if (isRotating) {
+                const deltaX = event.movementX * 0.01;
+                const deltaY = event.movementY * 0.01;
+
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, spherical.phi + deltaY));
+
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                return;
+            }
+
+            if (isDragging && selectedObject) {
+                mouse.x = (event.offsetX / renderer.domElement.clientWidth) * 2 - 1;
+                mouse.y = -(event.offsetY / renderer.domElement.clientHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                raycaster.ray.intersectPlane(plane, planeIntersect);
+
+                const def = selectedObject.userData.def;
+                const halfW = def.w / 2;
+                const halfD = def.d / 2;
+
+                let newX = planeIntersect.x - offset.x;
+                let newZ = planeIntersect.z - offset.z;
+
+                // Constrain to room bounds
+                newX = Math.max(-roomWidth / 2 + halfW, Math.min(roomWidth / 2 - halfW, newX));
+                newZ = Math.max(-roomDepth / 2 + halfD, Math.min(roomDepth / 2 - halfD, newZ));
+
+                selectedObject.position.x = newX;
+                selectedObject.position.z = newZ;
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            isRotating = false;
+        }
+
+        function onMouseWheel(event) {
+            const zoomSpeed = 0.1;
+            const direction = event.deltaY > 0 ? 1 : -1;
+
+            const spherical = new THREE.Spherical();
+            spherical.setFromVector3(camera.position);
+            spherical.radius = Math.max(10, Math.min(60, spherical.radius + direction * zoomSpeed * spherical.radius));
+
+            camera.position.setFromSpherical(spherical);
+            camera.lookAt(0, 0, 0);
+
+            event.preventDefault();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function setView(view) {
+            const distance = 30;
+
+            switch (view) {
+                case 'top':
+                    camera.position.set(0, distance, 0.01);
+                    break;
+                case 'front':
+                    camera.position.set(0, roomHeight / 2, distance);
+                    break;
+                case 'perspective':
+                default:
+                    camera.position.set(25, 20, 25);
+            }
+
+            camera.lookAt(0, 0, 0);
+
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Initialize
+        init();
+
+        // Event listeners for UI
+        document.querySelectorAll('.furniture-item').forEach(item => {
+            item.addEventListener('click', () => {
+                createFurniture(item.dataset.type);
+            });
+        });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => setView(btn.dataset.view));
+        });
+
+        document.getElementById('rotateLeft').addEventListener('click', () => {
+            if (selectedObject) selectedObject.rotation.y += Math.PI / 4;
+        });
+
+        document.getElementById('rotateRight').addEventListener('click', () => {
+            if (selectedObject) selectedObject.rotation.y -= Math.PI / 4;
+        });
+
+        document.getElementById('deleteSelected').addEventListener('click', deleteSelected);
+
+        document.getElementById('clearAll').addEventListener('click', () => {
+            furniture.forEach(f => scene.remove(f));
+            furniture = [];
+            selectObject(null);
+        });
+
+        document.getElementById('resetCamera').addEventListener('click', () => setView('perspective'));
+
+        // Room settings
+        ['roomWidth', 'roomDepth', 'roomHeight', 'wallColor', 'floorColor'].forEach(id => {
+            document.getElementById(id).addEventListener('change', createRoom);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Time-Lapse Creator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .drop-zone-text { color: #888; font-size: 1.1rem; }
+        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        input[type="file"] { display: none; }
+
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sidebar-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .sidebar-title {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .setting-row:last-child { margin-bottom: 0; }
+        .setting-row label {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        .setting-row input[type="range"] {
+            width: 120px;
+            accent-color: #4ecdc4;
+        }
+        .setting-row select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .setting-row .value {
+            font-size: 0.8rem;
+            color: #4ecdc4;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        button {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover:not(:disabled) { background: rgba(78, 205, 196, 0.3); }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+            color: #888;
+        }
+        button.secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
+        button.danger {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: rgba(255, 107, 107, 0.4);
+            color: #ff6b6b;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview-container {
+            background: #1a1a1f;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #previewCanvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .preview-placeholder {
+            color: #444;
+            font-size: 1.1rem;
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+        .play-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .timeline {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+        .timeline-progress {
+            height: 100%;
+            background: #4ecdc4;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        .timeline-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            cursor: grab;
+        }
+        .frame-counter {
+            font-size: 0.85rem;
+            color: #888;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .thumbnail-strip {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            overflow-x: auto;
+            min-height: 100px;
+        }
+        .thumbnail {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+            cursor: grab;
+            position: relative;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .thumbnail:hover { border-color: rgba(255,255,255,0.3); }
+        .thumbnail.active { border-color: #4ecdc4; }
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .thumbnail-index {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .thumbnail-delete {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255, 107, 107, 0.9);
+            color: #fff;
+            border: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .thumbnail:hover .thumbnail-delete { opacity: 1; }
+
+        .thumbnail-placeholder {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            border: 2px dashed rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 1.5rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .thumbnail-placeholder:hover {
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #4ecdc4;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .hidden { display: none !important; }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: #888;
+            text-align: center;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="container">
+        <h1>Photo Time-Lapse Creator</h1>
+        <p class="subtitle">Upload photos and create smooth time-lapse videos with crossfade transitions</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop photos here or click to browse</div>
+            <div class="drop-zone-hint">Upload multiple images in sequence. Supports PNG, JPEG, WebP</div>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+        </div>
+
+        <div class="editor-layout hidden" id="editorPanel">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Timing</div>
+                    <div class="setting-row">
+                        <label>Frame Duration</label>
+                        <input type="range" id="frameDuration" min="0.2" max="3" step="0.1" value="1">
+                        <span class="value" id="frameDurationVal">1.0s</span>
+                    </div>
+                    <div class="setting-row">
+                        <label>Transition</label>
+                        <input type="range" id="transitionDuration" min="0" max="1" step="0.1" value="0.3">
+                        <span class="value" id="transitionDurationVal">0.3s</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Transition Effect</div>
+                    <div class="setting-row">
+                        <label>Type</label>
+                        <select id="transitionType">
+                            <option value="crossfade">Crossfade</option>
+                            <option value="slide">Slide</option>
+                            <option value="zoom">Zoom</option>
+                            <option value="none">None (Cut)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Output</div>
+                    <div class="setting-row">
+                        <label>Resolution</label>
+                        <select id="resolution">
+                            <option value="1920x1080">1080p (1920×1080)</option>
+                            <option value="1280x720">720p (1280×720)</option>
+                            <option value="854x480">480p (854×480)</option>
+                            <option value="original">Original Size</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>FPS</label>
+                        <select id="fps">
+                            <option value="24">24 fps</option>
+                            <option value="30" selected>30 fps</option>
+                            <option value="60">60 fps</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Actions</div>
+                    <button id="addMoreBtn" class="secondary" style="margin-bottom: 8px;">+ Add More Photos</button>
+                    <button id="exportBtn">Export Video (WebM)</button>
+                    <div class="progress-bar hidden" id="progressBar">
+                        <div class="progress-bar-fill" id="progressFill"></div>
+                    </div>
+                    <div class="status-text hidden" id="statusText">Processing...</div>
+                    <button id="clearBtn" class="secondary danger" style="margin-top: 8px;">Clear All</button>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="preview-container">
+                    <canvas id="previewCanvas"></canvas>
+                    <div class="preview-placeholder" id="previewPlaceholder">Preview will appear here</div>
+                </div>
+
+                <div class="playback-controls">
+                    <button class="play-btn" id="playBtn">▶</button>
+                    <div class="timeline" id="timeline">
+                        <div class="timeline-progress" id="timelineProgress"></div>
+                        <div class="timeline-handle" id="timelineHandle" style="left: 0%"></div>
+                    </div>
+                    <span class="frame-counter" id="frameCounter">0 / 0</span>
+                </div>
+
+                <div class="thumbnail-strip" id="thumbnailStrip">
+                    <div class="thumbnail-placeholder" id="addThumbnail">+</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let photos = [];
+        let isPlaying = false;
+        let currentFrame = 0;
+        let animationId = null;
+        let lastFrameTime = 0;
+
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const editorPanel = document.getElementById('editorPanel');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+        const thumbnailStrip = document.getElementById('thumbnailStrip');
+        const addThumbnail = document.getElementById('addThumbnail');
+
+        // Settings
+        const frameDuration = document.getElementById('frameDuration');
+        const transitionDuration = document.getElementById('transitionDuration');
+        const transitionType = document.getElementById('transitionType');
+        const resolution = document.getElementById('resolution');
+        const fps = document.getElementById('fps');
+
+        // Update value displays
+        frameDuration.addEventListener('input', () => {
+            document.getElementById('frameDurationVal').textContent = frameDuration.value + 's';
+        });
+        transitionDuration.addEventListener('input', () => {
+            document.getElementById('transitionDurationVal').textContent = transitionDuration.value + 's';
+        });
+
+        // File handling
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+        addThumbnail.addEventListener('click', () => fileInput.click());
+        document.getElementById('addMoreBtn').addEventListener('click', () => fileInput.click());
+
+        function handleFiles(files) {
+            const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (imageFiles.length === 0) return;
+
+            let loaded = 0;
+            imageFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        photos.push({
+                            img,
+                            dataUrl: e.target.result,
+                            name: file.name
+                        });
+                        loaded++;
+                        if (loaded === imageFiles.length) {
+                            initEditor();
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function initEditor() {
+            dropZone.classList.add('hidden');
+            editorPanel.classList.remove('hidden');
+            previewPlaceholder.classList.add('hidden');
+
+            // Set canvas size based on first image or resolution setting
+            updateCanvasSize();
+            renderThumbnails();
+            renderFrame(0);
+            updateFrameCounter();
+        }
+
+        function updateCanvasSize() {
+            const res = resolution.value;
+            if (res === 'original' && photos.length > 0) {
+                previewCanvas.width = photos[0].img.width;
+                previewCanvas.height = photos[0].img.height;
+            } else {
+                const [w, h] = res.split('x').map(Number);
+                previewCanvas.width = w;
+                previewCanvas.height = h;
+            }
+        }
+
+        resolution.addEventListener('change', () => {
+            updateCanvasSize();
+            renderFrame(currentFrame);
+        });
+
+        function renderThumbnails() {
+            // Clear existing (except the add button)
+            thumbnailStrip.innerHTML = '';
+
+            photos.forEach((photo, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'thumbnail' + (idx === Math.floor(currentFrame) ? ' active' : '');
+                thumb.innerHTML = `
+                    <img src="${photo.dataUrl}" alt="Frame ${idx + 1}">
+                    <span class="thumbnail-index">${idx + 1}</span>
+                    <button class="thumbnail-delete">×</button>
+                `;
+                thumb.draggable = true;
+
+                thumb.addEventListener('click', e => {
+                    if (!e.target.classList.contains('thumbnail-delete')) {
+                        currentFrame = idx;
+                        renderFrame(currentFrame);
+                        updateFrameCounter();
+                        renderThumbnails();
+                    }
+                });
+
+                thumb.querySelector('.thumbnail-delete').addEventListener('click', () => {
+                    photos.splice(idx, 1);
+                    if (photos.length === 0) {
+                        editorPanel.classList.add('hidden');
+                        dropZone.classList.remove('hidden');
+                        previewPlaceholder.classList.remove('hidden');
+                    } else {
+                        currentFrame = Math.min(currentFrame, photos.length - 1);
+                        renderThumbnails();
+                        renderFrame(currentFrame);
+                        updateFrameCounter();
+                    }
+                });
+
+                // Drag and drop reordering
+                thumb.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', idx);
+                    thumb.style.opacity = '0.5';
+                });
+                thumb.addEventListener('dragend', () => {
+                    thumb.style.opacity = '1';
+                });
+                thumb.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    thumb.style.borderColor = '#4ecdc4';
+                });
+                thumb.addEventListener('dragleave', () => {
+                    thumb.style.borderColor = 'transparent';
+                });
+                thumb.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                    const toIdx = idx;
+                    if (fromIdx !== toIdx) {
+                        const [moved] = photos.splice(fromIdx, 1);
+                        photos.splice(toIdx, 0, moved);
+                        renderThumbnails();
+                        renderFrame(currentFrame);
+                    }
+                    thumb.style.borderColor = 'transparent';
+                });
+
+                thumbnailStrip.appendChild(thumb);
+            });
+
+            // Add the "+" button at the end
+            const addBtn = document.createElement('div');
+            addBtn.className = 'thumbnail-placeholder';
+            addBtn.textContent = '+';
+            addBtn.addEventListener('click', () => fileInput.click());
+            thumbnailStrip.appendChild(addBtn);
+        }
+
+        function renderFrame(frameIndex) {
+            if (photos.length === 0) return;
+
+            const transTime = parseFloat(transitionDuration.value);
+            const frameTime = parseFloat(frameDuration.value);
+            const transition = transitionType.value;
+
+            const totalFrameTime = frameTime + transTime;
+            const normalizedFrame = frameIndex % photos.length;
+            const currentPhotoIdx = Math.floor(normalizedFrame);
+            const nextPhotoIdx = (currentPhotoIdx + 1) % photos.length;
+
+            // Calculate position within current frame
+            const frameProgress = normalizedFrame - currentPhotoIdx;
+
+            // Are we in transition zone?
+            const transitionStart = frameTime / totalFrameTime;
+            const inTransition = frameProgress >= transitionStart && transTime > 0;
+
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+            if (!inTransition || transition === 'none') {
+                // Draw current photo only
+                drawImageCover(photos[currentPhotoIdx].img);
+            } else {
+                // Calculate transition progress (0 to 1)
+                const transProgress = (frameProgress - transitionStart) / (1 - transitionStart);
+
+                switch (transition) {
+                    case 'crossfade':
+                        drawImageCover(photos[currentPhotoIdx].img);
+                        ctx.globalAlpha = transProgress;
+                        drawImageCover(photos[nextPhotoIdx].img);
+                        ctx.globalAlpha = 1;
+                        break;
+
+                    case 'slide':
+                        const offset = previewCanvas.width * transProgress;
+                        ctx.save();
+                        ctx.translate(-offset, 0);
+                        drawImageCover(photos[currentPhotoIdx].img);
+                        ctx.translate(previewCanvas.width, 0);
+                        drawImageCover(photos[nextPhotoIdx].img);
+                        ctx.restore();
+                        break;
+
+                    case 'zoom':
+                        const scale = 1 + transProgress * 0.3;
+                        ctx.save();
+                        ctx.globalAlpha = 1 - transProgress;
+                        ctx.translate(previewCanvas.width/2, previewCanvas.height/2);
+                        ctx.scale(scale, scale);
+                        ctx.translate(-previewCanvas.width/2, -previewCanvas.height/2);
+                        drawImageCover(photos[currentPhotoIdx].img);
+                        ctx.restore();
+
+                        ctx.globalAlpha = transProgress;
+                        drawImageCover(photos[nextPhotoIdx].img);
+                        ctx.globalAlpha = 1;
+                        break;
+                }
+            }
+
+            // Update timeline
+            const totalDuration = photos.length;
+            const progress = (frameIndex % totalDuration) / totalDuration * 100;
+            document.getElementById('timelineProgress').style.width = progress + '%';
+            document.getElementById('timelineHandle').style.left = progress + '%';
+        }
+
+        function drawImageCover(img) {
+            const canvasRatio = previewCanvas.width / previewCanvas.height;
+            const imgRatio = img.width / img.height;
+
+            let drawWidth, drawHeight, drawX, drawY;
+
+            if (imgRatio > canvasRatio) {
+                drawHeight = previewCanvas.height;
+                drawWidth = img.width * (previewCanvas.height / img.height);
+                drawX = (previewCanvas.width - drawWidth) / 2;
+                drawY = 0;
+            } else {
+                drawWidth = previewCanvas.width;
+                drawHeight = img.height * (previewCanvas.width / img.width);
+                drawX = 0;
+                drawY = (previewCanvas.height - drawHeight) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+        }
+
+        function updateFrameCounter() {
+            const current = Math.floor(currentFrame) + 1;
+            document.getElementById('frameCounter').textContent = `${current} / ${photos.length}`;
+        }
+
+        // Playback
+        document.getElementById('playBtn').addEventListener('click', togglePlayback);
+
+        function togglePlayback() {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
+
+            if (isPlaying) {
+                lastFrameTime = performance.now();
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+
+            const now = performance.now();
+            const elapsed = (now - lastFrameTime) / 1000;
+            lastFrameTime = now;
+
+            const frameTime = parseFloat(frameDuration.value);
+            const transTime = parseFloat(transitionDuration.value);
+            const totalFrameTime = frameTime + transTime;
+
+            // Advance frame
+            currentFrame += elapsed / totalFrameTime;
+
+            // Loop
+            if (currentFrame >= photos.length) {
+                currentFrame = 0;
+            }
+
+            renderFrame(currentFrame);
+            updateFrameCounter();
+            renderThumbnails();
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Timeline scrubbing
+        const timeline = document.getElementById('timeline');
+        let isScrubbing = false;
+
+        timeline.addEventListener('mousedown', e => {
+            isScrubbing = true;
+            scrubTo(e);
+        });
+        document.addEventListener('mousemove', e => {
+            if (isScrubbing) scrubTo(e);
+        });
+        document.addEventListener('mouseup', () => {
+            isScrubbing = false;
+        });
+
+        function scrubTo(e) {
+            const rect = timeline.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            currentFrame = x * photos.length;
+            renderFrame(currentFrame);
+            updateFrameCounter();
+            renderThumbnails();
+        }
+
+        // Export
+        document.getElementById('exportBtn').addEventListener('click', exportVideo);
+
+        async function exportVideo() {
+            if (photos.length < 2) {
+                alert('Add at least 2 photos to create a time-lapse');
+                return;
+            }
+
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('statusText');
+            const exportBtn = document.getElementById('exportBtn');
+
+            progressBar.classList.remove('hidden');
+            statusText.classList.remove('hidden');
+            exportBtn.disabled = true;
+
+            // Stop playback if running
+            if (isPlaying) togglePlayback();
+
+            const outputFps = parseInt(fps.value);
+            const frameTime = parseFloat(frameDuration.value);
+            const transTime = parseFloat(transitionDuration.value);
+            const totalFrameTime = frameTime + transTime;
+            const totalDuration = photos.length * totalFrameTime;
+            const totalFrames = Math.ceil(totalDuration * outputFps);
+
+            // Create video using MediaRecorder
+            const stream = previewCanvas.captureStream(outputFps);
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
+            });
+
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'timelapse.webm';
+                a.click();
+
+                URL.revokeObjectURL(url);
+
+                progressBar.classList.add('hidden');
+                statusText.classList.add('hidden');
+                exportBtn.disabled = false;
+                statusText.textContent = 'Processing...';
+            };
+
+            mediaRecorder.start();
+
+            // Render frames
+            let frameIdx = 0;
+            const frameInterval = 1000 / outputFps;
+
+            function renderNextFrame() {
+                if (frameIdx >= totalFrames) {
+                    mediaRecorder.stop();
+                    return;
+                }
+
+                const time = frameIdx / outputFps;
+                currentFrame = time / totalFrameTime;
+
+                renderFrame(currentFrame);
+
+                const progress = (frameIdx / totalFrames) * 100;
+                progressFill.style.width = progress + '%';
+                statusText.textContent = `Rendering frame ${frameIdx + 1} / ${totalFrames}`;
+
+                frameIdx++;
+
+                // Use setTimeout to allow MediaRecorder to capture frames
+                setTimeout(renderNextFrame, frameInterval);
+            }
+
+            renderNextFrame();
+        }
+
+        // Clear all
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (photos.length === 0 || confirm('Clear all photos?')) {
+                photos = [];
+                currentFrame = 0;
+                if (isPlaying) togglePlayback();
+                editorPanel.classList.add('hidden');
+                dropZone.classList.remove('hidden');
+                previewPlaceholder.classList.remove('hidden');
+                fileInput.value = '';
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (e.target.matches('input, select')) return;
+
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (photos.length > 0) togglePlayback();
+            }
+            if (e.key === 'ArrowLeft' && photos.length > 0) {
+                currentFrame = Math.max(0, Math.floor(currentFrame) - 1);
+                renderFrame(currentFrame);
+                updateFrameCounter();
+                renderThumbnails();
+            }
+            if (e.key === 'ArrowRight' && photos.length > 0) {
+                currentFrame = Math.min(photos.length - 1, Math.floor(currentFrame) + 1);
+                renderFrame(currentFrame);
+                updateFrameCounter();
+                renderThumbnails();
+            }
+        });
+    </script>
+</body>
+</html>

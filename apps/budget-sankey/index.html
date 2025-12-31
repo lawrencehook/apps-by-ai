@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Sankey Diagram - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.5rem; font-weight: 600; }
+        .subtitle { color: #888; font-size: 0.9rem; margin-top: 4px; }
+        .back-link {
+            color: #888; text-decoration: none; font-size: 14px;
+            padding: 8px 14px; background: rgba(255,255,255,0.05);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+        .back-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .add-btn:hover { background: rgba(78, 205, 196, 0.3); }
+
+        .section { margin-bottom: 24px; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .section-total {
+            font-size: 14px;
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 30px;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .item-row input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 13px;
+        }
+        .item-row input:focus {
+            outline: none;
+            border-color: rgba(78, 205, 196, 0.5);
+        }
+        .item-row input::placeholder { color: #666; }
+        .item-row input[type="number"] { text-align: right; }
+
+        .delete-btn {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            width: 30px;
+            height: 38px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .delete-btn:hover { background: rgba(255, 107, 107, 0.2); }
+
+        .color-indicator {
+            width: 4px;
+            height: 100%;
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        .summary {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .summary-row:last-child { margin-bottom: 0; }
+        .summary-label { color: #888; }
+        .summary-value { font-weight: 600; }
+        .summary-value.positive { color: #4ade80; }
+        .summary-value.negative { color: #ff6b6b; }
+
+        /* Sankey Diagram */
+        .sankey-container {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+        }
+        #sankeyCanvas {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+        .tooltip.visible { opacity: 1; }
+        .tooltip-title { font-weight: 600; margin-bottom: 4px; }
+        .tooltip-value { color: #4ecdc4; }
+
+        /* Preset buttons */
+        .presets {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        @media (max-width: 1000px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .panel { max-height: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Budget Sankey Diagram</h1>
+                <div class="subtitle">Visualize money flow from income to expenses</div>
+            </div>
+            <a href="../../index.html" class="back-link">Back</a>
+        </header>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="presets">
+                    <button class="preset-btn" onclick="loadPreset('personal')">Personal Budget</button>
+                    <button class="preset-btn" onclick="loadPreset('business')">Small Business</button>
+                    <button class="preset-btn" onclick="loadPreset('minimal')">Minimal</button>
+                </div>
+
+                <div class="section" id="incomeSection">
+                    <div class="section-header">
+                        <span class="section-title">Income Sources</span>
+                        <span class="section-total" id="incomeTotal">$0</span>
+                    </div>
+                    <div id="incomeItems"></div>
+                    <button class="add-btn" onclick="addItem('income')">+ Add Income</button>
+                </div>
+
+                <div class="section" id="expenseSection">
+                    <div class="section-header">
+                        <span class="section-title">Expense Categories</span>
+                        <span class="section-total" id="expenseTotal">$0</span>
+                    </div>
+                    <div id="expenseItems"></div>
+                    <button class="add-btn" onclick="addItem('expense')">+ Add Expense</button>
+                </div>
+
+                <div class="summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Total Income</span>
+                        <span class="summary-value positive" id="summaryIncome">$0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Total Expenses</span>
+                        <span class="summary-value negative" id="summaryExpenses">$0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Net Balance</span>
+                        <span class="summary-value" id="summaryBalance">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sankey-container">
+                <canvas id="sankeyCanvas"></canvas>
+                <div class="tooltip" id="tooltip">
+                    <div class="tooltip-title"></div>
+                    <div class="tooltip-value"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color palettes
+        const INCOME_COLORS = ['#4ade80', '#22d3ee', '#a78bfa', '#fb923c', '#f472b6'];
+        const EXPENSE_COLORS = ['#ff6b6b', '#fbbf24', '#38bdf8', '#a3e635', '#e879f9', '#f97316', '#6366f1', '#14b8a6'];
+
+        // Data
+        let incomeData = [
+            { name: 'Salary', amount: 5000 },
+            { name: 'Freelance', amount: 1500 },
+            { name: 'Investments', amount: 500 }
+        ];
+
+        let expenseData = [
+            { name: 'Housing', amount: 1800 },
+            { name: 'Food', amount: 600 },
+            { name: 'Transportation', amount: 400 },
+            { name: 'Utilities', amount: 200 },
+            { name: 'Entertainment', amount: 300 },
+            { name: 'Savings', amount: 1000 },
+            { name: 'Healthcare', amount: 250 },
+            { name: 'Other', amount: 450 }
+        ];
+
+        const canvas = document.getElementById('sankeyCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        let hoveredFlow = null;
+        let animationProgress = 0;
+        let animationId = null;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.offsetWidth * 2;
+            canvas.height = Math.max(container.offsetHeight, 500) * 2;
+            ctx.scale(2, 2);
+        }
+
+        function formatCurrency(value) {
+            return '$' + value.toLocaleString();
+        }
+
+        function renderItems() {
+            const incomeContainer = document.getElementById('incomeItems');
+            const expenseContainer = document.getElementById('expenseItems');
+
+            incomeContainer.innerHTML = incomeData.map((item, i) => `
+                <div class="item-row">
+                    <input type="text" value="${item.name}" onchange="updateItem('income', ${i}, 'name', this.value)" placeholder="Income source">
+                    <input type="number" value="${item.amount}" onchange="updateItem('income', ${i}, 'amount', this.value)" placeholder="0">
+                    <button class="delete-btn" onclick="deleteItem('income', ${i})">×</button>
+                </div>
+            `).join('');
+
+            expenseContainer.innerHTML = expenseData.map((item, i) => `
+                <div class="item-row">
+                    <input type="text" value="${item.name}" onchange="updateItem('expense', ${i}, 'name', this.value)" placeholder="Expense category">
+                    <input type="number" value="${item.amount}" onchange="updateItem('expense', ${i}, 'amount', this.value)" placeholder="0">
+                    <button class="delete-btn" onclick="deleteItem('expense', ${i})">×</button>
+                </div>
+            `).join('');
+
+            updateTotals();
+            animateSankey();
+        }
+
+        function updateTotals() {
+            const incomeTotal = incomeData.reduce((sum, i) => sum + i.amount, 0);
+            const expenseTotal = expenseData.reduce((sum, e) => sum + e.amount, 0);
+            const balance = incomeTotal - expenseTotal;
+
+            document.getElementById('incomeTotal').textContent = formatCurrency(incomeTotal);
+            document.getElementById('expenseTotal').textContent = formatCurrency(expenseTotal);
+            document.getElementById('summaryIncome').textContent = formatCurrency(incomeTotal);
+            document.getElementById('summaryExpenses').textContent = formatCurrency(expenseTotal);
+
+            const balanceEl = document.getElementById('summaryBalance');
+            balanceEl.textContent = formatCurrency(balance);
+            balanceEl.className = 'summary-value ' + (balance >= 0 ? 'positive' : 'negative');
+        }
+
+        function addItem(type) {
+            if (type === 'income') {
+                incomeData.push({ name: 'New Income', amount: 0 });
+            } else {
+                expenseData.push({ name: 'New Expense', amount: 0 });
+            }
+            renderItems();
+        }
+
+        function updateItem(type, index, field, value) {
+            const data = type === 'income' ? incomeData : expenseData;
+            data[index][field] = field === 'amount' ? parseFloat(value) || 0 : value;
+            updateTotals();
+            animateSankey();
+        }
+
+        function deleteItem(type, index) {
+            if (type === 'income') {
+                incomeData.splice(index, 1);
+            } else {
+                expenseData.splice(index, 1);
+            }
+            renderItems();
+        }
+
+        function loadPreset(preset) {
+            if (preset === 'personal') {
+                incomeData = [
+                    { name: 'Salary', amount: 5000 },
+                    { name: 'Freelance', amount: 1500 },
+                    { name: 'Investments', amount: 500 }
+                ];
+                expenseData = [
+                    { name: 'Housing', amount: 1800 },
+                    { name: 'Food', amount: 600 },
+                    { name: 'Transportation', amount: 400 },
+                    { name: 'Utilities', amount: 200 },
+                    { name: 'Entertainment', amount: 300 },
+                    { name: 'Savings', amount: 1000 },
+                    { name: 'Healthcare', amount: 250 },
+                    { name: 'Other', amount: 450 }
+                ];
+            } else if (preset === 'business') {
+                incomeData = [
+                    { name: 'Product Sales', amount: 25000 },
+                    { name: 'Services', amount: 15000 },
+                    { name: 'Consulting', amount: 8000 }
+                ];
+                expenseData = [
+                    { name: 'Payroll', amount: 18000 },
+                    { name: 'Rent', amount: 3500 },
+                    { name: 'Marketing', amount: 4000 },
+                    { name: 'Software', amount: 1500 },
+                    { name: 'Supplies', amount: 2000 },
+                    { name: 'Insurance', amount: 800 },
+                    { name: 'Taxes', amount: 5000 },
+                    { name: 'Profit', amount: 13200 }
+                ];
+            } else if (preset === 'minimal') {
+                incomeData = [
+                    { name: 'Income', amount: 4000 }
+                ];
+                expenseData = [
+                    { name: 'Needs', amount: 2000 },
+                    { name: 'Wants', amount: 1200 },
+                    { name: 'Savings', amount: 800 }
+                ];
+            }
+            renderItems();
+        }
+
+        function animateSankey() {
+            animationProgress = 0;
+            if (animationId) cancelAnimationFrame(animationId);
+
+            function animate() {
+                animationProgress = Math.min(1, animationProgress + 0.03);
+                drawSankey(animationProgress);
+
+                if (animationProgress < 1) {
+                    animationId = requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+
+        function drawSankey(progress = 1) {
+            resizeCanvas();
+            const width = canvas.width / 2;
+            const height = canvas.height / 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const incomeTotal = incomeData.reduce((sum, i) => sum + i.amount, 0);
+            const expenseTotal = expenseData.reduce((sum, e) => sum + e.amount, 0);
+
+            if (incomeTotal === 0 && expenseTotal === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '16px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText('Add income and expenses to see the flow diagram', width / 2, height / 2);
+                return;
+            }
+
+            const padding = 60;
+            const nodeWidth = 30;
+            const leftX = padding;
+            const centerX = width / 2 - nodeWidth / 2;
+            const rightX = width - padding - nodeWidth;
+
+            const usableHeight = height - padding * 2;
+
+            // Calculate node positions
+            const incomeNodes = [];
+            let yOffset = padding;
+            incomeData.forEach((item, i) => {
+                const nodeHeight = (item.amount / incomeTotal) * usableHeight * 0.9;
+                incomeNodes.push({
+                    ...item,
+                    x: leftX,
+                    y: yOffset,
+                    height: nodeHeight,
+                    color: INCOME_COLORS[i % INCOME_COLORS.length]
+                });
+                yOffset += nodeHeight + 10;
+            });
+
+            // Center "Total" node
+            const centerNode = {
+                name: 'Total Budget',
+                amount: incomeTotal,
+                x: centerX,
+                y: padding,
+                height: usableHeight * 0.9,
+                color: '#4ecdc4'
+            };
+
+            const expenseNodes = [];
+            yOffset = padding;
+            expenseData.forEach((item, i) => {
+                const nodeHeight = incomeTotal > 0 ? (item.amount / incomeTotal) * usableHeight * 0.9 : 0;
+                expenseNodes.push({
+                    ...item,
+                    x: rightX,
+                    y: yOffset,
+                    height: Math.max(nodeHeight, 5),
+                    color: EXPENSE_COLORS[i % EXPENSE_COLORS.length]
+                });
+                yOffset += nodeHeight + 10;
+            });
+
+            // Draw flows with animation
+            ctx.globalAlpha = 0.6 * progress;
+
+            // Income to center flows
+            let incomeFlowY = centerNode.y;
+            incomeNodes.forEach(node => {
+                const flowHeight = (node.amount / incomeTotal) * centerNode.height;
+                drawFlow(
+                    node.x + nodeWidth, node.y, node.height,
+                    centerNode.x, incomeFlowY, flowHeight,
+                    node.color, progress
+                );
+                incomeFlowY += flowHeight;
+            });
+
+            // Center to expense flows
+            let expenseFlowY = centerNode.y;
+            expenseNodes.forEach(node => {
+                const flowHeight = (node.amount / incomeTotal) * centerNode.height;
+                drawFlow(
+                    centerNode.x + nodeWidth, expenseFlowY, flowHeight,
+                    node.x, node.y, node.height,
+                    node.color, progress
+                );
+                expenseFlowY += flowHeight;
+            });
+
+            ctx.globalAlpha = 1;
+
+            // Draw nodes
+            incomeNodes.forEach(node => drawNode(node, progress));
+            drawNode(centerNode, progress);
+            expenseNodes.forEach(node => drawNode(node, progress));
+
+            // Draw labels
+            ctx.font = '13px system-ui';
+            ctx.textBaseline = 'middle';
+
+            incomeNodes.forEach(node => {
+                if (node.height > 20) {
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(node.name, node.x - 10, node.y + node.height / 2);
+                    ctx.fillStyle = '#888';
+                    ctx.font = '11px system-ui';
+                    ctx.fillText(formatCurrency(node.amount), node.x - 10, node.y + node.height / 2 + 14);
+                    ctx.font = '13px system-ui';
+                }
+            });
+
+            // Center label
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px system-ui';
+            ctx.fillText('Total', centerNode.x + nodeWidth / 2, centerNode.y - 20);
+            ctx.font = '13px system-ui';
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillText(formatCurrency(incomeTotal), centerNode.x + nodeWidth / 2, centerNode.y - 6);
+
+            expenseNodes.forEach(node => {
+                if (node.height > 15) {
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(node.name, node.x + nodeWidth + 10, node.y + node.height / 2);
+                    ctx.fillStyle = '#888';
+                    ctx.font = '11px system-ui';
+                    ctx.fillText(formatCurrency(node.amount), node.x + nodeWidth + 10, node.y + node.height / 2 + 14);
+                    ctx.font = '13px system-ui';
+                }
+            });
+        }
+
+        function drawNode(node, progress) {
+            ctx.fillStyle = node.color;
+            const animatedHeight = node.height * progress;
+            ctx.beginPath();
+            ctx.roundRect(node.x, node.y, nodeWidth = 30, animatedHeight, 4);
+            ctx.fill();
+        }
+
+        function drawFlow(x1, y1, h1, x2, y2, h2, color, progress) {
+            const cp1x = x1 + (x2 - x1) * 0.5;
+            const cp2x = x1 + (x2 - x1) * 0.5;
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+
+            // Animated flow
+            const animX2 = x1 + (x2 - x1) * progress;
+            const animY2Top = y1 + (y2 - y1) * progress;
+            const animY2Bottom = (y1 + h1) + ((y2 + h2) - (y1 + h1)) * progress;
+
+            ctx.moveTo(x1, y1);
+            ctx.bezierCurveTo(
+                cp1x, y1,
+                cp2x * progress + x1 * (1 - progress), animY2Top,
+                animX2, animY2Top
+            );
+            ctx.lineTo(animX2, animY2Bottom);
+            ctx.bezierCurveTo(
+                cp2x * progress + x1 * (1 - progress), animY2Bottom,
+                cp1x, y1 + h1,
+                x1, y1 + h1
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Mouse interaction
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Simple hover detection could be added here
+            // For now, tooltip is disabled for simplicity
+        });
+
+        // Initialize
+        window.addEventListener('resize', () => drawSankey(1));
+        renderItems();
+    </script>
+</body>
+</html>

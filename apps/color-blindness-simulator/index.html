@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Blindness Simulator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .upload-zone .icon { font-size: 3rem; margin-bottom: 16px; }
+        .upload-zone p { color: #888; margin-bottom: 8px; }
+        .upload-zone .hint { font-size: 0.85rem; color: #555; }
+        .upload-zone input { display: none; }
+
+        .sample-images {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .sample-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .sample-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .type-selector {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .type-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        .type-btn:hover { background: rgba(255,255,255,0.05); }
+        .type-btn.active {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .type-btn .name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .type-btn .desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .type-btn .prevalence {
+            font-size: 0.75rem;
+            color: #4ecdc4;
+            margin-top: 6px;
+        }
+
+        .comparison-view {
+            display: none;
+        }
+        .comparison-view.active { display: block; }
+
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .view-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .view-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .view-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+        }
+
+        .image-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .image-comparison.single { grid-template-columns: 1fr; }
+        .image-comparison.grid-4 { grid-template-columns: 1fr 1fr; }
+
+        .image-panel {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+        }
+        .image-panel .label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #fff;
+            z-index: 10;
+        }
+        .image-panel canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .slider-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: ew-resize;
+        }
+        .slider-container canvas {
+            width: 100%;
+            display: block;
+        }
+        .slider-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .slider-label {
+            position: absolute;
+            top: 12px;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #fff;
+            z-index: 10;
+        }
+        .slider-label.left { left: 12px; }
+        .slider-label.right { right: 12px; }
+
+        .info-box {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        .info-box h3 {
+            color: #4ecdc4;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .info-box p {
+            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-top: 16px;
+            transition: all 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .image-comparison { grid-template-columns: 1fr; }
+            .type-selector { flex-direction: column; }
+            .type-btn { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Color Blindness Simulator</h1>
+        <p class="subtitle">See how images appear to people with different types of color vision deficiency.</p>
+
+        <div class="card" id="uploadCard">
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">🖼️</div>
+                <p>Drop an image here or click to upload</p>
+                <p class="hint">Supports JPG, PNG, GIF, WebP</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="sample-images">
+                <span style="color: #666; font-size: 0.9rem;">Or try a sample:</span>
+                <button class="sample-btn" onclick="loadSample('gradient')">Color Gradient</button>
+                <button class="sample-btn" onclick="loadSample('nature')">Nature Scene</button>
+                <button class="sample-btn" onclick="loadSample('ui')">UI Design</button>
+            </div>
+        </div>
+
+        <div class="comparison-view" id="comparisonView">
+            <div class="card">
+                <div class="type-selector" id="typeSelector">
+                    <div class="type-btn active" data-type="deuteranopia">
+                        <div class="name">Deuteranopia</div>
+                        <div class="desc">Red-green (green-blind)</div>
+                        <div class="prevalence">~6% of males</div>
+                    </div>
+                    <div class="type-btn" data-type="protanopia">
+                        <div class="name">Protanopia</div>
+                        <div class="desc">Red-green (red-blind)</div>
+                        <div class="prevalence">~2% of males</div>
+                    </div>
+                    <div class="type-btn" data-type="tritanopia">
+                        <div class="name">Tritanopia</div>
+                        <div class="desc">Blue-yellow blind</div>
+                        <div class="prevalence">~0.01% of population</div>
+                    </div>
+                    <div class="type-btn" data-type="achromatopsia">
+                        <div class="name">Achromatopsia</div>
+                        <div class="desc">Complete color blindness</div>
+                        <div class="prevalence">~0.003% of population</div>
+                    </div>
+                </div>
+
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="slider">Slider</button>
+                    <button class="view-btn" data-view="side">Side by Side</button>
+                    <button class="view-btn" data-view="all">All Types</button>
+                </div>
+
+                <div id="viewContainer"></div>
+
+                <button class="download-btn" onclick="downloadImage()">
+                    <span>📥</span> Download Simulated Image
+                </button>
+
+                <div class="info-box" id="infoBox">
+                    <h3>About Deuteranopia</h3>
+                    <p>Deuteranopia is a type of red-green color blindness where the green-sensitive cone cells don't function properly. People with this condition have difficulty distinguishing between red and green colors. It's the most common form of color blindness, affecting approximately 6% of males and 0.4% of females.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color blindness simulation matrices
+        // Based on research by Brettel, Viénot, and Mollon (1997)
+        const matrices = {
+            deuteranopia: [
+                0.625, 0.375, 0,
+                0.7, 0.3, 0,
+                0, 0.3, 0.7
+            ],
+            protanopia: [
+                0.567, 0.433, 0,
+                0.558, 0.442, 0,
+                0, 0.242, 0.758
+            ],
+            tritanopia: [
+                0.95, 0.05, 0,
+                0, 0.433, 0.567,
+                0, 0.475, 0.525
+            ],
+            achromatopsia: [
+                0.299, 0.587, 0.114,
+                0.299, 0.587, 0.114,
+                0.299, 0.587, 0.114
+            ]
+        };
+
+        const descriptions = {
+            deuteranopia: {
+                title: 'About Deuteranopia',
+                text: 'Deuteranopia is a type of red-green color blindness where the green-sensitive cone cells don\'t function properly. People with this condition have difficulty distinguishing between red and green colors. It\'s the most common form of color blindness, affecting approximately 6% of males and 0.4% of females.'
+            },
+            protanopia: {
+                title: 'About Protanopia',
+                text: 'Protanopia is a type of red-green color blindness caused by the absence of red-sensitive cone cells. Red colors appear much darker and are often confused with black, brown, or dark green. It affects about 2% of males and is much rarer in females.'
+            },
+            tritanopia: {
+                title: 'About Tritanopia',
+                text: 'Tritanopia is a rare form of color blindness affecting blue-yellow perception. People with tritanopia have difficulty distinguishing between blue and green, and between yellow and violet. Unlike red-green colorblindness, it affects males and females equally.'
+            },
+            achromatopsia: {
+                title: 'About Achromatopsia',
+                text: 'Achromatopsia, also known as total color blindness, is a rare condition where a person cannot perceive any colors at all. The world appears in shades of gray. People with this condition often have increased light sensitivity and reduced visual acuity.'
+            }
+        };
+
+        let currentImage = null;
+        let currentType = 'deuteranopia';
+        let currentView = 'slider';
+        let sliderPosition = 0.5;
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const comparisonView = document.getElementById('comparisonView');
+        const uploadCard = document.getElementById('uploadCard');
+
+        // File upload handling
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+        uploadZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage = img;
+                    showComparison();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Sample images (generated via canvas)
+        function loadSample(type) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 800;
+            canvas.height = 500;
+
+            if (type === 'gradient') {
+                // Rainbow gradient
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, '#ff0000');
+                gradient.addColorStop(0.17, '#ff8800');
+                gradient.addColorStop(0.33, '#ffff00');
+                gradient.addColorStop(0.5, '#00ff00');
+                gradient.addColorStop(0.67, '#00ffff');
+                gradient.addColorStop(0.83, '#0000ff');
+                gradient.addColorStop(1, '#ff00ff');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Add some circles
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                colors.forEach((color, i) => {
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(100 + i * 120, canvas.height / 2, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            } else if (type === 'nature') {
+                // Sky
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.6);
+                skyGrad.addColorStop(0, '#87CEEB');
+                skyGrad.addColorStop(1, '#E0F6FF');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height * 0.6);
+
+                // Sun
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(650, 100, 50, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Grass
+                const grassGrad = ctx.createLinearGradient(0, canvas.height * 0.6, 0, canvas.height);
+                grassGrad.addColorStop(0, '#228B22');
+                grassGrad.addColorStop(1, '#006400');
+                ctx.fillStyle = grassGrad;
+                ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
+
+                // Flowers
+                for (let i = 0; i < 20; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = canvas.height * 0.65 + Math.random() * canvas.height * 0.3;
+                    ctx.fillStyle = ['#FF69B4', '#FF0000', '#FFD700', '#FF6347'][Math.floor(Math.random() * 4)];
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Tree
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(150, canvas.height * 0.4, 40, canvas.height * 0.25);
+                ctx.fillStyle = '#228B22';
+                ctx.beginPath();
+                ctx.arc(170, canvas.height * 0.35, 80, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'ui') {
+                // Background
+                ctx.fillStyle = '#f5f5f5';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Header
+                ctx.fillStyle = '#2196F3';
+                ctx.fillRect(0, 0, canvas.width, 60);
+
+                // Buttons
+                ctx.fillStyle = '#4CAF50';
+                roundRect(ctx, 50, 100, 120, 45, 8);
+                ctx.fillStyle = '#f44336';
+                roundRect(ctx, 200, 100, 120, 45, 8);
+                ctx.fillStyle = '#FF9800';
+                roundRect(ctx, 350, 100, 120, 45, 8);
+                ctx.fillStyle = '#9C27B0';
+                roundRect(ctx, 500, 100, 120, 45, 8);
+
+                // Cards
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                ctx.shadowBlur = 10;
+                roundRect(ctx, 50, 180, 200, 150, 8);
+                roundRect(ctx, 280, 180, 200, 150, 8);
+                roundRect(ctx, 510, 180, 200, 150, 8);
+                ctx.shadowBlur = 0;
+
+                // Status indicators
+                ctx.fillStyle = '#4CAF50';
+                ctx.beginPath(); ctx.arc(100, 220, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#f44336';
+                ctx.beginPath(); ctx.arc(330, 220, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#FF9800';
+                ctx.beginPath(); ctx.arc(560, 220, 12, 0, Math.PI * 2); ctx.fill();
+
+                // Progress bars
+                ctx.fillStyle = '#e0e0e0';
+                roundRect(ctx, 70, 280, 160, 12, 6);
+                roundRect(ctx, 300, 280, 160, 12, 6);
+                roundRect(ctx, 530, 280, 160, 12, 6);
+
+                ctx.fillStyle = '#4CAF50';
+                roundRect(ctx, 70, 280, 120, 12, 6);
+                ctx.fillStyle = '#f44336';
+                roundRect(ctx, 300, 280, 80, 12, 6);
+                ctx.fillStyle = '#2196F3';
+                roundRect(ctx, 530, 280, 140, 12, 6);
+
+                // Chart
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                ctx.shadowBlur = 10;
+                roundRect(ctx, 50, 360, 700, 120, 8);
+                ctx.shadowBlur = 0;
+
+                // Bar chart
+                const barColors = ['#2196F3', '#4CAF50', '#FF9800', '#f44336', '#9C27B0', '#00BCD4'];
+                const barHeights = [80, 60, 90, 45, 70, 55];
+                barHeights.forEach((h, i) => {
+                    ctx.fillStyle = barColors[i];
+                    roundRect(ctx, 80 + i * 110, 460 - h, 60, h, 4);
+                });
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                currentImage = img;
+                showComparison();
+            };
+            img.src = canvas.toDataURL();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function showComparison() {
+            uploadCard.style.display = 'none';
+            comparisonView.classList.add('active');
+            renderView();
+            updateInfo();
+        }
+
+        // Type selector
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentType = btn.dataset.type;
+                renderView();
+                updateInfo();
+            });
+        });
+
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentView = btn.dataset.view;
+                renderView();
+            });
+        });
+
+        function applyColorBlindness(imageData, type) {
+            const data = imageData.data;
+            const matrix = matrices[type];
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                data[i] = r * matrix[0] + g * matrix[1] + b * matrix[2];
+                data[i + 1] = r * matrix[3] + g * matrix[4] + b * matrix[5];
+                data[i + 2] = r * matrix[6] + g * matrix[7] + b * matrix[8];
+            }
+
+            return imageData;
+        }
+
+        function createCanvas(img, type = null) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Limit size for performance
+            const maxSize = 800;
+            let w = img.width;
+            let h = img.height;
+
+            if (w > maxSize || h > maxSize) {
+                const ratio = Math.min(maxSize / w, maxSize / h);
+                w = Math.floor(w * ratio);
+                h = Math.floor(h * ratio);
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img, 0, 0, w, h);
+
+            if (type) {
+                const imageData = ctx.getImageData(0, 0, w, h);
+                const processed = applyColorBlindness(imageData, type);
+                ctx.putImageData(processed, 0, 0);
+            }
+
+            return canvas;
+        }
+
+        function renderView() {
+            const container = document.getElementById('viewContainer');
+
+            if (currentView === 'slider') {
+                renderSliderView(container);
+            } else if (currentView === 'side') {
+                renderSideView(container);
+            } else if (currentView === 'all') {
+                renderAllView(container);
+            }
+        }
+
+        function renderSliderView(container) {
+            const originalCanvas = createCanvas(currentImage);
+            const simulatedCanvas = createCanvas(currentImage, currentType);
+
+            container.innerHTML = `
+                <div class="slider-container" id="sliderContainer">
+                    <canvas id="sliderCanvas"></canvas>
+                    <div class="slider-label left">Original</div>
+                    <div class="slider-label right">${currentType.charAt(0).toUpperCase() + currentType.slice(1)}</div>
+                    <div class="slider-line" id="sliderLine" style="left: 50%;">
+                        <div class="slider-handle">⟷</div>
+                    </div>
+                </div>
+            `;
+
+            const sliderCanvas = document.getElementById('sliderCanvas');
+            const sliderCtx = sliderCanvas.getContext('2d');
+            sliderCanvas.width = originalCanvas.width;
+            sliderCanvas.height = originalCanvas.height;
+
+            const sliderLine = document.getElementById('sliderLine');
+            const sliderContainer = document.getElementById('sliderContainer');
+
+            function drawSlider() {
+                const splitX = Math.floor(originalCanvas.width * sliderPosition);
+
+                // Draw original on left
+                sliderCtx.drawImage(originalCanvas, 0, 0, splitX, originalCanvas.height, 0, 0, splitX, originalCanvas.height);
+
+                // Draw simulated on right
+                sliderCtx.drawImage(simulatedCanvas, splitX, 0, originalCanvas.width - splitX, originalCanvas.height, splitX, 0, originalCanvas.width - splitX, originalCanvas.height);
+
+                sliderLine.style.left = (sliderPosition * 100) + '%';
+            }
+
+            drawSlider();
+
+            let isDragging = false;
+            sliderContainer.addEventListener('mousedown', () => isDragging = true);
+            document.addEventListener('mouseup', () => isDragging = false);
+            sliderContainer.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                const rect = sliderContainer.getBoundingClientRect();
+                sliderPosition = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                drawSlider();
+            });
+
+            sliderContainer.addEventListener('touchmove', e => {
+                const rect = sliderContainer.getBoundingClientRect();
+                sliderPosition = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width));
+                drawSlider();
+            });
+        }
+
+        function renderSideView(container) {
+            const originalCanvas = createCanvas(currentImage);
+            const simulatedCanvas = createCanvas(currentImage, currentType);
+
+            container.innerHTML = `
+                <div class="image-comparison">
+                    <div class="image-panel">
+                        <div class="label">Original</div>
+                    </div>
+                    <div class="image-panel">
+                        <div class="label">${currentType.charAt(0).toUpperCase() + currentType.slice(1)}</div>
+                    </div>
+                </div>
+            `;
+
+            const panels = container.querySelectorAll('.image-panel');
+            panels[0].appendChild(originalCanvas);
+            panels[1].appendChild(simulatedCanvas);
+        }
+
+        function renderAllView(container) {
+            container.innerHTML = `<div class="image-comparison grid-4"></div>`;
+            const grid = container.querySelector('.image-comparison');
+
+            Object.keys(matrices).forEach(type => {
+                const canvas = createCanvas(currentImage, type);
+                const panel = document.createElement('div');
+                panel.className = 'image-panel';
+                panel.innerHTML = `<div class="label">${type.charAt(0).toUpperCase() + type.slice(1)}</div>`;
+                panel.appendChild(canvas);
+                grid.appendChild(panel);
+            });
+        }
+
+        function updateInfo() {
+            const info = descriptions[currentType];
+            document.getElementById('infoBox').innerHTML = `
+                <h3>${info.title}</h3>
+                <p>${info.text}</p>
+            `;
+        }
+
+        function downloadImage() {
+            const canvas = createCanvas(currentImage, currentType);
+            const link = document.createElement('a');
+            link.download = `colorblind-${currentType}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

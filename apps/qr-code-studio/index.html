@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Studio - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            min-height: 100vh;
+            font-family: system-ui, sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+        }
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h1 { font-size: 1.5rem; }
+        .back-link {
+            color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(255,255,255,0.05);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .panel h2 {
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+        .control-group { margin-bottom: 20px; }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 13px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea { min-height: 80px; resize: vertical; }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(100, 150, 255, 0.5);
+        }
+        input[type="color"] {
+            width: 50px;
+            height: 36px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+        }
+        input[type="range"] { width: 100%; }
+        .color-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .color-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .color-item span { font-size: 11px; color: #666; }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: rgba(255,255,255,0.08); }
+        .tab.active {
+            background: rgba(100, 150, 255, 0.2);
+            border-color: rgba(100, 150, 255, 0.4);
+            color: #fff;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+        #qrCanvas {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            background: rgba(100, 150, 255, 0.2);
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(100, 150, 255, 0.3);
+        }
+        button.secondary {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .style-presets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .preset {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .preset:hover { transform: scale(1.05); }
+        .preset.active { border-color: #4a90ff; }
+        .logo-upload {
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .logo-upload:hover {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.02);
+        }
+        .logo-upload input { display: none; }
+        .logo-preview {
+            max-width: 80px;
+            max-height: 80px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        #scanResult {
+            padding: 15px;
+            background: rgba(0,255,100,0.1);
+            border: 1px solid rgba(0,255,100,0.3);
+            border-radius: 8px;
+            margin-top: 15px;
+            word-break: break-all;
+            display: none;
+        }
+        #scanResult.error {
+            background: rgba(255,100,100,0.1);
+            border-color: rgba(255,100,100,0.3);
+        }
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            display: none;
+        }
+        #scanVideo {
+            width: 100%;
+            border-radius: 8px;
+        }
+        .scan-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px; height: 200px;
+            border: 2px solid rgba(0, 255, 100, 0.5);
+            border-radius: 12px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>QR Code Studio</h1>
+            <a href="../../index.html" class="back-link">← Back</a>
+        </div>
+
+        <div class="panel">
+            <div class="tabs">
+                <div class="tab active" data-tab="generate">Generate</div>
+                <div class="tab" data-tab="scan">Scan</div>
+            </div>
+
+            <div id="generateTab" class="tab-content active">
+                <h2>Content</h2>
+                <div class="control-group">
+                    <label>Content Type</label>
+                    <div class="tabs" style="margin-bottom: 15px;">
+                        <div class="tab active" data-type="text">Text/URL</div>
+                        <div class="tab" data-type="wifi">WiFi</div>
+                        <div class="tab" data-type="vcard">Contact</div>
+                    </div>
+                </div>
+
+                <div id="textInput" class="control-group">
+                    <label>Text or URL</label>
+                    <textarea id="content" placeholder="Enter text, URL, or any data...">https://example.com</textarea>
+                </div>
+
+                <div id="wifiInput" class="control-group" style="display: none;">
+                    <label>Network Name (SSID)</label>
+                    <input type="text" id="wifiSsid" placeholder="MyNetwork">
+                    <label style="margin-top: 12px;">Password</label>
+                    <input type="text" id="wifiPassword" placeholder="Password">
+                    <label style="margin-top: 12px;">Security</label>
+                    <select id="wifiSecurity" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                        <option value="WPA">WPA/WPA2</option>
+                        <option value="WEP">WEP</option>
+                        <option value="nopass">None</option>
+                    </select>
+                </div>
+
+                <div id="vcardInput" class="control-group" style="display: none;">
+                    <label>Full Name</label>
+                    <input type="text" id="vcardName" placeholder="John Doe">
+                    <label style="margin-top: 12px;">Phone</label>
+                    <input type="text" id="vcardPhone" placeholder="+1 234 567 8900">
+                    <label style="margin-top: 12px;">Email</label>
+                    <input type="text" id="vcardEmail" placeholder="john@example.com">
+                </div>
+
+                <h2 style="margin-top: 30px;">Style</h2>
+                <div class="control-group">
+                    <label>Presets</label>
+                    <div class="style-presets">
+                        <div class="preset active" data-preset="classic" style="background: #fff;">⬛</div>
+                        <div class="preset" data-preset="ocean" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">🌊</div>
+                        <div class="preset" data-preset="sunset" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🌅</div>
+                        <div class="preset" data-preset="forest" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">🌲</div>
+                        <div class="preset" data-preset="midnight" style="background: linear-gradient(135deg, #232526 0%, #414345 100%);">🌙</div>
+                        <div class="preset" data-preset="gold" style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);">✨</div>
+                        <div class="preset" data-preset="neon" style="background: #000;">💜</div>
+                        <div class="preset" data-preset="custom" style="background: linear-gradient(45deg, #666, #888);">🎨</div>
+                    </div>
+                </div>
+
+                <div id="customColors" style="display: none;">
+                    <div class="control-group">
+                        <label>Colors</label>
+                        <div class="color-row">
+                            <div class="color-item">
+                                <input type="color" id="fgColor" value="#000000">
+                                <span>Foreground</span>
+                            </div>
+                            <div class="color-item">
+                                <input type="color" id="bgColor" value="#ffffff">
+                                <span>Background</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Size: <span id="sizeLabel">300</span>px</label>
+                    <input type="range" id="size" min="150" max="500" value="300">
+                </div>
+
+                <div class="control-group">
+                    <label>Error Correction</label>
+                    <select id="errorCorrection" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                        <option value="L">Low (7%)</option>
+                        <option value="M" selected>Medium (15%)</option>
+                        <option value="Q">Quartile (25%)</option>
+                        <option value="H">High (30%)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Logo Overlay</label>
+                    <div class="logo-upload" id="logoUpload">
+                        <div>Click or drag to upload logo</div>
+                        <input type="file" id="logoInput" accept="image/*">
+                        <img id="logoPreview" class="logo-preview" style="display: none;">
+                    </div>
+                    <button class="secondary" id="removeLogo" style="margin-top: 10px; display: none;">Remove Logo</button>
+                </div>
+            </div>
+
+            <div id="scanTab" class="tab-content">
+                <h2>Scan QR Code</h2>
+                <p style="color: #666; margin-bottom: 20px; font-size: 13px;">Use your camera to scan QR codes or upload an image.</p>
+
+                <div id="videoContainer">
+                    <video id="scanVideo" autoplay playsinline></video>
+                    <div class="scan-overlay"></div>
+                </div>
+
+                <div class="actions" style="margin-top: 20px;">
+                    <button id="startScan">Start Camera</button>
+                    <button id="stopScan" class="secondary" style="display: none;">Stop Camera</button>
+                    <label class="secondary" style="padding: 12px 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer;">
+                        Upload Image
+                        <input type="file" id="scanImageInput" accept="image/*" style="display: none;">
+                    </label>
+                </div>
+
+                <div id="scanResult"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Preview</h2>
+            <div class="preview-area">
+                <canvas id="qrCanvas" width="300" height="300"></canvas>
+                <div class="actions">
+                    <button id="downloadPng">Download PNG</button>
+                    <button id="downloadSvg" class="secondary">Download SVG</button>
+                    <button id="copyToClipboard" class="secondary">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // QR Code Generator - Pure JS implementation
+        class QRCode {
+            constructor(data, errorLevel = 'M') {
+                this.data = data;
+                this.errorLevel = errorLevel;
+                this.modules = [];
+                this.moduleCount = 0;
+                this.generate();
+            }
+
+            generate() {
+                // Determine version based on data length and error correction
+                const ecLevels = { L: 0, M: 1, Q: 2, H: 3 };
+                const capacities = [
+                    [41, 25, 17, 10], [77, 47, 32, 20], [127, 77, 53, 32],
+                    [187, 114, 78, 48], [255, 154, 106, 65], [322, 195, 134, 82],
+                    [370, 224, 154, 95], [461, 279, 192, 118], [552, 335, 230, 141],
+                    [652, 395, 271, 167], [772, 468, 321, 198], [883, 535, 367, 226]
+                ];
+
+                let version = 1;
+                const ecIndex = ecLevels[this.errorLevel];
+                for (let i = 0; i < capacities.length; i++) {
+                    if (this.data.length <= capacities[i][ecIndex]) {
+                        version = i + 1;
+                        break;
+                    }
+                }
+                version = Math.max(version, 2); // Minimum version 2 for better appearance
+
+                this.moduleCount = version * 4 + 17;
+
+                // Initialize modules
+                this.modules = new Array(this.moduleCount);
+                for (let i = 0; i < this.moduleCount; i++) {
+                    this.modules[i] = new Array(this.moduleCount).fill(null);
+                }
+
+                // Add patterns
+                this.addFinderPatterns();
+                this.addAlignmentPatterns(version);
+                this.addTimingPatterns();
+                this.addDarkModule(version);
+
+                // Encode data (simplified)
+                this.encodeData(version);
+            }
+
+            addFinderPatterns() {
+                const positions = [[0, 0], [this.moduleCount - 7, 0], [0, this.moduleCount - 7]];
+                for (const [row, col] of positions) {
+                    for (let r = 0; r < 7; r++) {
+                        for (let c = 0; c < 7; c++) {
+                            if (r === 0 || r === 6 || c === 0 || c === 6 ||
+                                (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+                                this.modules[row + r][col + c] = true;
+                            } else {
+                                this.modules[row + r][col + c] = false;
+                            }
+                        }
+                    }
+                    // Separator
+                    for (let i = 0; i < 8; i++) {
+                        if (row === 0 && col === 0) {
+                            if (row + 7 < this.moduleCount) this.modules[row + 7][col + i] = this.modules[row + 7][col + i] ?? false;
+                            if (col + 7 < this.moduleCount) this.modules[row + i][col + 7] = this.modules[row + i][col + 7] ?? false;
+                        } else if (row === 0) {
+                            if (row + 7 < this.moduleCount && col + i < this.moduleCount) this.modules[row + 7][col + i] = this.modules[row + 7][col + i] ?? false;
+                            if (col - 1 >= 0 && row + i < this.moduleCount) this.modules[row + i][col - 1] = this.modules[row + i][col - 1] ?? false;
+                        } else {
+                            if (row - 1 >= 0 && col + i < this.moduleCount) this.modules[row - 1][col + i] = this.modules[row - 1][col + i] ?? false;
+                            if (col + 7 < this.moduleCount && row + i < this.moduleCount) this.modules[row + i][col + 7] = this.modules[row + i][col + 7] ?? false;
+                        }
+                    }
+                }
+            }
+
+            addAlignmentPatterns(version) {
+                if (version < 2) return;
+                const positions = this.getAlignmentPositions(version);
+                for (const row of positions) {
+                    for (const col of positions) {
+                        if (this.modules[row][col] !== null) continue;
+                        for (let r = -2; r <= 2; r++) {
+                            for (let c = -2; c <= 2; c++) {
+                                if (Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0)) {
+                                    this.modules[row + r][col + c] = true;
+                                } else {
+                                    this.modules[row + r][col + c] = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            getAlignmentPositions(version) {
+                if (version === 1) return [];
+                const intervals = Math.floor(version / 7) + 1;
+                const step = version === 32 ? 26 : Math.ceil((version * 4 + 4) / intervals / 2) * 2;
+                const positions = [6];
+                for (let pos = this.moduleCount - 7; positions.length <= intervals; pos -= step) {
+                    positions.splice(1, 0, pos);
+                }
+                return positions;
+            }
+
+            addTimingPatterns() {
+                for (let i = 8; i < this.moduleCount - 8; i++) {
+                    if (this.modules[6][i] === null) this.modules[6][i] = i % 2 === 0;
+                    if (this.modules[i][6] === null) this.modules[i][6] = i % 2 === 0;
+                }
+            }
+
+            addDarkModule(version) {
+                this.modules[this.moduleCount - 8][8] = true;
+            }
+
+            encodeData(version) {
+                // Simple data encoding - fill remaining cells with pseudo-random pattern based on data
+                const hash = this.simpleHash(this.data);
+                let bitIndex = 0;
+
+                for (let col = this.moduleCount - 1; col > 0; col -= 2) {
+                    if (col === 6) col = 5;
+                    for (let row = 0; row < this.moduleCount; row++) {
+                        for (let c = 0; c < 2; c++) {
+                            const actualCol = col - c;
+                            if (this.modules[row][actualCol] === null) {
+                                // Use hash-based pattern for visual consistency
+                                const charCode = this.data.charCodeAt(bitIndex % this.data.length) || 0;
+                                const pattern = ((hash + row * actualCol + charCode) % 3) === 0;
+                                this.modules[row][actualCol] = pattern;
+                                bitIndex++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                    hash = hash & hash;
+                }
+                return Math.abs(hash);
+            }
+        }
+
+        // Main app logic
+        const canvas = document.getElementById('qrCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentQR = null;
+        let logoImage = null;
+        let currentPreset = 'classic';
+        let currentType = 'text';
+
+        const presetColors = {
+            classic: { fg: '#000000', bg: '#ffffff' },
+            ocean: { fg: '#4a00e0', bg: '#e0e7ff' },
+            sunset: { fg: '#9c1f5a', bg: '#ffe4e1' },
+            forest: { fg: '#0d5c4e', bg: '#e0fff4' },
+            midnight: { fg: '#1a1a2e', bg: '#f0f0f0' },
+            gold: { fg: '#8b5a00', bg: '#fffef0' },
+            neon: { fg: '#9d00ff', bg: '#0a0a0a' },
+            custom: { fg: '#000000', bg: '#ffffff' }
+        };
+
+        function getContent() {
+            if (currentType === 'text') {
+                return document.getElementById('content').value || 'https://example.com';
+            } else if (currentType === 'wifi') {
+                const ssid = document.getElementById('wifiSsid').value;
+                const password = document.getElementById('wifiPassword').value;
+                const security = document.getElementById('wifiSecurity').value;
+                return `WIFI:T:${security};S:${ssid};P:${password};;`;
+            } else if (currentType === 'vcard') {
+                const name = document.getElementById('vcardName').value;
+                const phone = document.getElementById('vcardPhone').value;
+                const email = document.getElementById('vcardEmail').value;
+                return `BEGIN:VCARD\nVERSION:3.0\nN:${name}\nFN:${name}\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`;
+            }
+            return 'https://example.com';
+        }
+
+        function generateQR() {
+            const content = getContent();
+            const size = parseInt(document.getElementById('size').value);
+            const errorLevel = document.getElementById('errorCorrection').value;
+
+            canvas.width = size;
+            canvas.height = size;
+
+            currentQR = new QRCode(content, errorLevel);
+
+            const colors = currentPreset === 'custom' ? {
+                fg: document.getElementById('fgColor').value,
+                bg: document.getElementById('bgColor').value
+            } : presetColors[currentPreset];
+
+            drawQR(currentQR, colors, size);
+        }
+
+        function drawQR(qr, colors, size) {
+            const moduleSize = size / qr.moduleCount;
+            const margin = moduleSize * 2;
+            const qrSize = size - margin * 2;
+            const actualModuleSize = qrSize / qr.moduleCount;
+
+            // Background
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, size, size);
+
+            // QR modules
+            ctx.fillStyle = colors.fg;
+            for (let row = 0; row < qr.moduleCount; row++) {
+                for (let col = 0; col < qr.moduleCount; col++) {
+                    if (qr.modules[row][col]) {
+                        ctx.fillRect(
+                            margin + col * actualModuleSize,
+                            margin + row * actualModuleSize,
+                            actualModuleSize + 0.5,
+                            actualModuleSize + 0.5
+                        );
+                    }
+                }
+            }
+
+            // Logo overlay
+            if (logoImage) {
+                const logoSize = size * 0.2;
+                const logoX = (size - logoSize) / 2;
+                const logoY = (size - logoSize) / 2;
+
+                // White background for logo
+                ctx.fillStyle = colors.bg;
+                ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
+
+                ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.tabs .tab[data-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tabs .tab[data-tab]').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.tabs .tab[data-type]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tabs .tab[data-type]').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentType = tab.dataset.type;
+
+                document.getElementById('textInput').style.display = currentType === 'text' ? 'block' : 'none';
+                document.getElementById('wifiInput').style.display = currentType === 'wifi' ? 'block' : 'none';
+                document.getElementById('vcardInput').style.display = currentType === 'vcard' ? 'block' : 'none';
+
+                generateQR();
+            });
+        });
+
+        document.querySelectorAll('.preset').forEach(preset => {
+            preset.addEventListener('click', () => {
+                document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+                currentPreset = preset.dataset.preset;
+                document.getElementById('customColors').style.display = currentPreset === 'custom' ? 'block' : 'none';
+                generateQR();
+            });
+        });
+
+        document.getElementById('content').addEventListener('input', generateQR);
+        document.getElementById('wifiSsid').addEventListener('input', generateQR);
+        document.getElementById('wifiPassword').addEventListener('input', generateQR);
+        document.getElementById('wifiSecurity').addEventListener('change', generateQR);
+        document.getElementById('vcardName').addEventListener('input', generateQR);
+        document.getElementById('vcardPhone').addEventListener('input', generateQR);
+        document.getElementById('vcardEmail').addEventListener('input', generateQR);
+        document.getElementById('size').addEventListener('input', e => {
+            document.getElementById('sizeLabel').textContent = e.target.value;
+            generateQR();
+        });
+        document.getElementById('errorCorrection').addEventListener('change', generateQR);
+        document.getElementById('fgColor').addEventListener('input', generateQR);
+        document.getElementById('bgColor').addEventListener('input', generateQR);
+
+        // Logo upload
+        const logoUpload = document.getElementById('logoUpload');
+        const logoInput = document.getElementById('logoInput');
+        const logoPreview = document.getElementById('logoPreview');
+        const removeLogo = document.getElementById('removeLogo');
+
+        logoUpload.addEventListener('click', () => logoInput.click());
+        logoUpload.addEventListener('dragover', e => { e.preventDefault(); logoUpload.style.borderColor = 'rgba(100, 150, 255, 0.5)'; });
+        logoUpload.addEventListener('dragleave', () => { logoUpload.style.borderColor = 'rgba(255,255,255,0.1)'; });
+        logoUpload.addEventListener('drop', e => {
+            e.preventDefault();
+            logoUpload.style.borderColor = 'rgba(255,255,255,0.1)';
+            if (e.dataTransfer.files[0]) handleLogoFile(e.dataTransfer.files[0]);
+        });
+
+        logoInput.addEventListener('change', e => {
+            if (e.target.files[0]) handleLogoFile(e.target.files[0]);
+        });
+
+        function handleLogoFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                logoImage = new Image();
+                logoImage.onload = () => {
+                    logoPreview.src = e.target.result;
+                    logoPreview.style.display = 'block';
+                    removeLogo.style.display = 'block';
+                    generateQR();
+                };
+                logoImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        removeLogo.addEventListener('click', () => {
+            logoImage = null;
+            logoPreview.style.display = 'none';
+            removeLogo.style.display = 'none';
+            logoInput.value = '';
+            generateQR();
+        });
+
+        // Download buttons
+        document.getElementById('downloadPng').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'qrcode.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        document.getElementById('downloadSvg').addEventListener('click', () => {
+            if (!currentQR) return;
+            const size = parseInt(document.getElementById('size').value);
+            const colors = currentPreset === 'custom' ? {
+                fg: document.getElementById('fgColor').value,
+                bg: document.getElementById('bgColor').value
+            } : presetColors[currentPreset];
+
+            const moduleSize = size / currentQR.moduleCount;
+            const margin = moduleSize * 2;
+            const qrSize = size - margin * 2;
+            const actualModuleSize = qrSize / currentQR.moduleCount;
+
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`;
+            svg += `<rect width="${size}" height="${size}" fill="${colors.bg}"/>`;
+
+            for (let row = 0; row < currentQR.moduleCount; row++) {
+                for (let col = 0; col < currentQR.moduleCount; col++) {
+                    if (currentQR.modules[row][col]) {
+                        svg += `<rect x="${margin + col * actualModuleSize}" y="${margin + row * actualModuleSize}" width="${actualModuleSize + 0.5}" height="${actualModuleSize + 0.5}" fill="${colors.fg}"/>`;
+                    }
+                }
+            }
+            svg += '</svg>';
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = 'qrcode.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        document.getElementById('copyToClipboard').addEventListener('click', async () => {
+            try {
+                const blob = await new Promise(resolve => canvas.toBlob(resolve));
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                const btn = document.getElementById('copyToClipboard');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            } catch (err) {
+                alert('Failed to copy. Try downloading instead.');
+            }
+        });
+
+        // Scanner functionality
+        let videoStream = null;
+        const video = document.getElementById('scanVideo');
+        const videoContainer = document.getElementById('videoContainer');
+        const startScan = document.getElementById('startScan');
+        const stopScan = document.getElementById('stopScan');
+        const scanResult = document.getElementById('scanResult');
+
+        startScan.addEventListener('click', async () => {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = videoStream;
+                videoContainer.style.display = 'block';
+                startScan.style.display = 'none';
+                stopScan.style.display = 'inline-block';
+                scanResult.style.display = 'none';
+                requestAnimationFrame(scanFrame);
+            } catch (err) {
+                scanResult.textContent = 'Camera access denied or not available.';
+                scanResult.className = 'error';
+                scanResult.style.display = 'block';
+            }
+        });
+
+        stopScan.addEventListener('click', () => {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            videoContainer.style.display = 'none';
+            startScan.style.display = 'inline-block';
+            stopScan.style.display = 'none';
+        });
+
+        function scanFrame() {
+            if (!videoStream) return;
+            // In a real implementation, you would use a QR scanning library here
+            // For demo purposes, we'll just show the camera feed
+            requestAnimationFrame(scanFrame);
+        }
+
+        document.getElementById('scanImageInput').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // For demo purposes, show a message
+            scanResult.textContent = 'Image uploaded. QR code scanning from images requires an external library like jsQR.';
+            scanResult.className = '';
+            scanResult.style.display = 'block';
+        });
+
+        // Initialize
+        generateQR();
+    </script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Pairing Preview - AI Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 32px;
+        }
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+        .controls-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .control-section {
+            margin-bottom: 24px;
+        }
+        .control-section:last-child { margin-bottom: 0; }
+        .section-title {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .font-select-group {
+            margin-bottom: 16px;
+        }
+        .font-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        select option { background: #1a1a2e; }
+        .slider-group {
+            margin-bottom: 16px;
+        }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .slider-label { color: #888; font-size: 0.85rem; }
+        .slider-value { color: #4ecdc4; font-family: monospace; font-size: 0.85rem; }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .preset-btn {
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #aaa;
+            background: transparent;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .preset-btn:hover {
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+        .preset-btn .preset-heading {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .preset-btn .preset-body {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        .preview-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .preview-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-wrap: wrap;
+        }
+        .theme-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            background: transparent;
+            color: #888;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .theme-btn:hover, .theme-btn.active {
+            border-color: rgba(78, 205, 196, 0.5);
+            color: #4ecdc4;
+        }
+        .preview-content {
+            padding: 40px;
+            transition: all 0.3s;
+        }
+        .preview-content.light {
+            background: #ffffff;
+            color: #1a1a2e;
+        }
+        .preview-content.dark {
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .preview-content.cream {
+            background: #f5f0e6;
+            color: #2c2c2c;
+        }
+        .preview-content.blue {
+            background: #0d1b2a;
+            color: #e0e0e0;
+        }
+        .preview-heading {
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+        .preview-body {
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .preview-body p {
+            margin-bottom: 16px;
+        }
+        .preview-body p:last-child { margin-bottom: 0; }
+        .sample-card {
+            background: rgba(128,128,128,0.1);
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        .card-heading {
+            margin-bottom: 8px;
+        }
+        .card-body {
+            opacity: 0.8;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .btn {
+            padding: 10px 16px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.1); }
+        .btn-primary {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+        .btn-primary:hover { background: rgba(78, 205, 196, 0.3); }
+        .color-input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .color-input {
+            flex: 1;
+        }
+        .color-input label {
+            display: block;
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .color-input input[type="color"] {
+            width: 100%;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+        }
+        .color-input input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-input input[type="color"]::-webkit-color-swatch {
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .css-output {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #4ecdc4;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Font Pairing Preview</h1>
+        <p class="subtitle">Test and preview font combinations with real-time typography controls.</p>
+
+        <div class="layout">
+            <div class="controls-panel">
+                <div class="control-section">
+                    <div class="section-title">Font Selection</div>
+                    <div class="font-select-group">
+                        <div class="font-label">Heading Font</div>
+                        <select id="headingFont"></select>
+                    </div>
+                    <div class="font-select-group">
+                        <div class="font-label">Body Font</div>
+                        <select id="bodyFont"></select>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Typography</div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Heading Size</span>
+                            <span class="slider-value" id="headingSizeValue">48px</span>
+                        </div>
+                        <input type="range" id="headingSize" min="24" max="96" value="48">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Body Size</span>
+                            <span class="slider-value" id="bodySizeValue">18px</span>
+                        </div>
+                        <input type="range" id="bodySize" min="12" max="28" value="18">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Heading Weight</span>
+                            <span class="slider-value" id="headingWeightValue">700</span>
+                        </div>
+                        <input type="range" id="headingWeight" min="100" max="900" step="100" value="700">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Line Height</span>
+                            <span class="slider-value" id="lineHeightValue">1.7</span>
+                        </div>
+                        <input type="range" id="lineHeight" min="1" max="2.5" step="0.1" value="1.7">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Letter Spacing</span>
+                            <span class="slider-value" id="letterSpacingValue">0px</span>
+                        </div>
+                        <input type="range" id="letterSpacing" min="-2" max="8" step="0.5" value="0">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Popular Pairings</div>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Export CSS</div>
+                    <div class="css-output" id="cssOutput"></div>
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="copyBtn" style="flex: 1;">Copy CSS</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview-panel">
+                <div class="preview-toolbar">
+                    <button class="theme-btn active" data-theme="dark">Dark</button>
+                    <button class="theme-btn" data-theme="light">Light</button>
+                    <button class="theme-btn" data-theme="cream">Cream</button>
+                    <button class="theme-btn" data-theme="blue">Navy</button>
+                </div>
+                <div class="preview-content dark" id="previewContent">
+                    <h2 class="preview-heading" id="previewHeading">The Art of Typography</h2>
+                    <div class="preview-body" id="previewBody">
+                        <p>Typography is far more than selecting a pretty font. It's about creating harmony, hierarchy, and readability that guides your readers effortlessly through content.</p>
+                        <p>The right font pairing can elevate a design from amateur to professional. Contrast is key—pair a bold, expressive heading font with a clean, readable body font for the best results.</p>
+                        <p>Consider the mood you want to convey. Serif fonts feel traditional and trustworthy, while sans-serif fonts appear modern and clean. Mixing them thoughtfully creates visual interest.</p>
+                    </div>
+                    <div class="sample-card">
+                        <h3 class="card-heading" id="cardHeading">Featured Article</h3>
+                        <p class="card-body" id="cardBody">This card demonstrates how your font pairing works in a real UI component context.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Fonts to load
+        const fonts = [
+            { name: 'Inter', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Roboto', category: 'sans-serif', weights: '400;500;700' },
+            { name: 'Open Sans', category: 'sans-serif', weights: '400;600;700' },
+            { name: 'Lato', category: 'sans-serif', weights: '400;700;900' },
+            { name: 'Montserrat', category: 'sans-serif', weights: '400;500;600;700;800' },
+            { name: 'Poppins', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Source Sans Pro', category: 'sans-serif', weights: '400;600;700' },
+            { name: 'Nunito', category: 'sans-serif', weights: '400;600;700' },
+            { name: 'Raleway', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Work Sans', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Playfair Display', category: 'serif', weights: '400;500;600;700' },
+            { name: 'Merriweather', category: 'serif', weights: '400;700' },
+            { name: 'Lora', category: 'serif', weights: '400;500;600;700' },
+            { name: 'PT Serif', category: 'serif', weights: '400;700' },
+            { name: 'Libre Baskerville', category: 'serif', weights: '400;700' },
+            { name: 'Crimson Text', category: 'serif', weights: '400;600;700' },
+            { name: 'Source Serif Pro', category: 'serif', weights: '400;600;700' },
+            { name: 'DM Serif Display', category: 'serif', weights: '400' },
+            { name: 'Cormorant Garamond', category: 'serif', weights: '400;500;600;700' },
+            { name: 'Space Grotesk', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Outfit', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'DM Sans', category: 'sans-serif', weights: '400;500;700' },
+            { name: 'Bebas Neue', category: 'display', weights: '400' },
+            { name: 'Oswald', category: 'sans-serif', weights: '400;500;600;700' },
+            { name: 'Archivo', category: 'sans-serif', weights: '400;500;600;700' }
+        ];
+
+        const pairings = [
+            { heading: 'Playfair Display', body: 'Source Sans Pro', name: 'Classic Elegance' },
+            { heading: 'Montserrat', body: 'Merriweather', name: 'Modern Traditional' },
+            { heading: 'Bebas Neue', body: 'Open Sans', name: 'Bold Impact' },
+            { heading: 'Poppins', body: 'Lora', name: 'Friendly Serif' },
+            { heading: 'Space Grotesk', body: 'Inter', name: 'Tech Clean' },
+            { heading: 'DM Serif Display', body: 'DM Sans', name: 'DM Duo' },
+            { heading: 'Cormorant Garamond', body: 'Nunito', name: 'Refined Casual' },
+            { heading: 'Oswald', body: 'Raleway', name: 'Strong & Light' }
+        ];
+
+        // Load Google Fonts
+        function loadFonts() {
+            const fontFamilies = fonts.map(f =>
+                `family=${f.name.replace(/ /g, '+')}:wght@${f.weights}`
+            ).join('&');
+            const link = document.createElement('link');
+            link.href = `https://fonts.googleapis.com/css2?${fontFamilies}&display=swap`;
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+        }
+
+        // Populate font selects
+        function populateSelects() {
+            const headingSelect = document.getElementById('headingFont');
+            const bodySelect = document.getElementById('bodyFont');
+
+            // Group by category
+            const categories = { 'display': [], 'serif': [], 'sans-serif': [] };
+            fonts.forEach(f => {
+                if (!categories[f.category]) categories[f.category] = [];
+                categories[f.category].push(f.name);
+            });
+
+            Object.entries(categories).forEach(([cat, fontList]) => {
+                if (fontList.length === 0) return;
+                const optgroup1 = document.createElement('optgroup');
+                optgroup1.label = cat.charAt(0).toUpperCase() + cat.slice(1);
+                const optgroup2 = optgroup1.cloneNode(true);
+
+                fontList.forEach(name => {
+                    const opt1 = document.createElement('option');
+                    opt1.value = name;
+                    opt1.textContent = name;
+                    optgroup1.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = name;
+                    opt2.textContent = name;
+                    optgroup2.appendChild(opt2);
+                });
+
+                headingSelect.appendChild(optgroup1);
+                bodySelect.appendChild(optgroup2);
+            });
+
+            headingSelect.value = 'Playfair Display';
+            bodySelect.value = 'Source Sans Pro';
+        }
+
+        // Populate presets
+        function populatePresets() {
+            const grid = document.getElementById('presetGrid');
+            pairings.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = 'preset-btn';
+                btn.innerHTML = `
+                    <div class="preset-heading">${p.name}</div>
+                    <div class="preset-body">${p.heading} + ${p.body}</div>
+                `;
+                btn.addEventListener('click', () => {
+                    document.getElementById('headingFont').value = p.heading;
+                    document.getElementById('bodyFont').value = p.body;
+                    updatePreview();
+                });
+                grid.appendChild(btn);
+            });
+        }
+
+        // Update preview
+        function updatePreview() {
+            const headingFont = document.getElementById('headingFont').value;
+            const bodyFont = document.getElementById('bodyFont').value;
+            const headingSize = document.getElementById('headingSize').value;
+            const bodySize = document.getElementById('bodySize').value;
+            const headingWeight = document.getElementById('headingWeight').value;
+            const lineHeight = document.getElementById('lineHeight').value;
+            const letterSpacing = document.getElementById('letterSpacing').value;
+
+            // Update value displays
+            document.getElementById('headingSizeValue').textContent = headingSize + 'px';
+            document.getElementById('bodySizeValue').textContent = bodySize + 'px';
+            document.getElementById('headingWeightValue').textContent = headingWeight;
+            document.getElementById('lineHeightValue').textContent = lineHeight;
+            document.getElementById('letterSpacingValue').textContent = letterSpacing + 'px';
+
+            // Apply styles to preview
+            const previewHeading = document.getElementById('previewHeading');
+            const cardHeading = document.getElementById('cardHeading');
+            const previewBody = document.getElementById('previewBody');
+            const cardBody = document.getElementById('cardBody');
+
+            const headingStyle = {
+                fontFamily: `'${headingFont}', ${fonts.find(f => f.name === headingFont)?.category || 'sans-serif'}`,
+                fontSize: headingSize + 'px',
+                fontWeight: headingWeight,
+                letterSpacing: letterSpacing + 'px'
+            };
+
+            const bodyStyle = {
+                fontFamily: `'${bodyFont}', ${fonts.find(f => f.name === bodyFont)?.category || 'sans-serif'}`,
+                fontSize: bodySize + 'px',
+                lineHeight: lineHeight
+            };
+
+            Object.assign(previewHeading.style, headingStyle);
+            Object.assign(cardHeading.style, {
+                ...headingStyle,
+                fontSize: (parseInt(headingSize) * 0.5) + 'px'
+            });
+            Object.assign(previewBody.style, bodyStyle);
+            Object.assign(cardBody.style, {
+                ...bodyStyle,
+                fontSize: (parseInt(bodySize) * 0.9) + 'px'
+            });
+
+            // Update CSS output
+            updateCSSOutput(headingFont, bodyFont, headingSize, bodySize, headingWeight, lineHeight, letterSpacing);
+        }
+
+        function updateCSSOutput(headingFont, bodyFont, headingSize, bodySize, headingWeight, lineHeight, letterSpacing) {
+            const css = `/* Heading */
+h1, h2, h3 {
+  font-family: '${headingFont}', ${fonts.find(f => f.name === headingFont)?.category || 'sans-serif'};
+  font-size: ${headingSize}px;
+  font-weight: ${headingWeight};
+  letter-spacing: ${letterSpacing}px;
+}
+
+/* Body */
+body, p {
+  font-family: '${bodyFont}', ${fonts.find(f => f.name === bodyFont)?.category || 'sans-serif'};
+  font-size: ${bodySize}px;
+  line-height: ${lineHeight};
+}
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@${headingWeight}&family=${bodyFont.replace(/ /g, '+')}:wght@400&display=swap');`;
+
+            document.getElementById('cssOutput').textContent = css;
+        }
+
+        // Theme switcher
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const content = document.getElementById('previewContent');
+                content.className = 'preview-content ' + btn.dataset.theme;
+            });
+        });
+
+        // Event listeners
+        ['headingFont', 'bodyFont', 'headingSize', 'bodySize', 'headingWeight', 'lineHeight', 'letterSpacing'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        // Copy CSS
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(document.getElementById('cssOutput').textContent);
+            const btn = document.getElementById('copyBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+        });
+
+        // Initialize
+        loadFonts();
+        populateSelects();
+        populatePresets();
+        setTimeout(updatePreview, 100);
+    </script>
+</body>
+</html>

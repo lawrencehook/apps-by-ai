@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Mesh Editor - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .editor-layout { grid-template-columns: 1fr; }
+        }
+        .canvas-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+        }
+        #meshCanvas {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 8px;
+            cursor: crosshair;
+            display: block;
+        }
+        .controls-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .control-section {
+            margin-bottom: 24px;
+        }
+        .control-section:last-child { margin-bottom: 0; }
+        .section-title {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .color-node {
+            position: relative;
+        }
+        .color-node input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+        }
+        .color-node input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-node input[type="color"]::-webkit-color-swatch {
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .color-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: center;
+            margin-top: 4px;
+        }
+        .slider-group {
+            margin-bottom: 16px;
+        }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .slider-label { color: #888; font-size: 0.85rem; }
+        .slider-value { color: #4ecdc4; font-family: monospace; font-size: 0.85rem; }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 16px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.1); }
+        .btn-primary {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+        }
+        .btn-primary:hover { background: rgba(78, 205, 196, 0.3); }
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .preset-btn {
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #aaa;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+        .output-section {
+            margin-top: 24px;
+        }
+        .output-code {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #4ecdc4;
+            word-break: break-all;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            margin-top: 8px;
+            width: 100%;
+        }
+        .node-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            cursor: move;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .node-marker:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        .node-marker.selected {
+            border-width: 3px;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.5);
+        }
+        .instructions {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Gradient Mesh Editor</h1>
+        <p class="subtitle">Create complex multi-point gradient backgrounds with draggable nodes.</p>
+
+        <div class="editor-layout">
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="meshCanvas"></canvas>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-section">
+                    <div class="section-title">Color Nodes</div>
+                    <div class="color-grid" id="colorGrid"></div>
+                    <p class="instructions">Click canvas to add nodes (max 9). Drag nodes to reposition.</p>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Settings</div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Blur Intensity</span>
+                            <span class="slider-value" id="blurValue">80</span>
+                        </div>
+                        <input type="range" id="blurSlider" min="20" max="200" value="80">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-label">Node Size</span>
+                            <span class="slider-value" id="sizeValue">40</span>
+                        </div>
+                        <input type="range" id="sizeSlider" min="20" max="80" value="40">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Presets</div>
+                    <div class="preset-grid">
+                        <button class="preset-btn" data-preset="sunset">Sunset</button>
+                        <button class="preset-btn" data-preset="ocean">Ocean</button>
+                        <button class="preset-btn" data-preset="forest">Forest</button>
+                        <button class="preset-btn" data-preset="aurora">Aurora</button>
+                        <button class="preset-btn" data-preset="candy">Candy</button>
+                        <button class="preset-btn" data-preset="midnight">Midnight</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-title">Actions</div>
+                    <div class="btn-row">
+                        <button class="btn" id="clearBtn">Clear</button>
+                        <button class="btn" id="randomBtn">Random</button>
+                    </div>
+                </div>
+
+                <div class="output-section">
+                    <div class="section-title">Export</div>
+                    <div class="btn-row" style="margin-bottom: 12px;">
+                        <button class="btn btn-primary" id="exportPng">PNG</button>
+                        <button class="btn btn-primary" id="exportSvg">SVG</button>
+                    </div>
+                    <div class="output-code" id="cssOutput">Click canvas to add gradient nodes...</div>
+                    <button class="btn copy-btn" id="copyBtn">Copy CSS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('meshCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+        const colorGrid = document.getElementById('colorGrid');
+        const cssOutput = document.getElementById('cssOutput');
+
+        let nodes = [];
+        let selectedNode = null;
+        let isDragging = false;
+        let blurIntensity = 80;
+        let nodeSize = 40;
+
+        const presets = {
+            sunset: [
+                { x: 0.2, y: 0.3, color: '#ff6b6b' },
+                { x: 0.8, y: 0.2, color: '#ffa502' },
+                { x: 0.5, y: 0.7, color: '#ff4757' },
+                { x: 0.1, y: 0.9, color: '#5f27cd' }
+            ],
+            ocean: [
+                { x: 0.1, y: 0.2, color: '#00d2d3' },
+                { x: 0.9, y: 0.3, color: '#0984e3' },
+                { x: 0.3, y: 0.8, color: '#6c5ce7' },
+                { x: 0.7, y: 0.9, color: '#00cec9' }
+            ],
+            forest: [
+                { x: 0.2, y: 0.2, color: '#00b894' },
+                { x: 0.8, y: 0.3, color: '#55a3ff' },
+                { x: 0.5, y: 0.6, color: '#00cec9' },
+                { x: 0.3, y: 0.9, color: '#2d3436' }
+            ],
+            aurora: [
+                { x: 0.1, y: 0.1, color: '#a29bfe' },
+                { x: 0.9, y: 0.2, color: '#00cec9' },
+                { x: 0.5, y: 0.5, color: '#fd79a8' },
+                { x: 0.2, y: 0.8, color: '#6c5ce7' },
+                { x: 0.8, y: 0.9, color: '#00b894' }
+            ],
+            candy: [
+                { x: 0.2, y: 0.3, color: '#fd79a8' },
+                { x: 0.8, y: 0.2, color: '#a29bfe' },
+                { x: 0.5, y: 0.7, color: '#fdcb6e' },
+                { x: 0.9, y: 0.8, color: '#ff7675' }
+            ],
+            midnight: [
+                { x: 0.1, y: 0.1, color: '#2d3436' },
+                { x: 0.9, y: 0.2, color: '#0984e3' },
+                { x: 0.5, y: 0.5, color: '#6c5ce7' },
+                { x: 0.2, y: 0.9, color: '#1a1a2e' }
+            ]
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            render();
+        }
+
+        function getRandomColor() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#6c5ce7', '#a29bfe',
+                          '#fd79a8', '#00cec9', '#55a3ff', '#ff7675', '#00b894'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function addNode(x, y, color = null) {
+            if (nodes.length >= 9) return;
+            nodes.push({
+                x: x,
+                y: y,
+                color: color || getRandomColor()
+            });
+            updateColorGrid();
+            render();
+            updateCSS();
+        }
+
+        function updateColorGrid() {
+            colorGrid.innerHTML = '';
+            nodes.forEach((node, i) => {
+                const div = document.createElement('div');
+                div.className = 'color-node';
+                div.innerHTML = `
+                    <input type="color" value="${node.color}" data-index="${i}">
+                    <div class="color-label">${i + 1}</div>
+                `;
+                colorGrid.appendChild(div);
+            });
+
+            colorGrid.querySelectorAll('input[type="color"]').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    nodes[idx].color = e.target.value;
+                    render();
+                    updateCSS();
+                });
+            });
+        }
+
+        function render() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            if (nodes.length === 0) return;
+
+            // Draw blurred color nodes
+            ctx.save();
+            ctx.filter = `blur(${blurIntensity}px)`;
+
+            nodes.forEach(node => {
+                const gradient = ctx.createRadialGradient(
+                    node.x * w, node.y * h, 0,
+                    node.x * w, node.y * h, nodeSize * 3
+                );
+                gradient.addColorStop(0, node.color);
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(node.x * w, node.y * h, nodeSize * 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+
+            // Draw node markers
+            updateNodeMarkers();
+        }
+
+        function updateNodeMarkers() {
+            // Remove old markers
+            container.querySelectorAll('.node-marker').forEach(m => m.remove());
+
+            const rect = canvas.getBoundingClientRect();
+            nodes.forEach((node, i) => {
+                const marker = document.createElement('div');
+                marker.className = 'node-marker' + (selectedNode === i ? ' selected' : '');
+                marker.style.left = `${16 + node.x * (rect.width - 32)}px`;
+                marker.style.top = `${16 + node.y * (rect.height - 32)}px`;
+                marker.style.backgroundColor = node.color;
+                marker.dataset.index = i;
+                container.appendChild(marker);
+            });
+        }
+
+        function updateCSS() {
+            if (nodes.length === 0) {
+                cssOutput.textContent = 'Click canvas to add gradient nodes...';
+                return;
+            }
+
+            const gradients = nodes.map(node => {
+                const x = (node.x * 100).toFixed(0);
+                const y = (node.y * 100).toFixed(0);
+                return `radial-gradient(at ${x}% ${y}%, ${node.color} 0%, transparent 50%)`;
+            }).join(',\n  ');
+
+            const css = `background: #1a1a2e;\nbackground-image:\n  ${gradients};\nfilter: blur(${blurIntensity}px);`;
+            cssOutput.textContent = css;
+        }
+
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - 16) / (rect.width - 32);
+            const y = (e.clientY - rect.top - 16) / (rect.height - 32);
+            return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (isDragging) return;
+            const pos = getEventPos(e);
+            addNode(pos.x, pos.y);
+        });
+
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('node-marker')) {
+                selectedNode = parseInt(e.target.dataset.index);
+                isDragging = true;
+                render();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || selectedNode === null) return;
+            const pos = getEventPos(e);
+            nodes[selectedNode].x = pos.x;
+            nodes[selectedNode].y = pos.y;
+            render();
+            updateCSS();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                setTimeout(() => { isDragging = false; }, 10);
+            }
+            selectedNode = null;
+            render();
+        });
+
+        // Touch support
+        container.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('node-marker')) {
+                e.preventDefault();
+                selectedNode = parseInt(e.target.dataset.index);
+                isDragging = true;
+                render();
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (!isDragging || selectedNode === null) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = (touch.clientX - rect.left - 16) / (rect.width - 32);
+            const y = (touch.clientY - rect.top - 16) / (rect.height - 32);
+            nodes[selectedNode].x = Math.max(0, Math.min(1, x));
+            nodes[selectedNode].y = Math.max(0, Math.min(1, y));
+            render();
+            updateCSS();
+        });
+
+        container.addEventListener('touchend', () => {
+            isDragging = false;
+            selectedNode = null;
+            render();
+        });
+
+        // Sliders
+        document.getElementById('blurSlider').addEventListener('input', (e) => {
+            blurIntensity = parseInt(e.target.value);
+            document.getElementById('blurValue').textContent = blurIntensity;
+            render();
+            updateCSS();
+        });
+
+        document.getElementById('sizeSlider').addEventListener('input', (e) => {
+            nodeSize = parseInt(e.target.value);
+            document.getElementById('sizeValue').textContent = nodeSize;
+            render();
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = presets[btn.dataset.preset];
+                nodes = preset.map(n => ({ ...n }));
+                updateColorGrid();
+                render();
+                updateCSS();
+            });
+        });
+
+        // Clear and Random
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            nodes = [];
+            updateColorGrid();
+            render();
+            updateCSS();
+        });
+
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            const count = 3 + Math.floor(Math.random() * 4);
+            nodes = [];
+            for (let i = 0; i < count; i++) {
+                nodes.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    color: getRandomColor()
+                });
+            }
+            updateColorGrid();
+            render();
+            updateCSS();
+        });
+
+        // Copy CSS
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(cssOutput.textContent);
+            const btn = document.getElementById('copyBtn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+        });
+
+        // Export PNG
+        document.getElementById('exportPng').addEventListener('click', () => {
+            // Create high-res export canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 1920;
+            exportCanvas.height = 1080;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            exportCtx.fillStyle = '#1a1a2e';
+            exportCtx.fillRect(0, 0, 1920, 1080);
+
+            exportCtx.filter = `blur(${blurIntensity * 2}px)`;
+            nodes.forEach(node => {
+                const gradient = exportCtx.createRadialGradient(
+                    node.x * 1920, node.y * 1080, 0,
+                    node.x * 1920, node.y * 1080, nodeSize * 8
+                );
+                gradient.addColorStop(0, node.color);
+                gradient.addColorStop(1, 'transparent');
+
+                exportCtx.fillStyle = gradient;
+                exportCtx.beginPath();
+                exportCtx.arc(node.x * 1920, node.y * 1080, nodeSize * 8, 0, Math.PI * 2);
+                exportCtx.fill();
+            });
+
+            const link = document.createElement('a');
+            link.download = 'gradient-mesh.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Export SVG
+        document.getElementById('exportSvg').addEventListener('click', () => {
+            const defs = nodes.map((node, i) => `
+    <radialGradient id="grad${i}" cx="${node.x * 100}%" cy="${node.y * 100}%" r="50%">
+      <stop offset="0%" style="stop-color:${node.color};stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:${node.color};stop-opacity:0"/>
+    </radialGradient>`).join('');
+
+            const circles = nodes.map((node, i) =>
+                `  <circle cx="${node.x * 1920}" cy="${node.y * 1080}" r="${nodeSize * 8}" fill="url(#grad${i})"/>`
+            ).join('\n');
+
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="${blurIntensity}"/>
+    </filter>${defs}
+  </defs>
+  <rect width="1920" height="1080" fill="#1a1a2e"/>
+  <g filter="url(#blur)">
+${circles}
+  </g>
+</svg>`;
+
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = 'gradient-mesh.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        });
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Start with a default preset
+        const defaultPreset = presets.aurora;
+        nodes = defaultPreset.map(n => ({ ...n }));
+        updateColorGrid();
+        render();
+        updateCSS();
+    </script>
+</body>
+</html>

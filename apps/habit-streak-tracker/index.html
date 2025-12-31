@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Streak Tracker - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .add-habit {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .add-habit input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .add-habit input:focus { outline: none; border-color: #4ecdc4; }
+        .add-habit input::placeholder { color: #555; }
+        .btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(78, 205, 196, 0.3);
+        }
+        .habits-list { display: flex; flex-direction: column; gap: 20px; }
+        .habit-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .habit-name {
+            font-size: 1.2rem;
+            color: #fff;
+            font-weight: 500;
+        }
+        .habit-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .habit-actions button {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .habit-actions button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .habit-actions .delete:hover { background: rgba(255,82,82,0.2); color: #ff5252; border-color: rgba(255,82,82,0.3); }
+        .habit-stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4ecdc4;
+        }
+        .stat-value.fire { color: #ff6b35; }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .heatmap-container {
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        .heatmap {
+            display: flex;
+            gap: 3px;
+        }
+        .heatmap-week {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .heatmap-day {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .heatmap-day:hover {
+            transform: scale(1.3);
+            z-index: 10;
+        }
+        .heatmap-day.level-1 { background: rgba(78, 205, 196, 0.3); }
+        .heatmap-day.level-2 { background: rgba(78, 205, 196, 0.5); }
+        .heatmap-day.level-3 { background: rgba(78, 205, 196, 0.7); }
+        .heatmap-day.level-4 { background: rgba(78, 205, 196, 1); }
+        .heatmap-day.today {
+            outline: 2px solid #fff;
+            outline-offset: 1px;
+        }
+        .heatmap-day.future {
+            background: rgba(255,255,255,0.02);
+            cursor: default;
+        }
+        .heatmap-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-right: 8px;
+            font-size: 9px;
+            color: #555;
+        }
+        .heatmap-labels span {
+            height: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .heatmap-wrapper {
+            display: flex;
+        }
+        .month-labels {
+            display: flex;
+            margin-left: 28px;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: #555;
+        }
+        .month-label {
+            text-align: left;
+        }
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 12px;
+            font-size: 11px;
+            color: #555;
+        }
+        .legend-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        .tooltip {
+            position: fixed;
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #fff;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #555;
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+        .empty-state p { font-size: 1.1rem; }
+        .milestone {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,215,0,0.2));
+            border: 1px solid rgba(255,215,0,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #ffd700;
+            margin-left: 12px;
+        }
+        @media (max-width: 600px) {
+            .habit-stats { gap: 16px; }
+            .stat-value { font-size: 1.4rem; }
+            .add-habit { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Habit Streak Tracker</h1>
+        <p class="subtitle">Build habits with visual streaks. Click days to mark as complete.</p>
+
+        <div class="card">
+            <div class="add-habit">
+                <input type="text" id="habitInput" placeholder="Enter a new habit (e.g., Exercise, Read, Meditate)">
+                <button class="btn" onclick="addHabit()">Add Habit</button>
+            </div>
+        </div>
+
+        <div class="habits-list" id="habitsList"></div>
+
+        <div class="card empty-state" id="emptyState">
+            <div class="icon">📈</div>
+            <p>No habits yet. Add one above to start tracking!</p>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        const STORAGE_KEY = 'habit-tracker-data';
+        let habits = [];
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                habits = JSON.parse(saved);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function parseDate(str) {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function addHabit() {
+            const input = document.getElementById('habitInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            habits.push({
+                id: generateId(),
+                name: name,
+                completedDates: [],
+                createdAt: formatDate(new Date())
+            });
+
+            input.value = '';
+            saveData();
+            render();
+        }
+
+        function deleteHabit(id) {
+            if (!confirm('Delete this habit and all its data?')) return;
+            habits = habits.filter(h => h.id !== id);
+            saveData();
+            render();
+        }
+
+        function toggleDate(habitId, dateStr) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+
+            const idx = habit.completedDates.indexOf(dateStr);
+            if (idx === -1) {
+                habit.completedDates.push(dateStr);
+            } else {
+                habit.completedDates.splice(idx, 1);
+            }
+
+            saveData();
+            render();
+        }
+
+        function markToday(habitId) {
+            const today = formatDate(new Date());
+            toggleDate(habitId, today);
+        }
+
+        function calculateStreak(completedDates) {
+            if (!completedDates.length) return 0;
+
+            const sorted = [...completedDates].sort().reverse();
+            const today = formatDate(new Date());
+            const yesterday = formatDate(new Date(Date.now() - 86400000));
+
+            // Check if streak is still active (completed today or yesterday)
+            if (sorted[0] !== today && sorted[0] !== yesterday) {
+                return 0;
+            }
+
+            let streak = 1;
+            let current = parseDate(sorted[0]);
+
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = parseDate(sorted[i]);
+                const diffDays = Math.round((current - prev) / 86400000);
+
+                if (diffDays === 1) {
+                    streak++;
+                    current = prev;
+                } else {
+                    break;
+                }
+            }
+
+            return streak;
+        }
+
+        function calculateLongestStreak(completedDates) {
+            if (!completedDates.length) return 0;
+
+            const sorted = [...completedDates].sort();
+            let longest = 1;
+            let current = 1;
+
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = parseDate(sorted[i - 1]);
+                const curr = parseDate(sorted[i]);
+                const diffDays = Math.round((curr - prev) / 86400000);
+
+                if (diffDays === 1) {
+                    current++;
+                    longest = Math.max(longest, current);
+                } else if (diffDays > 1) {
+                    current = 1;
+                }
+            }
+
+            return longest;
+        }
+
+        function getMilestone(streak) {
+            const milestones = [
+                { days: 365, label: '1 Year!', emoji: '👑' },
+                { days: 100, label: '100 Days!', emoji: '💯' },
+                { days: 30, label: '1 Month!', emoji: '🏆' },
+                { days: 21, label: '21 Days!', emoji: '⭐' },
+                { days: 7, label: '1 Week!', emoji: '🔥' },
+            ];
+
+            for (const m of milestones) {
+                if (streak >= m.days) {
+                    return m;
+                }
+            }
+            return null;
+        }
+
+        function renderHeatmap(habit) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const weeks = 26; // ~6 months
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - (weeks * 7) + (7 - startDate.getDay()));
+
+            let html = '';
+            const months = [];
+            let lastMonth = -1;
+
+            // Build weeks
+            for (let w = 0; w < weeks; w++) {
+                html += '<div class="heatmap-week">';
+                for (let d = 0; d < 7; d++) {
+                    const date = new Date(startDate);
+                    date.setDate(date.getDate() + (w * 7) + d);
+                    const dateStr = formatDate(date);
+                    const isCompleted = habit.completedDates.includes(dateStr);
+                    const isToday = dateStr === formatDate(today);
+                    const isFuture = date > today;
+
+                    // Track months for labels
+                    if (d === 0 && date.getMonth() !== lastMonth) {
+                        months.push({ week: w, name: date.toLocaleString('default', { month: 'short' }) });
+                        lastMonth = date.getMonth();
+                    }
+
+                    let levelClass = '';
+                    if (isFuture) {
+                        levelClass = 'future';
+                    } else if (isCompleted) {
+                        levelClass = 'level-4';
+                    }
+
+                    html += `<div class="heatmap-day ${levelClass} ${isToday ? 'today' : ''}"
+                                data-date="${dateStr}"
+                                data-habit="${habit.id}"
+                                ${isFuture ? '' : `onclick="toggleDate('${habit.id}', '${dateStr}')"`}></div>`;
+                }
+                html += '</div>';
+            }
+
+            // Month labels
+            let monthLabelsHtml = '<div class="month-labels">';
+            months.forEach((m, i) => {
+                const nextWeek = months[i + 1]?.week || weeks;
+                const width = (nextWeek - m.week) * 17; // 14px + 3px gap
+                monthLabelsHtml += `<span class="month-label" style="width:${width}px">${m.name}</span>`;
+            });
+            monthLabelsHtml += '</div>';
+
+            return `
+                ${monthLabelsHtml}
+                <div class="heatmap-wrapper">
+                    <div class="heatmap-labels">
+                        <span></span>
+                        <span>Mon</span>
+                        <span></span>
+                        <span>Wed</span>
+                        <span></span>
+                        <span>Fri</span>
+                        <span></span>
+                    </div>
+                    <div class="heatmap-container">
+                        <div class="heatmap">${html}</div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <span>Less</span>
+                    <div class="legend-box" style="background: rgba(255,255,255,0.05)"></div>
+                    <div class="legend-box" style="background: rgba(78, 205, 196, 0.3)"></div>
+                    <div class="legend-box" style="background: rgba(78, 205, 196, 0.5)"></div>
+                    <div class="legend-box" style="background: rgba(78, 205, 196, 0.7)"></div>
+                    <div class="legend-box" style="background: rgba(78, 205, 196, 1)"></div>
+                    <span>More</span>
+                </div>
+            `;
+        }
+
+        function render() {
+            const list = document.getElementById('habitsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (habits.length === 0) {
+                list.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            list.innerHTML = habits.map(habit => {
+                const streak = calculateStreak(habit.completedDates);
+                const longest = calculateLongestStreak(habit.completedDates);
+                const total = habit.completedDates.length;
+                const milestone = getMilestone(streak);
+                const today = formatDate(new Date());
+                const completedToday = habit.completedDates.includes(today);
+
+                return `
+                    <div class="habit-card">
+                        <div class="habit-header">
+                            <div>
+                                <span class="habit-name">${escapeHtml(habit.name)}</span>
+                                ${milestone ? `<span class="milestone">${milestone.emoji} ${milestone.label}</span>` : ''}
+                            </div>
+                            <div class="habit-actions">
+                                <button onclick="markToday('${habit.id}')" ${completedToday ? 'style="background: rgba(78,205,196,0.2); color: #4ecdc4; border-color: rgba(78,205,196,0.3)"' : ''}>
+                                    ${completedToday ? '✓ Done Today' : 'Mark Today'}
+                                </button>
+                                <button class="delete" onclick="deleteHabit('${habit.id}')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="habit-stats">
+                            <div class="stat">
+                                <div class="stat-value fire">${streak}</div>
+                                <div class="stat-label">Current Streak</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${longest}</div>
+                                <div class="stat-label">Longest Streak</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${total}</div>
+                                <div class="stat-label">Total Days</div>
+                            </div>
+                        </div>
+                        ${renderHeatmap(habit)}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tooltip
+        const tooltip = document.getElementById('tooltip');
+        document.addEventListener('mouseover', e => {
+            if (e.target.classList.contains('heatmap-day') && !e.target.classList.contains('future')) {
+                const dateStr = e.target.dataset.date;
+                const habitId = e.target.dataset.habit;
+                const habit = habits.find(h => h.id === habitId);
+                const completed = habit?.completedDates.includes(dateStr);
+                const date = parseDate(dateStr);
+                const formatted = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+                tooltip.innerHTML = `<strong>${formatted}</strong><br>${completed ? '✓ Completed' : 'Not completed'}`;
+                tooltip.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (tooltip.style.display === 'block') {
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY + 10 + 'px';
+            }
+        });
+
+        document.addEventListener('mouseout', e => {
+            if (e.target.classList.contains('heatmap-day')) {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Enter key to add habit
+        document.getElementById('habitInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') addHabit();
+        });
+
+        // Init
+        loadData();
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Chord Visualizer - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.5rem; font-weight: 600; }
+        .subtitle { color: #888; font-size: 0.9rem; margin-top: 4px; }
+        .back-link {
+            color: #888; text-decoration: none; font-size: 14px;
+            padding: 8px 14px; background: rgba(255,255,255,0.05);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+        .back-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .chord-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .chord-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .chord-btn:hover { background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.3); }
+        .chord-btn.active { background: rgba(100, 200, 255, 0.25); border-color: rgba(100, 200, 255, 0.5); }
+
+        .chord-type-section { margin-bottom: 16px; }
+        .chord-type-label { font-size: 12px; color: #666; margin-bottom: 8px; }
+
+        .visualizer-grid {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 20px;
+        }
+
+        /* Piano Keyboard */
+        .piano-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .piano {
+            display: flex;
+            position: relative;
+            height: 160px;
+            min-width: 700px;
+        }
+        .white-key {
+            width: 50px;
+            height: 160px;
+            background: linear-gradient(to bottom, #fff 0%, #e8e8e8 100%);
+            border: 1px solid #999;
+            border-radius: 0 0 6px 6px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 10px;
+        }
+        .white-key:hover { background: linear-gradient(to bottom, #f0f0f0 0%, #ddd 100%); }
+        .white-key.active {
+            background: linear-gradient(to bottom, #4ecdc4 0%, #26a69a 100%);
+            transform: translateY(2px);
+        }
+        .white-key .note-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+        }
+        .white-key.active .note-label { color: #fff; }
+
+        .black-key {
+            width: 30px;
+            height: 100px;
+            background: linear-gradient(to bottom, #333 0%, #000 100%);
+            border-radius: 0 0 4px 4px;
+            position: absolute;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .black-key:hover { background: linear-gradient(to bottom, #444 0%, #111 100%); }
+        .black-key.active {
+            background: linear-gradient(to bottom, #26a69a 0%, #00897b 100%);
+            height: 95px;
+        }
+
+        /* Guitar Fretboard */
+        .guitar-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .guitar-label { font-size: 12px; color: #888; margin-bottom: 12px; }
+        .fretboard {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 600px;
+        }
+        .guitar-string {
+            display: flex;
+            align-items: center;
+            height: 28px;
+        }
+        .string-label {
+            width: 30px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        .frets {
+            display: flex;
+            flex: 1;
+            background: linear-gradient(to right, #8b4513 0%, #654321 100%);
+            border-radius: 3px;
+            position: relative;
+        }
+        .fret {
+            flex: 1;
+            height: 100%;
+            border-right: 3px solid #c0c0c0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .fret:first-child { border-left: 6px solid #f5f5dc; }
+        .fret-dot {
+            width: 20px;
+            height: 20px;
+            background: rgba(78, 205, 196, 0.9);
+            border-radius: 50%;
+            display: none;
+            font-size: 10px;
+            color: #fff;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+        .fret-dot.active { display: flex; }
+        .fret-marker {
+            position: absolute;
+            bottom: -20px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Waveform Display */
+        .waveform-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .waveform-label { font-size: 12px; color: #888; margin-bottom: 12px; }
+        #waveformCanvas {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Chord Info */
+        .chord-info {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .chord-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .chord-notes {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        .chord-intervals {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Controls */
+        .control-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .control-btn {
+            flex: 1;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .control-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .volume-control {
+            margin-top: 16px;
+        }
+        .volume-control label {
+            font-size: 12px;
+            color: #888;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .volume-control input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Music Chord Visualizer</h1>
+                <div class="subtitle">See chords on piano, guitar, and hear them play</div>
+            </div>
+            <a href="../../index.html" class="back-link">Back</a>
+        </header>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title">Select Chord</div>
+
+                <div class="chord-type-section">
+                    <div class="chord-type-label">Root Note</div>
+                    <div class="chord-grid" id="rootNotes"></div>
+                </div>
+
+                <div class="chord-type-section">
+                    <div class="chord-type-label">Chord Type</div>
+                    <div class="chord-grid" id="chordTypes"></div>
+                </div>
+
+                <div class="chord-info">
+                    <div class="chord-name" id="chordName">C Major</div>
+                    <div class="chord-notes" id="chordNotes">Notes: C - E - G</div>
+                    <div class="chord-intervals" id="chordIntervals">Intervals: 1 - 3 - 5</div>
+                </div>
+
+                <div class="control-row">
+                    <button class="control-btn" id="playBtn">Play Chord</button>
+                </div>
+                <div class="control-row">
+                    <button class="control-btn" id="arpeggioBtn">Arpeggio</button>
+                </div>
+
+                <div class="volume-control">
+                    <label>Volume: <span id="volumeLabel">70</span>%</label>
+                    <input type="range" id="volume" min="0" max="100" value="70">
+                </div>
+            </div>
+
+            <div class="visualizer-grid">
+                <div class="piano-container">
+                    <div class="piano" id="piano"></div>
+                </div>
+
+                <div class="guitar-container">
+                    <div class="guitar-label">Guitar (Standard Tuning: E A D G B E)</div>
+                    <div class="fretboard" id="fretboard"></div>
+                </div>
+
+                <div class="waveform-container">
+                    <div class="waveform-label">Frequency Spectrum</div>
+                    <canvas id="waveformCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Music Theory Data
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const DISPLAY_NAMES = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
+
+        const CHORD_TYPES = {
+            'Major': [0, 4, 7],
+            'Minor': [0, 3, 7],
+            'Dim': [0, 3, 6],
+            'Aug': [0, 4, 8],
+            'Maj7': [0, 4, 7, 11],
+            'Min7': [0, 3, 7, 10],
+            'Dom7': [0, 4, 7, 10],
+            'Sus2': [0, 2, 7],
+            'Sus4': [0, 5, 7],
+            'Add9': [0, 4, 7, 14],
+            '6': [0, 4, 7, 9],
+            'm6': [0, 3, 7, 9]
+        };
+
+        const INTERVAL_NAMES = {
+            0: '1', 2: '2', 3: 'm3', 4: '3', 5: '4', 6: 'b5',
+            7: '5', 8: '#5', 9: '6', 10: 'b7', 11: '7', 12: '8',
+            14: '9', 15: 'b10', 16: '10'
+        };
+
+        // Guitar string tuning (low to high): E2, A2, D3, G3, B3, E4
+        const GUITAR_TUNING = [40, 45, 50, 55, 59, 64]; // MIDI note numbers
+        const STRING_NAMES = ['E', 'A', 'D', 'G', 'B', 'e'];
+        const NUM_FRETS = 15;
+
+        // State
+        let currentRoot = 0; // C
+        let currentType = 'Major';
+        let audioContext = null;
+        let analyser = null;
+        let volume = 0.7;
+        let activeOscillators = [];
+        let animationId = null;
+
+        // Frequency calculation
+        function midiToFreq(midi) {
+            return 440 * Math.pow(2, (midi - 69) / 12);
+        }
+
+        // Get chord notes as MIDI numbers
+        function getChordMidi(root, type, octave = 4) {
+            const baseMidi = 12 * octave + root;
+            return CHORD_TYPES[type].map(interval => baseMidi + interval);
+        }
+
+        // Get note name from MIDI
+        function midiToNoteName(midi) {
+            return NOTE_NAMES[midi % 12] + Math.floor(midi / 12 - 1);
+        }
+
+        // Initialize Audio
+        function initAudio() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            analyser.connect(audioContext.destination);
+        }
+
+        // Play a single note
+        function playNote(freq, duration = 1.5, delay = 0) {
+            initAudio();
+
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+
+            osc.connect(gain);
+            gain.connect(analyser);
+
+            const now = audioContext.currentTime + delay;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(volume * 0.3, now + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            osc.start(now);
+            osc.stop(now + duration);
+
+            activeOscillators.push({ osc, gain });
+
+            setTimeout(() => {
+                const idx = activeOscillators.findIndex(o => o.osc === osc);
+                if (idx > -1) activeOscillators.splice(idx, 1);
+            }, (delay + duration) * 1000);
+        }
+
+        // Play chord
+        function playChord() {
+            stopAll();
+            const notes = getChordMidi(currentRoot, currentType);
+            notes.forEach(midi => {
+                playNote(midiToFreq(midi));
+            });
+            startVisualization();
+        }
+
+        // Play arpeggio
+        function playArpeggio() {
+            stopAll();
+            const notes = getChordMidi(currentRoot, currentType);
+            notes.forEach((midi, i) => {
+                playNote(midiToFreq(midi), 1.0, i * 0.2);
+            });
+            startVisualization();
+        }
+
+        // Stop all sounds
+        function stopAll() {
+            activeOscillators.forEach(({ osc, gain }) => {
+                try {
+                    gain.gain.setValueAtTime(0, audioContext.currentTime);
+                    osc.stop();
+                } catch (e) {}
+            });
+            activeOscillators = [];
+        }
+
+        // Build Piano
+        function buildPiano() {
+            const piano = document.getElementById('piano');
+            piano.innerHTML = '';
+
+            const whiteNotes = [0, 2, 4, 5, 7, 9, 11]; // C, D, E, F, G, A, B
+            const blackNotes = [1, 3, 6, 8, 10]; // C#, D#, F#, G#, A#
+            const blackPositions = [0.65, 1.65, 3.65, 4.65, 5.65]; // Position relative to white keys
+
+            // Create white keys for 2 octaves
+            for (let octave = 0; octave < 2; octave++) {
+                whiteNotes.forEach((note, i) => {
+                    const key = document.createElement('div');
+                    key.className = 'white-key';
+                    key.dataset.note = note + octave * 12;
+                    key.dataset.midi = 48 + note + octave * 12;
+
+                    const label = document.createElement('span');
+                    label.className = 'note-label';
+                    label.textContent = NOTE_NAMES[note] + (4 + octave);
+                    key.appendChild(label);
+
+                    key.addEventListener('click', () => {
+                        initAudio();
+                        playNote(midiToFreq(parseInt(key.dataset.midi)), 1.0);
+                        startVisualization();
+                    });
+
+                    piano.appendChild(key);
+                });
+            }
+
+            // Create black keys
+            for (let octave = 0; octave < 2; octave++) {
+                blackNotes.forEach((note, i) => {
+                    const key = document.createElement('div');
+                    key.className = 'black-key';
+                    key.dataset.note = note + octave * 12;
+                    key.dataset.midi = 48 + note + octave * 12;
+
+                    const pos = blackPositions[i] + octave * 7;
+                    key.style.left = (pos * 50 + 35) + 'px';
+
+                    key.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        initAudio();
+                        playNote(midiToFreq(parseInt(key.dataset.midi)), 1.0);
+                        startVisualization();
+                    });
+
+                    piano.appendChild(key);
+                });
+            }
+        }
+
+        // Build Guitar Fretboard
+        function buildFretboard() {
+            const fretboard = document.getElementById('fretboard');
+            fretboard.innerHTML = '';
+
+            // Markers at frets 3, 5, 7, 9, 12, 15
+            const markerFrets = [3, 5, 7, 9, 12, 15];
+
+            for (let s = 5; s >= 0; s--) {
+                const stringRow = document.createElement('div');
+                stringRow.className = 'guitar-string';
+
+                const label = document.createElement('div');
+                label.className = 'string-label';
+                label.textContent = STRING_NAMES[s];
+                stringRow.appendChild(label);
+
+                const frets = document.createElement('div');
+                frets.className = 'frets';
+
+                for (let f = 0; f <= NUM_FRETS; f++) {
+                    const fret = document.createElement('div');
+                    fret.className = 'fret';
+                    fret.dataset.string = s;
+                    fret.dataset.fret = f;
+                    fret.dataset.midi = GUITAR_TUNING[s] + f;
+
+                    const dot = document.createElement('div');
+                    dot.className = 'fret-dot';
+                    fret.appendChild(dot);
+
+                    // Add fret marker for first string only
+                    if (s === 0 && markerFrets.includes(f)) {
+                        const marker = document.createElement('div');
+                        marker.className = 'fret-marker';
+                        marker.textContent = f;
+                        fret.appendChild(marker);
+                    }
+
+                    fret.addEventListener('click', () => {
+                        initAudio();
+                        playNote(midiToFreq(parseInt(fret.dataset.midi)), 1.0);
+                        startVisualization();
+                    });
+
+                    frets.appendChild(fret);
+                }
+
+                stringRow.appendChild(frets);
+                fretboard.appendChild(stringRow);
+            }
+        }
+
+        // Update visualizations
+        function updateVisualizations() {
+            const chordNotes = CHORD_TYPES[currentType].map(i => (currentRoot + i) % 12);
+
+            // Update piano
+            document.querySelectorAll('.white-key, .black-key').forEach(key => {
+                const note = parseInt(key.dataset.note) % 12;
+                key.classList.toggle('active', chordNotes.includes(note));
+            });
+
+            // Update guitar - find best fingering
+            const fretDots = document.querySelectorAll('.fret-dot');
+            fretDots.forEach(dot => dot.classList.remove('active'));
+
+            // Simple chord fingering: find notes within first 5 frets
+            for (let s = 0; s < 6; s++) {
+                const openNote = GUITAR_TUNING[s] % 12;
+                for (let f = 0; f <= 5; f++) {
+                    const fretNote = (openNote + f) % 12;
+                    if (chordNotes.includes(fretNote)) {
+                        const fret = document.querySelector(`.fret[data-string="${s}"][data-fret="${f}"]`);
+                        if (fret) {
+                            const dot = fret.querySelector('.fret-dot');
+                            dot.classList.add('active');
+                            dot.textContent = NOTE_NAMES[fretNote];
+                        }
+                        break; // Only show one note per string
+                    }
+                }
+            }
+
+            // Update chord info
+            const notesArray = CHORD_TYPES[currentType].map(i => NOTE_NAMES[(currentRoot + i) % 12]);
+            const intervalsArray = CHORD_TYPES[currentType].map(i => INTERVAL_NAMES[i] || i);
+
+            document.getElementById('chordName').textContent =
+                `${DISPLAY_NAMES[currentRoot]} ${currentType}`;
+            document.getElementById('chordNotes').textContent =
+                `Notes: ${notesArray.join(' - ')}`;
+            document.getElementById('chordIntervals').textContent =
+                `Intervals: ${intervalsArray.join(' - ')}`;
+        }
+
+        // Build controls
+        function buildControls() {
+            const rootContainer = document.getElementById('rootNotes');
+            const typeContainer = document.getElementById('chordTypes');
+
+            // Root notes
+            NOTE_NAMES.forEach((note, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'chord-btn' + (i === currentRoot ? ' active' : '');
+                btn.textContent = note;
+                btn.addEventListener('click', () => {
+                    currentRoot = i;
+                    document.querySelectorAll('#rootNotes .chord-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateVisualizations();
+                });
+                rootContainer.appendChild(btn);
+            });
+
+            // Chord types
+            Object.keys(CHORD_TYPES).forEach(type => {
+                const btn = document.createElement('button');
+                btn.className = 'chord-btn' + (type === currentType ? ' active' : '');
+                btn.textContent = type;
+                btn.addEventListener('click', () => {
+                    currentType = type;
+                    document.querySelectorAll('#chordTypes .chord-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateVisualizations();
+                });
+                typeContainer.appendChild(btn);
+            });
+        }
+
+        // Waveform visualization
+        function startVisualization() {
+            if (animationId) cancelAnimationFrame(animationId);
+
+            const canvas = document.getElementById('waveformCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            function draw() {
+                if (!analyser) return;
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, width, height);
+
+                const barWidth = (width / bufferLength) * 4;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * height;
+
+                    const hue = (i / bufferLength) * 180 + 150;
+                    ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.9)`;
+
+                    ctx.fillRect(x, height - barHeight, barWidth - 1, barHeight);
+
+                    x += barWidth;
+                    if (x > width) break;
+                }
+
+                animationId = requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+
+        // Event listeners
+        document.getElementById('playBtn').addEventListener('click', playChord);
+        document.getElementById('arpeggioBtn').addEventListener('click', playArpeggio);
+        document.getElementById('volume').addEventListener('input', (e) => {
+            volume = e.target.value / 100;
+            document.getElementById('volumeLabel').textContent = e.target.value;
+        });
+
+        // Initialize
+        buildPiano();
+        buildFretboard();
+        buildControls();
+        updateVisualizations();
+
+        // Handle window resize for canvas
+        window.addEventListener('resize', () => {
+            if (animationId) {
+                startVisualization();
+            }
+        });
+    </script>
+</body>
+</html>
