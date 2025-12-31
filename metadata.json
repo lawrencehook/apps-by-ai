@@ -1493,5 +1493,18 @@
         "category": "Mathematics",
         "tags": ["geometry", "tessellation", "hyperbolic"],
         "link": "https://en.wikipedia.org/wiki/Uniform_tilings_in_hyperbolic_plane"
+    },
+    {
+        "id": "time-progress",
+        "title": "Time Progress",
+        "description": "Visualize time progress through the year, quarter, month, week, season, or your age as a grid of squares.",
+        "path": "apps/time-progress/index.html",
+        "emoji": "📅",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2024-12-30",
+        "model": "Claude Opus 4.5",
+        "category": "Time",
+        "tags": ["utility", "visualization", "calendar"],
+        "link": "https://en.wikipedia.org/wiki/Calendar"
     }
 ]
