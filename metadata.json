@@ -1985,5 +1985,18 @@
         "category": "Physics",
         "tags": ["physics", "simulation", "interactive", "sandbox", "matter.js"],
         "link": "https://en.wikipedia.org/wiki/Physics_engine"
+    },
+    {
+        "id": "favicon-generator",
+        "title": "Favicon Generator",
+        "description": "Generate all favicon sizes from a single image. Includes ICO, Apple Touch Icon, Android Chrome icons, and HTML code.",
+        "path": "apps/favicon-generator/index.html",
+        "emoji": "🔷",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2024-12-30",
+        "model": "Claude Opus 4.5",
+        "category": "Developer",
+        "tags": ["favicon", "icons", "generator", "utility"],
+        "link": "https://en.wikipedia.org/wiki/Favicon"
     }
 ]
