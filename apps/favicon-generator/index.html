@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .upload-zone {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.05);
+        }
+        .upload-zone.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        .upload-text {
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .upload-hint {
+            color: #555;
+            font-size: 0.85rem;
+        }
+        input[type="file"] { display: none; }
+        .preview-section {
+            display: none;
+        }
+        .preview-section.visible { display: block; }
+        .section-title {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .source-preview {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .source-image {
+            width: 128px;
+            height: 128px;
+            object-fit: contain;
+            background: repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 16px 16px;
+            border-radius: 8px;
+        }
+        .source-info {
+            flex: 1;
+        }
+        .source-name {
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .source-details {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .btn {
+            background: rgba(78, 205, 196, 0.15);
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            color: #4ecdc4;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: rgba(78, 205, 196, 0.25);
+            border-color: #4ecdc4;
+        }
+        .btn-primary {
+            background: #4ecdc4;
+            color: #0a0a0f;
+            border-color: #4ecdc4;
+        }
+        .btn-primary:hover {
+            background: #3dbdb5;
+        }
+        .favicon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .favicon-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .favicon-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            margin-bottom: 12px;
+        }
+        .favicon-preview img {
+            image-rendering: pixelated;
+            background: repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 8px 8px;
+        }
+        .favicon-size {
+            color: #4ecdc4;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .favicon-label {
+            color: #666;
+            font-size: 0.75rem;
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            text-decoration: none;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .code-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .code-block {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+        }
+        .code-block .tag { color: #ff6b6b; }
+        .code-block .attr { color: #4ecdc4; }
+        .code-block .value { color: #ffe66d; }
+        .copy-btn {
+            float: right;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Favicon Generator</h1>
+        <p class="subtitle">Generate all favicon sizes from a single image.</p>
+
+        <div class="card">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">Drop an image here or click to upload</div>
+                <div class="upload-hint">PNG, JPG, SVG, or WebP • Square images work best</div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+        </div>
+
+        <div class="card preview-section" id="previewSection">
+            <div class="source-preview">
+                <img id="sourceImage" class="source-image" alt="Source">
+                <div class="source-info">
+                    <div class="source-name" id="sourceName">image.png</div>
+                    <div class="source-details" id="sourceDetails">512 × 512</div>
+                </div>
+                <button class="btn" id="changeBtn">Change Image</button>
+            </div>
+
+            <div class="section-title">Generated Favicons</div>
+            <div class="favicon-grid" id="faviconGrid"></div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="downloadAllBtn">Download All (ZIP)</button>
+                <button class="btn" id="downloadIcoBtn">Download favicon.ico</button>
+            </div>
+
+            <div class="code-section">
+                <div class="section-title">HTML Code <button class="btn copy-btn" id="copyBtn">Copy</button></div>
+                <div class="code-block" id="codeBlock"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const sourceImage = document.getElementById('sourceImage');
+        const faviconGrid = document.getElementById('faviconGrid');
+        const codeBlock = document.getElementById('codeBlock');
+
+        const FAVICON_SIZES = [
+            { size: 16, name: 'favicon-16x16.png', label: 'Browser tab' },
+            { size: 32, name: 'favicon-32x32.png', label: 'Browser tab (HiDPI)' },
+            { size: 48, name: 'favicon-48x48.png', label: 'Windows site' },
+            { size: 180, name: 'apple-touch-icon.png', label: 'Apple Touch Icon' },
+            { size: 192, name: 'android-chrome-192x192.png', label: 'Android Chrome' },
+            { size: 512, name: 'android-chrome-512x512.png', label: 'Android splash' },
+        ];
+
+        let generatedImages = {};
+        let originalImage = null;
+
+        // Upload handlers
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        document.getElementById('changeBtn').addEventListener('click', () => fileInput.click());
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    sourceImage.src = e.target.result;
+                    document.getElementById('sourceName').textContent = file.name;
+                    document.getElementById('sourceDetails').textContent = `${img.width} × ${img.height}`;
+                    generateFavicons(img);
+                    previewSection.classList.add('visible');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function generateFavicons(img) {
+            faviconGrid.innerHTML = '';
+            generatedImages = {};
+
+            FAVICON_SIZES.forEach(({ size, name, label }) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Draw image centered and scaled to fit
+                const scale = Math.min(size / img.width, size / img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                const x = (size - w) / 2;
+                const y = (size - h) / 2;
+
+                ctx.imageSmoothingEnabled = size > 64;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, x, y, w, h);
+
+                const dataUrl = canvas.toDataURL('image/png');
+                generatedImages[name] = dataUrl;
+
+                // Create preview item
+                const item = document.createElement('div');
+                item.className = 'favicon-item';
+                item.innerHTML = `
+                    <div class="favicon-preview">
+                        <img src="${dataUrl}" width="${Math.min(size, 64)}" height="${Math.min(size, 64)}" alt="${size}x${size}">
+                    </div>
+                    <div class="favicon-size">${size}×${size}</div>
+                    <div class="favicon-label">${label}</div>
+                    <a class="btn download-btn" href="${dataUrl}" download="${name}">Download</a>
+                `;
+                faviconGrid.appendChild(item);
+            });
+
+            // Generate HTML code
+            codeBlock.innerHTML = formatHtmlCode();
+        }
+
+        function formatHtmlCode() {
+            return `<span class="tag">&lt;link</span> <span class="attr">rel=</span><span class="value">"icon"</span> <span class="attr">type=</span><span class="value">"image/png"</span> <span class="attr">sizes=</span><span class="value">"32x32"</span> <span class="attr">href=</span><span class="value">"/favicon-32x32.png"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel=</span><span class="value">"icon"</span> <span class="attr">type=</span><span class="value">"image/png"</span> <span class="attr">sizes=</span><span class="value">"16x16"</span> <span class="attr">href=</span><span class="value">"/favicon-16x16.png"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel=</span><span class="value">"apple-touch-icon"</span> <span class="attr">sizes=</span><span class="value">"180x180"</span> <span class="attr">href=</span><span class="value">"/apple-touch-icon.png"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel=</span><span class="value">"manifest"</span> <span class="attr">href=</span><span class="value">"/site.webmanifest"</span><span class="tag">&gt;</span>`;
+        }
+
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const code = `<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">`;
+            navigator.clipboard.writeText(code);
+            document.getElementById('copyBtn').textContent = 'Copied!';
+            setTimeout(() => {
+                document.getElementById('copyBtn').textContent = 'Copy';
+            }, 2000);
+        });
+
+        // Generate ICO file (contains 16, 32, 48 sizes)
+        document.getElementById('downloadIcoBtn').addEventListener('click', () => {
+            generateIco([16, 32, 48]);
+        });
+
+        function generateIco(sizes) {
+            const images = sizes.map(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                const scale = Math.min(size / originalImage.width, size / originalImage.height);
+                const w = originalImage.width * scale;
+                const h = originalImage.height * scale;
+                const x = (size - w) / 2;
+                const y = (size - h) / 2;
+
+                ctx.imageSmoothingEnabled = size > 32;
+                ctx.drawImage(originalImage, x, y, w, h);
+
+                return {
+                    size,
+                    canvas,
+                    data: ctx.getImageData(0, 0, size, size)
+                };
+            });
+
+            // Build ICO file
+            const numImages = images.length;
+            let fileSize = 6 + (numImages * 16); // Header + directory entries
+
+            const imageDataArrays = images.map(img => {
+                // Create BMP data (no file header, just DIB)
+                const size = img.size;
+                const rowSize = size * 4;
+                const pixelDataSize = rowSize * size;
+                const bmpSize = 40 + pixelDataSize + (size * size / 8); // DIB header + pixels + mask
+
+                const bmp = new ArrayBuffer(40 + pixelDataSize);
+                const view = new DataView(bmp);
+
+                // BITMAPINFOHEADER
+                view.setUint32(0, 40, true); // Header size
+                view.setInt32(4, size, true); // Width
+                view.setInt32(8, size * 2, true); // Height (doubled for XOR + AND mask)
+                view.setUint16(12, 1, true); // Planes
+                view.setUint16(14, 32, true); // Bits per pixel
+                view.setUint32(16, 0, true); // Compression (none)
+                view.setUint32(20, pixelDataSize, true); // Image size
+                view.setUint32(24, 0, true); // X pixels per meter
+                view.setUint32(28, 0, true); // Y pixels per meter
+                view.setUint32(32, 0, true); // Colors used
+                view.setUint32(36, 0, true); // Important colors
+
+                // Pixel data (BGRA, bottom-up)
+                const pixels = new Uint8Array(bmp, 40);
+                const imgData = img.data.data;
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const srcIdx = ((size - 1 - y) * size + x) * 4;
+                        const dstIdx = (y * size + x) * 4;
+                        pixels[dstIdx] = imgData[srcIdx + 2]; // B
+                        pixels[dstIdx + 1] = imgData[srcIdx + 1]; // G
+                        pixels[dstIdx + 2] = imgData[srcIdx]; // R
+                        pixels[dstIdx + 3] = imgData[srcIdx + 3]; // A
+                    }
+                }
+
+                return new Uint8Array(bmp);
+            });
+
+            // Calculate offsets
+            let offset = 6 + (numImages * 16);
+            const offsets = imageDataArrays.map(data => {
+                const o = offset;
+                offset += data.length;
+                return o;
+            });
+
+            // Create final ICO buffer
+            const ico = new ArrayBuffer(offset);
+            const icoView = new DataView(ico);
+            const icoBytes = new Uint8Array(ico);
+
+            // ICO Header
+            icoView.setUint16(0, 0, true); // Reserved
+            icoView.setUint16(2, 1, true); // Type (1 = ICO)
+            icoView.setUint16(4, numImages, true); // Number of images
+
+            // Directory entries
+            images.forEach((img, i) => {
+                const entryOffset = 6 + (i * 16);
+                icoView.setUint8(entryOffset, img.size < 256 ? img.size : 0); // Width
+                icoView.setUint8(entryOffset + 1, img.size < 256 ? img.size : 0); // Height
+                icoView.setUint8(entryOffset + 2, 0); // Color palette
+                icoView.setUint8(entryOffset + 3, 0); // Reserved
+                icoView.setUint16(entryOffset + 4, 1, true); // Color planes
+                icoView.setUint16(entryOffset + 6, 32, true); // Bits per pixel
+                icoView.setUint32(entryOffset + 8, imageDataArrays[i].length, true); // Size
+                icoView.setUint32(entryOffset + 12, offsets[i], true); // Offset
+            });
+
+            // Image data
+            imageDataArrays.forEach((data, i) => {
+                icoBytes.set(data, offsets[i]);
+            });
+
+            // Download
+            const blob = new Blob([ico], { type: 'image/x-icon' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicon.ico';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Download all as ZIP
+        document.getElementById('downloadAllBtn').addEventListener('click', async () => {
+            const zip = new JSZip();
+
+            // Add all PNG files
+            for (const [name, dataUrl] of Object.entries(generatedImages)) {
+                const base64 = dataUrl.split(',')[1];
+                zip.file(name, base64, { base64: true });
+            }
+
+            // Generate and add ICO
+            const icoBlob = await generateIcoBlob([16, 32, 48]);
+            zip.file('favicon.ico', icoBlob);
+
+            // Add webmanifest
+            const manifest = {
+                name: "",
+                short_name: "",
+                icons: [
+                    { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+                    { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
+                ],
+                theme_color: "#ffffff",
+                background_color: "#ffffff",
+                display: "standalone"
+            };
+            zip.file('site.webmanifest', JSON.stringify(manifest, null, 2));
+
+            // Generate ZIP
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicons.zip';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        function generateIcoBlob(sizes) {
+            return new Promise(resolve => {
+                const images = sizes.map(size => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    const scale = Math.min(size / originalImage.width, size / originalImage.height);
+                    const w = originalImage.width * scale;
+                    const h = originalImage.height * scale;
+                    const x = (size - w) / 2;
+                    const y = (size - h) / 2;
+
+                    ctx.imageSmoothingEnabled = size > 32;
+                    ctx.drawImage(originalImage, x, y, w, h);
+
+                    return {
+                        size,
+                        data: ctx.getImageData(0, 0, size, size)
+                    };
+                });
+
+                const numImages = images.length;
+                const imageDataArrays = images.map(img => {
+                    const size = img.size;
+                    const pixelDataSize = size * size * 4;
+                    const bmp = new ArrayBuffer(40 + pixelDataSize);
+                    const view = new DataView(bmp);
+
+                    view.setUint32(0, 40, true);
+                    view.setInt32(4, size, true);
+                    view.setInt32(8, size * 2, true);
+                    view.setUint16(12, 1, true);
+                    view.setUint16(14, 32, true);
+                    view.setUint32(16, 0, true);
+                    view.setUint32(20, pixelDataSize, true);
+
+                    const pixels = new Uint8Array(bmp, 40);
+                    const imgData = img.data.data;
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
+                            const srcIdx = ((size - 1 - y) * size + x) * 4;
+                            const dstIdx = (y * size + x) * 4;
+                            pixels[dstIdx] = imgData[srcIdx + 2];
+                            pixels[dstIdx + 1] = imgData[srcIdx + 1];
+                            pixels[dstIdx + 2] = imgData[srcIdx];
+                            pixels[dstIdx + 3] = imgData[srcIdx + 3];
+                        }
+                    }
+
+                    return new Uint8Array(bmp);
+                });
+
+                let offset = 6 + (numImages * 16);
+                const offsets = imageDataArrays.map(data => {
+                    const o = offset;
+                    offset += data.length;
+                    return o;
+                });
+
+                const ico = new ArrayBuffer(offset);
+                const icoView = new DataView(ico);
+                const icoBytes = new Uint8Array(ico);
+
+                icoView.setUint16(0, 0, true);
+                icoView.setUint16(2, 1, true);
+                icoView.setUint16(4, numImages, true);
+
+                images.forEach((img, i) => {
+                    const entryOffset = 6 + (i * 16);
+                    icoView.setUint8(entryOffset, img.size < 256 ? img.size : 0);
+                    icoView.setUint8(entryOffset + 1, img.size < 256 ? img.size : 0);
+                    icoView.setUint8(entryOffset + 2, 0);
+                    icoView.setUint8(entryOffset + 3, 0);
+                    icoView.setUint16(entryOffset + 4, 1, true);
+                    icoView.setUint16(entryOffset + 6, 32, true);
+                    icoView.setUint32(entryOffset + 8, imageDataArrays[i].length, true);
+                    icoView.setUint32(entryOffset + 12, offsets[i], true);
+                });
+
+                imageDataArrays.forEach((data, i) => {
+                    icoBytes.set(data, offsets[i]);
+                });
+
+                resolve(new Blob([ico], { type: 'image/x-icon' }));
+            });
+        }
+    </script>
+</body>
+</html>

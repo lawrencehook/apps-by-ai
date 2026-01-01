@@ -1753,6 +1753,19 @@
         "link": "https://en.wikipedia.org/wiki/Uniform_tilings_in_hyperbolic_plane"
     },
     {
+        "id": "time-progress",
+        "title": "Time Progress",
+        "description": "Visualize time progress through the year, quarter, month, week, season, or your age as a grid of squares.",
+        "path": "apps/time-progress/index.html",
+        "emoji": "📅",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2024-12-30",
+        "model": "Claude Opus 4.5",
+        "category": "Time",
+        "tags": ["utility", "visualization", "calendar"],
+        "link": "https://en.wikipedia.org/wiki/Calendar"
+    },
+    {
         "id": "3d-globe-visualizer",
         "title": "3D Globe Visualizer",
         "description": "Interactive 3D Earth with data overlays. Explore cities, flight paths, earthquake zones, and more.",
@@ -1972,5 +1985,18 @@
         "category": "Physics",
         "tags": ["physics", "simulation", "interactive", "sandbox", "matter.js"],
         "link": "https://en.wikipedia.org/wiki/Physics_engine"
+    },
+    {
+        "id": "favicon-generator",
+        "title": "Favicon Generator",
+        "description": "Generate all favicon sizes from a single image. Includes ICO, Apple Touch Icon, Android Chrome icons, and HTML code.",
+        "path": "apps/favicon-generator/index.html",
+        "emoji": "🔷",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2024-12-30",
+        "model": "Claude Opus 4.5",
+        "category": "Developer",
+        "tags": ["favicon", "icons", "generator", "utility"],
+        "link": "https://en.wikipedia.org/wiki/Favicon"
     }
 ]
