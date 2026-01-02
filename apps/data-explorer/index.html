@@ -67,33 +67,22 @@
         /* Stats Grid */
         .stats-grid {
             display: flex;
-            gap: 16px;
-            align-items: flex-end;
+            gap: 12px;
+            align-items: stretch;
             flex-wrap: wrap;
         }
         .stat-item {
             background: rgba(78, 205, 196, 0.08);
             border: 1px solid rgba(78, 205, 196, 0.15);
             border-radius: 8px;
-            padding: 16px 20px;
-            text-align: center;
-        }
-        .stat-item.primary {
             padding: 20px 28px;
-        }
-        .stat-item.primary .stat-value {
-            font-size: 2.2rem;
-        }
-        .stat-item.secondary {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: rgba(255, 255, 255, 0.08);
-        }
-        .stat-item.secondary .stat-value {
-            font-size: 1.2rem;
-            color: #888;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 2.2rem;
             font-weight: 600;
             color: #4ecdc4;
             font-family: 'SF Mono', Monaco, monospace;
@@ -104,8 +93,32 @@
             text-transform: uppercase;
             margin-top: 4px;
         }
+        /* Secondary/smaller stats */
+        .stat-item.secondary {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,255,255,0.08);
+            padding: 14px 18px;
+        }
+        .stat-item.secondary .stat-value {
+            font-size: 1.4rem;
+            color: #888;
+        }
         .stat-item.secondary .stat-label {
+            font-size: 0.65rem;
             color: #666;
+        }
+        /* Stat group */
+        .stat-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 8px;
+            background: rgba(78, 205, 196, 0.03);
+            border: 1px solid rgba(78, 205, 196, 0.1);
+            border-radius: 10px;
+        }
+        .stat-group .stat-item {
+            margin: 0;
         }
 
         /* Column Stats */
@@ -798,21 +811,23 @@ Olivia,32,65000,Marketing,6`;
             // Overview stats
             const overviewStats = document.getElementById('overviewStats');
             overviewStats.innerHTML = `
-                <div class="stat-item primary">
+                <div class="stat-item">
                     <div class="stat-value">${data.length}</div>
                     <div class="stat-label">Rows</div>
                 </div>
-                <div class="stat-item primary">
-                    <div class="stat-value">${headers.length}</div>
-                    <div class="stat-label">Columns</div>
-                </div>
-                <div class="stat-item secondary">
-                    <div class="stat-value">${numericColumns.length}</div>
-                    <div class="stat-label">Numeric</div>
-                </div>
-                <div class="stat-item secondary">
-                    <div class="stat-value">${headers.length - numericColumns.length}</div>
-                    <div class="stat-label">Text</div>
+                <div class="stat-group">
+                    <div class="stat-item">
+                        <div class="stat-value">${headers.length}</div>
+                        <div class="stat-label">Columns</div>
+                    </div>
+                    <div class="stat-item secondary">
+                        <div class="stat-value">${numericColumns.length}</div>
+                        <div class="stat-label">Numeric</div>
+                    </div>
+                    <div class="stat-item secondary">
+                        <div class="stat-value">${headers.length - numericColumns.length}</div>
+                        <div class="stat-label">Text</div>
+                    </div>
                 </div>
             `;
 
@@ -835,8 +850,15 @@ Olivia,32,65000,Marketing,6`;
         function displayColumnStats() {
             const columnStats = document.getElementById('columnStats');
 
+            // Filter out empty columns (no name or no values)
+            const validHeaders = headers.filter(h => {
+                if (!h || h.trim() === '') return false;
+                const values = data.map(row => row[h]).filter(v => v !== '' && v !== null && v !== undefined);
+                return values.length > 0;
+            });
+
             // Sort headers based on selected order
-            let sortedHeaders = [...headers];
+            let sortedHeaders = [...validHeaders];
             switch (columnSortOrder) {
                 case 'alpha':
                     sortedHeaders.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
