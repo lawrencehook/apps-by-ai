@@ -1998,5 +1998,29 @@
         "category": "Developer",
         "tags": ["favicon", "icons", "generator", "utility"],
         "link": "https://en.wikipedia.org/wiki/Favicon"
+    },
+    {
+        "id": "text-banner",
+        "title": "Text Banner",
+        "description": "Display text as a full-screen banner for presentations. Customizable size, color themes, and fullscreen mode. Tab title syncs with banner text.",
+        "path": "apps/text-banner/index.html",
+        "emoji": "📢",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #093028 100%)",
+        "dateCreated": "2026-01-01",
+        "model": "Claude Opus 4.5",
+        "category": "Utility",
+        "tags": ["banner", "text", "display", "presentation", "fullscreen"]
+    },
+    {
+        "id": "data-explorer",
+        "title": "Data Explorer",
+        "description": "Upload CSV files to get instant statistics: mean, median, mode, standard deviation, min/max. Includes histograms, scatter plots, and data preview.",
+        "path": "apps/data-explorer/index.html",
+        "emoji": "📊",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #2d3436 100%)",
+        "dateCreated": "2026-01-01",
+        "model": "Claude Opus 4.5",
+        "category": "Data",
+        "tags": ["csv", "data", "statistics", "analysis", "visualization", "charts"]
     }
 ]

@@ -13,24 +13,101 @@
             color: #e0e0e0;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
             border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
         }
         .back-link:hover { color: #fff; }
-        .card {
+
+        /* Countdown Display - Hero Section */
+        .countdown-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 48px 32px;
+            margin-bottom: 24px;
+        }
+        .countdown-display {
+            text-align: center;
+        }
+        .event-name {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .countdown-item {
+            background: rgba(78, 205, 196, 0.1);
+            border: 1px solid rgba(78, 205, 196, 0.25);
+            border-radius: 16px;
+            padding: 32px 16px;
+        }
+        .countdown-value {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+            line-height: 1;
+        }
+        .countdown-label {
+            color: #888;
+            font-size: 1rem;
+            margin-top: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .total-time {
+            margin-top: 32px;
+            color: #888;
+            font-size: 1.1rem;
+        }
+        .total-time span { color: #4ecdc4; font-weight: 600; }
+
+        /* Past Event State */
+        .past-event {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .past-event .emoji {
+            font-size: 6rem;
+            margin-bottom: 24px;
+        }
+        .past-event .message {
+            font-size: 2rem;
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+        .past-event .ago {
+            color: #888;
+            margin-top: 12px;
+            font-size: 1.1rem;
+        }
+
+        /* Settings Card */
+        .settings-card {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
             padding: 24px;
-            margin-bottom: 20px;
+        }
+        .settings-header {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
         }
         .form-group { margin-bottom: 16px; }
         .form-group label {
@@ -54,110 +131,40 @@
             display: flex;
             gap: 12px;
         }
-        .input-row .form-group { flex: 1; }
+        .input-row .form-group { flex: 1; margin-bottom: 0; }
         .presets {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            margin-top: 8px;
+            margin-top: 16px;
         }
         .preset-btn {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.15);
             color: #888;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 8px 14px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            transition: all 0.2s;
         }
-        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        .countdown-display {
-            text-align: center;
-            padding: 30px 20px;
-        }
-        .event-name {
-            font-size: 1.3rem;
-            color: #888;
-            margin-bottom: 24px;
-        }
-        .countdown-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
-        .countdown-item {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.2);
-            border-radius: 12px;
-            padding: 20px 10px;
-        }
-        .countdown-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #4ecdc4;
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-        .countdown-label {
-            color: #666;
-            font-size: 0.8rem;
-            margin-top: 4px;
-            text-transform: uppercase;
-        }
-        .total-time {
-            margin-top: 24px;
-            color: #888;
-            font-size: 0.95rem;
-        }
-        .total-time span { color: #4ecdc4; }
-        .past-event {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .past-event .emoji {
-            font-size: 4rem;
-            margin-bottom: 16px;
-        }
-        .past-event .message {
-            font-size: 1.5rem;
-            color: #4ecdc4;
-        }
-        .past-event .ago {
-            color: #888;
-            margin-top: 8px;
-        }
+        .preset-btn:hover { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; border-color: rgba(78, 205, 196, 0.3); }
         .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .countdown-value { font-size: 2.8rem; }
+            .countdown-item { padding: 20px 8px; }
+            .countdown-label { font-size: 0.75rem; }
+            .event-name { font-size: 1.4rem; }
+            .countdown-card { padding: 32px 16px; }
+        }
     </style>
 </head>
 <body>
     <a href="../../index.html" class="back-link">← Back</a>
     <div class="container">
-        <h1>Countdown to Date</h1>
-        <p class="subtitle">Count down to any event or date.</p>
-
-        <div class="card">
-            <div class="form-group">
-                <label>Event Name</label>
-                <input type="text" id="eventName" placeholder="My Event" value="Event">
-            </div>
-            <div class="input-row">
-                <div class="form-group">
-                    <label>Target Date</label>
-                    <input type="date" id="targetDate">
-                </div>
-                <div class="form-group">
-                    <label>Target Time</label>
-                    <input type="time" id="targetTime" value="00:00">
-                </div>
-            </div>
-            <div class="presets">
-                <button class="preset-btn" data-preset="new-year">New Year</button>
-                <button class="preset-btn" data-preset="week">1 Week</button>
-                <button class="preset-btn" data-preset="month">1 Month</button>
-                <button class="preset-btn" data-preset="christmas">Christmas</button>
-            </div>
-        </div>
-
-        <div class="card" id="countdownCard">
+        <!-- Countdown Display - Hero at Top -->
+        <div class="countdown-card" id="countdownCard">
             <div class="countdown-display" id="countdownActive">
                 <div class="event-name" id="displayEventName">-</div>
                 <div class="countdown-grid">
@@ -185,6 +192,31 @@
                 <div class="emoji">🎉</div>
                 <div class="message" id="pastMessage">Event has passed!</div>
                 <div class="ago" id="pastAgo">-</div>
+            </div>
+        </div>
+
+        <!-- Settings Below -->
+        <div class="settings-card">
+            <div class="settings-header">Settings</div>
+            <div class="form-group">
+                <label>Event Name</label>
+                <input type="text" id="eventName" placeholder="My Event" value="Event">
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Target Date</label>
+                    <input type="date" id="targetDate">
+                </div>
+                <div class="form-group">
+                    <label>Target Time</label>
+                    <input type="time" id="targetTime" value="00:00">
+                </div>
+            </div>
+            <div class="presets">
+                <button class="preset-btn" data-preset="new-year">New Year</button>
+                <button class="preset-btn" data-preset="week">1 Week</button>
+                <button class="preset-btn" data-preset="month">1 Month</button>
+                <button class="preset-btn" data-preset="christmas">Christmas</button>
             </div>
         </div>
     </div>

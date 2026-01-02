@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Explorer - AI Showcase</title>
+    <script src="papaparse.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #666; margin-bottom: 32px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* Upload Area */
+        .upload-area {
+            background: rgba(255,255,255,0.03);
+            border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .upload-area:hover { border-color: #4ecdc4; background: rgba(78, 205, 196, 0.05); }
+        .upload-area.dragover { border-color: #4ecdc4; background: rgba(78, 205, 196, 0.1); }
+        .upload-icon { font-size: 3rem; margin-bottom: 16px; }
+        .upload-text { color: #888; margin-bottom: 8px; }
+        .upload-hint { color: #555; font-size: 0.85rem; }
+        input[type="file"] { display: none; }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title .icon { opacity: 0.6; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: rgba(78, 205, 196, 0.08);
+            border: 1px solid rgba(78, 205, 196, 0.15);
+            border-radius: 8px;
+            padding: 16px 20px;
+            text-align: center;
+        }
+        .stat-item.primary {
+            padding: 20px 28px;
+        }
+        .stat-item.primary .stat-value {
+            font-size: 2.2rem;
+        }
+        .stat-item.secondary {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        .stat-item.secondary .stat-value {
+            font-size: 1.2rem;
+            color: #888;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .stat-item.secondary .stat-label {
+            color: #666;
+        }
+
+        /* Column Stats */
+        .column-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .column-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .column-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .column-type {
+            color: #666;
+            font-size: 0.75rem;
+            margin-bottom: 12px;
+        }
+        .column-type.numeric { color: #4ecdc4; }
+        .column-type.text { color: #f59e0b; }
+
+        /* Column sort controls */
+        .column-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .column-controls label {
+            color: #666;
+            font-size: 0.8rem;
+            margin-right: 4px;
+        }
+        .column-sort-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .column-sort-btn:hover {
+            background: rgba(78, 205, 196, 0.1);
+            color: #4ecdc4;
+        }
+        .column-sort-btn.active {
+            background: rgba(78, 205, 196, 0.15);
+            color: #4ecdc4;
+            border-color: rgba(78, 205, 196, 0.4);
+        }
+
+        /* Unique values list */
+        .unique-values {
+            margin-top: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .unique-value {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 6px;
+            font-size: 0.75rem;
+            border-radius: 3px;
+        }
+        .unique-value:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .unique-value {
+            cursor: pointer;
+        }
+        .unique-value-hint {
+            font-size: 0.65rem;
+            color: #555;
+            text-align: center;
+            padding: 4px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 4px;
+        }
+        .unique-value-name {
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 180px;
+        }
+        .unique-value-count {
+            color: #666;
+            font-family: 'SF Mono', Monaco, monospace;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        .mini-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        .mini-stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        .mini-stat-label { color: #666; }
+        .mini-stat-value { color: #fff; font-family: 'SF Mono', Monaco, monospace; }
+
+        /* Histogram */
+        .histogram-container {
+            margin-top: 12px;
+        }
+        .histogram {
+            height: 60px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        .histogram-bar {
+            flex: 1;
+            background: linear-gradient(to top, #4ecdc4, #44a08d);
+            border-radius: 2px 2px 0 0;
+            min-width: 8px;
+            transition: height 0.3s, opacity 0.15s;
+            cursor: pointer;
+            position: relative;
+        }
+        .histogram-bar:hover {
+            opacity: 0.8;
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #fff;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .tooltip-label {
+            color: #888;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .tooltip-value {
+            color: #4ecdc4;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-weight: 600;
+        }
+        .tooltip-row {
+            margin-top: 4px;
+        }
+        .tooltip-row:first-child {
+            margin-top: 0;
+        }
+        .histogram-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Data Preview Table */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        th {
+            background: rgba(255,255,255,0.03);
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        td {
+            color: #ccc;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Scatter Plot */
+        .scatter-container {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .scatter-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .scatter-controls select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .scatter-wrapper {
+            position: relative;
+            display: inline-block;
+            padding-left: 45px;
+            padding-bottom: 35px;
+        }
+        .scatter-plot {
+            width: 400px;
+            height: 280px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .scatter-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.7;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        .scatter-dot:hover {
+            transform: translate(-50%, -50%) scale(1.8);
+            opacity: 1;
+            z-index: 10;
+        }
+        .scatter-x-label {
+            text-align: center;
+            color: #888;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .scatter-y-label {
+            position: absolute;
+            left: -5px;
+            top: 140px;
+            transform: rotate(-90deg);
+            color: #888;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .scatter-x-values {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.65rem;
+            font-family: 'SF Mono', Monaco, monospace;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+        .scatter-y-values {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            color: #666;
+            font-size: 0.65rem;
+            font-family: 'SF Mono', Monaco, monospace;
+            padding: 4px 0;
+        }
+
+        .hidden { display: none !important; }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .view-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .view-btn:hover { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; }
+        .view-btn.active { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; border-color: #4ecdc4; }
+
+        /* Full Table View */
+        .full-table-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .full-table-scroll {
+            overflow: auto;
+            max-height: 70vh;
+        }
+        .full-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .full-table th {
+            position: sticky;
+            top: 0;
+            background: #1a1a1f;
+            padding: 12px 10px;
+            text-align: left;
+            color: #888;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: color 0.15s;
+        }
+        .full-table th:hover { color: #4ecdc4; }
+        .full-table th.sorted { color: #4ecdc4; }
+        .full-table th .sort-icon {
+            margin-left: 4px;
+            opacity: 0.5;
+        }
+        .full-table th.sorted .sort-icon { opacity: 1; }
+        .full-table td {
+            padding: 8px 10px;
+            color: #ccc;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .full-table td.numeric {
+            font-family: 'SF Mono', Monaco, monospace;
+            text-align: right;
+        }
+        .full-table tbody tr:hover td { background: rgba(255,255,255,0.03); }
+        .table-info {
+            padding: 12px 16px;
+            color: #666;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Filter row */
+        .filter-row th {
+            padding: 6px 4px;
+            background: #151518;
+            position: sticky;
+            top: 38px;
+            z-index: 1;
+        }
+        .filter-input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        .filter-input::placeholder {
+            color: #555;
+        }
+        .filter-select {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 5px 4px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        .clear-filters {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .clear-filters:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .filter-active {
+            color: #4ecdc4;
+        }
+
+        /* Sample data button */
+        .sample-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 16px;
+        }
+        .sample-btn:hover { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; }
+    </style>
+</head>
+<body>
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="container">
+        <h1>Data Explorer</h1>
+        <p class="subtitle">Upload CSV data for basic statistics and analysis</p>
+
+        <!-- Upload Area -->
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📊</div>
+            <div class="upload-text">Drop CSV file here or click to upload</div>
+            <div class="upload-hint">Supports standard CSV format with headers</div>
+            <input type="file" id="fileInput" accept=".csv">
+            <button class="sample-btn" id="sampleBtn">Or try sample data</button>
+        </div>
+
+        <!-- Results (hidden until data loaded) -->
+        <div id="results" class="hidden">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" data-view="stats">Stats View</button>
+                <button class="view-btn" data-view="table">Table View</button>
+            </div>
+
+            <!-- Stats View -->
+            <div id="statsView">
+            <!-- Overview Stats -->
+            <div class="card">
+                <div class="card-title"><span class="icon">📋</span> Dataset Overview</div>
+                <div class="stats-grid" id="overviewStats"></div>
+            </div>
+
+            <!-- Column Statistics -->
+            <div class="card">
+                <div class="card-title"><span class="icon">📈</span> Column Statistics</div>
+                <div class="column-controls">
+                    <label>Sort:</label>
+                    <button class="column-sort-btn active" data-sort="original">Original</button>
+                    <button class="column-sort-btn" data-sort="alpha">A–Z</button>
+                    <button class="column-sort-btn" data-sort="type">Numeric first</button>
+                    <button class="column-sort-btn" data-sort="type-text">Text first</button>
+                </div>
+                <div class="column-stats" id="columnStats"></div>
+            </div>
+
+            <!-- Scatter Plot -->
+            <div class="card" id="scatterCard">
+                <div class="card-title"><span class="icon">🔵</span> Scatter Plot</div>
+                <div class="scatter-controls">
+                    <select id="xAxis"></select>
+                    <span style="color: #666; align-self: center;">vs</span>
+                    <select id="yAxis"></select>
+                </div>
+                <div class="scatter-wrapper">
+                    <div class="scatter-y-label" id="scatterYLabel"></div>
+                    <div class="scatter-y-values" id="scatterYValues"></div>
+                    <div class="scatter-plot" id="scatterPlot"></div>
+                    <div class="scatter-x-values" id="scatterXValues"></div>
+                    <div class="scatter-x-label" id="scatterXLabel"></div>
+                </div>
+            </div>
+
+            <!-- Data Preview -->
+            <div class="card">
+                <div class="card-title"><span class="icon">👁️</span> Data Preview (first 10 rows)</div>
+                <div class="table-container">
+                    <table id="dataTable"></table>
+                </div>
+            </div>
+            </div><!-- end statsView -->
+
+            <!-- Table View -->
+            <div id="tableView" class="hidden">
+                <div class="full-table-container">
+                    <div class="full-table-scroll">
+                        <table class="full-table" id="fullTable"></table>
+                    </div>
+                    <div class="table-info">
+                        <span id="tableRowCount"></span>
+                        <span id="tableSortInfo"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = [];
+        let headers = [];
+        let numericColumns = [];
+        let sortColumn = null;
+        let sortDirection = 'asc';
+        let sortedData = [];
+        let columnSortOrder = 'original';
+        let filters = {}; // column -> filter value
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const results = document.getElementById('results');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const tooltip = document.getElementById('tooltip');
+        const statsView = document.getElementById('statsView');
+        const tableView = document.getElementById('tableView');
+
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const view = btn.dataset.view;
+                if (view === 'stats') {
+                    statsView.classList.remove('hidden');
+                    tableView.classList.add('hidden');
+                } else {
+                    statsView.classList.add('hidden');
+                    tableView.classList.remove('hidden');
+                    renderFullTable();
+                }
+            });
+        });
+
+        // Column sort order
+        document.querySelectorAll('.column-sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.column-sort-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                columnSortOrder = btn.dataset.sort;
+                displayColumnStats();
+                setupHistogramTooltips();
+                setupUniqueValueFilters();
+            });
+        });
+
+        // Tooltip functions
+        function showTooltip(e, html) {
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+            positionTooltip(e);
+        }
+
+        function positionTooltip(e) {
+            const x = e.clientX + 12;
+            const y = e.clientY + 12;
+            const rect = tooltip.getBoundingClientRect();
+
+            // Keep tooltip in viewport
+            const maxX = window.innerWidth - rect.width - 10;
+            const maxY = window.innerHeight - rect.height - 10;
+
+            tooltip.style.left = Math.min(x, maxX) + 'px';
+            tooltip.style.top = Math.min(y, maxY) + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        // Drag and drop
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target !== sampleBtn) fileInput.click();
+        });
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) processFile(fileInput.files[0]);
+        });
+
+        // Sample data
+        sampleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sampleCSV = `Name,Age,Salary,Department,Years
+Alice,28,55000,Engineering,3
+Bob,35,72000,Marketing,8
+Carol,42,85000,Engineering,12
+David,31,48000,Sales,5
+Eva,26,52000,Engineering,2
+Frank,45,95000,Management,15
+Grace,33,67000,Marketing,7
+Henry,29,58000,Sales,4
+Iris,38,78000,Engineering,10
+Jack,41,88000,Management,13
+Kate,27,51000,Marketing,3
+Leo,34,69000,Sales,6
+Maya,30,62000,Engineering,5
+Nick,44,92000,Management,14
+Olivia,32,65000,Marketing,6`;
+            parseCSV(sampleCSV);
+        });
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => parseCSV(e.target.result);
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            // Use PapaParse for robust CSV parsing (handles quoted fields, commas in values, etc.)
+            const result = Papa.parse(text, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: false, // We'll handle type conversion ourselves for better control
+                transformHeader: h => h.trim()
+            });
+
+            headers = result.meta.fields || [];
+            data = result.data.map(row => {
+                const cleanRow = {};
+                headers.forEach(h => {
+                    let val = row[h]?.trim() || '';
+                    // Try to parse as number (handle currency like "$1,234.56")
+                    const numStr = val.replace(/[$,]/g, '');
+                    if (numStr !== '' && !isNaN(numStr)) {
+                        cleanRow[h] = parseFloat(numStr);
+                    } else {
+                        cleanRow[h] = val;
+                    }
+                });
+                return cleanRow;
+            });
+
+            // Find numeric columns (columns where at least some values are numbers)
+            numericColumns = headers.filter(h => {
+                return data.some(row => typeof row[h] === 'number' && !isNaN(row[h]));
+            });
+
+            displayResults();
+        }
+
+        function displayResults() {
+            results.classList.remove('hidden');
+            uploadArea.classList.add('hidden');
+
+            // Overview stats
+            const overviewStats = document.getElementById('overviewStats');
+            overviewStats.innerHTML = `
+                <div class="stat-item primary">
+                    <div class="stat-value">${data.length}</div>
+                    <div class="stat-label">Rows</div>
+                </div>
+                <div class="stat-item primary">
+                    <div class="stat-value">${headers.length}</div>
+                    <div class="stat-label">Columns</div>
+                </div>
+                <div class="stat-item secondary">
+                    <div class="stat-value">${numericColumns.length}</div>
+                    <div class="stat-label">Numeric</div>
+                </div>
+                <div class="stat-item secondary">
+                    <div class="stat-value">${headers.length - numericColumns.length}</div>
+                    <div class="stat-label">Text</div>
+                </div>
+            `;
+
+            // Column stats
+            displayColumnStats();
+
+            // Set up histogram tooltips
+            setupHistogramTooltips();
+
+            // Set up unique value double-click to filter
+            setupUniqueValueFilters();
+
+            // Scatter plot
+            setupScatterPlot();
+
+            // Data preview
+            displayDataPreview();
+        }
+
+        function displayColumnStats() {
+            const columnStats = document.getElementById('columnStats');
+
+            // Sort headers based on selected order
+            let sortedHeaders = [...headers];
+            switch (columnSortOrder) {
+                case 'alpha':
+                    sortedHeaders.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                    break;
+                case 'type':
+                    sortedHeaders.sort((a, b) => {
+                        const aNum = numericColumns.includes(a);
+                        const bNum = numericColumns.includes(b);
+                        if (aNum && !bNum) return -1;
+                        if (!aNum && bNum) return 1;
+                        return 0;
+                    });
+                    break;
+                case 'type-text':
+                    sortedHeaders.sort((a, b) => {
+                        const aNum = numericColumns.includes(a);
+                        const bNum = numericColumns.includes(b);
+                        if (aNum && !bNum) return 1;
+                        if (!aNum && bNum) return -1;
+                        return 0;
+                    });
+                    break;
+                // 'original' - keep as is
+            }
+
+            columnStats.innerHTML = sortedHeaders.map(h => {
+                const isNumeric = numericColumns.includes(h);
+                const values = data.map(row => row[h]).filter(v => v !== '' && v !== null && v !== undefined);
+
+                if (isNumeric) {
+                    const nums = values.filter(v => typeof v === 'number' && !isNaN(v));
+                    const stats = calculateStats(nums);
+                    const histogram = createHistogram(nums, stats.min, stats.max);
+
+                    return `
+                        <div class="column-card">
+                            <div class="column-name">${h}</div>
+                            <div class="column-type numeric">Numeric (${nums.length} values)</div>
+                            <div class="mini-stats">
+                                <div class="mini-stat"><span class="mini-stat-label">Min</span><span class="mini-stat-value">${formatNum(stats.min)}</span></div>
+                                <div class="mini-stat"><span class="mini-stat-label">Max</span><span class="mini-stat-value">${formatNum(stats.max)}</span></div>
+                                <div class="mini-stat"><span class="mini-stat-label">Mean</span><span class="mini-stat-value">${formatNum(stats.mean)}</span></div>
+                                <div class="mini-stat"><span class="mini-stat-label">Median</span><span class="mini-stat-value">${formatNum(stats.median)}</span></div>
+                                <div class="mini-stat"><span class="mini-stat-label">Std Dev</span><span class="mini-stat-value">${formatNum(stats.stdDev)}</span></div>
+                                <div class="mini-stat"><span class="mini-stat-label">Mode</span><span class="mini-stat-value">${formatNum(stats.mode)}</span></div>
+                            </div>
+                            <div class="histogram-container">
+                                <div class="histogram">${histogram}</div>
+                                <div class="histogram-labels">
+                                    <span>${formatNum(stats.min)}</span>
+                                    <span>${formatNum(stats.max)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Count occurrences and sort by frequency
+                    const freq = {};
+                    values.forEach(v => freq[v] = (freq[v] || 0) + 1);
+                    const sortedUnique = Object.entries(freq)
+                        .sort((a, b) => b[1] - a[1]);
+                    const uniqueCount = sortedUnique.length;
+
+                    // Build unique values list with data attributes for filtering
+                    const uniqueValuesHtml = sortedUnique.map(([val, count]) => `
+                        <div class="unique-value" data-column="${h}" data-value="${val.replace(/"/g, '&quot;')}">
+                            <span class="unique-value-name" title="${val}">${val}</span>
+                            <span class="unique-value-count">${count}</span>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="column-card">
+                            <div class="column-name">${h}</div>
+                            <div class="column-type text">Text (${values.length} values)</div>
+                            <div class="mini-stat" style="margin-bottom: 8px;"><span class="mini-stat-label">Unique</span><span class="mini-stat-value">${uniqueCount}</span></div>
+                            <div class="unique-values">
+                                ${uniqueValuesHtml}
+                                <div class="unique-value-hint">Double-click to filter in table</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        function calculateStats(nums) {
+            const sorted = [...nums].sort((a, b) => a - b);
+            const n = nums.length;
+            const sum = nums.reduce((a, b) => a + b, 0);
+            const mean = sum / n;
+            const median = n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+            const variance = nums.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+
+            // Mode
+            const freq = {};
+            nums.forEach(v => freq[v] = (freq[v] || 0) + 1);
+            const maxFreq = Math.max(...Object.values(freq));
+            const mode = parseFloat(Object.keys(freq).find(k => freq[k] === maxFreq));
+
+            return {
+                min: sorted[0],
+                max: sorted[n - 1],
+                mean,
+                median,
+                stdDev,
+                mode
+            };
+        }
+
+        function findMode(values) {
+            const freq = {};
+            values.forEach(v => freq[v] = (freq[v] || 0) + 1);
+            const maxFreq = Math.max(...Object.values(freq));
+            return Object.keys(freq).find(k => freq[k] === maxFreq) || '-';
+        }
+
+        function setupUniqueValueFilters() {
+            document.querySelectorAll('.unique-value[data-column]').forEach(el => {
+                el.addEventListener('dblclick', () => {
+                    const column = el.dataset.column;
+                    const value = el.dataset.value;
+
+                    // Set the filter
+                    filters = {}; // Clear other filters
+                    filters[column] = value;
+
+                    // Switch to table view
+                    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelector('.view-btn[data-view="table"]').classList.add('active');
+                    statsView.classList.add('hidden');
+                    tableView.classList.remove('hidden');
+
+                    // Render table with filter
+                    renderFullTable();
+                });
+            });
+        }
+
+        function setupHistogramTooltips() {
+            document.querySelectorAll('.histogram-bar').forEach(bar => {
+                bar.addEventListener('mouseenter', (e) => {
+                    const count = bar.dataset.count;
+                    const min = parseFloat(bar.dataset.min);
+                    const max = parseFloat(bar.dataset.max);
+                    const pct = bar.dataset.pct;
+                    showTooltip(e, `
+                        <div class="tooltip-row">
+                            <div class="tooltip-label">Range</div>
+                            <div class="tooltip-value">${formatNum(min)} – ${formatNum(max)}</div>
+                        </div>
+                        <div class="tooltip-row">
+                            <div class="tooltip-label">Count</div>
+                            <div class="tooltip-value">${count} (${pct}%)</div>
+                        </div>
+                    `);
+                });
+                bar.addEventListener('mousemove', positionTooltip);
+                bar.addEventListener('mouseleave', hideTooltip);
+            });
+        }
+
+        function createHistogram(nums, min, max) {
+            const buckets = 10;
+            const range = max - min || 1;
+            const bucketSize = range / buckets;
+
+            const counts = new Array(buckets).fill(0);
+            nums.forEach(n => {
+                const idx = Math.min(Math.floor((n - min) / bucketSize), buckets - 1);
+                counts[idx]++;
+            });
+
+            const maxCount = Math.max(...counts);
+            return counts.map((c, i) => {
+                const height = maxCount > 0 ? (c / maxCount) * 100 : 0;
+                const bucketMin = min + i * bucketSize;
+                const bucketMax = min + (i + 1) * bucketSize;
+                const pct = nums.length > 0 ? ((c / nums.length) * 100).toFixed(1) : 0;
+                return `<div class="histogram-bar" style="height: ${height}%"
+                    data-count="${c}"
+                    data-min="${bucketMin.toFixed(2)}"
+                    data-max="${bucketMax.toFixed(2)}"
+                    data-pct="${pct}"></div>`;
+            }).join('');
+        }
+
+        function setupScatterPlot() {
+            if (numericColumns.length < 2) {
+                document.getElementById('scatterCard').classList.add('hidden');
+                return;
+            }
+
+            const xSelect = document.getElementById('xAxis');
+            const ySelect = document.getElementById('yAxis');
+
+            xSelect.innerHTML = numericColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+            ySelect.innerHTML = numericColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            // Default: first two numeric columns
+            ySelect.selectedIndex = Math.min(1, numericColumns.length - 1);
+
+            const updateScatter = () => drawScatterPlot(xSelect.value, ySelect.value);
+            xSelect.addEventListener('change', updateScatter);
+            ySelect.addEventListener('change', updateScatter);
+            updateScatter();
+        }
+
+        function formatNum(n) {
+            if (n === undefined || n === null || isNaN(n)) return '-';
+            if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, {maximumFractionDigits: 0});
+            if (Number.isInteger(n)) return n.toString();
+            return n.toFixed(2);
+        }
+
+        function drawScatterPlot(xCol, yCol) {
+            const plot = document.getElementById('scatterPlot');
+            const xVals = data.map(row => row[xCol]).filter(v => typeof v === 'number');
+            const yVals = data.map(row => row[yCol]).filter(v => typeof v === 'number');
+
+            const xMin = Math.min(...xVals), xMax = Math.max(...xVals);
+            const yMin = Math.min(...yVals), yMax = Math.max(...yVals);
+            const xRange = xMax - xMin || 1;
+            const yRange = yMax - yMin || 1;
+
+            const dots = data.map((row, idx) => {
+                const x = row[xCol], y = row[yCol];
+                if (typeof x !== 'number' || typeof y !== 'number') return '';
+                const left = ((x - xMin) / xRange) * 90 + 5;
+                const top = 95 - ((y - yMin) / yRange) * 90;
+                return `<div class="scatter-dot" style="left: ${left}%; top: ${top}%"
+                    data-idx="${idx}"
+                    data-x="${x}"
+                    data-y="${y}"
+                    data-xcol="${xCol}"
+                    data-ycol="${yCol}"></div>`;
+            }).join('');
+
+            plot.innerHTML = dots;
+
+            // Update axis labels and values
+            document.getElementById('scatterXLabel').textContent = xCol;
+            document.getElementById('scatterYLabel').textContent = yCol;
+            document.getElementById('scatterXValues').innerHTML = `<span>${formatNum(xMin)}</span><span>${formatNum(xMax)}</span>`;
+            document.getElementById('scatterYValues').innerHTML = `<span>${formatNum(yMax)}</span><span>${formatNum(yMin)}</span>`;
+
+            // Set up dot tooltips
+            plot.querySelectorAll('.scatter-dot').forEach(dot => {
+                dot.addEventListener('mouseenter', (e) => {
+                    const idx = parseInt(dot.dataset.idx);
+                    const row = data[idx];
+                    const xCol = dot.dataset.xcol;
+                    const yCol = dot.dataset.ycol;
+
+                    // Build tooltip with key values from the row
+                    let html = `
+                        <div class="tooltip-row">
+                            <div class="tooltip-label">${xCol}</div>
+                            <div class="tooltip-value">${formatNum(row[xCol])}</div>
+                        </div>
+                        <div class="tooltip-row">
+                            <div class="tooltip-label">${yCol}</div>
+                            <div class="tooltip-value">${formatNum(row[yCol])}</div>
+                        </div>
+                    `;
+
+                    // Add first text column as identifier if available
+                    const textCols = headers.filter(h => !numericColumns.includes(h));
+                    if (textCols.length > 0) {
+                        html = `
+                            <div class="tooltip-row">
+                                <div class="tooltip-label">${textCols[0]}</div>
+                                <div class="tooltip-value" style="color: #fff;">${row[textCols[0]]}</div>
+                            </div>
+                        ` + html;
+                    }
+
+                    showTooltip(e, html);
+                });
+                dot.addEventListener('mousemove', positionTooltip);
+                dot.addEventListener('mouseleave', hideTooltip);
+            });
+        }
+
+        function displayDataPreview() {
+            const table = document.getElementById('dataTable');
+            const previewData = data.slice(0, 10);
+
+            table.innerHTML = `
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${previewData.map(row => `
+                        <tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>
+                    `).join('')}
+                </tbody>
+            `;
+        }
+
+        // Full table with sorting and filtering
+        function renderFullTable() {
+            const table = document.getElementById('fullTable');
+
+            // Apply filters
+            let filteredData = data.filter(row => {
+                return headers.every(h => {
+                    const filterVal = filters[h];
+                    if (!filterVal || filterVal === '') return true;
+
+                    const cellVal = row[h];
+                    const isNumeric = numericColumns.includes(h);
+
+                    if (isNumeric) {
+                        // For numeric: search in formatted string
+                        const cellStr = String(cellVal ?? '').toLowerCase();
+                        return cellStr.includes(filterVal.toLowerCase());
+                    } else {
+                        // For text: exact match from dropdown
+                        return String(cellVal ?? '') === filterVal;
+                    }
+                });
+            });
+
+            // Sort filtered data
+            if (sortColumn !== null) {
+                sortedData = [...filteredData].sort((a, b) => {
+                    let aVal = a[sortColumn];
+                    let bVal = b[sortColumn];
+
+                    if (aVal == null || aVal === '') return 1;
+                    if (bVal == null || bVal === '') return -1;
+
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    }
+
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            } else {
+                sortedData = [...filteredData];
+            }
+
+            // Build filter inputs
+            const filterRowHtml = headers.map(h => {
+                const isNumeric = numericColumns.includes(h);
+                const currentFilter = filters[h] || '';
+
+                if (isNumeric) {
+                    return `<th>
+                        <input type="text" class="filter-input" data-col="${h}"
+                            placeholder="Filter..." value="${currentFilter}">
+                    </th>`;
+                } else {
+                    // Get unique values for dropdown
+                    const uniqueVals = [...new Set(data.map(row => row[h]).filter(v => v !== '' && v != null))].sort();
+                    const options = uniqueVals.map(v =>
+                        `<option value="${v}" ${currentFilter === String(v) ? 'selected' : ''}>${v}</option>`
+                    ).join('');
+                    return `<th>
+                        <select class="filter-select" data-col="${h}">
+                            <option value="">All</option>
+                            ${options}
+                        </select>
+                    </th>`;
+                }
+            }).join('');
+
+            // Render table
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        ${headers.map(h => {
+                            const isSorted = sortColumn === h;
+                            const icon = isSorted ? (sortDirection === 'asc' ? '↑' : '↓') : '↕';
+                            return `<th class="${isSorted ? 'sorted' : ''}" data-col="${h}">
+                                ${h}<span class="sort-icon">${icon}</span>
+                            </th>`;
+                        }).join('')}
+                    </tr>
+                    <tr class="filter-row">${filterRowHtml}</tr>
+                </thead>
+                <tbody>
+                    ${sortedData.map(row => `
+                        <tr>
+                            ${headers.map(h => {
+                                const val = row[h];
+                                const isNum = typeof val === 'number';
+                                const display = isNum ? formatNum(val) : (val || '');
+                                return `<td class="${isNum ? 'numeric' : ''}" title="${display}">${display}</td>`;
+                            }).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+
+            // Update info
+            const hasFilters = Object.values(filters).some(v => v && v !== '');
+            const filterInfo = hasFilters ? ` (${sortedData.length} shown)` : '';
+            document.getElementById('tableRowCount').innerHTML = hasFilters
+                ? `<span class="filter-active">${sortedData.length} of ${data.length} rows</span> × ${headers.length} columns`
+                : `${data.length} rows × ${headers.length} columns`;
+            document.getElementById('tableSortInfo').innerHTML = hasFilters
+                ? `<button class="clear-filters" id="clearFiltersBtn">Clear filters</button>`
+                : (sortColumn ? `Sorted by ${sortColumn} (${sortDirection === 'asc' ? 'ascending' : 'descending'})` : 'Click a column header to sort');
+
+            // Add sort listeners (only on header row, not filter row)
+            table.querySelectorAll('thead tr:first-child th').forEach(th => {
+                th.addEventListener('click', () => {
+                    const col = th.dataset.col;
+                    if (sortColumn === col) {
+                        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortColumn = col;
+                        sortDirection = 'asc';
+                    }
+                    renderFullTable();
+                });
+            });
+
+            // Add filter listeners
+            table.querySelectorAll('.filter-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    filters[e.target.dataset.col] = e.target.value;
+                    renderFullTable();
+                });
+                // Prevent sort when clicking in input
+                input.addEventListener('click', e => e.stopPropagation());
+            });
+
+            table.querySelectorAll('.filter-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    filters[e.target.dataset.col] = e.target.value;
+                    renderFullTable();
+                });
+                select.addEventListener('click', e => e.stopPropagation());
+            });
+
+            // Clear filters button
+            const clearBtn = document.getElementById('clearFiltersBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    filters = {};
+                    renderFullTable();
+                });
+            }
+        }
+    </script>
+</body>
+</html>

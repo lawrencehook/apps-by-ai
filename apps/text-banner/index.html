@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Banner - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* Banner Display */
+        .banner-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .banner-text {
+            font-size: 12vw;
+            font-weight: 700;
+            text-align: center;
+            word-break: break-word;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #093028 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: font-size 0.3s;
+        }
+        .banner-text.small { font-size: 8vw; }
+        .banner-text.medium { font-size: 12vw; }
+        .banner-text.large { font-size: 18vw; }
+        .banner-text.xlarge { font-size: 25vw; }
+
+        /* Controls Panel */
+        .controls {
+            background: rgba(255,255,255,0.03);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .controls.hidden { display: none; }
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .input-group label {
+            display: block;
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input[type="text"]:focus { outline: none; border-color: #4ecdc4; }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #888;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn:hover { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; border-color: rgba(78, 205, 196, 0.3); }
+        .btn.active { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; border-color: #4ecdc4; }
+
+        select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        select:focus { outline: none; border-color: #4ecdc4; }
+
+        .fullscreen-hint {
+            color: #555;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+
+        /* Fullscreen mode */
+        body.fullscreen .controls { display: none; }
+        body.fullscreen .back-link { display: none; }
+        body.fullscreen .banner-container { cursor: default; }
+
+        /* Color themes - must include background-clip for gradient text */
+        .theme-ocean { background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #56ab91 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-sunset { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #ff9ff3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-neon { background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-fire { background: linear-gradient(135deg, #f12711 0%, #f5af19 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-ice { background: linear-gradient(135deg, #74ebd5 0%, #acb6e5 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-mono { background: linear-gradient(135deg, #fff 0%, #ccc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    </style>
+</head>
+<body>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <div class="banner-container" id="bannerContainer">
+        <div class="banner-text medium theme-ocean" id="bannerText">Hello World</div>
+    </div>
+
+    <div class="controls" id="controls">
+        <div class="input-group">
+            <label>Banner Text</label>
+            <input type="text" id="textInput" placeholder="Enter your text..." value="Hello World">
+        </div>
+
+        <div>
+            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;">Size</label>
+            <div class="btn-group">
+                <button class="btn" data-size="small">S</button>
+                <button class="btn active" data-size="medium">M</button>
+                <button class="btn" data-size="large">L</button>
+                <button class="btn" data-size="xlarge">XL</button>
+            </div>
+        </div>
+
+        <div>
+            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;">Theme</label>
+            <select id="themeSelect">
+                <option value="ocean">Ocean</option>
+                <option value="sunset">Sunset</option>
+                <option value="neon">Neon</option>
+                <option value="fire">Fire</option>
+                <option value="ice">Ice</option>
+                <option value="mono">Mono</option>
+            </select>
+        </div>
+
+        <button class="btn" id="fullscreenBtn">⛶ Fullscreen</button>
+
+        <span class="fullscreen-hint">Press Escape to exit fullscreen</span>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const bannerText = document.getElementById('bannerText');
+        const bannerContainer = document.getElementById('bannerContainer');
+        const themeSelect = document.getElementById('themeSelect');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const sizeButtons = document.querySelectorAll('[data-size]');
+
+        let originalTitle = 'Text Banner - AI Showcase';
+        let currentText = 'Hello World';
+        let currentSize = 'medium';
+        let currentTheme = 'ocean';
+
+        // Update banner text and title
+        function updateBanner() {
+            currentText = textInput.value || 'Enter text...';
+            bannerText.textContent = currentText;
+
+            // Update page title to show the text
+            document.title = currentText;
+        }
+
+        // Update text when user types
+        textInput.addEventListener('input', updateBanner);
+
+        // Size buttons
+        sizeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sizeButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSize = btn.dataset.size;
+                bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+            });
+        });
+
+        // Theme select
+        themeSelect.addEventListener('change', () => {
+            currentTheme = themeSelect.value;
+            bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+        });
+
+        // Fullscreen
+        fullscreenBtn.addEventListener('click', () => {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('fullscreen');
+            } else {
+                document.body.classList.remove('fullscreen');
+            }
+        });
+
+        // Click on banner to toggle controls visibility (when not in fullscreen)
+        bannerContainer.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('controls').classList.toggle('hidden');
+            }
+        });
+
+        // Handle visibility change - update title when tab becomes hidden/visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // When tabbed away, show the banner text in title
+                document.title = currentText;
+            } else {
+                // When returning, still show the text (it's always synced now)
+                document.title = currentText;
+            }
+        });
+
+        // Load from URL params
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('text')) {
+                textInput.value = params.get('text');
+                updateBanner();
+            }
+            if (params.has('size')) {
+                const size = params.get('size');
+                sizeButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.size === size);
+                });
+                currentSize = size;
+                bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+            }
+            if (params.has('theme')) {
+                const theme = params.get('theme');
+                themeSelect.value = theme;
+                currentTheme = theme;
+                bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+            }
+        }
+
+        // Update URL when settings change
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('text', currentText);
+            params.set('size', currentSize);
+            params.set('theme', currentTheme);
+            history.replaceState(null, '', '?' + params.toString());
+        }
+
+        textInput.addEventListener('input', updateURL);
+        themeSelect.addEventListener('change', updateURL);
+        sizeButtons.forEach(btn => btn.addEventListener('click', updateURL));
+
+        // Initialize
+        loadFromURL();
+        updateBanner();
+    </script>
+</body>
+</html>
