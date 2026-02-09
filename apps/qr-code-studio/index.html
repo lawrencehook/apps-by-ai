@@ -231,6 +231,8 @@
             50% { opacity: 0.5; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -376,7 +378,7 @@
     </div>
 
     <script>
-        // QR Code Generator - Pure JS implementation
+        // QR Code Generator - wrapper around qrcode-generator library
         class QRCode {
             constructor(data, errorLevel = 'M') {
                 this.data = data;
@@ -387,142 +389,19 @@
             }
 
             generate() {
-                // Determine version based on data length and error correction
-                const ecLevels = { L: 0, M: 1, Q: 2, H: 3 };
-                const capacities = [
-                    [41, 25, 17, 10], [77, 47, 32, 20], [127, 77, 53, 32],
-                    [187, 114, 78, 48], [255, 154, 106, 65], [322, 195, 134, 82],
-                    [370, 224, 154, 95], [461, 279, 192, 118], [552, 335, 230, 141],
-                    [652, 395, 271, 167], [772, 468, 321, 198], [883, 535, 367, 226]
-                ];
+                const ecMap = { L: 'L', M: 'M', Q: 'Q', H: 'H' };
+                const qr = qrcode(0, ecMap[this.errorLevel] || 'M');
+                qr.addData(this.data);
+                qr.make();
 
-                let version = 1;
-                const ecIndex = ecLevels[this.errorLevel];
-                for (let i = 0; i < capacities.length; i++) {
-                    if (this.data.length <= capacities[i][ecIndex]) {
-                        version = i + 1;
-                        break;
+                this.moduleCount = qr.getModuleCount();
+                this.modules = [];
+                for (let row = 0; row < this.moduleCount; row++) {
+                    this.modules[row] = [];
+                    for (let col = 0; col < this.moduleCount; col++) {
+                        this.modules[row][col] = qr.isDark(row, col);
                     }
                 }
-                version = Math.max(version, 2); // Minimum version 2 for better appearance
-
-                this.moduleCount = version * 4 + 17;
-
-                // Initialize modules
-                this.modules = new Array(this.moduleCount);
-                for (let i = 0; i < this.moduleCount; i++) {
-                    this.modules[i] = new Array(this.moduleCount).fill(null);
-                }
-
-                // Add patterns
-                this.addFinderPatterns();
-                this.addAlignmentPatterns(version);
-                this.addTimingPatterns();
-                this.addDarkModule(version);
-
-                // Encode data (simplified)
-                this.encodeData(version);
-            }
-
-            addFinderPatterns() {
-                const positions = [[0, 0], [this.moduleCount - 7, 0], [0, this.moduleCount - 7]];
-                for (const [row, col] of positions) {
-                    for (let r = 0; r < 7; r++) {
-                        for (let c = 0; c < 7; c++) {
-                            if (r === 0 || r === 6 || c === 0 || c === 6 ||
-                                (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
-                                this.modules[row + r][col + c] = true;
-                            } else {
-                                this.modules[row + r][col + c] = false;
-                            }
-                        }
-                    }
-                    // Separator
-                    for (let i = 0; i < 8; i++) {
-                        if (row === 0 && col === 0) {
-                            if (row + 7 < this.moduleCount) this.modules[row + 7][col + i] = this.modules[row + 7][col + i] ?? false;
-                            if (col + 7 < this.moduleCount) this.modules[row + i][col + 7] = this.modules[row + i][col + 7] ?? false;
-                        } else if (row === 0) {
-                            if (row + 7 < this.moduleCount && col + i < this.moduleCount) this.modules[row + 7][col + i] = this.modules[row + 7][col + i] ?? false;
-                            if (col - 1 >= 0 && row + i < this.moduleCount) this.modules[row + i][col - 1] = this.modules[row + i][col - 1] ?? false;
-                        } else {
-                            if (row - 1 >= 0 && col + i < this.moduleCount) this.modules[row - 1][col + i] = this.modules[row - 1][col + i] ?? false;
-                            if (col + 7 < this.moduleCount && row + i < this.moduleCount) this.modules[row + i][col + 7] = this.modules[row + i][col + 7] ?? false;
-                        }
-                    }
-                }
-            }
-
-            addAlignmentPatterns(version) {
-                if (version < 2) return;
-                const positions = this.getAlignmentPositions(version);
-                for (const row of positions) {
-                    for (const col of positions) {
-                        if (this.modules[row][col] !== null) continue;
-                        for (let r = -2; r <= 2; r++) {
-                            for (let c = -2; c <= 2; c++) {
-                                if (Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0)) {
-                                    this.modules[row + r][col + c] = true;
-                                } else {
-                                    this.modules[row + r][col + c] = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            getAlignmentPositions(version) {
-                if (version === 1) return [];
-                const intervals = Math.floor(version / 7) + 1;
-                const step = version === 32 ? 26 : Math.ceil((version * 4 + 4) / intervals / 2) * 2;
-                const positions = [6];
-                for (let pos = this.moduleCount - 7; positions.length <= intervals; pos -= step) {
-                    positions.splice(1, 0, pos);
-                }
-                return positions;
-            }
-
-            addTimingPatterns() {
-                for (let i = 8; i < this.moduleCount - 8; i++) {
-                    if (this.modules[6][i] === null) this.modules[6][i] = i % 2 === 0;
-                    if (this.modules[i][6] === null) this.modules[i][6] = i % 2 === 0;
-                }
-            }
-
-            addDarkModule(version) {
-                this.modules[this.moduleCount - 8][8] = true;
-            }
-
-            encodeData(version) {
-                // Simple data encoding - fill remaining cells with pseudo-random pattern based on data
-                const hash = this.simpleHash(this.data);
-                let bitIndex = 0;
-
-                for (let col = this.moduleCount - 1; col > 0; col -= 2) {
-                    if (col === 6) col = 5;
-                    for (let row = 0; row < this.moduleCount; row++) {
-                        for (let c = 0; c < 2; c++) {
-                            const actualCol = col - c;
-                            if (this.modules[row][actualCol] === null) {
-                                // Use hash-based pattern for visual consistency
-                                const charCode = this.data.charCodeAt(bitIndex % this.data.length) || 0;
-                                const pattern = ((hash + row * actualCol + charCode) % 3) === 0;
-                                this.modules[row][actualCol] = pattern;
-                                bitIndex++;
-                            }
-                        }
-                    }
-                }
-            }
-
-            simpleHash(str) {
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) {
-                    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                    hash = hash & hash;
-                }
-                return Math.abs(hash);
             }
         }
 
@@ -798,8 +677,24 @@
 
         function scanFrame() {
             if (!videoStream) return;
-            // In a real implementation, you would use a QR scanning library here
-            // For demo purposes, we'll just show the camera feed
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+                requestAnimationFrame(scanFrame);
+                return;
+            }
+            const offscreen = document.createElement('canvas');
+            offscreen.width = video.videoWidth;
+            offscreen.height = video.videoHeight;
+            const offCtx = offscreen.getContext('2d');
+            offCtx.drawImage(video, 0, 0);
+            const imageData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+                scanResult.textContent = code.data;
+                scanResult.className = '';
+                scanResult.style.display = 'block';
+                stopScan.click();
+                return;
+            }
             requestAnimationFrame(scanFrame);
         }
 
@@ -807,10 +702,25 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // For demo purposes, show a message
-            scanResult.textContent = 'Image uploaded. QR code scanning from images requires an external library like jsQR.';
-            scanResult.className = '';
-            scanResult.style.display = 'block';
+            const img = new Image();
+            img.onload = () => {
+                const offscreen = document.createElement('canvas');
+                offscreen.width = img.width;
+                offscreen.height = img.height;
+                const offCtx = offscreen.getContext('2d');
+                offCtx.drawImage(img, 0, 0);
+                const imageData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                    scanResult.textContent = code.data;
+                    scanResult.className = '';
+                } else {
+                    scanResult.textContent = 'No QR code found in image.';
+                    scanResult.className = 'error';
+                }
+                scanResult.style.display = 'block';
+            };
+            img.src = URL.createObjectURL(file);
         });
 
         // Initialize
