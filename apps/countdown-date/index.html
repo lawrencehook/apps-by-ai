@@ -731,6 +731,24 @@
         targetTimeInput.addEventListener('change', () => { update(); updateURL(); });
 
         let lastSeconds = -1;
+        let alarmFired = false;
+
+        function playAlarm() {
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const notes = [659, 784, 880, 1047]; // E5 G5 A5 C6
+            notes.forEach((freq, i) => {
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.3, ac.currentTime + i * 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.2 + 0.5);
+                osc.connect(gain);
+                gain.connect(ac.destination);
+                osc.start(ac.currentTime + i * 0.2);
+                osc.stop(ac.currentTime + i * 0.2 + 0.5);
+            });
+        }
 
         function update() {
             const name = eventNameInput.value || 'Event';
@@ -757,6 +775,10 @@
 
             if (diff <= 0) {
                 // Event has passed
+                if (!alarmFired) {
+                    alarmFired = true;
+                    playAlarm();
+                }
                 document.getElementById('countdownActive').classList.add('hidden');
                 document.getElementById('pastEvent').classList.remove('hidden');
                 document.getElementById('pastMessage').textContent = `${name} has arrived!`;
@@ -775,6 +797,7 @@
             } else {
                 document.getElementById('countdownActive').classList.remove('hidden');
                 document.getElementById('pastEvent').classList.add('hidden');
+                alarmFired = false;
 
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
