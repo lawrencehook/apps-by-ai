@@ -102,8 +102,10 @@
         }
 
         function heuristic(a, b) {
-            // Manhattan distance
-            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+            // Octile distance (admissible for 8-directional movement)
+            const dx = Math.abs(a.x - b.x);
+            const dy = Math.abs(a.y - b.y);
+            return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy);
         }
 
         function resize() {

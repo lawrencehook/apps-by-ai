@@ -276,7 +276,7 @@
                 return;
             }
 
-            const maxTime = Math.max(...last20, 500);
+            const maxTime = Math.max(500, ...last20);
             chart.innerHTML = last20.map((time, i) => {
                 const height = (time / maxTime) * 100;
                 return `<div class="history-bar" style="height: ${height}%" data-time="${time}ms"></div>`;
