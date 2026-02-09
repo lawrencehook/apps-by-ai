@@ -283,7 +283,7 @@
             // Ordered lists
             html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
             html = html.replace(/(<oli>.*<\/oli>\n?)+/g, match => {
-                return '<ol>' + match.replace(/<\/?oli>/g, m => m === '<oli>' ? '<li>' : '</li>') + '</ol>';
+                return '<ol>' + match.replace(/<oli>/g, '<li>').replace(/<\/oli>/g, '</li>') + '</ol>';
             });
 
             // Tables

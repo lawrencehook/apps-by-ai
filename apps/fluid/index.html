@@ -326,7 +326,7 @@
             const dx = e.clientX - pmouseX;
             const dy = e.clientY - pmouseY;
 
-            if (mouseDown || (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
+            if (mouseDown && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
                 addDensity(x, y, mouseDown ? 0.8 : 0.3);
                 addVelocity(x, y, dx * 0.3, dy * 0.3);
             }

@@ -225,7 +225,7 @@
 
         function findClosestPoint(x, y) {
             let closest = null;
-            let minDist = 30;
+            let minDist = spacing * 0.4;
             for (const point of points) {
                 const dist = Math.hypot(point.x - x, point.y - y);
                 if (dist < minDist) {

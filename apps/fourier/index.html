@@ -138,14 +138,14 @@
                 y += amp * Math.sin(freq * t + phase);
 
                 // Draw circle
-                ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 - i * 0.001})`;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, 0.15 - i * 0.001)})`;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.arc(prevX, prevY, amp, 0, Math.PI * 2);
                 ctx.stroke();
 
                 // Draw radius
-                ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 - i * 0.002})`;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, 0.4 - i * 0.002)})`;
                 ctx.beginPath();
                 ctx.moveTo(prevX, prevY);
                 ctx.lineTo(x, y);
