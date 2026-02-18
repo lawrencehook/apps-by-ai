@@ -9,7 +9,8 @@
         "dateCreated": "2025-12-28",
         "model": "Claude Opus 4.5",
         "category": "Music",
-        "tags": ["music", "arpeggio", "chords", "synthesizer", "piano", "harmony", "interactive"]
+        "tags": ["music", "arpeggio", "chords", "synthesizer", "piano", "harmony", "interactive"],
+        "completeness": 4
     },
     {
         "id": "midi-pad",
@@ -21,7 +22,8 @@
         "dateCreated": "2025-12-28",
         "model": "Claude Opus 4.5",
         "category": "Music",
-        "tags": ["midi", "music", "drums", "dj", "synthesizer", "sequencer", "production", "808", "909"]
+        "tags": ["midi", "music", "drums", "dj", "synthesizer", "sequencer", "production", "808", "909"],
+        "completeness": 4
     },
     {
         "id": "git-commit-visualizer",
@@ -34,7 +36,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer Tools",
         "tags": ["git", "visualization", "commits", "version-control"],
-        "link": "https://en.wikipedia.org/wiki/Git"
+        "link": "https://en.wikipedia.org/wiki/Git",
+        "completeness": 3
     },
     {
         "id": "keyboard-heatmap",
@@ -47,7 +50,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["keyboard", "heatmap", "typing", "analytics"],
-        "link": "https://en.wikipedia.org/wiki/Heat_map"
+        "link": "https://en.wikipedia.org/wiki/Heat_map",
+        "completeness": 4
     },
     {
         "id": "dependency-graph-visualizer",
@@ -60,7 +64,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer Tools",
         "tags": ["dependencies", "graph", "npm", "python", "visualization"],
-        "link": "https://en.wikipedia.org/wiki/Dependency_graph"
+        "link": "https://en.wikipedia.org/wiki/Dependency_graph",
+        "completeness": 3
     },
     {
         "id": "blueprint-annotation-tool",
@@ -73,7 +78,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["blueprint", "annotation", "measurements", "floor-plan"],
-        "link": "https://en.wikipedia.org/wiki/Floor_plan"
+        "link": "https://en.wikipedia.org/wiki/Floor_plan",
+        "completeness": 4
     },
     {
         "id": "data-flow-animator",
@@ -86,7 +92,8 @@
         "model": "Claude Opus 4.5",
         "category": "Visualization",
         "tags": ["architecture", "diagram", "animation", "data-flow"],
-        "link": "https://en.wikipedia.org/wiki/Data_flow_diagram"
+        "link": "https://en.wikipedia.org/wiki/Data_flow_diagram",
+        "completeness": 3
     },
     {
         "id": "photo-time-lapse-creator",
@@ -99,7 +106,8 @@
         "model": "Claude Opus 4.5",
         "category": "Image",
         "tags": ["timelapse", "video", "animation", "photos"],
-        "link": "https://en.wikipedia.org/wiki/Time-lapse_photography"
+        "link": "https://en.wikipedia.org/wiki/Time-lapse_photography",
+        "completeness": 3
     },
     {
         "id": "resume-ats-analyzer",
@@ -112,7 +120,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["resume", "job-search", "ats", "career"],
-        "link": "https://en.wikipedia.org/wiki/Applicant_tracking_system"
+        "link": "https://en.wikipedia.org/wiki/Applicant_tracking_system",
+        "completeness": 4
     },
     {
         "id": "3d-room-planner",
@@ -125,7 +134,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["3d", "interior-design", "planning", "visualization"],
-        "link": "https://en.wikipedia.org/wiki/Interior_design"
+        "link": "https://en.wikipedia.org/wiki/Interior_design",
+        "completeness": 4
     },
     {
         "id": "speech-to-text-notes",
@@ -138,7 +148,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["speech", "transcription", "notes", "accessibility"],
-        "link": "https://en.wikipedia.org/wiki/Speech_recognition"
+        "link": "https://en.wikipedia.org/wiki/Speech_recognition",
+        "completeness": 4
     },
     {
         "id": "font-specimen-generator",
@@ -151,7 +162,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["typography", "fonts", "design"],
-        "link": "https://en.wikipedia.org/wiki/Font"
+        "link": "https://en.wikipedia.org/wiki/Font",
+        "completeness": 3
     },
     {
         "id": "css-glass-morphism-builder",
@@ -164,7 +176,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["css", "ui", "design"],
-        "link": "https://en.wikipedia.org/wiki/Glassmorphism"
+        "link": "https://en.wikipedia.org/wiki/Glassmorphism",
+        "completeness": 4
     },
     {
         "id": "image-to-ascii",
@@ -177,7 +190,8 @@
         "model": "Claude Opus 4.5",
         "category": "Image",
         "tags": ["ascii", "art", "converter"],
-        "link": "https://en.wikipedia.org/wiki/ASCII_art"
+        "link": "https://en.wikipedia.org/wiki/ASCII_art",
+        "completeness": 3
     },
     {
         "id": "receipt-splitter",
@@ -190,7 +204,8 @@
         "model": "Claude Opus 4.5",
         "category": "Finance",
         "tags": ["calculator", "sharing", "money"],
-        "link": "https://en.wikipedia.org/wiki/Bill_splitting"
+        "link": "https://en.wikipedia.org/wiki/Bill_splitting",
+        "completeness": 3
     },
     {
         "id": "code-screenshot",
@@ -203,7 +218,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer Tools",
         "tags": ["code", "screenshot", "developer"],
-        "link": "https://en.wikipedia.org/wiki/Syntax_highlighting"
+        "link": "https://en.wikipedia.org/wiki/Syntax_highlighting",
+        "completeness": 3
     },
     {
         "id": "svg-path-animator",
@@ -216,7 +232,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["svg", "animation", "drawing"],
-        "link": "https://en.wikipedia.org/wiki/SVG_animation"
+        "link": "https://en.wikipedia.org/wiki/SVG_animation",
+        "completeness": 4
     },
     {
         "id": "habit-streak-tracker",
@@ -229,7 +246,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["habits", "tracking", "persistence"],
-        "link": "https://en.wikipedia.org/wiki/Habit"
+        "link": "https://en.wikipedia.org/wiki/Habit",
+        "completeness": 4
     },
     {
         "id": "pomodoro-flow",
@@ -242,7 +260,8 @@
         "model": "Claude Opus 4.5",
         "category": "Productivity",
         "tags": ["timer", "focus", "productivity"],
-        "link": "https://en.wikipedia.org/wiki/Pomodoro_Technique"
+        "link": "https://en.wikipedia.org/wiki/Pomodoro_Technique",
+        "completeness": 4
     },
     {
         "id": "color-blindness-simulator",
@@ -255,7 +274,8 @@
         "model": "Claude Opus 4.5",
         "category": "Accessibility",
         "tags": ["accessibility", "design", "simulation"],
-        "link": "https://en.wikipedia.org/wiki/Color_blindness"
+        "link": "https://en.wikipedia.org/wiki/Color_blindness",
+        "completeness": 4
     },
     {
         "id": "particle-life",
@@ -268,7 +288,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "emergent", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Artificial_life"
+        "link": "https://en.wikipedia.org/wiki/Artificial_life",
+        "completeness": 3
     },
     {
         "id": "boids",
@@ -281,7 +302,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "swarm", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Boids"
+        "link": "https://en.wikipedia.org/wiki/Boids",
+        "completeness": 4
     },
     {
         "id": "game-of-life",
@@ -294,7 +316,8 @@
         "model": "Claude Opus 4.5",
         "category": "Theory of Computation",
         "tags": ["cellular automata", "interactive", "patterns"],
-        "link": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life"
+        "link": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life",
+        "completeness": 4
     },
     {
         "id": "mandelbrot",
@@ -307,7 +330,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["fractal", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Mandelbrot_set"
+        "link": "https://en.wikipedia.org/wiki/Mandelbrot_set",
+        "completeness": 4
     },
     {
         "id": "fourier",
@@ -320,7 +344,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["visualization", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Fourier_series"
+        "link": "https://en.wikipedia.org/wiki/Fourier_series",
+        "completeness": 3
     },
     {
         "id": "fluid",
@@ -333,7 +358,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Computational_fluid_dynamics"
+        "link": "https://en.wikipedia.org/wiki/Computational_fluid_dynamics",
+        "completeness": 4
     },
     {
         "id": "lsystem",
@@ -346,7 +372,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["generative", "procedural", "nature"],
-        "link": "https://en.wikipedia.org/wiki/L-system"
+        "link": "https://en.wikipedia.org/wiki/L-system",
+        "completeness": 3
     },
     {
         "id": "reaction-diffusion",
@@ -359,7 +386,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "patterns", "generative"],
-        "link": "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system"
+        "link": "https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system",
+        "completeness": 4
     },
     {
         "id": "cloth",
@@ -372,7 +400,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Verlet_integration"
+        "link": "https://en.wikipedia.org/wiki/Verlet_integration",
+        "completeness": 4
     },
     {
         "id": "raymarching",
@@ -385,7 +414,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["3D", "rendering"],
-        "link": "https://en.wikipedia.org/wiki/Ray_marching"
+        "link": "https://en.wikipedia.org/wiki/Ray_marching",
+        "completeness": 4
     },
     {
         "id": "pendulum",
@@ -398,7 +428,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["chaos", "simulation"],
-        "link": "https://en.wikipedia.org/wiki/Double_pendulum"
+        "link": "https://en.wikipedia.org/wiki/Double_pendulum",
+        "completeness": 4
     },
     {
         "id": "metaballs",
@@ -411,7 +442,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["interactive", "organic"],
-        "link": "https://en.wikipedia.org/wiki/Metaballs"
+        "link": "https://en.wikipedia.org/wiki/Metaballs",
+        "completeness": 4
     },
     {
         "id": "voronoi",
@@ -424,7 +456,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["geometry", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Voronoi_diagram"
+        "link": "https://en.wikipedia.org/wiki/Voronoi_diagram",
+        "completeness": 4
     },
     {
         "id": "terrain",
@@ -437,7 +470,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["procedural", "3D", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Procedural_generation"
+        "link": "https://en.wikipedia.org/wiki/Procedural_generation",
+        "completeness": 4
     },
     {
         "id": "wfc",
@@ -450,7 +484,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["procedural", "patterns"],
-        "link": "https://en.wikipedia.org/wiki/Wave_function_collapse"
+        "link": "https://en.wikipedia.org/wiki/Wave_function_collapse",
+        "completeness": 3
     },
     {
         "id": "lorenz",
@@ -463,7 +498,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["chaos", "3D"],
-        "link": "https://en.wikipedia.org/wiki/Lorenz_system"
+        "link": "https://en.wikipedia.org/wiki/Lorenz_system",
+        "completeness": 4
     },
     {
         "id": "marching-squares",
@@ -476,7 +512,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["visualization", "contours"],
-        "link": "https://en.wikipedia.org/wiki/Marching_squares"
+        "link": "https://en.wikipedia.org/wiki/Marching_squares",
+        "completeness": 3
     },
     {
         "id": "delaunay",
@@ -489,7 +526,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["geometry", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Delaunay_triangulation"
+        "link": "https://en.wikipedia.org/wiki/Delaunay_triangulation",
+        "completeness": 4
     },
     {
         "id": "flowfield",
@@ -502,7 +540,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["generative", "particles", "art"],
-        "link": "https://en.wikipedia.org/wiki/Perlin_noise"
+        "link": "https://en.wikipedia.org/wiki/Perlin_noise",
+        "completeness": 4
     },
     {
         "id": "gravity",
@@ -515,7 +554,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/N-body_problem"
+        "link": "https://en.wikipedia.org/wiki/N-body_problem",
+        "completeness": 3
     },
     {
         "id": "bezier",
@@ -528,7 +568,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["curves", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/B%C3%A9zier_curve"
+        "link": "https://en.wikipedia.org/wiki/B%C3%A9zier_curve",
+        "completeness": 4
     },
     {
         "id": "langton",
@@ -541,7 +582,8 @@
         "model": "Claude Opus 4.5",
         "category": "Theory of Computation",
         "tags": ["cellular automata", "emergent", "patterns"],
-        "link": "https://en.wikipedia.org/wiki/Langton%27s_ant"
+        "link": "https://en.wikipedia.org/wiki/Langton%27s_ant",
+        "completeness": 4
     },
     {
         "id": "dla",
@@ -554,7 +596,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["fractal", "generative", "simulation"],
-        "link": "https://en.wikipedia.org/wiki/Diffusion-limited_aggregation"
+        "link": "https://en.wikipedia.org/wiki/Diffusion-limited_aggregation",
+        "completeness": 3
     },
     {
         "id": "fire",
@@ -567,7 +610,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["retro", "demoscene"],
-        "link": "https://en.wikipedia.org/wiki/Demoscene"
+        "link": "https://en.wikipedia.org/wiki/Demoscene",
+        "completeness": 4
     },
     {
         "id": "maze",
@@ -580,7 +624,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["procedural", "visualization"],
-        "link": "https://en.wikipedia.org/wiki/Maze_generation_algorithm"
+        "link": "https://en.wikipedia.org/wiki/Maze_generation_algorithm",
+        "completeness": 4
     },
     {
         "id": "springs",
@@ -593,7 +638,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["simulation", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Hooke%27s_law"
+        "link": "https://en.wikipedia.org/wiki/Hooke%27s_law",
+        "completeness": 4
     },
     {
         "id": "quadtree",
@@ -606,7 +652,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data Structures",
         "tags": ["spatial", "visualization"],
-        "link": "https://en.wikipedia.org/wiki/Quadtree"
+        "link": "https://en.wikipedia.org/wiki/Quadtree",
+        "completeness": 4
     },
     {
         "id": "synth",
@@ -619,7 +666,8 @@
         "model": "Claude Opus 4.5",
         "category": "Music",
         "tags": ["interactive", "visualization", "synthesizer", "music"],
-        "link": "https://en.wikipedia.org/wiki/Synthesizer"
+        "link": "https://en.wikipedia.org/wiki/Synthesizer",
+        "completeness": 4
     },
     {
         "id": "shader",
@@ -632,7 +680,8 @@
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
         "tags": ["GPU", "art"],
-        "link": "https://en.wikipedia.org/wiki/Shader"
+        "link": "https://en.wikipedia.org/wiki/Shader",
+        "completeness": 4
     },
     {
         "id": "astar",
@@ -645,7 +694,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["AI", "pathfinding", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/A*_search_algorithm"
+        "link": "https://en.wikipedia.org/wiki/A*_search_algorithm",
+        "completeness": 4
     },
     {
         "id": "sorting",
@@ -658,7 +708,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["visualization", "comparison"],
-        "link": "https://en.wikipedia.org/wiki/Sorting_algorithm"
+        "link": "https://en.wikipedia.org/wiki/Sorting_algorithm",
+        "completeness": 4
     },
     {
         "id": "dijkstra",
@@ -671,7 +722,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["graph", "pathfinding"],
-        "link": "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm"
+        "link": "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm",
+        "completeness": 4
     },
     {
         "id": "bfs-dfs",
@@ -684,7 +736,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["graph", "comparison"],
-        "link": "https://en.wikipedia.org/wiki/Graph_traversal"
+        "link": "https://en.wikipedia.org/wiki/Graph_traversal",
+        "completeness": 3
     },
     {
         "id": "convex-hull",
@@ -697,7 +750,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["geometry", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Convex_hull"
+        "link": "https://en.wikipedia.org/wiki/Convex_hull",
+        "completeness": 4
     },
     {
         "id": "rbtree",
@@ -710,7 +764,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data Structures",
         "tags": ["data structure", "tree", "visualization"],
-        "link": "https://en.wikipedia.org/wiki/Red%E2%80%93black_tree"
+        "link": "https://en.wikipedia.org/wiki/Red%E2%80%93black_tree",
+        "completeness": 4
     },
     {
         "id": "mst",
@@ -723,7 +778,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["graph", "optimization"],
-        "link": "https://en.wikipedia.org/wiki/Minimum_spanning_tree"
+        "link": "https://en.wikipedia.org/wiki/Minimum_spanning_tree",
+        "completeness": 4
     },
     {
         "id": "huffman",
@@ -736,7 +792,8 @@
         "model": "Claude Opus 4.5",
         "category": "Algorithms",
         "tags": ["compression", "tree"],
-        "link": "https://en.wikipedia.org/wiki/Huffman_coding"
+        "link": "https://en.wikipedia.org/wiki/Huffman_coding",
+        "completeness": 3
     },
     {
         "id": "fsm",
@@ -749,7 +806,8 @@
         "model": "Claude Opus 4.5",
         "category": "Theory of Computation",
         "tags": ["automata", "theory", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Finite-state_machine"
+        "link": "https://en.wikipedia.org/wiki/Finite-state_machine",
+        "completeness": 4
     },
     {
         "id": "turing",
@@ -762,7 +820,8 @@
         "model": "Claude Opus 4.5",
         "category": "Theory of Computation",
         "tags": ["automata", "theory", "computation"],
-        "link": "https://en.wikipedia.org/wiki/Turing_machine"
+        "link": "https://en.wikipedia.org/wiki/Turing_machine",
+        "completeness": 3
     },
     {
         "id": "bst",
@@ -775,7 +834,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data Structures",
         "tags": ["data structure", "tree", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Binary_search_tree"
+        "link": "https://en.wikipedia.org/wiki/Binary_search_tree",
+        "completeness": 4
     },
     {
         "id": "pdf-merge",
@@ -788,7 +848,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-split",
@@ -801,7 +862,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-rotate",
@@ -814,7 +876,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-extract",
@@ -827,7 +890,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-remove",
@@ -840,7 +904,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-reorder",
@@ -853,7 +918,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "files"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-to-images",
@@ -866,7 +932,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["conversion", "export"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-watermark",
@@ -879,7 +946,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "security"],
-        "link": "https://en.wikipedia.org/wiki/Watermark"
+        "link": "https://en.wikipedia.org/wiki/Watermark",
+        "completeness": 4
     },
     {
         "id": "pdf-page-numbers",
@@ -892,7 +960,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["utility", "formatting"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-text-extract",
@@ -905,7 +974,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["extraction", "utility"],
-        "link": "https://en.wikipedia.org/wiki/PDF"
+        "link": "https://en.wikipedia.org/wiki/PDF",
+        "completeness": 4
     },
     {
         "id": "pdf-redact",
@@ -918,7 +988,8 @@
         "model": "Claude Opus 4.5",
         "category": "PDF",
         "tags": ["security", "privacy"],
-        "link": "https://en.wikipedia.org/wiki/Redaction"
+        "link": "https://en.wikipedia.org/wiki/Redaction",
+        "completeness": 3
     },
     {
         "id": "image-resize",
@@ -931,7 +1002,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["utility", "resize"],
-        "link": "https://en.wikipedia.org/wiki/Image_scaling"
+        "link": "https://en.wikipedia.org/wiki/Image_scaling",
+        "completeness": 4
     },
     {
         "id": "image-crop",
@@ -944,7 +1016,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["utility", "crop"],
-        "link": "https://en.wikipedia.org/wiki/Cropping_(image)"
+        "link": "https://en.wikipedia.org/wiki/Cropping_(image)",
+        "completeness": 4
     },
     {
         "id": "image-rotate",
@@ -957,7 +1030,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["utility", "rotate"],
-        "link": "https://en.wikipedia.org/wiki/Image_rotation"
+        "link": "https://en.wikipedia.org/wiki/Image_rotation",
+        "completeness": 4
     },
     {
         "id": "image-convert",
@@ -970,7 +1044,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["conversion", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Image_file_format"
+        "link": "https://en.wikipedia.org/wiki/Image_file_format",
+        "completeness": 4
     },
     {
         "id": "image-filters",
@@ -983,7 +1058,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["filters", "effects"],
-        "link": "https://en.wikipedia.org/wiki/Image_editing"
+        "link": "https://en.wikipedia.org/wiki/Image_editing",
+        "completeness": 4
     },
     {
         "id": "image-watermark",
@@ -996,7 +1072,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["watermark", "security"],
-        "link": "https://en.wikipedia.org/wiki/Digital_watermarking"
+        "link": "https://en.wikipedia.org/wiki/Digital_watermarking",
+        "completeness": 4
     },
     {
         "id": "random-number",
@@ -1009,7 +1086,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["utility", "numbers"],
-        "link": "https://en.wikipedia.org/wiki/Random_number_generation"
+        "link": "https://en.wikipedia.org/wiki/Random_number_generation",
+        "completeness": 4
     },
     {
         "id": "random-password",
@@ -1022,7 +1100,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["security", "password"],
-        "link": "https://en.wikipedia.org/wiki/Password_strength"
+        "link": "https://en.wikipedia.org/wiki/Password_strength",
+        "completeness": 3
     },
     {
         "id": "dice-roller",
@@ -1035,7 +1114,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["games", "dice"],
-        "link": "https://en.wikipedia.org/wiki/Dice"
+        "link": "https://en.wikipedia.org/wiki/Dice",
+        "completeness": 4
     },
     {
         "id": "coin-flip",
@@ -1048,7 +1128,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["games", "probability"],
-        "link": "https://en.wikipedia.org/wiki/Coin_flipping"
+        "link": "https://en.wikipedia.org/wiki/Coin_flipping",
+        "completeness": 4
     },
     {
         "id": "list-picker",
@@ -1061,7 +1142,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["utility", "lists"],
-        "link": "https://en.wikipedia.org/wiki/Randomization"
+        "link": "https://en.wikipedia.org/wiki/Randomization",
+        "completeness": 4
     },
     {
         "id": "uuid-generator",
@@ -1074,7 +1156,8 @@
         "model": "Claude Opus 4.5",
         "category": "Random",
         "tags": ["utility", "identifiers"],
-        "link": "https://en.wikipedia.org/wiki/Universally_unique_identifier"
+        "link": "https://en.wikipedia.org/wiki/Universally_unique_identifier",
+        "completeness": 3
     },
     {
         "id": "timer-stopwatch",
@@ -1087,7 +1170,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "timer"],
-        "link": "https://en.wikipedia.org/wiki/Timer"
+        "link": "https://en.wikipedia.org/wiki/Timer",
+        "completeness": 4
     },
     {
         "id": "date-difference",
@@ -1100,7 +1184,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "dates"],
-        "link": "https://en.wikipedia.org/wiki/Date_and_time_notation"
+        "link": "https://en.wikipedia.org/wiki/Date_and_time_notation",
+        "completeness": 4
     },
     {
         "id": "timezone-converter",
@@ -1113,7 +1198,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "timezone"],
-        "link": "https://en.wikipedia.org/wiki/Time_zone"
+        "link": "https://en.wikipedia.org/wiki/Time_zone",
+        "completeness": 3
     },
     {
         "id": "unix-timestamp",
@@ -1126,7 +1212,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "unix"],
-        "link": "https://en.wikipedia.org/wiki/Unix_time"
+        "link": "https://en.wikipedia.org/wiki/Unix_time",
+        "completeness": 3
     },
     {
         "id": "age-calculator",
@@ -1139,7 +1226,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "birthday"],
-        "link": "https://en.wikipedia.org/wiki/Age"
+        "link": "https://en.wikipedia.org/wiki/Age",
+        "completeness": 4
     },
     {
         "id": "countdown-date",
@@ -1152,7 +1240,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "countdown"],
-        "link": "https://en.wikipedia.org/wiki/Countdown"
+        "link": "https://en.wikipedia.org/wiki/Countdown",
+        "completeness": 4
     },
     {
         "id": "audio-trim",
@@ -1165,7 +1254,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "trim"],
-        "link": "https://en.wikipedia.org/wiki/Audio_editing_software"
+        "link": "https://en.wikipedia.org/wiki/Audio_editing_software",
+        "completeness": 3
     },
     {
         "id": "audio-merge",
@@ -1178,7 +1268,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "merge"],
-        "link": "https://en.wikipedia.org/wiki/Audio_editing_software"
+        "link": "https://en.wikipedia.org/wiki/Audio_editing_software",
+        "completeness": 4
     },
     {
         "id": "audio-volume",
@@ -1191,7 +1282,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "volume"],
-        "link": "https://en.wikipedia.org/wiki/Audio_normalization"
+        "link": "https://en.wikipedia.org/wiki/Audio_normalization",
+        "completeness": 4
     },
     {
         "id": "audio-speed",
@@ -1204,7 +1296,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "speed"],
-        "link": "https://en.wikipedia.org/wiki/Audio_time_stretching_and_pitch_scaling"
+        "link": "https://en.wikipedia.org/wiki/Audio_time_stretching_and_pitch_scaling",
+        "completeness": 4
     },
     {
         "id": "audio-reverse",
@@ -1217,7 +1310,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "effects"],
-        "link": "https://en.wikipedia.org/wiki/Backmasking"
+        "link": "https://en.wikipedia.org/wiki/Backmasking",
+        "completeness": 4
     },
     {
         "id": "audio-fade",
@@ -1230,7 +1324,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["utility", "effects"],
-        "link": "https://en.wikipedia.org/wiki/Fade_(audio_engineering)"
+        "link": "https://en.wikipedia.org/wiki/Fade_(audio_engineering)",
+        "completeness": 4
     },
     {
         "id": "audio-waveform",
@@ -1243,7 +1338,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["visualization", "export"],
-        "link": "https://en.wikipedia.org/wiki/Waveform"
+        "link": "https://en.wikipedia.org/wiki/Waveform",
+        "completeness": 3
     },
     {
         "id": "word-counter",
@@ -1256,7 +1352,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "writing"],
-        "link": "https://en.wikipedia.org/wiki/Word_count"
+        "link": "https://en.wikipedia.org/wiki/Word_count",
+        "completeness": 4
     },
     {
         "id": "case-converter",
@@ -1269,7 +1366,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "formatting"],
-        "link": "https://en.wikipedia.org/wiki/Letter_case"
+        "link": "https://en.wikipedia.org/wiki/Letter_case",
+        "completeness": 4
     },
     {
         "id": "lorem-generator",
@@ -1282,7 +1380,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "placeholder"],
-        "link": "https://en.wikipedia.org/wiki/Lorem_ipsum"
+        "link": "https://en.wikipedia.org/wiki/Lorem_ipsum",
+        "completeness": 4
     },
     {
         "id": "text-diff",
@@ -1295,7 +1394,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "comparison"],
-        "link": "https://en.wikipedia.org/wiki/Diff"
+        "link": "https://en.wikipedia.org/wiki/Diff",
+        "completeness": 4
     },
     {
         "id": "remove-duplicates",
@@ -1308,7 +1408,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "cleanup"],
-        "link": "https://en.wikipedia.org/wiki/Uniq"
+        "link": "https://en.wikipedia.org/wiki/Uniq",
+        "completeness": 4
     },
     {
         "id": "sort-lines",
@@ -1321,7 +1422,8 @@
         "model": "Claude Opus 4.5",
         "category": "Text",
         "tags": ["utility", "sorting"],
-        "link": "https://en.wikipedia.org/wiki/Sort_(Unix)"
+        "link": "https://en.wikipedia.org/wiki/Sort_(Unix)",
+        "completeness": 4
     },
     {
         "id": "json-formatter",
@@ -1334,7 +1436,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["json", "formatting"],
-        "link": "https://en.wikipedia.org/wiki/JSON"
+        "link": "https://en.wikipedia.org/wiki/JSON",
+        "completeness": 4
     },
     {
         "id": "regex-tester",
@@ -1347,7 +1450,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["regex", "testing"],
-        "link": "https://en.wikipedia.org/wiki/Regular_expression"
+        "link": "https://en.wikipedia.org/wiki/Regular_expression",
+        "completeness": 3
     },
     {
         "id": "base64-encode",
@@ -1360,7 +1464,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["encoding", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Base64"
+        "link": "https://en.wikipedia.org/wiki/Base64",
+        "completeness": 4
     },
     {
         "id": "url-encode",
@@ -1373,7 +1478,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["encoding", "url"],
-        "link": "https://en.wikipedia.org/wiki/Percent-encoding"
+        "link": "https://en.wikipedia.org/wiki/Percent-encoding",
+        "completeness": 4
     },
     {
         "id": "hash-generator",
@@ -1386,7 +1492,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["security", "hashing"],
-        "link": "https://en.wikipedia.org/wiki/Cryptographic_hash_function"
+        "link": "https://en.wikipedia.org/wiki/Cryptographic_hash_function",
+        "completeness": 4
     },
     {
         "id": "jwt-decoder",
@@ -1399,7 +1506,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["jwt", "security"],
-        "link": "https://en.wikipedia.org/wiki/JSON_Web_Token"
+        "link": "https://en.wikipedia.org/wiki/JSON_Web_Token",
+        "completeness": 4
     },
     {
         "id": "percentage-calc",
@@ -1412,7 +1520,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["percentage", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Percentage"
+        "link": "https://en.wikipedia.org/wiki/Percentage",
+        "completeness": 4
     },
     {
         "id": "tip-calc",
@@ -1425,7 +1534,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["money", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Gratuity"
+        "link": "https://en.wikipedia.org/wiki/Gratuity",
+        "completeness": 4
     },
     {
         "id": "unit-converter",
@@ -1438,7 +1548,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["conversion", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Conversion_of_units"
+        "link": "https://en.wikipedia.org/wiki/Conversion_of_units",
+        "completeness": 3
     },
     {
         "id": "loan-calc",
@@ -1451,7 +1562,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["finance", "loans"],
-        "link": "https://en.wikipedia.org/wiki/Loan"
+        "link": "https://en.wikipedia.org/wiki/Loan",
+        "completeness": 4
     },
     {
         "id": "bmi-calc",
@@ -1464,7 +1576,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["health", "fitness"],
-        "link": "https://en.wikipedia.org/wiki/Body_mass_index"
+        "link": "https://en.wikipedia.org/wiki/Body_mass_index",
+        "completeness": 4
     },
     {
         "id": "discount-calc",
@@ -1477,7 +1590,8 @@
         "model": "Claude Opus 4.5",
         "category": "Calculator",
         "tags": ["shopping", "money"],
-        "link": "https://en.wikipedia.org/wiki/Discounts_and_allowances"
+        "link": "https://en.wikipedia.org/wiki/Discounts_and_allowances",
+        "completeness": 4
     },
     {
         "id": "color-picker",
@@ -1490,7 +1604,8 @@
         "model": "Claude Opus 4.5",
         "category": "Color",
         "tags": ["design", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Color_picker"
+        "link": "https://en.wikipedia.org/wiki/Color_picker",
+        "completeness": 4
     },
     {
         "id": "palette-generator",
@@ -1503,7 +1618,8 @@
         "model": "Claude Opus 4.5",
         "category": "Color",
         "tags": ["design", "palette"],
-        "link": "https://en.wikipedia.org/wiki/Color_scheme"
+        "link": "https://en.wikipedia.org/wiki/Color_scheme",
+        "completeness": 4
     },
     {
         "id": "contrast-checker",
@@ -1516,7 +1632,8 @@
         "model": "Claude Opus 4.5",
         "category": "Color",
         "tags": ["accessibility", "wcag"],
-        "link": "https://en.wikipedia.org/wiki/Web_Content_Accessibility_Guidelines"
+        "link": "https://en.wikipedia.org/wiki/Web_Content_Accessibility_Guidelines",
+        "completeness": 4
     },
     {
         "id": "color-converter",
@@ -1529,7 +1646,8 @@
         "model": "Claude Opus 4.5",
         "category": "Color",
         "tags": ["conversion", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Color_model"
+        "link": "https://en.wikipedia.org/wiki/Color_model",
+        "completeness": 4
     },
     {
         "id": "csv-json",
@@ -1542,7 +1660,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data",
         "tags": ["conversion", "csv", "json"],
-        "link": "https://en.wikipedia.org/wiki/Comma-separated_values"
+        "link": "https://en.wikipedia.org/wiki/Comma-separated_values",
+        "completeness": 4
     },
     {
         "id": "markdown-preview",
@@ -1555,7 +1674,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data",
         "tags": ["markdown", "editor", "preview"],
-        "link": "https://en.wikipedia.org/wiki/Markdown"
+        "link": "https://en.wikipedia.org/wiki/Markdown",
+        "completeness": 4
     },
     {
         "id": "yaml-json",
@@ -1568,7 +1688,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data",
         "tags": ["conversion", "yaml", "json"],
-        "link": "https://en.wikipedia.org/wiki/YAML"
+        "link": "https://en.wikipedia.org/wiki/YAML",
+        "completeness": 3
     },
     {
         "id": "xml-json",
@@ -1581,7 +1702,8 @@
         "model": "Claude Opus 4.5",
         "category": "Data",
         "tags": ["conversion", "xml", "json"],
-        "link": "https://en.wikipedia.org/wiki/XML"
+        "link": "https://en.wikipedia.org/wiki/XML",
+        "completeness": 4
     },
     {
         "id": "spin-wheel",
@@ -1594,7 +1716,8 @@
         "model": "Claude Opus 4.5",
         "category": "Fun",
         "tags": ["random", "games", "decision"],
-        "link": "https://en.wikipedia.org/wiki/Wheel_of_Fortune_(game_show)"
+        "link": "https://en.wikipedia.org/wiki/Wheel_of_Fortune_(game_show)",
+        "completeness": 4
     },
     {
         "id": "name-generator",
@@ -1607,7 +1730,8 @@
         "model": "Claude Opus 4.5",
         "category": "Fun",
         "tags": ["random", "names", "generator"],
-        "link": "https://en.wikipedia.org/wiki/Name_generator"
+        "link": "https://en.wikipedia.org/wiki/Name_generator",
+        "completeness": 4
     },
     {
         "id": "reaction-test",
@@ -1620,7 +1744,8 @@
         "model": "Claude Opus 4.5",
         "category": "Fun",
         "tags": ["games", "test", "reaction"],
-        "link": "https://en.wikipedia.org/wiki/Mental_chronometry"
+        "link": "https://en.wikipedia.org/wiki/Mental_chronometry",
+        "completeness": 4
     },
     {
         "id": "typing-test",
@@ -1633,7 +1758,8 @@
         "model": "Claude Opus 4.5",
         "category": "Fun",
         "tags": ["games", "test", "typing"],
-        "link": "https://en.wikipedia.org/wiki/Words_per_minute"
+        "link": "https://en.wikipedia.org/wiki/Words_per_minute",
+        "completeness": 4
     },
     {
         "id": "audio-recorder",
@@ -1646,7 +1772,8 @@
         "model": "Claude Opus 4.5",
         "category": "Audio",
         "tags": ["recording", "microphone", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Audio_signal_recording"
+        "link": "https://en.wikipedia.org/wiki/Audio_signal_recording",
+        "completeness": 3
     },
     {
         "id": "system-info",
@@ -1659,7 +1786,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["hardware", "browser", "system"],
-        "link": "https://en.wikipedia.org/wiki/WebGL"
+        "link": "https://en.wikipedia.org/wiki/WebGL",
+        "completeness": 4
     },
     {
         "id": "primes",
@@ -1672,7 +1800,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["primes", "visualization", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Prime_number"
+        "link": "https://en.wikipedia.org/wiki/Prime_number",
+        "completeness": 3
     },
     {
         "id": "julia-sets",
@@ -1685,7 +1814,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["fractal", "complex", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Julia_set"
+        "link": "https://en.wikipedia.org/wiki/Julia_set",
+        "completeness": 4
     },
     {
         "id": "apollonian-gasket",
@@ -1698,7 +1828,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["fractal", "geometry", "circles"],
-        "link": "https://en.wikipedia.org/wiki/Apollonian_gasket"
+        "link": "https://en.wikipedia.org/wiki/Apollonian_gasket",
+        "completeness": 4
     },
     {
         "id": "spirograph",
@@ -1711,7 +1842,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["curves", "geometry", "art"],
-        "link": "https://en.wikipedia.org/wiki/Spirograph"
+        "link": "https://en.wikipedia.org/wiki/Spirograph",
+        "completeness": 4
     },
     {
         "id": "collatz",
@@ -1724,7 +1856,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["conjecture", "sequences", "unsolved"],
-        "link": "https://en.wikipedia.org/wiki/Collatz_conjecture"
+        "link": "https://en.wikipedia.org/wiki/Collatz_conjecture",
+        "completeness": 4
     },
     {
         "id": "bifurcation",
@@ -1737,7 +1870,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["chaos", "dynamics", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Bifurcation_diagram"
+        "link": "https://en.wikipedia.org/wiki/Bifurcation_diagram",
+        "completeness": 4
     },
     {
         "id": "hyperbolic-tiling",
@@ -1750,7 +1884,8 @@
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
         "tags": ["geometry", "tessellation", "hyperbolic"],
-        "link": "https://en.wikipedia.org/wiki/Uniform_tilings_in_hyperbolic_plane"
+        "link": "https://en.wikipedia.org/wiki/Uniform_tilings_in_hyperbolic_plane",
+        "completeness": 3
     },
     {
         "id": "time-progress",
@@ -1763,7 +1898,8 @@
         "model": "Claude Opus 4.5",
         "category": "Time",
         "tags": ["utility", "visualization", "calendar"],
-        "link": "https://en.wikipedia.org/wiki/Calendar"
+        "link": "https://en.wikipedia.org/wiki/Calendar",
+        "completeness": 4
     },
     {
         "id": "3d-globe-visualizer",
@@ -1776,7 +1912,8 @@
         "model": "Claude Opus 4.5",
         "category": "Visualization",
         "tags": ["3D", "globe", "interactive", "data"],
-        "link": "https://en.wikipedia.org/wiki/Globe"
+        "link": "https://en.wikipedia.org/wiki/Globe",
+        "completeness": 4
     },
     {
         "id": "qr-code-studio",
@@ -1789,7 +1926,8 @@
         "model": "Claude Opus 4.5",
         "category": "Utility",
         "tags": ["qr", "generator", "utility"],
-        "link": "https://en.wikipedia.org/wiki/QR_code"
+        "link": "https://en.wikipedia.org/wiki/QR_code",
+        "completeness": 4
     },
     {
         "id": "audio-visualizer",
@@ -1802,7 +1940,8 @@
         "model": "Claude Opus 4.5",
         "category": "Music",
         "tags": ["visualization", "music", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Music_visualization"
+        "link": "https://en.wikipedia.org/wiki/Music_visualization",
+        "completeness": 3
     },
     {
         "id": "neural-network-viz",
@@ -1815,7 +1954,8 @@
         "model": "Claude Opus 4.5",
         "category": "Machine Learning",
         "tags": ["AI", "neural network", "visualization", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Artificial_neural_network"
+        "link": "https://en.wikipedia.org/wiki/Artificial_neural_network",
+        "completeness": 4
     },
     {
         "id": "invoice-generator",
@@ -1828,7 +1968,8 @@
         "model": "Claude Opus 4.5",
         "category": "Utility",
         "tags": ["business", "PDF", "invoices", "generator"],
-        "link": "https://en.wikipedia.org/wiki/Invoice"
+        "link": "https://en.wikipedia.org/wiki/Invoice",
+        "completeness": 4
     },
     {
         "id": "kaleidoscope",
@@ -1841,7 +1982,8 @@
         "model": "Claude Opus 4.5",
         "category": "Art",
         "tags": ["visualization", "art", "interactive", "creative"],
-        "link": "https://en.wikipedia.org/wiki/Kaleidoscope"
+        "link": "https://en.wikipedia.org/wiki/Kaleidoscope",
+        "completeness": 4
     },
     {
         "id": "signature-studio",
@@ -1854,7 +1996,8 @@
         "model": "Claude Opus 4.5",
         "category": "Utility",
         "tags": ["signature", "PDF", "document", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Electronic_signature"
+        "link": "https://en.wikipedia.org/wiki/Electronic_signature",
+        "completeness": 3
     },
     {
         "id": "gradient-mesh-editor",
@@ -1867,7 +2010,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["gradient", "design", "CSS", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Color_gradient"
+        "link": "https://en.wikipedia.org/wiki/Color_gradient",
+        "completeness": 4
     },
     {
         "id": "motion-trail-painter",
@@ -1880,7 +2024,8 @@
         "model": "Claude Opus 4.5",
         "category": "Art",
         "tags": ["drawing", "art", "interactive", "creative"],
-        "link": "https://en.wikipedia.org/wiki/Light_painting"
+        "link": "https://en.wikipedia.org/wiki/Light_painting",
+        "completeness": 3
     },
     {
         "id": "font-pairing-preview",
@@ -1893,7 +2038,8 @@
         "model": "Claude Opus 4.5",
         "category": "Design",
         "tags": ["typography", "fonts", "design", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Typography"
+        "link": "https://en.wikipedia.org/wiki/Typography",
+        "completeness": 3
     },
     {
         "id": "walkthrough-creator",
@@ -1906,7 +2052,8 @@
         "model": "Claude Opus 4.5",
         "category": "Utility",
         "tags": ["tutorial", "documentation", "PDF", "screenshots", "guide"],
-        "link": "https://en.wikipedia.org/wiki/Tutorial"
+        "link": "https://en.wikipedia.org/wiki/Tutorial",
+        "completeness": 4
     },
     {
         "id": "data-story-builder",
@@ -1919,7 +2066,8 @@
         "model": "Claude Opus 4.5",
         "category": "Visualization",
         "tags": ["data", "charts", "animation", "interactive", "CSV", "JSON"],
-        "link": "https://en.wikipedia.org/wiki/Data_visualization"
+        "link": "https://en.wikipedia.org/wiki/Data_visualization",
+        "completeness": 3
     },
     {
         "id": "photo-mosaic-generator",
@@ -1932,7 +2080,8 @@
         "model": "Claude Opus 4.5",
         "category": "Images",
         "tags": ["mosaic", "image", "art", "emoji", "creative"],
-        "link": "https://en.wikipedia.org/wiki/Photographic_mosaic"
+        "link": "https://en.wikipedia.org/wiki/Photographic_mosaic",
+        "completeness": 3
     },
     {
         "id": "circuit-diagram-builder",
@@ -1945,7 +2094,8 @@
         "model": "Claude Opus 4.5",
         "category": "Education",
         "tags": ["electronics", "circuits", "simulation", "interactive", "engineering"],
-        "link": "https://en.wikipedia.org/wiki/Circuit_diagram"
+        "link": "https://en.wikipedia.org/wiki/Circuit_diagram",
+        "completeness": 3
     },
     {
         "id": "music-chord-visualizer",
@@ -1958,7 +2108,8 @@
         "model": "Claude Opus 4.5",
         "category": "Music",
         "tags": ["music", "chords", "visualization", "interactive", "piano", "guitar"],
-        "link": "https://en.wikipedia.org/wiki/Chord_(music)"
+        "link": "https://en.wikipedia.org/wiki/Chord_(music)",
+        "completeness": 4
     },
     {
         "id": "budget-sankey",
@@ -1971,7 +2122,8 @@
         "model": "Claude Opus 4.5",
         "category": "Visualization",
         "tags": ["finance", "budget", "sankey", "visualization", "interactive"],
-        "link": "https://en.wikipedia.org/wiki/Sankey_diagram"
+        "link": "https://en.wikipedia.org/wiki/Sankey_diagram",
+        "completeness": 3
     },
     {
         "id": "physics-sandbox",
@@ -1984,7 +2136,8 @@
         "model": "Claude Opus 4.5",
         "category": "Physics",
         "tags": ["physics", "simulation", "interactive", "sandbox", "matter.js"],
-        "link": "https://en.wikipedia.org/wiki/Physics_engine"
+        "link": "https://en.wikipedia.org/wiki/Physics_engine",
+        "completeness": 3
     },
     {
         "id": "favicon-generator",
@@ -1997,7 +2150,8 @@
         "model": "Claude Opus 4.5",
         "category": "Developer",
         "tags": ["favicon", "icons", "generator", "utility"],
-        "link": "https://en.wikipedia.org/wiki/Favicon"
+        "link": "https://en.wikipedia.org/wiki/Favicon",
+        "completeness": 4
     },
     {
         "id": "text-banner",
@@ -2009,7 +2163,8 @@
         "dateCreated": "2026-01-01",
         "model": "Claude Opus 4.5",
         "category": "Utility",
-        "tags": ["banner", "text", "display", "presentation", "fullscreen"]
+        "tags": ["banner", "text", "display", "presentation", "fullscreen"],
+        "completeness": 4
     },
     {
         "id": "data-explorer",
@@ -2021,6 +2176,7 @@
         "dateCreated": "2026-01-01",
         "model": "Claude Opus 4.5",
         "category": "Data",
-        "tags": ["csv", "data", "statistics", "analysis", "visualization", "charts"]
+        "tags": ["csv", "data", "statistics", "analysis", "visualization", "charts"],
+        "completeness": 4
     }
 ]
