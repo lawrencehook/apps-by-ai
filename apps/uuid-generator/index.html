@@ -238,6 +238,14 @@
         }
 
         function generateUUIDv4() {
+            if (crypto && crypto.getRandomValues) {
+                const bytes = new Uint8Array(16);
+                crypto.getRandomValues(bytes);
+                bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+                bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+                const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+                return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+            }
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -246,13 +254,14 @@
         }
 
         function generateUUIDv1() {
-            // Simplified v1-like UUID (not strictly RFC compliant but functional)
+            // Simplified v1-like UUID (timestamp-based, not strictly RFC 4122 but structurally valid)
             const now = Date.now();
-            const timeHex = now.toString(16).padStart(12, '0');
+            const timeHex = now.toString(16).padStart(16, '0');
             const timeLow = timeHex.slice(-8);
             const timeMid = timeHex.slice(-12, -8);
-            const timeHiAndVersion = '1' + timeHex.slice(-15, -12).slice(-3);
-            const clockSeq = (Math.random() * 0x3fff | 0x8000).toString(16);
+            const timeHi = timeHex.slice(-16, -12);
+            const timeHiAndVersion = '1' + timeHi.slice(-3);
+            const clockSeq = (Math.random() * 0x3fff | 0x8000).toString(16).padStart(4, '0');
             const node = Array.from({length: 6}, () =>
                 Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
             ).join('');

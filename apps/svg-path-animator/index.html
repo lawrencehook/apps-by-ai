@@ -675,6 +675,7 @@
             isPlaying = true;
             playIcon.style.display = 'none';
             pauseIcon.style.display = 'block';
+            if (progress >= 1 || progress <= 0) animCycle = 0;
             animate(Date.now() - (progress * parseFloat(document.getElementById('duration').value) * 1000));
         }
 

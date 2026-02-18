@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; overflow-y: auto; font-family: system-ui, sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; width: 100%; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
@@ -50,6 +50,18 @@
             margin: 2px 0; border-radius: 2px; color: #888;
         }
         .transition.current { background: rgba(78, 205, 196, 0.3); color: #4ecdc4; }
+        @media (max-width: 600px) {
+            .controls {
+                position: relative;
+                top: auto; left: auto;
+                min-width: auto;
+                width: 100%;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            canvas { min-height: 300px; }
+        }
     </style>
 </head>
 <body>
@@ -519,6 +531,7 @@
         });
 
         document.getElementById('run').addEventListener('click', run);
+        document.getElementById('stop').addEventListener('click', stopRunning);
         document.getElementById('step').addEventListener('click', step);
         document.getElementById('reset').addEventListener('click', reset);
 

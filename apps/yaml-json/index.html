@@ -416,9 +416,12 @@
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
                 updateMode();
-                const temp = input.value;
-                input.value = output.value;
-                output.value = temp;
+                // Only swap if output has content (successful prior conversion)
+                if (output.value.trim()) {
+                    const temp = input.value;
+                    input.value = output.value;
+                    output.value = temp;
+                }
                 convert();
             });
         });
@@ -508,6 +511,7 @@ settings:
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!output.value.trim()) return;
             const ext = mode === 'yaml-to-json' ? 'json' : 'yaml';
             const type = mode === 'yaml-to-json' ? 'application/json' : 'text/yaml';
             const blob = new Blob([output.value], { type });
