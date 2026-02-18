@@ -225,7 +225,7 @@
                 : '-';
 
             // Unique words
-            const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, ''))).size;
+            const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(w => w.length > 0)).size;
 
             // Update UI
             document.getElementById('wordCount').textContent = wordCount;
@@ -244,8 +244,17 @@
 
         textInput.addEventListener('input', updateStats);
 
-        document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(textInput.value);
+        document.getElementById('copyBtn').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(textInput.value);
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            } catch (e) {
+                // Fallback: select text
+                textInput.select();
+                document.execCommand('copy');
+            }
         });
 
         document.getElementById('clearBtn').addEventListener('click', () => {
@@ -254,9 +263,13 @@
         });
 
         document.getElementById('pasteBtn').addEventListener('click', async () => {
-            const text = await navigator.clipboard.readText();
-            textInput.value = text;
-            updateStats();
+            try {
+                const text = await navigator.clipboard.readText();
+                textInput.value = text;
+                updateStats();
+            } catch (e) {
+                // Clipboard access denied - no action
+            }
         });
 
         updateStats();

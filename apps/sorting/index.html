@@ -6,8 +6,8 @@
     <title>Sorting Algorithms - AI Showcase</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
-        .container { display: flex; flex-wrap: wrap; padding: 10px; height: 100vh; }
+        body { background: #0a0a0f; overflow-x: hidden; font-family: system-ui, sans-serif; }
+        .container { display: flex; flex-wrap: wrap; padding: 10px; min-height: 100vh; }
         .sorter {
             flex: 1 1 calc(33.333% - 20px); margin: 10px; min-width: 300px;
             background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px;
@@ -114,6 +114,8 @@
 
             resize() {
                 const rect = this.canvas.getBoundingClientRect();
+                this.drawWidth = rect.width;
+                this.drawHeight = rect.height;
                 this.canvas.width = rect.width * window.devicePixelRatio;
                 this.canvas.height = rect.height * window.devicePixelRatio;
                 this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
@@ -126,9 +128,8 @@
             }
 
             draw() {
-                const rect = this.canvas.getBoundingClientRect();
-                const w = rect.width;
-                const h = rect.height;
+                const w = this.drawWidth || this.canvas.getBoundingClientRect().width;
+                const h = this.drawHeight || this.canvas.getBoundingClientRect().height;
                 this.ctx.clearRect(0, 0, w, h);
 
                 const barWidth = w / this.array.length;

@@ -243,17 +243,23 @@
             }
             if (params.has('size')) {
                 const size = params.get('size');
-                sizeButtons.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.size === size);
-                });
-                currentSize = size;
-                bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+                const validSizes = ['small', 'medium', 'large', 'xlarge'];
+                if (validSizes.includes(size)) {
+                    sizeButtons.forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.size === size);
+                    });
+                    currentSize = size;
+                    bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+                }
             }
             if (params.has('theme')) {
                 const theme = params.get('theme');
-                themeSelect.value = theme;
-                currentTheme = theme;
-                bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+                const validThemes = ['ocean', 'sunset', 'neon', 'fire', 'ice', 'mono'];
+                if (validThemes.includes(theme)) {
+                    themeSelect.value = theme;
+                    currentTheme = theme;
+                    bannerText.className = `banner-text ${currentSize} theme-${currentTheme}`;
+                }
             }
         }
 

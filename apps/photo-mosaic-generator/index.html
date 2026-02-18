@@ -183,9 +183,12 @@
         .zoom-btn {
             width: 32px;
             height: 32px;
+            min-width: 32px;
             padding: 0;
             margin: 0;
+            margin-top: 0;
             background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 6px;
             font-size: 18px;
             display: flex;
@@ -344,7 +347,7 @@
                     </select>
                 </div>
 
-                <div class="section-title">Emoji Palette</div>
+                <div class="section-title" id="paletteSectionTitle">Emoji Palette</div>
                 <div class="tile-palette" id="emojiPalette"></div>
 
                 <button id="generateBtn" disabled>Generate Mosaic</button>
@@ -509,17 +512,23 @@
         function updatePalettePreview() {
             const type = document.getElementById('tileType').value;
             const palette = document.getElementById('emojiPalette');
+            const paletteTitle = document.getElementById('paletteSectionTitle');
 
             if (type === 'emoji') {
                 palette.style.display = 'grid';
+                paletteTitle.style.display = 'block';
+                paletteTitle.textContent = 'Emoji Palette';
                 initEmojiPalette();
             } else if (type === 'ascii') {
                 palette.style.display = 'grid';
+                paletteTitle.style.display = 'block';
+                paletteTitle.textContent = 'ASCII Characters';
                 palette.innerHTML = asciiChars.split('').map(c =>
                     `<div class="tile-preview" style="font-family: monospace; font-size: 20px; color: #fff;">${c === ' ' ? '&nbsp;' : c}</div>`
                 ).join('');
             } else {
                 palette.style.display = 'none';
+                paletteTitle.style.display = 'none';
             }
         }
 
@@ -597,27 +606,30 @@
                     const py = y * tileSize;
 
                     switch (tileType) {
-                        case 'emoji':
+                        case 'emoji': {
                             const emoji = getEmojiForColor(r, g, b, brightness);
                             ctx.fillText(emoji, px + tileSize / 2, py + tileSize / 2 + 2);
                             break;
+                        }
 
-                        case 'circles':
+                        case 'circles': {
                             const circleRadius = (tileSize / 2 - 1) * (0.3 + brightness * 0.7);
                             ctx.beginPath();
                             ctx.arc(px + tileSize / 2, py + tileSize / 2, circleRadius, 0, Math.PI * 2);
                             ctx.fillStyle = color;
                             ctx.fill();
                             break;
+                        }
 
-                        case 'squares':
+                        case 'squares': {
                             const squareSize = tileSize * (0.3 + brightness * 0.7);
                             const offset = (tileSize - squareSize) / 2;
                             ctx.fillStyle = color;
                             ctx.fillRect(px + offset, py + offset, squareSize, squareSize);
                             break;
+                        }
 
-                        case 'triangles':
+                        case 'triangles': {
                             const triSize = tileSize * (0.4 + brightness * 0.6);
                             const triOffset = (tileSize - triSize) / 2;
                             ctx.beginPath();
@@ -628,18 +640,20 @@
                             ctx.fillStyle = color;
                             ctx.fill();
                             break;
+                        }
 
                         case 'hearts':
                             drawHeart(ctx, px + tileSize / 2, py + tileSize / 2, tileSize * 0.4 * (0.5 + brightness * 0.5), color);
                             break;
 
-                        case 'ascii':
+                        case 'ascii': {
                             const charIdx = Math.floor(brightness * (asciiCharsDark.length - 1));
                             ctx.fillStyle = color;
                             ctx.fillText(asciiCharsDark[charIdx], px + tileSize / 2, py + tileSize / 2);
                             break;
+                        }
 
-                        case 'dots':
+                        case 'dots': {
                             const dotRadius = (tileSize / 2) * Math.sqrt(1 - brightness);
                             if (dotRadius > 0.5) {
                                 ctx.beginPath();
@@ -648,6 +662,7 @@
                                 ctx.fill();
                             }
                             break;
+                        }
                     }
 
                     tilesDrawn++;

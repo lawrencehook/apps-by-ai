@@ -293,10 +293,10 @@ URL: https://www.example.com/path?query=value</textarea>
         function runRegex() {
             const pattern = regexInput.value;
             const flags = flagsInput.value;
-            const text = originalText;
+            const text = testTextarea.value;
 
             if (!pattern) {
-                testContent.textContent = text;
+                testHighlight.innerHTML = '';
                 matchCount.textContent = '0 matches';
                 resultsContent.innerHTML = '<div class="no-matches">Enter a regex pattern to see matches</div>';
                 regexWrapper.classList.remove('error');
@@ -333,7 +333,7 @@ URL: https://www.example.com/path?query=value</textarea>
                     }
                 }
 
-                // Highlight matches in text
+                // Highlight matches in overlay
                 let highlighted = '';
                 let lastIndex = 0;
 
@@ -344,7 +344,7 @@ URL: https://www.example.com/path?query=value</textarea>
                 });
                 highlighted += escapeHtml(text.slice(lastIndex));
 
-                testContent.innerHTML = highlighted;
+                testHighlight.innerHTML = highlighted;
 
                 // Update match count
                 matchCount.textContent = `${matches.length} match${matches.length !== 1 ? 'es' : ''}`;
@@ -378,7 +378,7 @@ URL: https://www.example.com/path?query=value</textarea>
                 regexWrapper.classList.add('error');
                 errorText.textContent = e.message;
                 errorText.style.display = 'block';
-                testContent.textContent = text;
+                testHighlight.innerHTML = '';
                 matchCount.textContent = '0 matches';
                 resultsContent.innerHTML = '<div class="no-matches">Invalid regex pattern</div>';
             }
@@ -396,15 +396,14 @@ URL: https://www.example.com/path?query=value</textarea>
             runRegex();
         });
 
-        testContent.addEventListener('input', () => {
-            originalText = testContent.textContent;
+        testTextarea.addEventListener('input', () => {
             runRegex();
         });
 
-        testContent.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = e.clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
+        // Sync scroll between textarea and highlight overlay
+        testTextarea.addEventListener('scroll', () => {
+            testHighlight.scrollTop = testTextarea.scrollTop;
+            testHighlight.scrollLeft = testTextarea.scrollLeft;
         });
 
         // Sample patterns

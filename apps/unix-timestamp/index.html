@@ -96,7 +96,9 @@
         .result-value {
             color: #4ecdc4;
             font-family: 'SF Mono', Monaco, monospace;
+            cursor: pointer;
         }
+        .result-value:hover { opacity: 0.8; }
         .copy-hint {
             color: #555;
             font-size: 0.75rem;
@@ -333,6 +335,20 @@
         }
 
         convertDate();
+
+        // Click-to-copy on all result values
+        document.querySelectorAll('.result-value').forEach(el => {
+            el.title = 'Click to copy';
+            el.addEventListener('click', () => {
+                const text = el.textContent;
+                if (text && text !== '-' && text !== 'Invalid') {
+                    navigator.clipboard.writeText(text);
+                    const original = text;
+                    el.textContent = 'Copied!';
+                    setTimeout(() => el.textContent = original, 1000);
+                }
+            });
+        });
     </script>
 </body>
 </html>

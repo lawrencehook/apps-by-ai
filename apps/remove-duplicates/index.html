@@ -211,11 +211,19 @@
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(outputText.value);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy';
-            }, 1500);
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyBtn').textContent = 'Copy';
+                }, 1500);
+            }).catch(() => {
+                outputText.select();
+                document.execCommand('copy');
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyBtn').textContent = 'Copy';
+                }, 1500);
+            });
         });
     </script>
 </body>

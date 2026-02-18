@@ -63,6 +63,7 @@
             padding: 16px;
             border-radius: 8px;
             font-size: 1.2rem;
+            color-scheme: dark;
         }
         input[type="number"]:focus {
             outline: none;
@@ -246,7 +247,7 @@
         }
 
         function calculate() {
-            const bill = parseFloat(billInput.value) || 0;
+            const bill = Math.max(0, parseFloat(billInput.value) || 0);
             const tip = bill * (tipPercent / 100);
             const total = bill + tip;
             const perPerson = total / splitCount;
@@ -258,6 +259,7 @@
             document.getElementById('perPersonDisplay').textContent = formatCurrency(perPerson);
 
             document.getElementById('perPersonRow').style.display = splitCount > 1 ? 'flex' : 'none';
+            document.querySelector('.split-label').textContent = splitCount === 1 ? 'person' : 'people';
         }
 
         function setTip(percent) {

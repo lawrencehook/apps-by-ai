@@ -13,6 +13,11 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10; max-width: calc(100vw - 40px);
+        }
+        @media (max-width: 480px) {
+            .controls { padding: 12px; min-width: 180px; font-size: 12px; }
+            .controls h1 { font-size: 1.1rem; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -260,6 +265,33 @@
         });
 
         canvas.addEventListener('mouseleave', () => {
+            selectedNode = null;
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const node = getNodeAt(touch.clientX, touch.clientY);
+            if (node && !node.fixed) {
+                selectedNode = node;
+                mouseX = touch.clientX;
+                mouseY = touch.clientY;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            selectedNode = null;
+        });
+
+        canvas.addEventListener('touchcancel', () => {
             selectedNode = null;
         });
 
