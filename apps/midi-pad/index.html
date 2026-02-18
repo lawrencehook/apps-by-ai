@@ -2841,7 +2841,15 @@
                 if (keyMap.hasOwnProperty(key)) {
                     e.preventDefault();
                     const padIndex = keyMap[key];
-                    handlePadTrigger(padIndex, { clientX: 0, clientY: 0 });
+                    // Pass a centered position for the ripple effect
+                    const pad = document.querySelector(`.pad[data-index="${padIndex}"]`);
+                    if (pad) {
+                        const rect = pad.getBoundingClientRect();
+                        handlePadTrigger(padIndex, {
+                            clientX: rect.left + rect.width / 2,
+                            clientY: rect.top + rect.height / 2
+                        });
+                    }
                 }
             });
 

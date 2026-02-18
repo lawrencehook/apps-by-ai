@@ -205,19 +205,19 @@
         }
         .btn {
             padding: 10px 16px;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(128,128,128,0.3);
             border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            background: rgba(128,128,128,0.15);
+            color: inherit;
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn:hover { background: rgba(255,255,255,0.1); }
+        .btn:hover { background: rgba(128,128,128,0.25); }
         .btn-primary {
             background: rgba(78, 205, 196, 0.2);
             border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            color: #2ba89f;
         }
         .btn-primary:hover { background: rgba(78, 205, 196, 0.3); }
         .color-input-group {
@@ -518,7 +518,10 @@
         }
 
         function updateCSSOutput(headingFont, bodyFont, headingSize, bodySize, headingWeight, lineHeight, letterSpacing) {
-            const css = `/* Heading */
+            const css = `/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@${headingWeight}&family=${bodyFont.replace(/ /g, '+')}:wght@400&display=swap');
+
+/* Heading */
 h1, h2, h3 {
   font-family: '${headingFont}', ${fonts.find(f => f.name === headingFont)?.category || 'sans-serif'};
   font-size: ${headingSize}px;
@@ -531,10 +534,7 @@ body, p {
   font-family: '${bodyFont}', ${fonts.find(f => f.name === bodyFont)?.category || 'sans-serif'};
   font-size: ${bodySize}px;
   line-height: ${lineHeight};
-}
-
-/* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@${headingWeight}&family=${bodyFont.replace(/ /g, '+')}:wght@400&display=swap');`;
+}`;
 
             document.getElementById('cssOutput').textContent = css;
         }
@@ -556,17 +556,42 @@ body, p {
 
         // Copy CSS
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(document.getElementById('cssOutput').textContent);
+            const cssText = document.getElementById('cssOutput').textContent;
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(cssText).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+                }).catch(() => {
+                    fallbackCopy(cssText, btn);
+                });
+            } else {
+                fallbackCopy(cssText, btn);
+            }
         });
+
+        function fallbackCopy(text, btn) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                btn.textContent = 'Copied!';
+            } catch (e) {
+                btn.textContent = 'Copy failed';
+            }
+            document.body.removeChild(textarea);
+            setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+        }
 
         // Initialize
         loadFonts();
         populateSelects();
         populatePresets();
-        setTimeout(updatePreview, 100);
+        updatePreview();
     </script>
 </body>
 </html>

@@ -12,6 +12,16 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls {
+                min-width: unset;
+                right: 20px;
+                font-size: 13px;
+                padding: 14px;
+            }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -177,7 +187,13 @@
         document.getElementById('count').addEventListener('input', e => {
             numParticles = parseInt(e.target.value);
             document.getElementById('countLabel').textContent = numParticles;
-            init();
+            // Adjust particle count without full reset to avoid visual jump
+            while (particles.length < numParticles) {
+                particles.push(new Particle());
+            }
+            if (particles.length > numParticles) {
+                particles.length = numParticles;
+            }
         });
 
         document.getElementById('scale').addEventListener('input', e => {

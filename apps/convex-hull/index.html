@@ -52,6 +52,7 @@
         </div>
         <button id="random">Add Random Points</button>
         <button id="run">Build Hull</button>
+        <button id="stop" style="display:none">Stop</button>
         <button id="clear">Clear</button>
         <div class="status" id="status">Click to add points</div>
     </div>
@@ -147,7 +148,8 @@
             hull = [];
             running = true;
 
-            // Find bottom-most point (and leftmost if tie)
+            // Find lowest point on screen (largest y) and leftmost if tie
+            // In screen coordinates, y increases downward
             let start = points[0];
             for (const p of points) {
                 if (p.y > start.y || (p.y === start.y && p.x < start.x)) {
@@ -282,6 +284,13 @@
 
         canvas.addEventListener('click', e => {
             if (running) return;
+            // Prevent adding points under the controls panel
+            const controls = document.querySelector('.controls');
+            const ctrlRect = controls.getBoundingClientRect();
+            if (e.clientX >= ctrlRect.left && e.clientX <= ctrlRect.right &&
+                e.clientY >= ctrlRect.top && e.clientY <= ctrlRect.bottom) {
+                return;
+            }
             points.push({ x: e.clientX, y: e.clientY });
             hull = [];
             document.getElementById('status').textContent = `${points.length} points`;
@@ -311,13 +320,28 @@
         });
 
         document.getElementById('run').addEventListener('click', () => {
-            if (running || points.length < 3) return;
-            hull = [];
-            if (algorithm === 'jarvis') {
-                jarvisMarch();
-            } else {
-                grahamScan();
+            if (running) return;
+            if (points.length < 3) {
+                document.getElementById('status').textContent = 'Need at least 3 points';
+                return;
             }
+            hull = [];
+            document.getElementById('run').style.display = 'none';
+            document.getElementById('stop').style.display = '';
+            if (algorithm === 'jarvis') {
+                jarvisMarch().then(onHullDone);
+            } else {
+                grahamScan().then(onHullDone);
+            }
+        });
+
+        function onHullDone() {
+            document.getElementById('run').style.display = '';
+            document.getElementById('stop').style.display = 'none';
+        }
+
+        document.getElementById('stop').addEventListener('click', () => {
+            running = false;
         });
 
         document.getElementById('clear').addEventListener('click', () => {

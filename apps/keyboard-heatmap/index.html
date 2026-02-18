@@ -387,6 +387,7 @@
         let keyData = {};
         let isRecording = false;
         let startTime = null;
+        let accumulatedTime = 0;
         let recordingInterval = null;
         let keyElements = {};
 
@@ -473,8 +474,8 @@
             document.getElementById('totalKeystrokes').textContent = total.toLocaleString();
             document.getElementById('uniqueKeys').textContent = unique;
 
-            if (startTime) {
-                const elapsed = (Date.now() - startTime) / 1000;
+            if (startTime || accumulatedTime > 0) {
+                const elapsed = accumulatedTime + (startTime ? (Date.now() - startTime) / 1000 : 0);
                 const minutes = elapsed / 60;
                 const kpm = minutes > 0 ? Math.round(total / minutes) : 0;
                 document.getElementById('keysPerMinute').textContent = kpm;
@@ -564,6 +565,9 @@
             const key = normalizeKey(e);
             if (!key || !keyElements[key]) return;
 
+            // Prevent default browser actions for recorded keys (e.g., Backspace navigating back)
+            e.preventDefault();
+
             keyData[key] = (keyData[key] || 0) + 1;
 
             const element = keyElements[key];
@@ -585,9 +589,7 @@
                 instruction.textContent = 'Recording... Type anywhere on this page';
                 instruction.style.color = '#48dbfb';
 
-                if (!startTime) {
-                    startTime = Date.now();
-                }
+                startTime = Date.now();
 
                 recordingInterval = setInterval(updateStats, 1000);
             } else {
@@ -596,6 +598,10 @@
                 instruction.textContent = 'Recording paused. Click "Resume Recording" to continue';
                 instruction.style.color = '#feca57';
 
+                if (startTime) {
+                    accumulatedTime += (Date.now() - startTime) / 1000;
+                    startTime = null;
+                }
                 clearInterval(recordingInterval);
             }
         }
@@ -603,6 +609,7 @@
         function resetData() {
             keyData = {};
             startTime = null;
+            accumulatedTime = 0;
             isRecording = false;
             clearInterval(recordingInterval);
 
@@ -634,8 +641,8 @@
             text += `Total Keystrokes: ${total}\n`;
             text += `Unique Keys Used: ${sorted.length}\n`;
 
-            if (startTime) {
-                const elapsed = (Date.now() - startTime) / 1000;
+            const elapsed = accumulatedTime + (startTime ? (Date.now() - startTime) / 1000 : 0);
+            if (elapsed > 0) {
                 const minutes = elapsed / 60;
                 text += `Recording Time: ${Math.floor(elapsed / 60)}m ${Math.floor(elapsed % 60)}s\n`;
                 text += `Keys per Minute: ${Math.round(total / minutes)}\n`;

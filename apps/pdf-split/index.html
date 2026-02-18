@@ -383,10 +383,12 @@
                     }
 
                     a.click();
-                    URL.revokeObjectURL(url);
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-                    // Small delay between downloads
-                    await new Promise(r => setTimeout(r, 100));
+                    // Delay between downloads to avoid browser blocking
+                    if (i < ranges.length - 1) {
+                        await new Promise(r => setTimeout(r, 300));
+                    }
                 }
 
                 showStatus(`Successfully created ${ranges.length} PDF file${ranges.length !== 1 ? 's' : ''}`);

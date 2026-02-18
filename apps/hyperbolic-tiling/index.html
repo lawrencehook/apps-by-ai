@@ -307,15 +307,15 @@
             switch (scheme) {
                 case 'alternating':
                     return colorIdx === 0 ?
-                        `hsl(175, 60%, ${45 - depth * 3}%)` :
-                        `hsl(350, 60%, ${45 - depth * 3}%)`;
+                        `hsl(175, 60%, ${Math.max(10, 45 - depth * 3)}%)` :
+                        `hsl(350, 60%, ${Math.max(10, 45 - depth * 3)}%)`;
                 case 'rainbow':
-                    return `hsl(${(colorIdx * 180 + depth * 30) % 360}, 65%, ${50 - depth * 4}%)`;
+                    return `hsl(${(colorIdx * 180 + depth * 30) % 360}, 65%, ${Math.max(10, 50 - depth * 4)}%)`;
                 case 'depth':
-                    return `hsl(${200 + depth * 20}, 70%, ${55 - depth * 5}%)`;
+                    return `hsl(${200 + depth * 20}, 70%, ${Math.max(10, 55 - depth * 5)}%)`;
                 case 'mono':
-                    const l = 50 - depth * 6;
-                    return colorIdx === 0 ? `hsl(175, 60%, ${l}%)` : `hsl(175, 30%, ${l - 10}%)`;
+                    const l = Math.max(10, 50 - depth * 6);
+                    return colorIdx === 0 ? `hsl(175, 60%, ${l}%)` : `hsl(175, 30%, ${Math.max(5, l - 10)}%)`;
             }
         }
 
@@ -374,8 +374,15 @@
             ctx.stroke();
         }
 
+        let generateTimeout = null;
+        function debouncedGenerate() {
+            document.getElementById('depthVal').textContent = depthSlider.value;
+            clearTimeout(generateTimeout);
+            generateTimeout = setTimeout(generate, 150);
+        }
+
         tilingSelect.addEventListener('change', generate);
-        depthSlider.addEventListener('input', generate);
+        depthSlider.addEventListener('input', debouncedGenerate);
         colorSelect.addEventListener('change', draw);
         showEdgesCheck.addEventListener('change', draw);
         document.getElementById('regenerate').addEventListener('click', generate);

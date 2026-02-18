@@ -375,6 +375,8 @@
         }
 
         function step() {
+            if (running) return false;
+
             if (!currentState) {
                 currentState = startState;
                 inputString = document.getElementById('input').value;
@@ -382,10 +384,23 @@
             }
 
             if (inputIndex >= inputString.length) {
+                updateUI();
+                draw();
                 return false;
             }
 
             const symbol = inputString[inputIndex];
+
+            // Validate symbol is in alphabet
+            if (!alphabet.includes(symbol)) {
+                inputIndex = inputString.length;
+                document.getElementById('result').textContent = `REJECTED (invalid symbol: "${symbol}")`;
+                document.getElementById('result').className = 'result reject';
+                updateUI();
+                draw();
+                return false;
+            }
+
             const trans = transitions.find(t =>
                 t.from === currentState && t.symbol === symbol
             );
@@ -406,11 +421,23 @@
 
         async function run() {
             if (running) return;
+
+            const input = document.getElementById('input').value;
+            if (input.length === 0) {
+                // Handle empty string: just show accept/reject of start state
+                currentState = startState;
+                inputString = '';
+                inputIndex = 0;
+                updateUI();
+                draw();
+                return;
+            }
+
             running = true;
 
             // Reset
             currentState = startState;
-            inputString = document.getElementById('input').value;
+            inputString = input;
             inputIndex = 0;
             updateUI();
             draw();
@@ -418,7 +445,29 @@
             await new Promise(r => setTimeout(r, 300));
 
             while (inputIndex < inputString.length) {
-                step();
+                const symbol = inputString[inputIndex];
+                if (!alphabet.includes(symbol)) {
+                    inputIndex = inputString.length;
+                    document.getElementById('result').textContent = `REJECTED (invalid symbol: "${symbol}")`;
+                    document.getElementById('result').className = 'result reject';
+                    updateUI();
+                    draw();
+                    break;
+                }
+
+                const trans = transitions.find(t =>
+                    t.from === currentState && t.symbol === symbol
+                );
+
+                if (trans) {
+                    currentState = trans.to;
+                    inputIndex++;
+                } else {
+                    inputIndex = inputString.length;
+                }
+
+                updateUI();
+                draw();
                 await new Promise(r => setTimeout(r, 500));
             }
 

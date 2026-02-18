@@ -299,9 +299,13 @@
 
         function resizeCanvas() {
             const container = canvas.parentElement;
-            canvas.width = container.offsetWidth * 2;
-            canvas.height = Math.max(container.offsetHeight, 500) * 2;
-            ctx.scale(2, 2);
+            const newWidth = container.offsetWidth * 2;
+            const newHeight = Math.max(container.offsetHeight, 500) * 2;
+            if (canvas.width !== newWidth || canvas.height !== newHeight) {
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                ctx.scale(2, 2);
+            }
         }
 
         function formatCurrency(value) {
@@ -314,16 +318,16 @@
 
             incomeContainer.innerHTML = incomeData.map((item, i) => `
                 <div class="item-row">
-                    <input type="text" value="${item.name}" onchange="updateItem('income', ${i}, 'name', this.value)" placeholder="Income source">
-                    <input type="number" value="${item.amount}" onchange="updateItem('income', ${i}, 'amount', this.value)" placeholder="0">
+                    <input type="text" value="${item.name}" oninput="updateItem('income', ${i}, 'name', this.value)" placeholder="Income source">
+                    <input type="number" value="${item.amount}" oninput="updateItem('income', ${i}, 'amount', this.value)" placeholder="0">
                     <button class="delete-btn" onclick="deleteItem('income', ${i})">×</button>
                 </div>
             `).join('');
 
             expenseContainer.innerHTML = expenseData.map((item, i) => `
                 <div class="item-row">
-                    <input type="text" value="${item.name}" onchange="updateItem('expense', ${i}, 'name', this.value)" placeholder="Expense category">
-                    <input type="number" value="${item.amount}" onchange="updateItem('expense', ${i}, 'amount', this.value)" placeholder="0">
+                    <input type="text" value="${item.name}" oninput="updateItem('expense', ${i}, 'name', this.value)" placeholder="Expense category">
+                    <input type="number" value="${item.amount}" oninput="updateItem('expense', ${i}, 'amount', this.value)" placeholder="0">
                     <button class="delete-btn" onclick="deleteItem('expense', ${i})">×</button>
                 </div>
             `).join('');
@@ -574,7 +578,7 @@
             ctx.fillStyle = node.color;
             const animatedHeight = node.height * progress;
             ctx.beginPath();
-            ctx.roundRect(node.x, node.y, nodeWidth = 30, animatedHeight, 4);
+            ctx.roundRect(node.x, node.y, 30, animatedHeight, 4);
             ctx.fill();
         }
 

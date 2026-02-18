@@ -171,7 +171,7 @@ Elderberry"></textarea>
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
             if (params.has('items')) {
-                textarea.value = decodeURIComponent(params.get('items')).replace(/,/g, '\n');
+                textarea.value = params.get('items').replace(/,/g, '\n');
             }
             if (params.has('count')) document.getElementById('pickCount').value = params.get('count');
             if (params.has('remove')) document.getElementById('removePicked').checked = params.get('remove') === '1';
@@ -181,7 +181,7 @@ Elderberry"></textarea>
             const params = new URLSearchParams();
             const items = getItems();
             if (items.length > 0) {
-                params.set('items', encodeURIComponent(items.join(',')));
+                params.set('items', items.join(','));
             }
             params.set('count', document.getElementById('pickCount').value);
             params.set('remove', document.getElementById('removePicked').checked ? '1' : '0');
@@ -235,7 +235,15 @@ Elderberry"></textarea>
             ).join('') + '</div>';
 
             if (removePicked) {
-                const remaining = items.filter(item => !picked.includes(item));
+                const toRemove = [...picked];
+                const remaining = items.filter(item => {
+                    const idx = toRemove.indexOf(item);
+                    if (idx !== -1) {
+                        toRemove.splice(idx, 1);
+                        return false;
+                    }
+                    return true;
+                });
                 textarea.value = remaining.join('\n');
                 updateCount();
                 updateURL();

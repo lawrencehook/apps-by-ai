@@ -145,6 +145,10 @@
             text-align: center;
         }
         .status.show { display: block; }
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -260,7 +264,7 @@
                 editorPanel.classList.remove('hidden');
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
-                status.classList.add('show');
+                status.classList.add('show', 'error');
             }
         }
 
@@ -376,6 +380,7 @@
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!reversedBuffer || !currentFile) return;
             const wavBlob = audioBufferToWav(reversedBuffer);
             const url = URL.createObjectURL(wavBlob);
 
@@ -385,7 +390,7 @@
             a.download = `${baseName}_reversed.wav`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = 'Reversed audio saved!';
             status.classList.add('show');

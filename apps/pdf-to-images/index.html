@@ -187,14 +187,14 @@
             <div class="toolbar">
                 <div class="options">
                     <div class="option-group">
-                        <label>Format:</label>
+                        <label for="formatSelect">Format:</label>
                         <select id="formatSelect">
                             <option value="png">PNG</option>
                             <option value="jpeg">JPEG</option>
                         </select>
                     </div>
                     <div class="option-group">
-                        <label>Scale:</label>
+                        <label for="scaleSelect">Scale:</label>
                         <select id="scaleSelect">
                             <option value="1">1x (72 DPI)</option>
                             <option value="2" selected>2x (144 DPI)</option>
@@ -202,8 +202,8 @@
                             <option value="4">4x (288 DPI)</option>
                         </select>
                     </div>
-                    <div class="option-group" id="qualityGroup">
-                        <label>Quality:</label>
+                    <div class="option-group" id="qualityGroup" style="display: none;">
+                        <label for="qualityInput">Quality:</label>
                         <input type="number" id="qualityInput" value="90" min="1" max="100">
                     </div>
                 </div>
@@ -273,7 +273,7 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }

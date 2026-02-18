@@ -1217,7 +1217,9 @@
             gainNode.connect(masterGain);
 
             // Clean envelope inspired by chord-visualizer
-            const { attack, decay, sustain, release } = inst;
+            const { attack, decay, sustain } = inst;
+            // Use user-configurable release setting (converted from ms to seconds)
+            const release = settings.release / 1000 || inst.release;
             const totalDuration = duration + release;
 
             gainNode.gain.setValueAtTime(0, startTime);
@@ -1378,20 +1380,28 @@
 
                     // Touch events
                     let touchTimer = null;
+                    let touchTriggered = false;
                     cell.addEventListener('touchstart', (e) => {
                         e.preventDefault();
-                        // Long press for chord, short tap for arpeggio (caps lock = chord)
+                        touchTriggered = false;
+                        // Long press for chord, short tap for arpeggio
                         touchTimer = setTimeout(() => {
+                            touchTriggered = true;
                             handleCellTrigger(cell, rootIndex, chordType, e, true);
                             touchTimer = null;
                         }, 500);
-                        handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
+                        // Visual feedback immediately
+                        cell.classList.add('active');
                     });
                     cell.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         if (touchTimer) {
                             clearTimeout(touchTimer);
                             touchTimer = null;
+                            // Short tap - play arpeggio (or chord if caps lock)
+                            if (!touchTriggered) {
+                                handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
+                            }
                         }
                         handleCellRelease(cell);
                     });
@@ -1416,13 +1426,21 @@
             const size = Math.max(rect.width, rect.height);
 
             let x, y;
-            if (event.type === 'touchstart') {
+            if (event.touches && event.touches.length > 0) {
                 const touch = event.touches[0];
                 x = touch.clientX - rect.left;
                 y = touch.clientY - rect.top;
-            } else {
+            } else if (event.changedTouches && event.changedTouches.length > 0) {
+                const touch = event.changedTouches[0];
+                x = touch.clientX - rect.left;
+                y = touch.clientY - rect.top;
+            } else if (event.clientX !== undefined) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
+            } else {
+                // Fallback: center of cell
+                x = rect.width / 2;
+                y = rect.height / 2;
             }
 
             ripple.style.width = ripple.style.height = size + 'px';

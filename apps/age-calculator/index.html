@@ -131,7 +131,7 @@
 
         <div class="card">
             <div class="form-group">
-                <label>Date of Birth</label>
+                <label for="birthdate">Date of Birth</label>
                 <input type="date" id="birthdate">
             </div>
         </div>
@@ -206,7 +206,10 @@
         birthdateInput.addEventListener('change', () => { calculate(); updateURL(); });
 
         function calculate() {
-            const birthdate = new Date(birthdateInput.value);
+            // Parse as local date to avoid timezone offset issues
+            const parts = birthdateInput.value.split('-');
+            if (parts.length !== 3) return;
+            const birthdate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             const now = new Date();
 
             if (isNaN(birthdate) || birthdate > now) {

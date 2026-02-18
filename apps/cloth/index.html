@@ -139,7 +139,7 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            init();
+            if (points.length === 0) init();
         }
 
         function init() {
@@ -268,6 +268,42 @@
         });
 
         canvas.addEventListener('mouseleave', () => {
+            mouse.down = false;
+            selectedPoint = null;
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            mouse.down = true;
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+            selectedPoint = findClosestPoint(mouse.x, mouse.y);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            mouse.px = mouse.x;
+            mouse.py = mouse.y;
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+
+            if (mouse.down && !selectedPoint) {
+                for (const stick of sticks) {
+                    if (!stick.active) continue;
+                    const mx = (stick.p1.x + stick.p2.x) / 2;
+                    const my = (stick.p1.y + stick.p2.y) / 2;
+                    if (Math.hypot(mouse.x - mx, mouse.y - my) < 15) {
+                        stick.active = false;
+                    }
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
             mouse.down = false;
             selectedPoint = null;
         });

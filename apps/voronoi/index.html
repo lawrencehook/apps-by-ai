@@ -213,7 +213,11 @@
                 vy: (Math.random() - 0.5) * 2,
                 hue: Math.random() * 360
             });
-            document.getElementById('count').value = points.length;
+            const countSlider = document.getElementById('count');
+            if (points.length > parseInt(countSlider.max)) {
+                countSlider.max = points.length;
+            }
+            countSlider.value = points.length;
             document.getElementById('countLabel').textContent = points.length;
         });
 

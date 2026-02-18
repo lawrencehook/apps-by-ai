@@ -592,6 +592,7 @@
             <div class="view-toggle">
                 <button class="view-btn active" data-view="stats">Stats View</button>
                 <button class="view-btn" data-view="table">Table View</button>
+                <button class="view-btn" id="loadNewBtn" style="margin-left: auto;">Load New File</button>
             </div>
 
             <!-- Stats View -->
@@ -666,6 +667,12 @@
         let columnSortOrder = 'original';
         let filters = {}; // column -> filter value
 
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const results = document.getElementById('results');
@@ -689,6 +696,20 @@
                     renderFullTable();
                 }
             });
+        });
+
+        // Load new file button
+        document.getElementById('loadNewBtn').addEventListener('click', () => {
+            data = [];
+            headers = [];
+            numericColumns = [];
+            sortColumn = null;
+            sortDirection = 'asc';
+            sortedData = [];
+            filters = {};
+            results.classList.add('hidden');
+            uploadArea.classList.remove('hidden');
+            fileInput.value = '';
         });
 
         // Column sort order
@@ -924,8 +945,8 @@ Olivia,32,65000,Marketing,6`;
 
                     // Build unique values list with data attributes for filtering
                     const uniqueValuesHtml = sortedUnique.map(([val, count]) => `
-                        <div class="unique-value" data-column="${h}" data-value="${val.replace(/"/g, '&quot;')}">
-                            <span class="unique-value-name" title="${val}">${val}</span>
+                        <div class="unique-value" data-column="${escapeHtml(h)}" data-value="${escapeHtml(val)}">
+                            <span class="unique-value-name" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
                             <span class="unique-value-count">${count}</span>
                         </div>
                     `).join('');
@@ -1150,11 +1171,11 @@ Olivia,32,65000,Marketing,6`;
 
             table.innerHTML = `
                 <thead>
-                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    <tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
                 </thead>
                 <tbody>
                     ${previewData.map(row => `
-                        <tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>
+                        <tr>${headers.map(h => `<td>${escapeHtml(String(row[h] ?? ''))}</td>`).join('')}</tr>
                     `).join('')}
                 </tbody>
             `;

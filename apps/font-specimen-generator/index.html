@@ -242,6 +242,16 @@
         .color-option:hover { transform: scale(1.1); }
         .color-option.active { border-color: #667eea; }
 
+        @media (max-width: 600px) {
+            #specimen { padding: 24px; }
+            .specimen-title { font-size: 2.5rem; }
+            .alphabet-row { font-size: 1.5rem; }
+            .alphabet-lower { font-size: 1.2rem; }
+            .numbers-row { font-size: 1.2rem; }
+            .pangram { font-size: 1.2rem; }
+            .weight-item { flex-direction: column; gap: 4px; }
+            .weight-sample { font-size: 1.1rem; }
+        }
         @media print {
             body { background: #fff; }
             .back-link, .controls, .actions { display: none !important; }
@@ -304,7 +314,7 @@
         </div>
 
         <div class="actions">
-            <button class="btn btn-primary" id="downloadPdf">Download as PDF</button>
+            <button class="btn btn-primary" id="downloadPdf">Save as PDF (Print)</button>
             <button class="btn btn-secondary" id="printBtn">Print</button>
         </div>
 
@@ -373,6 +383,12 @@
         let currentColor = '#111';
         let customFontName = null;
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Load Google Fonts
         const googleFonts = ['Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins',
                             'Playfair Display', 'Merriweather', 'Source Code Pro', 'JetBrains Mono'];
@@ -399,10 +415,11 @@
             // Update size samples
             const sizes = [72, 48, 36, 24, 18, 14, 12];
             const sizeSamples = document.getElementById('sizeSamples');
+            const safeText = escapeHtml(sampleText.value || 'The quick brown fox');
             sizeSamples.innerHTML = sizes.map(size => `
                 <div class="size-item">
                     <div class="size-label">${size}px</div>
-                    <div style="font-size: ${size}px; line-height: 1.2; color: ${currentColor}">${sampleText.value || 'The quick brown fox'}</div>
+                    <div style="font-size: ${size}px; line-height: 1.2; color: ${currentColor}">${safeText}</div>
                 </div>
             `).join('');
 
@@ -419,10 +436,11 @@
                 { value: 900, name: 'Black' }
             ];
             const weightsGrid = document.getElementById('weightsGrid');
+            const safeTextFull = escapeHtml(sampleText.value || 'The quick brown fox jumps over the lazy dog');
             weightsGrid.innerHTML = weights.map(w => `
                 <div class="weight-item">
                     <span class="weight-label">${w.value} ${w.name}</span>
-                    <span class="weight-sample" style="font-weight: ${w.value}; color: ${currentColor}">${sampleText.value || 'The quick brown fox jumps over the lazy dog'}</span>
+                    <span class="weight-sample" style="font-weight: ${w.value}; color: ${currentColor}">${safeTextFull}</span>
                 </div>
             `).join('');
 

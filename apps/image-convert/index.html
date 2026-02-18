@@ -23,6 +23,7 @@
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
             border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
         }
         .back-link:hover { color: #fff; }
         .drop-zone {
@@ -252,13 +253,26 @@
         });
 
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) return;
+            if (!file.type.startsWith('image/')) {
+                status.textContent = 'Please select a valid image file.';
+                status.className = 'status show';
+                return;
+            }
 
             currentImage = { file, type: file.type };
 
             const reader = new FileReader();
+            reader.onerror = () => {
+                status.textContent = 'Error reading file. Please try again.';
+                status.className = 'status show';
+            };
             reader.onload = e => {
                 const img = new Image();
+                img.onerror = () => {
+                    status.textContent = 'Could not load image. The file may be corrupt.';
+                    status.className = 'status show';
+                    currentImage = null;
+                };
                 img.onload = () => {
                     currentImage.img = img;
                     currentImage.dataUrl = e.target.result;
@@ -318,6 +332,7 @@
         });
 
         document.getElementById('convertBtn').addEventListener('click', () => {
+            if (!currentImage || !currentImage.img) return;
             const img = currentImage.img;
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
@@ -335,9 +350,10 @@
             const quality = selectedFormat === 'image/png' ? undefined : qualitySlider.value / 100;
             const dataUrl = canvas.toDataURL(selectedFormat, quality);
 
-            // Calculate new size
+            // Calculate new size (account for base64 padding)
             const base64 = dataUrl.split(',')[1];
-            const newSize = Math.round((base64.length * 3) / 4);
+            const padding = (base64.match(/=+$/) || [''])[0].length;
+            const newSize = Math.round((base64.length * 3) / 4) - padding;
 
             const ext = selectedFormat.split('/')[1];
             const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');

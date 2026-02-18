@@ -264,6 +264,8 @@
                     });
                 } catch (err) {
                     console.error('Error loading:', file.name, err);
+                    status.textContent = `Error loading "${file.name}": ${err.message}`;
+                    status.classList.add('show');
                 }
             }
 
@@ -290,12 +292,13 @@
                 el.draggable = true;
                 el.dataset.index = index;
 
+                const escapedName = item.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
                 el.innerHTML = `
                     <span class="drag-handle">⋮⋮</span>
                     <span class="file-order">${index + 1}</span>
                     <canvas class="file-waveform" data-index="${index}"></canvas>
                     <div class="file-details">
-                        <div class="file-name">${item.name}</div>
+                        <div class="file-name">${escapedName}</div>
                         <div class="file-meta">${formatTime(item.duration)} • ${item.buffer.sampleRate} Hz</div>
                     </div>
                     <button class="remove-btn" data-index="${index}">Remove</button>
@@ -311,6 +314,7 @@
                 el.addEventListener('dragstart', handleDragStart);
                 el.addEventListener('dragend', handleDragEnd);
                 el.addEventListener('dragover', handleDragOver);
+                el.addEventListener('dragleave', e => e.currentTarget.classList.remove('drag-over'));
                 el.addEventListener('drop', handleDrop);
 
                 // Remove button
@@ -477,7 +481,7 @@
             a.download = 'merged_audio.wav';
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = `Merged ${audioFiles.length} files into ${formatTime(mergedBuffer.duration)}!`;
             status.classList.add('show');

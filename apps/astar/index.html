@@ -72,8 +72,8 @@
         let width, height, cols, rows;
         let grid = [];
         let openSet = [];
-        let closedSet = [];
-        let path = [];
+        let closedSet = new Set();
+        let path = new Set();
         let start = null;
         let end = null;
         let searching = false;
@@ -81,6 +81,7 @@
         let mode = 'wall';
         let speed = 10;
         let isDrawing = false;
+        let drawMode = null; // 'draw' or 'erase' - set on mousedown
 
         const CELL_SIZE = 20;
 
@@ -119,8 +120,8 @@
         function init() {
             grid = [];
             openSet = [];
-            closedSet = [];
-            path = [];
+            closedSet = new Set();
+            path = new Set();
             start = null;
             end = null;
             searching = false;
@@ -157,6 +158,12 @@
                 if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
                     const neighbor = grid[ny][nx];
                     if (neighbor.type !== WALL) {
+                        // Prevent diagonal corner-cutting through walls
+                        if (dx !== 0 && dy !== 0) {
+                            if (grid[node.y][node.x + dx].type === WALL || grid[node.y + dy][node.x].type === WALL) {
+                                continue;
+                            }
+                        }
                         neighbors.push({ node: neighbor, cost: dx !== 0 && dy !== 0 ? 1.414 : 1 });
                     }
                 }
@@ -178,8 +185,8 @@
             }
 
             openSet = [start];
-            closedSet = [];
-            path = [];
+            closedSet = new Set();
+            path = new Set();
             searching = true;
             found = false;
 
@@ -200,27 +207,31 @@
             }
 
             // Find node with lowest f score
-            openSet.sort((a, b) => a.f - b.f);
-            const current = openSet.shift();
-            closedSet.push(current);
+            let lowestIdx = 0;
+            for (let i = 1; i < openSet.length; i++) {
+                if (openSet[i].f < openSet[lowestIdx].f) lowestIdx = i;
+            }
+            const current = openSet[lowestIdx];
+            openSet.splice(lowestIdx, 1);
+            closedSet.add(current);
 
             if (current === end) {
                 // Reconstruct path
                 let node = current;
                 while (node) {
-                    path.unshift(node);
+                    path.add(node);
                     node = node.parent;
                 }
                 searching = false;
                 found = true;
-                document.getElementById('status').textContent = `Path found! Length: ${path.length}`;
+                document.getElementById('status').textContent = `Path found! Length: ${path.size}`;
                 return;
             }
 
             const neighbors = getNeighbors(current);
 
             for (const { node: neighbor, cost } of neighbors) {
-                if (closedSet.includes(neighbor)) continue;
+                if (closedSet.has(neighbor)) continue;
 
                 const tentativeG = current.g + cost;
 
@@ -276,9 +287,9 @@
                         ctx.fillStyle = '#4ecdc4';
                     } else if (node.type === END) {
                         ctx.fillStyle = '#ff6b6b';
-                    } else if (path.includes(node)) {
+                    } else if (path.has(node)) {
                         ctx.fillStyle = '#ffe66d';
-                    } else if (closedSet.includes(node)) {
+                    } else if (closedSet.has(node)) {
                         ctx.fillStyle = '#5a3a5a';
                     } else if (openSet.includes(node)) {
                         ctx.fillStyle = '#3a5a6a';
@@ -291,13 +302,20 @@
             }
 
             // Draw path line
-            if (path.length > 1) {
+            if (path.size > 1) {
+                // Reconstruct ordered path from end node for line drawing
+                const pathArr = [];
+                let node = end;
+                while (node) {
+                    pathArr.unshift(node);
+                    node = node.parent;
+                }
                 ctx.strokeStyle = '#ffe66d';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.moveTo(path[0].x * CELL_SIZE + CELL_SIZE / 2, path[0].y * CELL_SIZE + CELL_SIZE / 2);
-                for (let i = 1; i < path.length; i++) {
-                    ctx.lineTo(path[i].x * CELL_SIZE + CELL_SIZE / 2, path[i].y * CELL_SIZE + CELL_SIZE / 2);
+                ctx.moveTo(pathArr[0].x * CELL_SIZE + CELL_SIZE / 2, pathArr[0].y * CELL_SIZE + CELL_SIZE / 2);
+                for (let i = 1; i < pathArr.length; i++) {
+                    ctx.lineTo(pathArr[i].x * CELL_SIZE + CELL_SIZE / 2, pathArr[i].y * CELL_SIZE + CELL_SIZE / 2);
                 }
                 ctx.stroke();
             }
@@ -305,7 +323,7 @@
             requestAnimationFrame(render);
         }
 
-        function handleCell(e) {
+        function handleCell(e, isInitialClick) {
             const x = Math.floor(e.clientX / CELL_SIZE);
             const y = Math.floor(e.clientY / CELL_SIZE);
 
@@ -315,7 +333,11 @@
 
             if (mode === 'wall') {
                 if (node !== start && node !== end) {
-                    node.type = node.type === WALL ? EMPTY : WALL;
+                    if (isInitialClick) {
+                        // Determine draw mode from the initial cell state
+                        drawMode = node.type === WALL ? 'erase' : 'draw';
+                    }
+                    node.type = drawMode === 'draw' ? WALL : EMPTY;
                 }
             } else if (mode === 'start') {
                 if (start) start.type = EMPTY;
@@ -330,8 +352,8 @@
             // Reset search when modifying
             if (found || searching) {
                 openSet = [];
-                closedSet = [];
-                path = [];
+                closedSet = new Set();
+                path = new Set();
                 searching = false;
                 found = false;
             }
@@ -339,12 +361,12 @@
 
         canvas.addEventListener('mousedown', e => {
             isDrawing = true;
-            handleCell(e);
+            handleCell(e, true);
         });
 
         canvas.addEventListener('mousemove', e => {
             if (isDrawing && mode === 'wall') {
-                handleCell(e);
+                handleCell(e, false);
             }
         });
 

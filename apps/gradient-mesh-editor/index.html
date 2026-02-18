@@ -330,6 +330,7 @@
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * window.devicePixelRatio;
             canvas.height = rect.height * window.devicePixelRatio;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             render();
         }
@@ -556,10 +557,32 @@
 
         // Copy CSS
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(cssOutput.textContent);
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(cssOutput.textContent).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+                }).catch(() => {
+                    btn.textContent = 'Copy failed';
+                    setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+                });
+            } else {
+                // Fallback for non-HTTPS contexts
+                const textarea = document.createElement('textarea');
+                textarea.value = cssOutput.textContent;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.textContent = 'Copied!';
+                } catch (err) {
+                    btn.textContent = 'Copy failed';
+                }
+                document.body.removeChild(textarea);
+                setTimeout(() => { btn.textContent = 'Copy CSS'; }, 1500);
+            }
         });
 
         // Export PNG
@@ -619,10 +642,12 @@ ${circles}
 </svg>`;
 
             const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = 'gradient-mesh.svg';
-            link.href = URL.createObjectURL(blob);
+            link.href = url;
             link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
         // Initialize

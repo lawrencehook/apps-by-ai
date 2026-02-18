@@ -118,12 +118,12 @@
         <div class="controls">
             <div class="control-group">
                 <label>Real (c)</label>
-                <input type="range" id="realC" min="-2" max="2" step="0.01" value="-0.7">
+                <input type="range" id="realC" min="-2" max="2" step="0.001" value="-0.7">
                 <span class="value" id="realVal">-0.70</span>
             </div>
             <div class="control-group">
                 <label>Imag (c)</label>
-                <input type="range" id="imagC" min="-2" max="2" step="0.01" value="0.27">
+                <input type="range" id="imagC" min="-2" max="2" step="0.001" value="0.27">
                 <span class="value" id="imagVal">0.27</span>
             </div>
             <div class="control-group">
@@ -169,7 +169,7 @@
 
         function resize() {
             const container = document.querySelector('.canvas-container');
-            const size = Math.min(container.clientWidth, container.clientHeight) - 20;
+            const size = Math.max(100, Math.min(container.clientWidth, container.clientHeight) - 20);
             width = height = Math.floor(size);
             canvas.width = width;
             canvas.height = height;
@@ -218,10 +218,10 @@
             const maxIter = parseInt(iterSlider.value);
             const colorFn = colorSchemes[colorSelect.value];
 
-            document.getElementById('realVal').textContent = cReal.toFixed(2);
-            document.getElementById('imagVal').textContent = cImag.toFixed(2);
+            document.getElementById('realVal').textContent = cReal.toFixed(3);
+            document.getElementById('imagVal').textContent = cImag.toFixed(3);
             document.getElementById('iterVal').textContent = maxIter;
-            document.getElementById('cValue').textContent = `${cReal.toFixed(2)} ${cImag >= 0 ? '+' : '-'} ${Math.abs(cImag).toFixed(2)}i`;
+            document.getElementById('cValue').textContent = `${cReal.toFixed(3)} ${cImag >= 0 ? '+' : '-'} ${Math.abs(cImag).toFixed(3)}i`;
 
             const imageData = ctx.createImageData(width, height);
             const data = imageData.data;

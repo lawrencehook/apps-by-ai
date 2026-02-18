@@ -88,6 +88,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: auto;
         }
         .trim-handle::after {
             content: '';
@@ -374,11 +375,21 @@
             e.stopPropagation();
             isDragging = 'start';
         });
+        document.getElementById('handleStart').addEventListener('touchstart', e => {
+            e.stopPropagation();
+            e.preventDefault();
+            isDragging = 'start';
+        }, { passive: false });
 
         document.getElementById('handleEnd').addEventListener('mousedown', e => {
             e.stopPropagation();
             isDragging = 'end';
         });
+        document.getElementById('handleEnd').addEventListener('touchstart', e => {
+            e.stopPropagation();
+            e.preventDefault();
+            isDragging = 'end';
+        }, { passive: false });
 
         document.getElementById('waveformWrapper').addEventListener('click', e => {
             if (isDragging) return;
@@ -415,6 +426,30 @@
         });
 
         document.addEventListener('mouseup', () => {
+            isDragging = null;
+        });
+
+        document.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const wrapper = document.getElementById('waveformWrapper');
+            const rect = wrapper.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+            const time = pct * audioBuffer.duration;
+
+            if (isDragging === 'start') {
+                trimStart = Math.max(0, Math.min(time, trimEnd - 0.01));
+            } else {
+                trimEnd = Math.max(trimStart + 0.01, Math.min(time, audioBuffer.duration));
+            }
+
+            updateTimeInputs();
+            updateTrimOverlay();
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
             isDragging = null;
         });
 
@@ -518,7 +553,7 @@
             a.download = `${baseName}_trimmed.wav`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = `Trimmed ${formatTime(trimEnd - trimStart)} of audio saved!`;
             status.classList.add('show');

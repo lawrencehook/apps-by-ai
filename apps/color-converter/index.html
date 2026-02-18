@@ -194,7 +194,12 @@
         }
 
         function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            hex = hex.trim().replace(/^#/, '');
+            // Support 3-digit hex shorthand
+            if (/^[a-f\d]{3}$/i.test(hex)) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
                 r: parseInt(result[1], 16),
                 g: parseInt(result[2], 16),
@@ -309,6 +314,14 @@
             };
         }
 
+        function clampRgb(r, g, b) {
+            return {
+                r: Math.max(0, Math.min(255, r)),
+                g: Math.max(0, Math.min(255, g)),
+                b: Math.max(0, Math.min(255, b))
+            };
+        }
+
         // Parsing functions
         function parseColor(format, value) {
             value = value.trim();
@@ -318,9 +331,9 @@
                         return hexToRgb(value);
                     case 'rgb': {
                         const match = value.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
-                        if (match) return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+                        if (match) return clampRgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
                         const simple = value.match(/^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/);
-                        if (simple) return { r: parseInt(simple[1]), g: parseInt(simple[2]), b: parseInt(simple[3]) };
+                        if (simple) return clampRgb(parseInt(simple[1]), parseInt(simple[2]), parseInt(simple[3]));
                         return null;
                     }
                     case 'hsl': {
@@ -417,7 +430,11 @@
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const text = document.getElementById(btn.dataset.target).textContent;
-                navigator.clipboard.writeText(text);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+                } else {
+                    fallbackCopy(text);
+                }
                 btn.textContent = 'Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => {
@@ -426,6 +443,17 @@
                 }, 1500);
             });
         });
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
 
         updatePlaceholder();
         updateOutputs();

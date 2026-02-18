@@ -164,7 +164,9 @@
         }
         .play-btn {
             width: 48px;
+            min-width: 48px;
             height: 48px;
+            padding: 0;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -251,6 +253,8 @@
             border: none;
             width: 18px;
             height: 18px;
+            min-width: 18px;
+            padding: 0;
             border-radius: 50%;
             font-size: 10px;
             cursor: pointer;
@@ -712,7 +716,12 @@
 
             renderFrame(currentFrame);
             updateFrameCounter();
-            renderThumbnails();
+
+            // Update active thumbnail highlight without full DOM rebuild
+            const thumbs = thumbnailStrip.querySelectorAll('.thumbnail');
+            thumbs.forEach((t, i) => {
+                t.classList.toggle('active', i === Math.floor(currentFrame));
+            });
 
             animationId = requestAnimationFrame(animate);
         }
@@ -729,6 +738,19 @@
             if (isScrubbing) scrubTo(e);
         });
         document.addEventListener('mouseup', () => {
+            isScrubbing = false;
+        });
+
+        // Touch support for timeline
+        timeline.addEventListener('touchstart', e => {
+            isScrubbing = true;
+            scrubTo(e.touches[0]);
+            e.preventDefault();
+        });
+        document.addEventListener('touchmove', e => {
+            if (isScrubbing) scrubTo(e.touches[0]);
+        });
+        document.addEventListener('touchend', () => {
             isScrubbing = false;
         });
 
@@ -771,10 +793,15 @@
 
             // Create video using MediaRecorder
             const stream = previewCanvas.captureStream(outputFps);
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'video/webm;codecs=vp9',
-                videoBitsPerSecond: 5000000
-            });
+            let recorderOptions = { videoBitsPerSecond: 5000000 };
+            if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                recorderOptions.mimeType = 'video/webm;codecs=vp9';
+            } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                recorderOptions.mimeType = 'video/webm;codecs=vp8';
+            } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                recorderOptions.mimeType = 'video/webm';
+            }
+            const mediaRecorder = new MediaRecorder(stream, recorderOptions);
 
             const chunks = [];
             mediaRecorder.ondataavailable = e => {

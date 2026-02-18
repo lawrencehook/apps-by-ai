@@ -225,13 +225,21 @@
             while (str.length % 4) {
                 str += '=';
             }
-            return decodeURIComponent(escape(atob(str)));
+            const bytes = Uint8Array.from(atob(str), c => c.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
 
         function formatJson(obj) {
-            return JSON.stringify(obj, null, 2)
-                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
-                .replace(/: "([^"]+)"/g, ': <span class="json-string">"$1"</span>')
+            const raw = JSON.stringify(obj, null, 2);
+            return escapeHtml(raw)
+                .replace(/&quot;([^&]+?)&quot;:/g, '<span class="json-key">"$1"</span>:')
+                .replace(/: &quot;(.*?)&quot;/g, ': <span class="json-string">"$1"</span>')
                 .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
                 .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
         }
@@ -263,7 +271,7 @@
             }
 
             // Visualize parts
-            jwtVisual.innerHTML = `<span class="jwt-header-part">${parts[0]}</span><span class="jwt-dot">.</span><span class="jwt-payload-part">${parts[1]}</span><span class="jwt-dot">.</span><span class="jwt-signature-part">${parts[2]}</span>`;
+            jwtVisual.innerHTML = `<span class="jwt-header-part">${escapeHtml(parts[0])}</span><span class="jwt-dot">.</span><span class="jwt-payload-part">${escapeHtml(parts[1])}</span><span class="jwt-dot">.</span><span class="jwt-signature-part">${escapeHtml(parts[2])}</span>`;
 
             try {
                 // Decode header
@@ -304,15 +312,16 @@
                 }
 
                 if (decodedPayload.sub) {
-                    claims.push({ name: 'Subject', value: decodedPayload.sub });
+                    claims.push({ name: 'Subject', value: escapeHtml(String(decodedPayload.sub)) });
                 }
 
                 if (decodedPayload.iss) {
-                    claims.push({ name: 'Issuer', value: decodedPayload.iss });
+                    claims.push({ name: 'Issuer', value: escapeHtml(String(decodedPayload.iss)) });
                 }
 
                 if (decodedPayload.aud) {
-                    claims.push({ name: 'Audience', value: Array.isArray(decodedPayload.aud) ? decodedPayload.aud.join(', ') : decodedPayload.aud });
+                    const audValue = Array.isArray(decodedPayload.aud) ? decodedPayload.aud.join(', ') : decodedPayload.aud;
+                    claims.push({ name: 'Audience', value: escapeHtml(String(audValue)) });
                 }
 
                 if (claims.length > 0) {
@@ -328,7 +337,7 @@
                 }
 
                 // Signature (just show base64)
-                signatureContent.innerHTML = `<code style="word-break: break-all; color: #4ecdc4;">${parts[2]}</code>`;
+                signatureContent.innerHTML = `<code style="word-break: break-all; color: #4ecdc4;">${escapeHtml(parts[2])}</code>`;
 
             } catch (e) {
                 errorMessage.textContent = 'Error decoding token: ' + e.message;
@@ -365,15 +374,45 @@
             decodeJwt();
         });
 
-        document.getElementById('copyHeader').addEventListener('click', () => {
+        function copyWithFeedback(btn, text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopyFeedback(btn);
+                }).catch(() => {
+                    fallbackCopy(btn, text);
+                });
+            } else {
+                fallbackCopy(btn, text);
+            }
+        }
+
+        function fallbackCopy(btn, text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopyFeedback(btn);
+        }
+
+        function showCopyFeedback(btn) {
+            const original = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = original, 1500);
+        }
+
+        document.getElementById('copyHeader').addEventListener('click', function() {
             if (decodedHeader) {
-                navigator.clipboard.writeText(JSON.stringify(decodedHeader, null, 2));
+                copyWithFeedback(this, JSON.stringify(decodedHeader, null, 2));
             }
         });
 
-        document.getElementById('copyPayload').addEventListener('click', () => {
+        document.getElementById('copyPayload').addEventListener('click', function() {
             if (decodedPayload) {
-                navigator.clipboard.writeText(JSON.stringify(decodedPayload, null, 2));
+                copyWithFeedback(this, JSON.stringify(decodedPayload, null, 2));
             }
         });
     </script>

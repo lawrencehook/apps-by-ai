@@ -202,10 +202,10 @@
                         <input type="number" id="interestRate" value="6.5" min="0" max="30" step="0.1">
                         <span class="symbol-right">%</span>
                     </div>
-                    <input type="range" id="interestRateRange" min="0" max="15" value="6.5" step="0.1">
+                    <input type="range" id="interestRateRange" min="0" max="30" value="6.5" step="0.1">
                     <div class="range-labels">
                         <span>0%</span>
-                        <span>15%</span>
+                        <span>30%</span>
                     </div>
                 </div>
 
@@ -300,15 +300,15 @@
             const totalAmount = monthlyPayment * numPayments;
             const totalInterest = totalAmount - principal;
 
-            document.getElementById('monthlyPayment').textContent = formatCurrency(monthlyPayment);
+            document.getElementById('monthlyPayment').textContent = isNaN(monthlyPayment) ? '$0' : formatCurrency(monthlyPayment);
             document.getElementById('principalAmount').textContent = formatCurrency(principal);
-            document.getElementById('totalInterest').textContent = formatCurrency(totalInterest);
-            document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+            document.getElementById('totalInterest').textContent = isNaN(totalInterest) ? '$0' : formatCurrency(totalInterest);
+            document.getElementById('totalAmount').textContent = isNaN(totalAmount) ? '$0' : formatCurrency(totalAmount);
             document.getElementById('totalPayments').textContent = numPayments;
 
             // Update chart
-            const principalPercent = (principal / totalAmount) * 100;
-            const interestPercent = (totalInterest / totalAmount) * 100;
+            const principalPercent = totalAmount > 0 ? (principal / totalAmount) * 100 : 0;
+            const interestPercent = totalAmount > 0 ? (totalInterest / totalAmount) * 100 : 0;
             document.getElementById('chartPrincipal').style.width = principalPercent + '%';
             document.getElementById('chartInterest').style.width = interestPercent + '%';
         }

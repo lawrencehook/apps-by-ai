@@ -260,12 +260,11 @@
             document.getElementById('angle').value = angle;
             document.getElementById('angleLabel').textContent = angle;
 
-            // Adjust iterations for complex presets
-            if (currentPreset === 'dragon') {
-                iterations = Math.min(iterations, 12);
-            } else if (currentPreset === 'sierpinski') {
-                iterations = Math.min(iterations, 8);
-            }
+            // Adjust iterations for presets to avoid freezing
+            const maxIterMap = { tree1: 7, tree2: 7, bush: 6, fern: 7, sierpinski: 8, dragon: 14 };
+            const maxIter = maxIterMap[currentPreset] || 8;
+            document.getElementById('iterations').max = maxIter;
+            iterations = Math.min(iterations, maxIter);
             document.getElementById('iterations').value = iterations;
             document.getElementById('iterLabel').textContent = iterations;
 
@@ -275,19 +274,23 @@
         document.getElementById('iterations').addEventListener('input', e => {
             iterations = parseInt(e.target.value);
             document.getElementById('iterLabel').textContent = iterations;
-            generate();
+            // Debounce to avoid freezing on rapid slider movement
+            clearTimeout(window._genTimeout);
+            window._genTimeout = setTimeout(generate, 100);
         });
 
         document.getElementById('angle').addEventListener('input', e => {
             angle = parseInt(e.target.value);
             document.getElementById('angleLabel').textContent = angle;
-            generate();
+            clearTimeout(window._genTimeout);
+            window._genTimeout = setTimeout(generate, 100);
         });
 
         document.getElementById('length').addEventListener('input', e => {
             length = parseInt(e.target.value);
             document.getElementById('lengthLabel').textContent = length;
-            generate();
+            clearTimeout(window._genTimeout);
+            window._genTimeout = setTimeout(generate, 100);
         });
 
         document.getElementById('generate').addEventListener('click', generate);

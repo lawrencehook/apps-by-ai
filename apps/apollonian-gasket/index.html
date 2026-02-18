@@ -131,6 +131,7 @@
 
         <div class="canvas-container">
             <canvas id="canvas"></canvas>
+            <div class="info">Circles: <span id="circleCount">0</span></div>
         </div>
     </div>
 
@@ -189,15 +190,6 @@
             };
 
             return [center1, center2];
-        }
-
-        function isTangent(c1, c2, tolerance = 0.5) {
-            const dx = c1.x - c2.x;
-            const dy = c1.y - c2.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const sumR = Math.abs(c1.r) + Math.abs(c2.r);
-            const diffR = Math.abs(Math.abs(c1.r) - Math.abs(c2.r));
-            return Math.abs(dist - sumR) < tolerance || Math.abs(dist - diffR) < tolerance;
         }
 
         function circleExists(newCircle) {
@@ -270,6 +262,7 @@
             apollonian(outer, c1, c3, 1, maxDepth);
             apollonian(c1, c2, c3, 1, maxDepth);
 
+            document.getElementById('circleCount').textContent = circles.length;
             draw();
         }
 

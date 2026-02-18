@@ -22,7 +22,7 @@
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
         }
         .back-link:hover { color: #fff; }
         .drop-zone {
@@ -103,7 +103,7 @@
             transition: all 0.2s;
         }
         .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        button {
+        button:not(.preset-btn) {
             background: rgba(78, 205, 196, 0.2);
             border: 1px solid rgba(78, 205, 196, 0.4);
             color: #4ecdc4;
@@ -169,10 +169,10 @@
         <h1>Image Resize</h1>
         <p class="subtitle">Resize images to specific dimensions or by percentage.</p>
 
-        <div class="drop-zone" id="dropZone">
+        <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Upload image area. Drop an image here or press Enter to browse.">
             <div class="drop-zone-text">Drop an image here or click to browse</div>
             <div class="drop-zone-hint">Supports PNG, JPEG, WebP, GIF</div>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*" aria-label="Choose image file">
         </div>
 
         <div class="editor-layout hidden" id="editorPanel">
@@ -272,6 +272,12 @@
 
         // Drop zone events
         dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
         dropZone.addEventListener('dragover', e => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -392,6 +398,16 @@
                 const scale = (parseInt(scaleInput.value) || 100) / 100;
                 newWidth = Math.round(originalWidth * scale);
                 newHeight = Math.round(originalHeight * scale);
+            }
+
+            // Validate dimensions
+            if (newWidth < 1 || newHeight < 1 || !isFinite(newWidth) || !isFinite(newHeight)) {
+                showStatus('Invalid dimensions. Width and height must be at least 1 pixel.', true);
+                return;
+            }
+            if (newWidth > 10000 || newHeight > 10000) {
+                showStatus('Dimensions too large. Maximum 10000 pixels per side.', true);
+                return;
             }
 
             // Create canvas and resize

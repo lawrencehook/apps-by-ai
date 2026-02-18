@@ -382,7 +382,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_modified.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
                 showStatus(`Successfully removed ${selectedPages.size} page${selectedPages.size !== 1 ? 's' : ''}`);
             } catch (err) {
                 showStatus('Error removing pages: ' + err.message, true);

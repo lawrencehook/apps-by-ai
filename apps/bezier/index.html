@@ -66,6 +66,7 @@
         let animationDirection = 1;
         let selectedPoint = null;
         let isDragging = false;
+        let hasDragged = false;
 
         const POINT_RADIUS = 10;
 
@@ -229,6 +230,10 @@
             if (idx !== null) {
                 selectedPoint = idx;
                 isDragging = true;
+                hasDragged = false;
+            } else {
+                hasDragged = false;
+                isDragging = false;
             }
         });
 
@@ -236,6 +241,7 @@
             if (isDragging && selectedPoint !== null) {
                 controlPoints[selectedPoint].x = e.clientX;
                 controlPoints[selectedPoint].y = e.clientY;
+                hasDragged = true;
             }
         });
 
@@ -244,12 +250,14 @@
         });
 
         canvas.addEventListener('click', e => {
-            if (!isDragging) {
-                const idx = getPointAt(e.clientX, e.clientY);
-                if (idx === null) {
-                    // Add new point
-                    controlPoints.push({ x: e.clientX, y: e.clientY });
-                }
+            if (hasDragged) {
+                hasDragged = false;
+                return;
+            }
+            const idx = getPointAt(e.clientX, e.clientY);
+            if (idx === null) {
+                // Add new point
+                controlPoints.push({ x: e.clientX, y: e.clientY });
             }
         });
 

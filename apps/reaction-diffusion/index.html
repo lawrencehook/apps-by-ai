@@ -182,8 +182,11 @@
             [gridB, nextB] = [nextB, gridB];
         }
 
+        let imageData;
         function render() {
-            const imageData = ctx.createImageData(cols, rows);
+            if (!imageData || imageData.width !== cols || imageData.height !== rows) {
+                imageData = ctx.createImageData(cols, rows);
+            }
             const data = imageData.data;
 
             for (let i = 0; i < cols * rows; i++) {
@@ -238,6 +241,35 @@
                 }
             }
         });
+
+        function addChemicalB(clientX, clientY, radius) {
+            const x = Math.floor(clientX / SCALE);
+            const y = Math.floor(clientY / SCALE);
+            const r = radius;
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    const px = x + dx;
+                    const py = y + dy;
+                    if (px >= 0 && px < cols && py >= 0 && py < rows && dx*dx + dy*dy < r*r) {
+                        gridB[py * cols + px] = 1;
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            for (const touch of e.touches) {
+                addChemicalB(touch.clientX, touch.clientY, 8);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            for (const touch of e.touches) {
+                addChemicalB(touch.clientX, touch.clientY, 5);
+            }
+        }, { passive: false });
 
         document.getElementById('preset').addEventListener('change', e => {
             const p = presets[e.target.value];

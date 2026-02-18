@@ -629,7 +629,12 @@
                     return { x: ann.x, y: ann.y, width: metrics.width + 12, height: 32 };
                 case 'rectangle':
                 case 'circle':
-                    return { x: ann.x, y: ann.y, width: ann.width, height: ann.height };
+                    return {
+                        x: ann.width < 0 ? ann.x + ann.width : ann.x,
+                        y: ann.height < 0 ? ann.y + ann.height : ann.y,
+                        width: Math.abs(ann.width),
+                        height: Math.abs(ann.height)
+                    };
             }
             return { x: 0, y: 0, width: 0, height: 0 };
         }
@@ -896,6 +901,10 @@
 
         // Export PNG
         document.getElementById('exportPng').addEventListener('click', () => {
+            if (!loadedImage) {
+                alert('No image loaded to export.');
+                return;
+            }
             selectedAnnotation = null;
             render();
 
@@ -907,21 +916,30 @@
 
         // Export PDF
         document.getElementById('exportPdf').addEventListener('click', () => {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert('PDF library failed to load. Please check your internet connection and reload the page.');
+                return;
+            }
+
             selectedAnnotation = null;
             render();
 
-            const { jsPDF } = window.jspdf;
-            const imgData = canvas.toDataURL('image/png');
+            try {
+                const { jsPDF } = window.jspdf;
+                const imgData = canvas.toDataURL('image/png');
 
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
 
-            // Determine orientation
-            const orientation = imgWidth > imgHeight ? 'l' : 'p';
-            const pdf = new jsPDF(orientation, 'px', [imgWidth, imgHeight]);
+                // Determine orientation
+                const orientation = imgWidth > imgHeight ? 'l' : 'p';
+                const pdf = new jsPDF(orientation, 'px', [imgWidth, imgHeight]);
 
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save('annotated-blueprint.pdf');
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save('annotated-blueprint.pdf');
+            } catch (e) {
+                alert('Failed to generate PDF: ' + e.message);
+            }
         });
 
         // Clear all

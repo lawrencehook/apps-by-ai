@@ -22,7 +22,7 @@
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
         }
         .back-link:hover { color: #fff; }
         .drop-zone {
@@ -133,10 +133,10 @@
         <h1>Image Rotate & Flip</h1>
         <p class="subtitle">Rotate images by 90° increments or flip horizontally/vertically.</p>
 
-        <div class="drop-zone" id="dropZone">
+        <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Upload image area. Drop an image here or press Enter to browse.">
             <div class="drop-zone-text">Drop an image here or click to browse</div>
             <div class="drop-zone-hint">Supports PNG, JPEG, WebP, GIF</div>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*" aria-label="Choose image file">
         </div>
 
         <div class="hidden" id="editorPanel">
@@ -189,6 +189,12 @@
 
         // Drop zone events
         dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
         dropZone.addEventListener('dragover', e => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -204,7 +210,11 @@
         });
 
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) return;
+            if (!file.type.startsWith('image/')) {
+                status.textContent = 'Please select a valid image file.';
+                status.className = 'status show';
+                return;
+            }
 
             currentImage = { file, type: file.type };
             rotation = 0;

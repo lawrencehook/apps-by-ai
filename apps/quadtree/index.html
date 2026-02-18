@@ -182,8 +182,8 @@
                 if (this.x < 0 || this.x > width) this.vx *= -1;
                 if (this.y < 0 || this.y > height) this.vy *= -1;
 
-                this.x = Math.max(0, Math.min(width, this.x));
-                this.y = Math.max(0, Math.min(height, this.y));
+                this.x = Math.max(0, Math.min(width - 1, this.x));
+                this.y = Math.max(0, Math.min(height - 1, this.y));
             }
         }
 
@@ -243,9 +243,12 @@
             ctx.arc(mouseX, mouseY, queryRadius, 0, Math.PI * 2);
             ctx.stroke();
 
+            // Build a Set for O(1) lookups instead of O(n) includes()
+            const inRangeSet = new Set(queryResults);
+
             // Draw particles
             for (const p of particles) {
-                const inRange = queryResults.includes(p);
+                const inRange = inRangeSet.has(p);
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, inRange ? 6 : 3, 0, Math.PI * 2);
                 ctx.fillStyle = inRange ? '#4ecdc4' : `hsla(${p.hue}, 50%, 50%, 0.7)`;
@@ -283,6 +286,18 @@
         });
 
         canvas.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
             mouseX = -1000;
             mouseY = -1000;
         });

@@ -396,7 +396,10 @@
             }
 
             // Normalize
-            const max = Math.max(...result);
+            let max = 0;
+            for (let i = 0; i < result.length; i++) {
+                if (result[i] > max) max = result[i];
+            }
             return result.map(v => max > 0 ? v / max : 0);
         }
 
@@ -433,22 +436,44 @@
             const audioData = getAudioData(numBars);
 
             ctx.fillStyle = settings.waveformColor;
+            ctx.strokeStyle = settings.waveformColor;
 
             const centerY = height / 2;
 
-            for (let i = 0; i < numBars; i++) {
-                const x = i * totalBarWidth;
-                const value = audioData[i];
+            if (settings.style === 'line') {
+                ctx.lineWidth = settings.barWidth;
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth + barWidth / 2;
+                    const value = audioData[i];
+                    const y = centerY - value * height * 0.45;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                // Draw mirrored line below center
+                ctx.beginPath();
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth + barWidth / 2;
+                    const value = audioData[i];
+                    const y = centerY + value * height * 0.45;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            } else {
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth;
+                    const value = audioData[i];
 
-                if (settings.style === 'bars') {
-                    const barHeight = value * height * 0.9;
-                    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-                } else if (settings.style === 'line') {
-                    const barHeight = value * height * 0.45;
-                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
-                } else if (settings.style === 'mirror') {
-                    const barHeight = value * height * 0.45;
-                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                    if (settings.style === 'bars') {
+                        const barHeight = value * height * 0.9;
+                        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                    } else if (settings.style === 'mirror') {
+                        const barHeight = value * height * 0.45;
+                        ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                    }
                 }
             }
         }
@@ -479,22 +504,43 @@
             const audioData = getAudioData(numBars);
 
             ctx.fillStyle = settings.waveformColor;
+            ctx.strokeStyle = settings.waveformColor;
 
             const centerY = height / 2;
 
-            for (let i = 0; i < numBars; i++) {
-                const x = i * totalBarWidth;
-                const value = audioData[i];
+            if (settings.style === 'line') {
+                ctx.lineWidth = barWidth;
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth + barWidth / 2;
+                    const value = audioData[i];
+                    const y = centerY - value * height * 0.45;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.beginPath();
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth + barWidth / 2;
+                    const value = audioData[i];
+                    const y = centerY + value * height * 0.45;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            } else {
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth;
+                    const value = audioData[i];
 
-                if (settings.style === 'bars') {
-                    const barHeight = value * height * 0.9;
-                    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-                } else if (settings.style === 'line') {
-                    const barHeight = value * height * 0.45;
-                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
-                } else if (settings.style === 'mirror') {
-                    const barHeight = value * height * 0.45;
-                    ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                    if (settings.style === 'bars') {
+                        const barHeight = value * height * 0.9;
+                        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                    } else if (settings.style === 'mirror') {
+                        const barHeight = value * height * 0.45;
+                        ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+                    }
                 }
             }
 
@@ -515,16 +561,29 @@
             let rects = '';
             const centerY = height / 2;
 
-            for (let i = 0; i < numBars; i++) {
-                const x = i * totalBarWidth;
-                const value = audioData[i];
+            if (settings.style === 'line') {
+                let topPoints = '';
+                let bottomPoints = '';
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth + barWidth / 2;
+                    const value = audioData[i];
+                    topPoints += `${x},${centerY - value * height * 0.45} `;
+                    bottomPoints += `${x},${centerY + value * height * 0.45} `;
+                }
+                rects += `<polyline points="${topPoints.trim()}" fill="none" stroke="${settings.waveformColor}" stroke-width="${barWidth}" stroke-linejoin="round"/>`;
+                rects += `<polyline points="${bottomPoints.trim()}" fill="none" stroke="${settings.waveformColor}" stroke-width="${barWidth}" stroke-linejoin="round"/>`;
+            } else {
+                for (let i = 0; i < numBars; i++) {
+                    const x = i * totalBarWidth;
+                    const value = audioData[i];
 
-                if (settings.style === 'bars') {
-                    const barHeight = value * height * 0.9;
-                    rects += `<rect x="${x}" y="${height - barHeight}" width="${barWidth}" height="${barHeight}" fill="${settings.waveformColor}"/>`;
-                } else if (settings.style === 'line' || settings.style === 'mirror') {
-                    const barHeight = value * height * 0.45;
-                    rects += `<rect x="${x}" y="${centerY - barHeight}" width="${barWidth}" height="${barHeight * 2}" fill="${settings.waveformColor}"/>`;
+                    if (settings.style === 'bars') {
+                        const barHeight = value * height * 0.9;
+                        rects += `<rect x="${x}" y="${height - barHeight}" width="${barWidth}" height="${barHeight}" fill="${settings.waveformColor}"/>`;
+                    } else if (settings.style === 'mirror') {
+                        const barHeight = value * height * 0.45;
+                        rects += `<rect x="${x}" y="${centerY - barHeight}" width="${barWidth}" height="${barHeight * 2}" fill="${settings.waveformColor}"/>`;
+                    }
                 }
             }
 
@@ -540,6 +599,7 @@ ${rects}
         // Event listeners for controls
         document.getElementById('canvasWidth').addEventListener('change', e => {
             settings.width = parseInt(e.target.value);
+            if (audioBuffer) drawWaveform();
         });
 
         document.getElementById('canvasHeight').addEventListener('change', e => {

@@ -271,16 +271,31 @@
                 card.appendChild(info);
                 pageGrid.appendChild(card);
 
-                card.addEventListener('click', () => {
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('role', 'checkbox');
+                card.setAttribute('aria-checked', 'false');
+                card.setAttribute('aria-label', `Page ${i + 1}`);
+
+                function togglePage() {
                     const pageIndex = parseInt(card.dataset.page);
                     if (selectedPages.has(pageIndex)) {
                         selectedPages.delete(pageIndex);
                         card.classList.remove('selected');
+                        card.setAttribute('aria-checked', 'false');
                     } else {
                         selectedPages.add(pageIndex);
                         card.classList.add('selected');
+                        card.setAttribute('aria-checked', 'true');
                     }
                     updateSelectHint();
+                }
+
+                card.addEventListener('click', togglePage);
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        togglePage();
+                    }
                 });
 
                 // Render preview
@@ -369,7 +384,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_extracted.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showStatus(`Successfully extracted ${selectedPages.size} page${selectedPages.size !== 1 ? 's' : ''}`);
             } catch (err) {
                 showStatus('Error extracting pages: ' + err.message, true);

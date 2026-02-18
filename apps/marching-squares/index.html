@@ -61,21 +61,26 @@
         let resolution = 8;
         let time = 0;
 
-        // Metaballs
+        // Metaballs - positions will be set on first resize
         const balls = [];
-        for (let i = 0; i < 5; i++) {
-            balls.push({
-                x: Math.random() * 800,
-                y: Math.random() * 600,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                r: 50 + Math.random() * 50
-            });
+        function initBalls() {
+            balls.length = 0;
+            for (let i = 0; i < 5; i++) {
+                balls.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    r: 50 + Math.random() * 50
+                });
+            }
         }
 
         function resize() {
+            const firstLoad = !width;
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            if (firstLoad) initBalls();
         }
 
         function noise(x, y) {
@@ -222,8 +227,10 @@
                 }
             }
 
-            requestAnimationFrame(render);
+            animFrameId = requestAnimationFrame(render);
         }
+
+        let animFrameId;
 
         document.getElementById('field').addEventListener('change', e => {
             fieldType = e.target.value;

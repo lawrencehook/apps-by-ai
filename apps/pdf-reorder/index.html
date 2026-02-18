@@ -333,6 +333,7 @@
 
         function handleDrop(e) {
             e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
             const dropPosition = parseInt(e.currentTarget.dataset.position);
 
             if (draggedPosition !== null && draggedPosition !== dropPosition) {
@@ -388,7 +389,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_reordered.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
                 showStatus('PDF saved successfully');
             } catch (err) {
                 showStatus('Error saving PDF: ' + err.message, true);

@@ -75,6 +75,7 @@
         let startNode = null;
         let endNode = null;
         let running = false;
+        let cancelRequested = false;
         let path = [];
         let visited = new Set();
         let inQueue = new Set();
@@ -195,6 +196,7 @@
                     const my = (edge.a.y + edge.b.y) / 2;
                     ctx.fillStyle = 'rgba(100, 100, 150, 0.5)';
                     ctx.font = '9px system-ui';
+                    ctx.textAlign = 'center';
                     ctx.fillText(Math.round(edge.weight), mx, my);
                 }
             }
@@ -244,8 +246,13 @@
         }
 
         async function dijkstra() {
-            if (!startNode || !endNode || running) return;
+            if (!startNode || !endNode) return;
+            if (running) {
+                cancelRequested = true;
+                return;
+            }
             running = true;
+            cancelRequested = false;
 
             // Reset
             for (const node of nodes) {
@@ -261,6 +268,15 @@
             inQueue.add(startNode);
 
             while (queue.length > 0) {
+                if (cancelRequested) {
+                    document.getElementById('status').textContent = 'Cancelled. Click two nodes to set start and end';
+                    currentNode = null;
+                    running = false;
+                    cancelRequested = false;
+                    draw();
+                    return;
+                }
+
                 // Find node with minimum distance
                 queue.sort((a, b) => a.dist - b.dist);
                 currentNode = queue.shift();
@@ -348,7 +364,12 @@
 
         document.getElementById('run').addEventListener('click', dijkstra);
         document.getElementById('reset').addEventListener('click', () => {
-            if (!running) generateGraph();
+            if (running) {
+                cancelRequested = true;
+                setTimeout(generateGraph, 100);
+            } else {
+                generateGraph();
+            }
         });
 
         window.addEventListener('resize', resize);

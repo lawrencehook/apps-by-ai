@@ -31,6 +31,7 @@
             margin-bottom: 24px;
             text-align: center;
             transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .preview-text-large {
             font-size: 2.5rem;
@@ -150,6 +151,11 @@
         .info-title { color: #4ecdc4; font-size: 0.9rem; margin-bottom: 12px; }
         .info-text { color: #888; font-size: 0.85rem; line-height: 1.6; }
         .info-text strong { color: #fff; }
+        @media (max-width: 600px) {
+            .color-inputs { grid-template-columns: 1fr; }
+            .wcag-results { grid-template-columns: 1fr; }
+            .ratio-value { font-size: 2.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -283,9 +289,19 @@
             update();
         });
 
+        function normalizeHexInput(input) {
+            let val = input.value.trim();
+            if (val && !val.startsWith('#')) {
+                val = '#' + val;
+                input.value = val;
+            }
+            return val;
+        }
+
         fgHex.addEventListener('input', () => {
-            if (isValidHex(fgHex.value)) {
-                fgPicker.value = fgHex.value;
+            const val = normalizeHexInput(fgHex);
+            if (isValidHex(val)) {
+                fgPicker.value = val;
                 update();
             }
         });
@@ -296,8 +312,9 @@
         });
 
         bgHex.addEventListener('input', () => {
-            if (isValidHex(bgHex.value)) {
-                bgPicker.value = bgHex.value;
+            const val = normalizeHexInput(bgHex);
+            if (isValidHex(val)) {
+                bgPicker.value = val;
                 update();
             }
         });

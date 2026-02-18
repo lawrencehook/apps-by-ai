@@ -173,8 +173,9 @@
         });
 
         async function handleFiles(newFiles) {
+            let skippedCount = 0;
             for (const file of newFiles) {
-                if (file.type === 'application/pdf') {
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                     try {
                         const arrayBuffer = await file.arrayBuffer();
                         const pdf = await PDFDocument.load(arrayBuffer);
@@ -190,7 +191,12 @@
                     } catch (err) {
                         showStatus(`Error loading ${file.name}: ${err.message}`, true);
                     }
+                } else {
+                    skippedCount++;
                 }
+            }
+            if (skippedCount > 0) {
+                showStatus(`${skippedCount} non-PDF file${skippedCount !== 1 ? 's' : ''} skipped. Only PDF files are supported.`, true);
             }
             renderFileList();
         }
@@ -207,12 +213,18 @@
             clearBtn.style.display = 'inline-block';
             mergeBtn.disabled = files.length < 2;
 
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
             fileList.innerHTML = files.map((f, i) => `
                 <div class="file-item" draggable="true" data-index="${i}">
                     <span class="drag-handle">☰</span>
                     <span class="file-icon">📄</span>
                     <div class="file-info">
-                        <div class="file-name">${f.name}</div>
+                        <div class="file-name">${escapeHtml(f.name)}</div>
                         <div>
                             <span class="file-size">${formatSize(f.size)}</span>
                             <span class="file-pages">${f.pages} page${f.pages !== 1 ? 's' : ''}</span>
@@ -250,8 +262,9 @@
 
         function handleDragOver(e) {
             e.preventDefault();
-            const item = e.currentTarget;
-            item.classList.add('drag-over');
+            // Remove drag-over from all items, then add to current
+            document.querySelectorAll('.file-item').forEach(item => item.classList.remove('drag-over'));
+            e.currentTarget.classList.add('drag-over');
         }
 
         function handleDrop(e) {
@@ -314,7 +327,7 @@
                 a.download = 'merged.pdf';
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
 
                 const totalPages = files.reduce((sum, f) => sum + f.pages, 0);
                 showStatus(`Successfully merged ${files.length} files (${totalPages} pages total)`);

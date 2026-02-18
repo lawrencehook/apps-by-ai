@@ -378,14 +378,11 @@ Pasta</textarea>
                     canvas.classList.remove('spinning');
 
                     // Calculate winner - pointer is at top
-                    // The wheel is drawn with slice 0 starting at -PI/2 + currentRotation
-                    // So after rotation, the slice at the pointer (top, -PI/2) is:
                     const sliceAngle = (2 * Math.PI) / options.length;
                     // Normalize rotation to 0 to 2*PI
                     const normalizedRotation = ((currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
                     // The winning slice is the one that rotated to be under the pointer
-                    // Since we rotate clockwise (positive), we go backwards through slices
-                    const winnerIndex = Math.floor((options.length - (normalizedRotation / sliceAngle) % options.length)) % options.length;
+                    const winnerIndex = ((options.length - Math.floor(normalizedRotation / sliceAngle)) % options.length + options.length) % options.length;
                     const winner = options[winnerIndex];
 
                     resultEl.textContent = winner;

@@ -254,14 +254,16 @@
         }
 
         function calculate() {
-            const original = parseFloat(document.getElementById('originalPrice').value) || 0;
+            const original = Math.max(0, parseFloat(document.getElementById('originalPrice').value) || 0);
+
+            // Clamp base discount
+            const clampedDiscount = Math.max(0, Math.min(100, baseDiscount));
 
             // Calculate stacked discounts
             let price = original;
-            let totalDiscountPercent = 0;
 
             // Apply base discount
-            price = price * (1 - baseDiscount / 100);
+            price = price * (1 - clampedDiscount / 100);
 
             // Apply additional discounts
             additionalDiscounts.forEach(d => {
@@ -269,7 +271,7 @@
             });
 
             const savings = original - price;
-            totalDiscountPercent = original > 0 ? ((savings / original) * 100) : 0;
+            const totalDiscountPercent = original > 0 ? ((savings / original) * 100) : 0;
 
             document.getElementById('finalPrice').textContent = formatCurrency(price);
             document.getElementById('originalDisplay').textContent = 'was ' + formatCurrency(original);

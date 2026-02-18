@@ -141,6 +141,7 @@
         }
         .position-btn {
             flex: 1;
+            width: auto;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.15);
             color: #666;
@@ -368,7 +369,7 @@
                 case 'number': return String(pageNum);
                 case 'pageOf': return `Page ${pageNum} of ${total}`;
                 case 'dash': return `- ${pageNum} -`;
-                case 'custom': return customFormat.replace('{n}', pageNum).replace('{total}', total);
+                case 'custom': return customFormat.replaceAll('{n}', pageNum).replaceAll('{total}', total);
                 default: return String(pageNum);
             }
         }
@@ -527,7 +528,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_numbered.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showStatus('Page numbers added successfully');
             } catch (err) {
                 showStatus('Error adding page numbers: ' + err.message, true);

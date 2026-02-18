@@ -11,7 +11,8 @@
             background: #0a0a0f;
             min-height: 100vh;
             color: #e0e0e0;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
@@ -50,8 +51,7 @@
         .bg-orb.orb3 {
             width: 400px; height: 400px;
             background: radial-gradient(circle, #a855f7 0%, transparent 70%);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
+            top: calc(50% - 200px); left: calc(50% - 200px);
             animation-delay: -14s;
         }
         @keyframes float {

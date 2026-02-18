@@ -473,6 +473,7 @@
 
         // Stop all sounds
         function stopAll() {
+            if (!audioContext) return;
             activeOscillators.forEach(({ osc, gain }) => {
                 try {
                     gain.gain.setValueAtTime(0, audioContext.currentTime);
@@ -668,8 +669,11 @@
         }
 
         // Waveform visualization
+        let silentFrames = 0;
+
         function startVisualization() {
             if (animationId) cancelAnimationFrame(animationId);
+            silentFrames = 0;
 
             const canvas = document.getElementById('waveformCanvas');
             const ctx = canvas.getContext('2d');
@@ -687,7 +691,20 @@
                 const dataArray = new Uint8Array(bufferLength);
                 analyser.getByteFrequencyData(dataArray);
 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                // Check if audio has gone silent
+                const maxVal = Math.max(...dataArray);
+                if (maxVal < 2) {
+                    silentFrames++;
+                    if (silentFrames > 60) {
+                        ctx.clearRect(0, 0, width, height);
+                        animationId = null;
+                        return;
+                    }
+                } else {
+                    silentFrames = 0;
+                }
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
                 ctx.fillRect(0, 0, width, height);
 
                 const barWidth = (width / bufferLength) * 4;

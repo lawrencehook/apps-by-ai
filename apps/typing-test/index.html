@@ -262,7 +262,7 @@
         </div>
 
         <div class="typing-area" id="typingArea">
-            <input type="text" class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <input type="text" class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type the displayed text here">
             <div class="text-display" id="textDisplay"></div>
             <div class="click-hint" id="clickHint">
                 <span>Click here to start typing</span>
@@ -389,7 +389,8 @@
                     className += ' pending';
                 }
 
-                html += `<span class="${className}">${char}</span>`;
+                const safeChar = char === '&' ? '&amp;' : char === '<' ? '&lt;' : char === '>' ? '&gt;' : char;
+                html += `<span class="${className}">${safeChar}</span>`;
             }
             textDisplay.innerHTML = html;
         }

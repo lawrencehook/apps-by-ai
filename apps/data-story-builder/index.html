@@ -686,48 +686,50 @@ Toys,28000`
             const showGrid = document.getElementById('showGrid').checked;
             const showValues = document.getElementById('showValues').checked;
 
-            let html = `<svg viewBox="0 0 ${width} ${height}" class="chart-svg">`;
+            let inner = '';
 
             // Grid lines
             if (showGrid) {
                 for (let i = 0; i <= 5; i++) {
                     const y = padding.top + (height - padding.top - padding.bottom) * (1 - i / 5);
-                    html += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
-                    html += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
+                    inner += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
+                    inner += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
                 }
             }
 
             // Axis
-            html += `<line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" class="axis-line" stroke-width="2"/>`;
+            inner += `<line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" class="axis-line" stroke-width="2"/>`;
+
+            const baseY = height - padding.bottom;
 
             // Bars
             data.forEach((d, i) => {
                 const groupX = padding.left + i * barGroupWidth + barGroupWidth / 2;
 
                 // Label
-                html += `<text x="${groupX}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${groupX}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
 
                 valueKeys.forEach((key, j) => {
                     const val = d[key];
                     const barHeight = (val / maxVal) * (height - padding.top - padding.bottom);
                     const x = groupX - (valueKeys.length * barWidth) / 2 + j * barWidth + 2;
-                    const y = height - padding.bottom - barHeight;
+                    const y = baseY - barHeight;
 
-                    html += `<rect class="data-bar" data-label="${d[labelKey]}" data-key="${key}" data-value="${val}"
-                        x="${x}" y="${height - padding.bottom}" width="${barWidth - 4}" height="0"
+                    inner += `<rect class="data-bar" data-label="${d[labelKey]}" data-key="${key}" data-value="${val}"
+                        x="${x}" y="${baseY}" width="${barWidth - 4}" height="0"
+                        data-base-y="${baseY}"
                         fill="${chartColors[j % chartColors.length]}" rx="3"
-                        style="--target-y: ${y}px; --target-height: ${barHeight}px"/>`;
+                        style="--target-y: ${y}; --target-height: ${barHeight}"/>`;
 
                     if (showValues) {
-                        html += `<text class="bar-value" x="${x + barWidth / 2 - 2}" y="${y - 8}"
-                            fill="${chartColors[j % chartColors.length]}" font-size="11" text-anchor="middle" opacity="0"
-                            style="--target-y: ${y - 8}px">${val.toLocaleString()}</text>`;
+                        inner += `<text class="bar-value" x="${x + barWidth / 2 - 2}" y="${y - 8}"
+                            fill="${chartColors[j % chartColors.length]}" font-size="11" text-anchor="middle" opacity="0">${val.toLocaleString()}</text>`;
                     }
                 });
             });
 
-            html += '</svg>';
-            svg.outerHTML = html;
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.innerHTML = inner;
 
             // Render legend
             renderLegend(valueKeys, chartColors);
@@ -751,21 +753,21 @@ Toys,28000`
             const showGrid = document.getElementById('showGrid').checked;
             const showValues = document.getElementById('showValues').checked;
 
-            let html = `<svg viewBox="0 0 ${width} ${height}" class="chart-svg">`;
+            let inner = '';
 
             // Grid
             if (showGrid) {
                 for (let i = 0; i <= 5; i++) {
                     const y = padding.top + (height - padding.top - padding.bottom) * (1 - i / 5);
-                    html += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
-                    html += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
+                    inner += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
+                    inner += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
                 }
             }
 
             // X labels
             data.forEach((d, i) => {
                 const x = padding.left + i * pointSpacing;
-                html += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
             });
 
             // Lines and points
@@ -783,25 +785,25 @@ Toys,28000`
 
                 // Line
                 const pathLength = points.length * 200;
-                html += `<path class="data-line" d="${pathD}" stroke="${color}"
+                inner += `<path class="data-line" d="${pathD}" stroke="${color}"
                     stroke-dasharray="${pathLength}" stroke-dashoffset="${pathLength}"
                     style="--path-length: ${pathLength}"/>`;
 
                 // Points
                 points.forEach((p, i) => {
-                    html += `<circle class="data-point" data-label="${p.label}" data-key="${key}" data-value="${p.val}"
+                    inner += `<circle class="data-point" data-label="${p.label}" data-key="${key}" data-value="${p.val}"
                         cx="${p.x}" cy="${p.y}" r="0" fill="${color}" stroke="#1a1a2e" stroke-width="2"
                         style="--target-r: 6"/>`;
 
                     if (showValues) {
-                        html += `<text class="point-value" x="${p.x}" y="${p.y - 15}"
+                        inner += `<text class="point-value" x="${p.x}" y="${p.y - 15}"
                             fill="${color}" font-size="11" text-anchor="middle" opacity="0">${p.val.toLocaleString()}</text>`;
                     }
                 });
             });
 
-            html += '</svg>';
-            svg.outerHTML = html;
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.innerHTML = inner;
 
             renderLegend(valueKeys, chartColors);
             setupTooltips();
@@ -824,21 +826,21 @@ Toys,28000`
             const showGrid = document.getElementById('showGrid').checked;
             const baseY = height - padding.bottom;
 
-            let html = `<svg viewBox="0 0 ${width} ${height}" class="chart-svg">`;
+            let inner = '';
 
             // Grid
             if (showGrid) {
                 for (let i = 0; i <= 5; i++) {
                     const y = padding.top + (height - padding.top - padding.bottom) * (1 - i / 5);
-                    html += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
-                    html += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
+                    inner += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="grid-line"/>`;
+                    inner += `<text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${Math.round(maxVal * i / 5).toLocaleString()}</text>`;
                 }
             }
 
             // X labels
             data.forEach((d, i) => {
                 const x = padding.left + i * pointSpacing;
-                html += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
             });
 
             // Areas (reverse order for layering)
@@ -854,7 +856,7 @@ Toys,28000`
 
                 pathD += `L${padding.left + (data.length - 1) * pointSpacing},${baseY}Z`;
 
-                html += `<path class="data-area" d="${pathD}" fill="${color}" opacity="0"
+                inner += `<path class="data-area" d="${pathD}" fill="${color}" opacity="0"
                     style="--target-opacity: 0.4"/>`;
             });
 
@@ -870,12 +872,12 @@ Toys,28000`
                 });
 
                 const pathLength = data.length * 200;
-                html += `<path class="data-line" d="${lineD}" stroke="${color}"
+                inner += `<path class="data-line" d="${lineD}" stroke="${color}"
                     stroke-dasharray="${pathLength}" stroke-dashoffset="${pathLength}"/>`;
             });
 
-            html += '</svg>';
-            svg.outerHTML = html;
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.innerHTML = inner;
 
             renderLegend(valueKeys, chartColors);
         }
@@ -896,7 +898,7 @@ Toys,28000`
             const cy = height / 2;
             const radius = Math.min(width, height) / 2 - 60;
 
-            let html = `<svg viewBox="0 0 ${width} ${height}" class="chart-svg">`;
+            let inner = '';
 
             let startAngle = -Math.PI / 2;
 
@@ -914,7 +916,7 @@ Toys,28000`
 
                 const pathD = `M${cx},${cy} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`;
 
-                html += `<path class="pie-slice" d="${pathD}" fill="${chartColors[i % chartColors.length]}"
+                inner += `<path class="pie-slice" d="${pathD}" fill="${chartColors[i % chartColors.length]}"
                     data-label="${d[labelKey]}" data-value="${value}" data-percent="${((value/total)*100).toFixed(1)}"
                     transform="scale(0)" style="transform-origin: ${cx}px ${cy}px; --target-scale: 1"/>`;
 
@@ -924,14 +926,14 @@ Toys,28000`
                 const lx = cx + labelRadius * Math.cos(midAngle);
                 const ly = cy + labelRadius * Math.sin(midAngle);
 
-                html += `<text class="pie-label" x="${lx}" y="${ly}" fill="#fff" font-size="12" font-weight="600"
+                inner += `<text class="pie-label" x="${lx}" y="${ly}" fill="#fff" font-size="12" font-weight="600"
                     text-anchor="middle" dominant-baseline="middle" opacity="0">${((value/total)*100).toFixed(0)}%</text>`;
 
                 startAngle = endAngle;
             });
 
-            html += '</svg>';
-            svg.outerHTML = html;
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.innerHTML = inner;
 
             renderLegend(data.map(d => d[labelKey]), chartColors);
             setupTooltips();
@@ -1026,12 +1028,11 @@ Toys,28000`
 
             // Bars
             document.querySelectorAll('.data-bar').forEach(bar => {
-                const targetY = parseFloat(bar.style.getPropertyValue('--target-y'));
                 const targetHeight = parseFloat(bar.style.getPropertyValue('--target-height'));
-                const baseY = parseFloat(bar.getAttribute('y')) || (500 - 60);
+                const baseY = parseFloat(bar.dataset.baseY);
 
                 bar.setAttribute('height', targetHeight * eased);
-                bar.setAttribute('y', baseY - targetHeight * eased + (parseFloat(bar.dataset.baseY) || 0));
+                bar.setAttribute('y', baseY - targetHeight * eased);
             });
 
             // Bar values

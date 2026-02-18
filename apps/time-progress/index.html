@@ -70,10 +70,11 @@
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.15);
             color: #fff;
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 0.9rem;
             color-scheme: dark;
+            -webkit-appearance: none;
         }
         .age-input input:focus { outline: none; border-color: #4ecdc4; }
         .progress-header {
@@ -205,6 +206,7 @@
             display: flex;
             gap: 8px;
             justify-content: center;
+            flex-wrap: wrap;
         }
         .grid.week-grid .day {
             width: 60px;
@@ -302,6 +304,13 @@
             z-index: 100;
         }
         .tooltip.visible { opacity: 1; }
+        .grid-container { overflow-x: auto; }
+        @media (max-width: 480px) {
+            .progress-percent { font-size: 2.2rem; }
+            .progress-stats { flex-direction: column; gap: 4px; }
+            .tabs { gap: 4px; }
+            .tab { padding: 8px 10px; font-size: 0.82rem; }
+        }
     </style>
 </head>
 <body>

@@ -22,6 +22,7 @@
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
             border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 10;
         }
         .back-link:hover { color: #fff; }
     </style>
@@ -47,6 +48,10 @@
     <script>
         const canvas = document.getElementById('canvas');
         const gl = canvas.getContext('webgl');
+
+        if (!gl) {
+            document.querySelector('.controls').innerHTML = '<h1>Shader Art</h1><p style="color: #ff6b6b;">WebGL is not supported in your browser. Please use a modern browser with WebGL support.</p>';
+        }
 
         let width, height;
         let program = null;
@@ -272,9 +277,11 @@
         }
 
         function setShader(name) {
+            if (!gl) return;
             if (program) gl.deleteProgram(program);
 
             program = createProgram(shaders[name]);
+            if (!program) return;
             gl.useProgram(program);
 
             timeLocation = gl.getUniformLocation(program, 'time');
@@ -303,6 +310,7 @@
         }
 
         function render() {
+            if (!gl || !program) return;
             const time = (Date.now() - startTime) / 1000;
 
             gl.uniform1f(timeLocation, time);
@@ -318,6 +326,12 @@
             mouseX = e.clientX / width;
             mouseY = 1.0 - e.clientY / height;
         });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX / width;
+            mouseY = 1.0 - e.touches[0].clientY / height;
+        }, { passive: false });
 
         document.getElementById('shader').addEventListener('change', e => {
             setShader(e.target.value);

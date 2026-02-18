@@ -596,7 +596,8 @@ We're looking for a Senior Software Engineer with:
             const score = totalKeywords > 0 ? Math.round((matchedCount / totalKeywords) * 100) : 0;
 
             // Update UI
-            displayResults(score, matched, missing, resumeText, resumeKeywords.size);
+            const resumeWordCount = resumeText.trim().split(/\s+/).filter(w => w.length > 0).length;
+            displayResults(score, matched, missing, resumeText, resumeWordCount);
         }
 
         function displayResults(score, matched, missing, resumeText, wordCount) {
@@ -660,8 +661,12 @@ We're looking for a Senior Software Engineer with:
                 </div>
             `).join('');
 
-            // Highlight resume
-            let highlightedText = resumeText;
+            // Highlight resume - sanitize HTML first to prevent XSS
+            let highlightedText = resumeText
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
             matched.forEach(m => {
                 const regex = new RegExp(`\\b(${m.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
                 highlightedText = highlightedText.replace(regex, '<span class="matched-word">$1</span>');

@@ -384,7 +384,7 @@ Or just paste any standard git log output!"></textarea>
         function resize() {
             const container = canvas.parentElement;
             canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            canvas.height = Math.max(container.clientHeight, 600);
             draw();
         }
 
@@ -548,17 +548,33 @@ Or just paste any standard git log output!"></textarea>
             const sortedContribs = Object.entries(contributors)
                 .sort((a, b) => b[1] - a[1]);
 
-            contribList.innerHTML = sortedContribs.map(([name, count], i) => `
-                <div class="contributor">
-                    <div class="contributor-avatar" style="background: ${colors[i % colors.length]}">
-                        ${name.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="contributor-info">
-                        <div class="contributor-name">${name}</div>
-                        <div class="contributor-commits">${count} commit${count !== 1 ? 's' : ''}</div>
-                    </div>
-                </div>
-            `).join('');
+            contribList.innerHTML = '';
+            sortedContribs.forEach(([name, count], i) => {
+                const div = document.createElement('div');
+                div.className = 'contributor';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'contributor-avatar';
+                avatar.style.background = colors[i % colors.length];
+                avatar.textContent = name.charAt(0).toUpperCase();
+
+                const info = document.createElement('div');
+                info.className = 'contributor-info';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'contributor-name';
+                nameEl.textContent = name;
+
+                const commitsEl = document.createElement('div');
+                commitsEl.className = 'contributor-commits';
+                commitsEl.textContent = `${count} commit${count !== 1 ? 's' : ''}`;
+
+                info.appendChild(nameEl);
+                info.appendChild(commitsEl);
+                div.appendChild(avatar);
+                div.appendChild(info);
+                contribList.appendChild(div);
+            });
         }
 
         function draw() {
@@ -777,7 +793,7 @@ b4c5d6e|2024-12-28|Alice|Prepare v1.0 release`;
         });
         document.getElementById('loadSample').addEventListener('click', loadSampleData);
         canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('wheel', handleScroll);
+        canvas.addEventListener('wheel', handleScroll, { passive: false });
         canvas.addEventListener('mouseleave', () => {
             hoveredCommit = null;
             tooltip.style.display = 'none';

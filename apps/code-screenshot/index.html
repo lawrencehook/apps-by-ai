@@ -609,7 +609,7 @@ greet("World");</textarea>
             });
         }
 
-        // Simple syntax highlighting
+        // Simple syntax highlighting using token-based approach to avoid nested span corruption
         function highlight(code, lang) {
             // Escape HTML
             code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -629,30 +629,95 @@ greet("World");</textarea>
             };
 
             const langKeywords = keywords[lang] || keywords.default;
+            const kwSet = new Set(langKeywords);
 
-            // Comments
-            code = code.replace(/(\/\/.*$)/gm, `<span style="color:${theme.comment}">$1</span>`);
-            code = code.replace(/(#.*$)/gm, `<span style="color:${theme.comment}">$1</span>`);
-            code = code.replace(/(\/\*[\s\S]*?\*\/)/g, `<span style="color:${theme.comment}">$1</span>`);
+            // Use # comments only for Python, Shell, Ruby, YAML
+            const hashCommentLangs = ['python', 'shell', 'ruby', 'yaml'];
+            const useHashComments = hashCommentLangs.includes(lang);
 
-            // Strings
-            code = code.replace(/("(?:[^"\\]|\\.)*")/g, `<span style="color:${theme.string}">$1</span>`);
-            code = code.replace(/('(?:[^'\\]|\\.)*')/g, `<span style="color:${theme.string}">$1</span>`);
-            code = code.replace(/(`(?:[^`\\]|\\.)*`)/g, `<span style="color:${theme.string}">$1</span>`);
+            // Tokenize to prevent nested highlighting
+            const tokens = [];
+            let i = 0;
+            while (i < code.length) {
+                // Block comments
+                if (code.substr(i, 2) === '/*') {
+                    const end = code.indexOf('*/', i + 2);
+                    const commentEnd = end === -1 ? code.length : end + 2;
+                    tokens.push({ type: 'comment', text: code.substring(i, commentEnd) });
+                    i = commentEnd;
+                }
+                // Line comments (//)
+                else if (code.substr(i, 2) === '//') {
+                    const end = code.indexOf('\n', i);
+                    const commentEnd = end === -1 ? code.length : end;
+                    tokens.push({ type: 'comment', text: code.substring(i, commentEnd) });
+                    i = commentEnd;
+                }
+                // Hash comments (only for supported languages)
+                else if (code[i] === '#' && useHashComments) {
+                    const end = code.indexOf('\n', i);
+                    const commentEnd = end === -1 ? code.length : end;
+                    tokens.push({ type: 'comment', text: code.substring(i, commentEnd) });
+                    i = commentEnd;
+                }
+                // Strings
+                else if (code[i] === '"' || code[i] === "'" || code[i] === '`') {
+                    const quote = code[i];
+                    let j = i + 1;
+                    while (j < code.length && code[j] !== quote) {
+                        if (code[j] === '\\') j++;
+                        j++;
+                    }
+                    j = Math.min(j + 1, code.length);
+                    tokens.push({ type: 'string', text: code.substring(i, j) });
+                    i = j;
+                }
+                // Numbers
+                else if (/\d/.test(code[i]) && (i === 0 || /[^a-zA-Z_]/.test(code[i - 1]))) {
+                    let j = i;
+                    while (j < code.length && /[\d.]/.test(code[j])) j++;
+                    tokens.push({ type: 'number', text: code.substring(i, j) });
+                    i = j;
+                }
+                // Words (keywords, function calls, identifiers)
+                else if (/[a-zA-Z_$]/.test(code[i])) {
+                    let j = i;
+                    while (j < code.length && /[a-zA-Z0-9_$]/.test(code[j])) j++;
+                    const word = code.substring(i, j);
+                    // Check if followed by ( for function call
+                    let rest = code.substring(j);
+                    const isFunc = /^\s*\(/.test(rest);
+                    if (kwSet.has(word)) {
+                        tokens.push({ type: 'keyword', text: word });
+                    } else if (isFunc) {
+                        tokens.push({ type: 'function', text: word });
+                    } else {
+                        tokens.push({ type: 'plain', text: word });
+                    }
+                    i = j;
+                }
+                // Other characters
+                else {
+                    let j = i;
+                    while (j < code.length && !/[a-zA-Z_$\d"'`/#]/.test(code[j])) j++;
+                    if (j === i) j = i + 1;
+                    tokens.push({ type: 'plain', text: code.substring(i, j) });
+                    i = j;
+                }
+            }
 
-            // Numbers
-            code = code.replace(/\b(\d+\.?\d*)\b/g, `<span style="color:${theme.number}">$1</span>`);
-
-            // Keywords
-            langKeywords.forEach(kw => {
-                const regex = new RegExp(`\\b(${kw})\\b`, 'g');
-                code = code.replace(regex, `<span style="color:${theme.keyword}">$1</span>`);
-            });
-
-            // Function calls
-            code = code.replace(/(\w+)(\s*\()/g, `<span style="color:${theme.function}">$1</span>$2`);
-
-            return code;
+            // Render tokens
+            return tokens.map(t => {
+                const colorMap = {
+                    comment: theme.comment,
+                    string: theme.string,
+                    number: theme.number,
+                    keyword: theme.keyword,
+                    function: theme.function
+                };
+                const color = colorMap[t.type];
+                return color ? `<span style="color:${color}">${t.text}</span>` : t.text;
+            }).join('');
         }
 
         // Update preview

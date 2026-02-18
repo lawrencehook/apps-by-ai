@@ -36,10 +36,12 @@
             margin: 0 auto;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.1s;
         }
-        .coin.flipping {
-            animation: flip 0.6s ease-out;
+        .coin.flipping-heads {
+            animation: flipToHeads 1s ease-out forwards;
+        }
+        .coin.flipping-tails {
+            animation: flipToTails 1s ease-out forwards;
         }
         .coin.heads {
             transform: rotateY(0deg);
@@ -47,9 +49,13 @@
         .coin.tails {
             transform: rotateY(180deg);
         }
-        @keyframes flip {
+        @keyframes flipToHeads {
             0% { transform: rotateY(0deg); }
             100% { transform: rotateY(1800deg); }
+        }
+        @keyframes flipToTails {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(1980deg); }
         }
         .coin-face {
             position: absolute;
@@ -187,12 +193,14 @@
 
             const result = Math.random() < 0.5 ? 'heads' : 'tails';
 
-            coin.classList.remove('heads', 'tails');
-            coin.classList.add('flipping');
+            coin.classList.remove('heads', 'tails', 'flipping-heads', 'flipping-tails');
+            // Force reflow to restart animation
+            void coin.offsetWidth;
+            coin.classList.add(result === 'heads' ? 'flipping-heads' : 'flipping-tails');
             document.getElementById('result').textContent = '...';
 
             setTimeout(() => {
-                coin.classList.remove('flipping');
+                coin.classList.remove('flipping-heads', 'flipping-tails');
                 coin.classList.add(result);
 
                 if (result === 'heads') {
@@ -206,7 +214,7 @@
                 updateStats();
                 isFlipping = false;
                 flipBtn.disabled = false;
-            }, 600);
+            }, 1000);
         }
 
         function updateStats() {
@@ -222,7 +230,7 @@
             tails = 0;
             updateStats();
             document.getElementById('result').textContent = '-';
-            coin.classList.remove('heads', 'tails');
+            coin.classList.remove('heads', 'tails', 'flipping-heads', 'flipping-tails');
         }
     </script>
 </body>

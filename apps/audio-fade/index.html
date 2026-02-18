@@ -185,6 +185,10 @@
             text-align: center;
         }
         .status.show { display: block; }
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -332,7 +336,7 @@
                 editorPanel.classList.remove('hidden');
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
-                status.classList.add('show');
+                status.classList.add('show', 'error');
             }
         }
 
@@ -463,13 +467,13 @@
                     let gain = 1.0;
 
                     // Apply fade in
-                    if (fadeInEnabled && i < fadeInSamples) {
+                    if (fadeInEnabled && fadeInSamples > 0 && i < fadeInSamples) {
                         const t = i / fadeInSamples;
                         gain *= applyFadeCurve(t, fadeInCurve);
                     }
 
                     // Apply fade out
-                    if (fadeOutEnabled && i >= fadeOutStart) {
+                    if (fadeOutEnabled && fadeOutSamples > 0 && i >= fadeOutStart) {
                         const t = (buffer.length - i) / fadeOutSamples;
                         gain *= applyFadeCurve(t, fadeOutCurve);
                     }
@@ -519,6 +523,7 @@
         }
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!audioBuffer) return;
             const fadedBuffer = applyFades(audioBuffer);
             const wavBlob = audioBufferToWav(fadedBuffer);
             const url = URL.createObjectURL(wavBlob);

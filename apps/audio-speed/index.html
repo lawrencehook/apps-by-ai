@@ -246,7 +246,7 @@
                 <button id="resetBtn" class="secondary">New File</button>
             </div>
 
-            <p class="note">Pitch is preserved during speed change using time-stretching</p>
+            <p class="note">Note: Pitch changes proportionally with speed (no time-stretching)</p>
         </div>
 
         <div class="status" id="status"></div>
@@ -454,7 +454,7 @@
             a.download = `${baseName}_${speedStr}x.wav`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = `Audio saved at ${speed.toFixed(2)}x speed (${formatTime(newBuffer.duration)})!`;
             status.classList.add('show');

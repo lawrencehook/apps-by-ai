@@ -98,6 +98,15 @@
                 this.y += dy * dt;
                 this.z += dz * dt;
 
+                // Guard against divergence
+                if (!isFinite(this.x) || !isFinite(this.y) || !isFinite(this.z)) {
+                    this.x = 0.1;
+                    this.y = 0;
+                    this.z = 0;
+                    this.trail = [];
+                    return;
+                }
+
                 this.trail.push({ x: this.x, y: this.y, z: this.z });
                 if (this.trail.length > trailLength) {
                     this.trail.shift();
@@ -207,6 +216,25 @@
         canvas.addEventListener('mouseup', () => isDragging = false);
         canvas.addEventListener('mouseleave', () => isDragging = false);
 
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            isDragging = true;
+            autoRotate = false;
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        }, { passive: false });
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (isDragging) {
+                rotationY += (e.touches[0].clientX - lastX) * 0.01;
+                rotationX += (e.touches[0].clientY - lastY) * 0.01;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+            }
+        }, { passive: false });
+        canvas.addEventListener('touchend', () => isDragging = false);
+
         document.getElementById('sigma').addEventListener('input', e => {
             sigma = parseFloat(e.target.value);
             document.getElementById('sigmaLabel').textContent = sigma;
@@ -230,6 +258,11 @@
 
         document.getElementById('reset').addEventListener('click', () => {
             autoRotate = true;
+            rotationX = 0.5;
+            rotationY = 0;
+            // Clear the canvas fully so old trails don't persist
+            ctx.fillStyle = 'rgb(10, 10, 15)';
+            ctx.fillRect(0, 0, width, height);
             init();
         });
 

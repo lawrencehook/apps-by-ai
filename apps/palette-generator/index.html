@@ -406,7 +406,7 @@
 
         // Spacebar to regenerate
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+            if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(e.target.tagName)) {
                 e.preventDefault();
                 generatePalette();
             }

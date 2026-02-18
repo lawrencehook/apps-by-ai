@@ -159,9 +159,22 @@
         }
 
         function find(x, y) {
-            let cell = cells[y][x];
-            if (cell.parent === null) return { x, y };
-            return find(cell.parent.x, cell.parent.y);
+            // Iterative find with path compression
+            let cx = x, cy = y;
+            while (cells[cy][cx].parent !== null) {
+                const p = cells[cy][cx].parent;
+                cx = p.x;
+                cy = p.y;
+            }
+            // Path compression
+            let px = x, py = y;
+            while (px !== cx || py !== cy) {
+                const p = cells[py][px].parent;
+                cells[py][px].parent = { x: cx, y: cy };
+                px = p.x;
+                py = p.y;
+            }
+            return { x: cx, y: cy };
         }
 
         function union(x1, y1, x2, y2) {

@@ -183,7 +183,7 @@
 
         let currentFile = null;
         let pdfDoc = null;
-        let pdfLibDoc = null;
+        // pdfLibDoc removed - save handler loads from arrayBuffer directly
         let pageRotations = [];
         let selectedPages = new Set();
 
@@ -233,9 +233,6 @@
 
                 // Load with pdf.js for previews
                 pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
-
-                // Load with pdf-lib for editing
-                pdfLibDoc = await PDFDocument.load(arrayBuffer);
 
                 const pageCount = pdfDoc.numPages;
                 pageRotations = new Array(pageCount).fill(0);
@@ -364,6 +361,8 @@
         }
 
         document.getElementById('saveBtn').addEventListener('click', async () => {
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
             showStatus('Saving PDF...');
 
             try {
@@ -387,17 +386,17 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_rotated.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
                 showStatus('PDF saved successfully');
             } catch (err) {
                 showStatus('Error saving PDF: ' + err.message, true);
             }
+            saveBtn.disabled = false;
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             currentFile = null;
             pdfDoc = null;
-            pdfLibDoc = null;
             pageRotations = [];
             selectedPages.clear();
             fileInput.value = '';

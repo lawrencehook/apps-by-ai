@@ -88,16 +88,17 @@
             }
 
             draw() {
-                // Draw trail
+                // Draw trail with fading opacity
                 if (this.trail.length > 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for (let i = 1; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
                         ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                        ctx.strokeStyle = this.color.replace('1)', `${alpha})`);
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
                     }
-                    ctx.strokeStyle = this.color.replace('1)', '0.3)');
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
                 }
 
                 // Draw body
@@ -121,14 +122,12 @@
         }
 
         function applyGravity(dt) {
-            const forces = bodies.map(() => ({ fx: 0, fy: 0 }));
-
+            // Handle collisions first in a separate pass
             for (let i = 0; i < bodies.length; i++) {
                 for (let j = i + 1; j < bodies.length; j++) {
                     const dx = bodies[j].x - bodies[i].x;
                     const dy = bodies[j].y - bodies[i].y;
-                    const distSq = dx * dx + dy * dy;
-                    const dist = Math.sqrt(distSq);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist < bodies[i].radius + bodies[j].radius) {
                         // Collision - merge bodies
@@ -139,10 +138,23 @@
                         bodies[i].radius = Math.sqrt(totalMass) * 2;
                         bodies.splice(j, 1);
                         j--;
-                        continue;
                     }
+                }
+            }
 
-                    const force = G * bodies[i].mass * bodies[j].mass / distSq;
+            // Calculate gravitational forces with consistent indices
+            const forces = bodies.map(() => ({ fx: 0, fy: 0 }));
+
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+
+                    // Softening factor to prevent extreme forces at very small distances
+                    const softened = distSq + 100;
+                    const force = G * bodies[i].mass * bodies[j].mass / softened;
                     const fx = force * dx / dist;
                     const fy = force * dy / dist;
 
@@ -194,7 +206,7 @@
         }
 
         function render() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, width, height);
 
             const dt = 0.5;

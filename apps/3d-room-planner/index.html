@@ -475,6 +475,7 @@
 
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -509,8 +510,73 @@
             renderer.domElement.addEventListener('mousedown', onMouseDown);
             renderer.domElement.addEventListener('mousemove', onMouseMove);
             renderer.domElement.addEventListener('mouseup', onMouseUp);
-            renderer.domElement.addEventListener('wheel', onMouseWheel);
+            renderer.domElement.addEventListener('wheel', onMouseWheel, { passive: false });
             renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Touch support
+            let lastTouchX = 0, lastTouchY = 0;
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+
+                // Simulate mousedown for object selection
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(furniture, true);
+                if (intersects.length > 0) {
+                    let obj = intersects[0].object;
+                    while (obj.parent && !furniture.includes(obj)) obj = obj.parent;
+                    if (furniture.includes(obj)) {
+                        selectObject(obj);
+                        isDragging = true;
+                        raycaster.ray.intersectPlane(plane, planeIntersect);
+                        offset.copy(planeIntersect).sub(obj.position);
+                    }
+                } else {
+                    // Single touch rotates view if nothing selected
+                    isRotating = true;
+                }
+            }, { passive: false });
+
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+
+                if (isDragging && selectedObject) {
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+                    raycaster.setFromCamera(mouse, camera);
+                    raycaster.ray.intersectPlane(plane, planeIntersect);
+                    const def = selectedObject.userData.def;
+                    let newX = planeIntersect.x - offset.x;
+                    let newZ = planeIntersect.z - offset.z;
+                    newX = Math.max(-roomWidth/2 + def.w/2, Math.min(roomWidth/2 - def.w/2, newX));
+                    newZ = Math.max(-roomDepth/2 + def.d/2, Math.min(roomDepth/2 - def.d/2, newZ));
+                    selectedObject.position.x = newX;
+                    selectedObject.position.z = newZ;
+                } else if (isRotating) {
+                    const deltaX = (touch.clientX - lastTouchX) * 0.01;
+                    const deltaY = (touch.clientY - lastTouchY) * 0.01;
+                    const spherical = new THREE.Spherical();
+                    spherical.setFromVector3(camera.position);
+                    spherical.theta -= deltaX;
+                    spherical.phi = Math.max(0.1, Math.min(Math.PI/2 - 0.1, spherical.phi + deltaY));
+                    camera.position.setFromSpherical(spherical);
+                    camera.lookAt(0, 0, 0);
+                }
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+            }, { passive: false });
+
+            renderer.domElement.addEventListener('touchend', () => {
+                isDragging = false;
+                isRotating = false;
+            });
 
             window.addEventListener('resize', onWindowResize);
 
@@ -519,10 +585,18 @@
         }
 
         function createRoom() {
-            // Clear existing room
-            walls.forEach(w => scene.remove(w));
+            // Clear existing room and dispose resources
+            walls.forEach(w => {
+                scene.remove(w);
+                if (w.geometry) w.geometry.dispose();
+                if (w.material) w.material.dispose();
+            });
             walls = [];
-            if (floor) scene.remove(floor);
+            if (floor) {
+                scene.remove(floor);
+                if (floor.geometry) floor.geometry.dispose();
+                if (floor.material) floor.material.dispose();
+            }
 
             roomWidth = parseFloat(document.getElementById('roomWidth').value) || 20;
             roomDepth = parseFloat(document.getElementById('roomDepth').value) || 15;

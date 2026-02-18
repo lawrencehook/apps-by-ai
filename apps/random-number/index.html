@@ -119,16 +119,16 @@
         <div class="card">
             <div class="form-row">
                 <div class="form-group">
-                    <label>Minimum</label>
+                    <label for="minVal">Minimum</label>
                     <input type="number" id="minVal" value="1">
                 </div>
                 <div class="form-group">
-                    <label>Maximum</label>
+                    <label for="maxVal">Maximum</label>
                     <input type="number" id="maxVal" value="100">
                 </div>
             </div>
             <div class="form-group">
-                <label>Count (generate multiple)</label>
+                <label for="count">Count (generate multiple)</label>
                 <input type="number" id="count" value="1" min="1" max="100">
             </div>
             <div class="form-group">
@@ -177,7 +177,7 @@
         document.getElementById('generateBtn').addEventListener('click', generate);
         generate();
         document.addEventListener('keydown', e => {
-            if (e.code === 'Space' || e.code === 'Enter') {
+            if ((e.code === 'Space' || e.code === 'Enter') && e.target === document.body) {
                 e.preventDefault();
                 generate();
             }
@@ -232,9 +232,13 @@
             }
 
             section.style.display = 'block';
-            container.innerHTML = resultHistory.map(h =>
-                `<span class="history-item">${h}</span>`
-            ).join('');
+            container.innerHTML = '';
+            resultHistory.forEach(h => {
+                const span = document.createElement('span');
+                span.className = 'history-item';
+                span.textContent = h;
+                container.appendChild(span);
+            });
         }
     </script>
 </body>

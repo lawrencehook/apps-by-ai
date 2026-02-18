@@ -348,15 +348,41 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">`;
-            navigator.clipboard.writeText(code);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy';
-            }, 2000);
+            navigator.clipboard.writeText(code).then(() => {
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyBtn').textContent = 'Copy';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for non-HTTPS contexts
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    document.getElementById('copyBtn').textContent = 'Copied!';
+                    setTimeout(() => {
+                        document.getElementById('copyBtn').textContent = 'Copy';
+                    }, 2000);
+                } catch (e) {
+                    document.getElementById('copyBtn').textContent = 'Failed';
+                    setTimeout(() => {
+                        document.getElementById('copyBtn').textContent = 'Copy';
+                    }, 2000);
+                }
+                document.body.removeChild(textarea);
+            });
         });
 
         // Generate ICO file (contains 16, 32, 48 sizes)
         document.getElementById('downloadIcoBtn').addEventListener('click', () => {
+            if (!originalImage) {
+                alert('Please upload an image first.');
+                return;
+            }
             generateIco([16, 32, 48]);
         });
 
@@ -475,6 +501,14 @@
 
         // Download all as ZIP
         document.getElementById('downloadAllBtn').addEventListener('click', async () => {
+            if (!originalImage) {
+                alert('Please upload an image first.');
+                return;
+            }
+            if (typeof JSZip === 'undefined') {
+                alert('ZIP library failed to load. Please check your internet connection and reload.');
+                return;
+            }
             const zip = new JSZip();
 
             // Add all PNG files

@@ -580,7 +580,8 @@
                     const div = document.createElement('div');
                     div.className = 'training-sample';
                     div.dataset.input = `${x},${y}`;
-                    div.textContent = `${x}`;
+                    div.textContent = `${x},${y}`;
+                    div.style.fontSize = '0.9rem';
                     grid.appendChild(div);
                 }
             }
@@ -753,6 +754,8 @@
             document.getElementById('trainBtn').textContent = isTraining ? 'Stop Training' : 'Start Training';
             if (isTraining) {
                 trainingLoop();
+            } else {
+                cancelAnimationFrame(animationId);
             }
         });
 
@@ -770,10 +773,18 @@
 
         document.getElementById('hiddenLayers').addEventListener('input', (e) => {
             document.getElementById('layersValue').textContent = e.target.value;
+            if (!isTraining) {
+                createNetwork();
+                drawNetwork();
+            }
         });
 
         document.getElementById('neuronsPerLayer').addEventListener('input', (e) => {
             document.getElementById('neuronsValue').textContent = e.target.value;
+            if (!isTraining) {
+                createNetwork();
+                drawNetwork();
+            }
         });
 
         document.getElementById('learningRate').addEventListener('input', (e) => {

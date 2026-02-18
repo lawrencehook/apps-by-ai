@@ -38,12 +38,12 @@
         <h1>Double Pendulum</h1>
         <p>A chaotic system highly sensitive to initial conditions. Tiny changes lead to wildly different outcomes.</p>
         <div class="control-group">
-            <label>Trail Length: <span id="trailLabel">500</span></label>
-            <input type="range" id="trail" min="50" max="2000" value="500">
+            <label for="trail">Trail Length: <span id="trailLabel">500</span></label>
+            <input type="range" id="trail" min="50" max="2000" value="500" aria-label="Trail Length">
         </div>
         <div class="control-group">
-            <label>Pendulums: <span id="countLabel">3</span></label>
-            <input type="range" id="count" min="1" max="10" value="3">
+            <label for="count">Pendulums: <span id="countLabel">3</span></label>
+            <input type="range" id="count" min="1" max="10" value="3" aria-label="Pendulum Count">
         </div>
         <button id="reset">Reset</button>
     </div>
@@ -159,6 +159,10 @@
             height = canvas.height = window.innerHeight;
             cx = width / 2;
             cy = height / 2 - 50;
+            // Clear trails since old coordinates are invalid after resize
+            for (const p of pendulums) {
+                p.trail = [];
+            }
         }
 
         function init() {

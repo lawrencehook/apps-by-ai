@@ -197,7 +197,7 @@ Example:
                 errorMessage.style.display = 'none';
                 inputPanel.classList.remove('error');
                 outputText.value = '';
-                return null;
+                return { success: false, parsed: null };
             }
 
             try {
@@ -206,7 +206,7 @@ Example:
                 statusBadge.textContent = 'Valid JSON';
                 errorMessage.style.display = 'none';
                 inputPanel.classList.remove('error');
-                return parsed;
+                return { success: true, parsed };
             } catch (e) {
                 statusBadge.className = 'status-badge invalid';
                 statusBadge.textContent = 'Invalid JSON';
@@ -214,26 +214,26 @@ Example:
                 errorMessage.style.display = 'block';
                 inputPanel.classList.add('error');
                 outputText.value = '';
-                return null;
+                return { success: false, parsed: null };
             }
         }
 
         function format() {
-            const parsed = validate();
-            if (parsed !== null) {
+            const { success, parsed } = validate();
+            if (success) {
                 outputText.value = JSON.stringify(parsed, null, getIndent());
             }
         }
 
         function minify() {
-            const parsed = validate();
-            if (parsed !== null) {
+            const { success, parsed } = validate();
+            if (success) {
                 outputText.value = JSON.stringify(parsed);
             }
         }
 
         inputText.addEventListener('input', () => {
-            validate();
+            format();
         });
 
         document.getElementById('formatBtn').addEventListener('click', format);
@@ -268,11 +268,24 @@ Example:
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(outputText.value);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy';
-            }, 1500);
+            if (!outputText.value) return;
+            const btn = document.getElementById('copyBtn');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(outputText.value).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy', 1500);
+                }).catch(() => {
+                    fallbackCopy();
+                });
+            } else {
+                fallbackCopy();
+            }
+            function fallbackCopy() {
+                outputText.select();
+                document.execCommand('copy');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            }
         });
     </script>
 </body>

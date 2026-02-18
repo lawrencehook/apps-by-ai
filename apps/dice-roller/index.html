@@ -165,8 +165,8 @@
                 <button class="dice-btn" data-sides="20">d20<span class="sides">20 sides</span></button>
             </div>
             <div class="controls">
-                <label>Roll</label>
-                <input type="number" id="diceCount" value="1" min="1" max="20">
+                <label for="diceCount">Roll</label>
+                <input type="number" id="diceCount" value="1" min="1" max="20" aria-label="Number of dice">
                 <label>dice</label>
                 <button class="roll-btn" id="rollBtn">Roll!</button>
             </div>
@@ -218,6 +218,7 @@
         document.getElementById('rollBtn').addEventListener('click', roll);
         roll();
         document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.code === 'Space' || e.code === 'Enter') {
                 e.preventDefault();
                 roll();
@@ -225,7 +226,9 @@
         });
 
         function roll() {
-            const count = Math.min(20, Math.max(1, parseInt(document.getElementById('diceCount').value) || 1));
+            const countInput = document.getElementById('diceCount');
+            const count = Math.min(20, Math.max(1, parseInt(countInput.value) || 1));
+            countInput.value = count;
             const container = document.getElementById('diceResults');
 
             // Create dice elements and roll immediately

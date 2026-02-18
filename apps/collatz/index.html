@@ -61,6 +61,10 @@
             color: #fff; padding: 5px 10px; border-radius: 4px;
             font-size: 0.85rem; width: 80px;
         }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
         input[type="range"] { width: 100px; accent-color: #4ecdc4; }
         .value { color: #4ecdc4; font-family: monospace; font-size: 0.8rem; min-width: 40px; }
         select, button {
@@ -127,7 +131,7 @@
             </div>
             <div class="control-group" id="numberGroup" style="display: none;">
                 <label>Start</label>
-                <input type="number" id="startNum" value="27" min="1">
+                <input type="number" id="startNum" value="27" min="1" max="999999">
             </div>
             <div class="control-group">
                 <label>Angle</label>
@@ -168,7 +172,8 @@
 
         function collatzSequence(n) {
             const seq = [n];
-            while (n !== 1) {
+            const MAX_STEPS = 10000;
+            while (n !== 1 && seq.length < MAX_STEPS) {
                 if (n % 2 === 0) {
                     n = n / 2;
                 } else {
@@ -177,6 +182,14 @@
                 seq.push(n);
             }
             return seq;
+        }
+
+        function arrayMax(arr) {
+            let max = -Infinity;
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] > max) max = arr[i];
+            }
+            return max;
         }
 
         function drawTree() {
@@ -195,7 +208,7 @@
                 const seq = collatzSequence(n);
                 sequences.push(seq.reverse()); // Reverse so we draw from 1 outward
                 maxSteps = Math.max(maxSteps, seq.length);
-                maxValue = Math.max(maxValue, Math.max(...seq));
+                maxValue = Math.max(maxValue, arrayMax(seq));
             }
 
             document.getElementById('numCount').textContent = maxN;
@@ -236,12 +249,12 @@
         }
 
         function drawSinglePath() {
-            const n = parseInt(startNumInput.value) || 27;
+            const n = Math.max(1, Math.min(999999, parseInt(startNumInput.value) || 27));
             const seq = collatzSequence(n);
 
             document.getElementById('numCount').textContent = '1';
             document.getElementById('maxSteps').textContent = seq.length;
-            document.getElementById('maxValue').textContent = Math.max(...seq).toLocaleString();
+            document.getElementById('maxValue').textContent = arrayMax(seq).toLocaleString();
 
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, width, height);
@@ -251,7 +264,7 @@
             const graphWidth = width - padding * 2;
             const graphHeight = height - padding * 2;
 
-            const maxVal = Math.max(...seq);
+            const maxVal = arrayMax(seq);
             const stepW = graphWidth / (seq.length - 1);
 
             // Draw axes
@@ -294,15 +307,15 @@
         }
 
         function drawComparison() {
-            const baseN = parseInt(startNumInput.value) || 27;
+            const baseN = Math.max(1, Math.min(999999, parseInt(startNumInput.value) || 27));
             const numbers = [baseN, baseN + 1, baseN + 2, baseN * 2, baseN * 3];
 
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, width, height);
 
             const sequences = numbers.map(n => ({ n, seq: collatzSequence(n) }));
-            const maxLen = Math.max(...sequences.map(s => s.seq.length));
-            const maxVal = Math.max(...sequences.flatMap(s => s.seq));
+            const maxLen = sequences.reduce((m, s) => Math.max(m, s.seq.length), 0);
+            const maxVal = sequences.reduce((m, s) => Math.max(m, arrayMax(s.seq)), 0);
 
             document.getElementById('numCount').textContent = numbers.length;
             document.getElementById('maxSteps').textContent = maxLen;

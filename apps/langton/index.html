@@ -12,6 +12,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -132,10 +133,15 @@
             if (!paused) {
                 for (let s = 0; s < speed; s++) {
                     for (const ant of ants) {
-                        // Draw the cell ant is leaving
-                        const idx = ant.y * cols + ant.x;
-                        const x = ant.x * CELL_SIZE;
-                        const y = ant.y * CELL_SIZE;
+                        const prevX = ant.x;
+                        const prevY = ant.y;
+
+                        ant.step();
+
+                        // Draw the cell the ant just left (after it was flipped by step)
+                        const idx = prevY * cols + prevX;
+                        const x = prevX * CELL_SIZE;
+                        const y = prevY * CELL_SIZE;
 
                         if (grid[idx] === 0) {
                             ctx.fillStyle = '#0a0a0f';
@@ -143,8 +149,6 @@
                             ctx.fillStyle = '#fff';
                         }
                         ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-
-                        ant.step();
                     }
                     steps++;
                 }

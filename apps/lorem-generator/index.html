@@ -229,7 +229,8 @@
         }
 
         function generate() {
-            const amount = parseInt(document.getElementById('amount').value) || 5;
+            const rawAmount = parseInt(document.getElementById('amount').value);
+            const amount = Math.max(1, Math.min(100, isNaN(rawAmount) ? 5 : rawAmount));
             const unit = document.getElementById('unit').value;
             const startWithLorem = document.getElementById('startLorem').checked;
             const includeHtml = document.getElementById('includeHtml').checked;
@@ -280,11 +281,28 @@
 
         document.getElementById('generateBtn').addEventListener('click', generate);
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(document.getElementById('outputText').innerText);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
-            }, 1500);
+            const text = document.getElementById('outputText').innerText;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
+                }, 1500);
+            }).catch(() => {
+                // Fallback for non-HTTPS or denied permission
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                document.getElementById('copyBtn').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
+                }, 1500);
+            });
         });
 
         // Generate on load

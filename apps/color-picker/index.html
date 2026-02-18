@@ -83,9 +83,9 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        .range-r { background: linear-gradient(to right, #000, #ff0000) !important; }
-        .range-g { background: linear-gradient(to right, #000, #00ff00) !important; }
-        .range-b { background: linear-gradient(to right, #000, #0000ff) !important; }
+        .range-r { background: linear-gradient(to right, #000, #ff0000); }
+        .range-g { background: linear-gradient(to right, #000, #00ff00); }
+        .range-b { background: linear-gradient(to right, #000, #0000ff); }
         .values-card {
             background: rgba(78, 205, 196, 0.05);
             border: 1px solid rgba(78, 205, 196, 0.2);
@@ -319,6 +319,11 @@
             document.getElementById('cmykValue').textContent = `cmyk(${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%)`;
 
             nativePicker.value = hex;
+
+            // Update slider gradients to reflect current color context
+            rSlider.style.background = `linear-gradient(to right, rgb(0,${g},${b}), rgb(255,${g},${b}))`;
+            gSlider.style.background = `linear-gradient(to right, rgb(${r},0,${b}), rgb(${r},255,${b}))`;
+            bSlider.style.background = `linear-gradient(to right, rgb(${r},${g},0), rgb(${r},${g},255))`;
         }
 
         function addToHistory(hex) {
@@ -360,10 +365,25 @@
 
         nativePicker.addEventListener('change', () => addToHistory(rgbToHex(r, g, b)));
 
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const text = document.getElementById(btn.dataset.target).textContent;
-                navigator.clipboard.writeText(text);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+                } else {
+                    fallbackCopy(text);
+                }
                 btn.textContent = 'Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => {

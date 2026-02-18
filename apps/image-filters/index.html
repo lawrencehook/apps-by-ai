@@ -99,7 +99,7 @@
             border-color: rgba(78, 205, 196, 0.4);
             color: #4ecdc4;
         }
-        button {
+        button:not(.preset-btn) {
             background: rgba(78, 205, 196, 0.2);
             border: 1px solid rgba(78, 205, 196, 0.4);
             color: #4ecdc4;
@@ -152,10 +152,10 @@
         <h1>Image Filters</h1>
         <p class="subtitle">Apply adjustments and filters to your images.</p>
 
-        <div class="drop-zone" id="dropZone">
+        <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Upload image area. Drop an image here or press Enter to browse.">
             <div class="drop-zone-text">Drop an image here or click to browse</div>
             <div class="drop-zone-hint">Supports PNG, JPEG, WebP</div>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*" aria-label="Choose image file">
         </div>
 
         <div class="editor-layout hidden" id="editorPanel">
@@ -268,6 +268,12 @@
 
         // Drop zone events
         dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
         dropZone.addEventListener('dragover', e => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -295,6 +301,8 @@
                     currentImage.img = img;
                     updateSliders();
                     updatePreview();
+                    // Clear active preset state
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
                     dropZone.classList.add('hidden');
                     editorPanel.classList.remove('hidden');
                 };
@@ -324,6 +332,7 @@
         }
 
         function updatePreview() {
+            if (!currentImage || !currentImage.img) return;
             const img = currentImage.img;
             const ctx = previewCanvas.getContext('2d');
 

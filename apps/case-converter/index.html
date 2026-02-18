@@ -226,7 +226,7 @@
                 }).join('');
             },
             alternating: text => {
-                let upper = false;
+                let upper = true;
                 return text.split('').map(char => {
                     if (/[a-zA-Z]/.test(char)) {
                         upper = !upper;
@@ -259,12 +259,40 @@
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(outputText.textContent);
-            document.getElementById('copyBtn').textContent = 'Copied!';
+            const text = outputText.textContent;
+            if (!text) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    document.getElementById('copyBtn').textContent = 'Copied!';
+                    setTimeout(() => {
+                        document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
+                    }, 1500);
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        });
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                document.getElementById('copyBtn').textContent = 'Copied!';
+            } catch (e) {
+                document.getElementById('copyBtn').textContent = 'Copy failed';
+            }
+            document.body.removeChild(textarea);
             setTimeout(() => {
                 document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
             }, 1500);
-        });
+        }
     </script>
 </body>
 </html>

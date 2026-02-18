@@ -243,12 +243,37 @@
         urlSafe.addEventListener('change', convert);
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(outputText.value);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy';
-            }, 1500);
+            const text = outputText.value;
+            if (!text) return;
+            const btn = document.getElementById('copyBtn');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy', 1500);
+                }).catch(() => {
+                    fallbackCopy(text, btn);
+                });
+            } else {
+                fallbackCopy(text, btn);
+            }
         });
+
+        function fallbackCopy(text, btn) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                btn.textContent = 'Copied!';
+            } catch (e) {
+                btn.textContent = 'Failed';
+            }
+            document.body.removeChild(ta);
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+        }
     </script>
 </body>
 </html>

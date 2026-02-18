@@ -179,10 +179,10 @@
         <h1>Image Crop</h1>
         <p class="subtitle">Drag to select crop area. Resize handles to adjust.</p>
 
-        <div class="drop-zone" id="dropZone">
+        <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Upload image area. Drop an image here or press Enter to browse.">
             <div class="drop-zone-text">Drop an image here or click to browse</div>
             <div class="drop-zone-hint">Supports PNG, JPEG, WebP, GIF</div>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*" aria-label="Choose image file">
         </div>
 
         <div class="hidden" id="editorPanel">
@@ -256,6 +256,12 @@
 
         // Drop zone events
         dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
         dropZone.addEventListener('dragover', e => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -561,6 +567,101 @@
             dropZone.classList.remove('hidden');
             editorPanel.classList.add('hidden');
             status.classList.remove('show');
+        });
+
+        // Handle window resize to recalculate displayScale
+        window.addEventListener('resize', () => {
+            if (!loadedImg || editorPanel.classList.contains('hidden')) return;
+            const displayW = sourceImage.offsetWidth;
+            const displayH = sourceImage.offsetHeight;
+            if (displayW === 0 || displayH === 0) return;
+
+            const oldScale = displayScale;
+            displayScale = loadedImg.naturalWidth / displayW;
+            const ratio = oldScale / displayScale;
+
+            // Adjust crop box to match new display dimensions
+            cropBox.x *= ratio;
+            cropBox.y *= ratio;
+            cropBox.width *= ratio;
+            cropBox.height *= ratio;
+
+            // Clamp to bounds
+            const maxW = displayW;
+            const maxH = displayH;
+            cropBox.x = Math.max(0, Math.min(maxW - cropBox.width, cropBox.x));
+            cropBox.y = Math.max(0, Math.min(maxH - cropBox.height, cropBox.y));
+            cropBox.width = Math.min(cropBox.width, maxW - cropBox.x);
+            cropBox.height = Math.min(cropBox.height, maxH - cropBox.y);
+
+            updateCropBox();
+            updatePreview();
+        });
+
+        // Touch support for crop interactions
+        function getTouchPos(e) {
+            const touch = e.touches[0];
+            const rect = sourceImage.getBoundingClientRect();
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
+
+        cropBoxEl.addEventListener('touchstart', e => {
+            e.stopPropagation();
+            e.preventDefault();
+            const pos = getTouchPos(e);
+            dragStart = pos;
+            cropStart = { ...cropBox };
+
+            if (e.target.classList.contains('crop-handle')) {
+                isResizing = true;
+                activeHandle = e.target.dataset.handle;
+            } else {
+                isDragging = true;
+            }
+        }, { passive: false });
+
+        cropOverlay.addEventListener('touchstart', e => {
+            if (e.target === cropOverlay) {
+                e.preventDefault();
+                const pos = getTouchPos(e);
+                dragStart = pos;
+                cropStart = { x: pos.x, y: pos.y, width: 0, height: 0 };
+                cropBox = { x: pos.x, y: pos.y, width: 0, height: 0 };
+                isCreating = true;
+                updateCropBox();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', e => {
+            if (!isDragging && !isResizing && !isCreating) return;
+            e.preventDefault();
+            const fakeEvent = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+            const pos = getMousePos(fakeEvent);
+            const maxW = sourceImage.offsetWidth;
+            const maxH = sourceImage.offsetHeight;
+            const aspectSelect = document.getElementById('aspectRatio').value;
+
+            if (isDragging) {
+                const dx = pos.x - dragStart.x;
+                const dy = pos.y - dragStart.y;
+                cropBox.x = Math.max(0, Math.min(maxW - cropStart.width, cropStart.x + dx));
+                cropBox.y = Math.max(0, Math.min(maxH - cropStart.height, cropStart.y + dy));
+            } else if (isCreating || isResizing) {
+                // Reuse mouse logic via synthetic event
+                const mouseEvent = new MouseEvent('mousemove', { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+                document.dispatchEvent(mouseEvent);
+                return;
+            }
+
+            updateCropBox();
+            updatePreview();
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            document.dispatchEvent(new MouseEvent('mouseup'));
         });
     </script>
 </body>

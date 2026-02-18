@@ -146,7 +146,7 @@
         }
         .item-row {
             display: grid;
-            grid-template-columns: 1fr 90px auto;
+            grid-template-columns: 1fr 90px auto auto;
             gap: 12px;
             align-items: center;
             padding: 12px;
@@ -440,9 +440,10 @@
         }
 
         // People Functions
+        let nextId = 1;
         function addPerson(name) {
             if (!name.trim()) return;
-            const id = Date.now() + Math.random();
+            const id = 'p' + nextId++;
             const colorIndex = people.length % personColors.length;
             people.push({ id, name: name.trim(), color: personColors[colorIndex] });
             renderPeople();
@@ -472,10 +473,10 @@
         function renderPeople() {
             peopleList.innerHTML = people.map(p => `
                 <div class="person-chip ${selectedPeopleForAssignment.includes(p.id) ? 'selected' : ''}"
-                     onclick="togglePersonSelection(${p.id})">
+                     onclick="togglePersonSelection('${p.id}')">
                     <div class="person-color" style="background: ${p.color}"></div>
                     <span class="person-name">${escapeHtml(p.name)}</span>
-                    <button class="person-remove" onclick="event.stopPropagation(); removePerson(${p.id})">&times;</button>
+                    <button class="person-remove" onclick="event.stopPropagation(); removePerson('${p.id}')">&times;</button>
                 </div>
             `).join('');
         }
@@ -483,7 +484,7 @@
         // Items Functions
         function addItem(name, price) {
             if (!name.trim() || isNaN(price)) return;
-            const id = Date.now() + Math.random();
+            const id = 'i' + nextId++;
             items.push({
                 id,
                 name: name.trim(),

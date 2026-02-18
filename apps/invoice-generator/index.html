@@ -596,8 +596,15 @@
 
         function formatDate(dateStr) {
             if (!dateStr) return '';
-            const date = new Date(dateStr);
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
             return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
 
         function addItem() {
@@ -617,7 +624,7 @@
             const container = document.getElementById('itemsContainer');
             container.innerHTML = items.map((item, index) => `
                 <div class="item-row">
-                    <input type="text" placeholder="Item description" value="${item.description}"
+                    <input type="text" placeholder="Item description" value="${escapeHtml(item.description)}"
                         onchange="updateItem(${index}, 'description', this.value)">
                     <input type="number" placeholder="Qty" value="${item.quantity}" min="1"
                         onchange="updateItem(${index}, 'quantity', this.value)">
@@ -650,18 +657,18 @@
 
             // Update parties
             document.getElementById('previewFromName').textContent = document.getElementById('fromName').value || 'Your Company Name';
-            document.getElementById('previewFromAddress').innerHTML = (document.getElementById('fromAddress').value || '').replace(/\n/g, '<br>');
+            document.getElementById('previewFromAddress').innerHTML = escapeHtml(document.getElementById('fromAddress').value || '').replace(/\n/g, '<br>');
             document.getElementById('previewFromEmail').textContent = document.getElementById('fromEmail').value || '';
 
             document.getElementById('previewToName').textContent = document.getElementById('toName').value || 'Client Name';
-            document.getElementById('previewToAddress').innerHTML = (document.getElementById('toAddress').value || '').replace(/\n/g, '<br>');
+            document.getElementById('previewToAddress').innerHTML = escapeHtml(document.getElementById('toAddress').value || '').replace(/\n/g, '<br>');
             document.getElementById('previewToEmail').textContent = document.getElementById('toEmail').value || '';
 
             // Update items
             const previewItems = document.getElementById('previewItems');
             previewItems.innerHTML = items.filter(item => item.description).map(item => `
                 <tr>
-                    <td>${item.description}</td>
+                    <td>${escapeHtml(item.description)}</td>
                     <td>${item.quantity}</td>
                     <td>${formatCurrency(item.rate)}</td>
                     <td>${formatCurrency(item.quantity * item.rate)}</td>

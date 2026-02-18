@@ -53,6 +53,7 @@
             font-size: 0.95rem;
         }
         select:focus, input:focus { outline: none; border-color: #4ecdc4; }
+        select option { background: #1a1a2e; color: #fff; }
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -400,8 +401,11 @@
 
             currentNames = [];
             const used = new Set();
+            let attempts = 0;
+            const maxAttempts = count * 20;
 
-            while (currentNames.length < count) {
+            while (currentNames.length < count && attempts < maxAttempts) {
+                attempts++;
                 const result = generateName(type, gender, alliteration);
                 if (unique && used.has(result.name)) continue;
                 used.add(result.name);
@@ -474,19 +478,41 @@
         document.getElementById('alliteration').addEventListener('change', updateURL);
         document.getElementById('unique').addEventListener('change', updateURL);
 
+        function copyToClipboard(text, btn, originalText) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = originalText, 1500);
+                }).catch(() => {
+                    btn.textContent = 'Copy failed';
+                    setTimeout(() => btn.textContent = originalText, 1500);
+                });
+            } else {
+                // Fallback for insecure contexts
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.textContent = 'Copied!';
+                } catch (e) {
+                    btn.textContent = 'Copy failed';
+                }
+                document.body.removeChild(textarea);
+                setTimeout(() => btn.textContent = originalText, 1500);
+            }
+        }
+
         document.getElementById('copyAllBtn').addEventListener('click', () => {
             const text = currentNames.map(n => n.name).join('\n');
-            navigator.clipboard.writeText(text);
-            const btn = document.getElementById('copyAllBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy All', 1500);
+            copyToClipboard(text, document.getElementById('copyAllBtn'), 'Copy All');
         });
 
         document.getElementById('copyFavsBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(favorites.join('\n'));
-            const btn = document.getElementById('copyFavsBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy Favorites', 1500);
+            copyToClipboard(favorites.join('\n'), document.getElementById('copyFavsBtn'), 'Copy Favorites');
         });
 
         // Initialize

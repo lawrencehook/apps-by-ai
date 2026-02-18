@@ -136,9 +136,30 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            cols = Math.floor(canvas.width / cellSize);
-            rows = Math.floor(canvas.height / cellSize);
-            initGrid();
+            const newCols = Math.floor(canvas.width / cellSize);
+            const newRows = Math.floor(canvas.height / cellSize);
+
+            if (grid) {
+                // Preserve existing grid data on resize
+                const oldGrid = grid;
+                const oldCols = cols;
+                const oldRows = rows;
+                cols = newCols;
+                rows = newRows;
+                grid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+                nextGrid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+                const copyCols = Math.min(oldCols, cols);
+                const copyRows = Math.min(oldRows, rows);
+                for (let i = 0; i < copyCols; i++) {
+                    for (let j = 0; j < copyRows; j++) {
+                        grid[i][j] = oldGrid[i][j];
+                    }
+                }
+            } else {
+                cols = newCols;
+                rows = newRows;
+                initGrid();
+            }
         }
 
         function initGrid() {
@@ -227,6 +248,7 @@
         canvas.addEventListener('mousedown', e => {
             const x = Math.floor(e.clientX / cellSize);
             const y = Math.floor(e.clientY / cellSize);
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return;
             if (selectedPattern !== 'none') {
                 placePattern(selectedPattern, x, y);
             } else {
@@ -238,6 +260,7 @@
             if (e.buttons === 1 && selectedPattern === 'none') {
                 const x = Math.floor(e.clientX / cellSize);
                 const y = Math.floor(e.clientY / cellSize);
+                if (x < 0 || x >= cols || y < 0 || y >= rows) return;
                 grid[x][y] = 1;
             }
         });

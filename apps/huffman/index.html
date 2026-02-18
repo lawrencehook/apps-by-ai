@@ -81,6 +81,7 @@
         let codes = new Map();
         let animationPhase = 0;
         let highlightPath = [];
+        let animationCancelled = false;
 
         class Node {
             constructor(char, freq) {
@@ -97,8 +98,15 @@
 
         function resize() {
             const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            // Store logical dimensions for drawing
+            canvas._logicalWidth = rect.width;
+            canvas._logicalHeight = rect.height;
             if (root) {
                 updatePositions();
                 draw();
@@ -157,8 +165,10 @@
         function updatePositions() {
             if (!root) return;
 
+            const w = canvas._logicalWidth || canvas.width;
+            const h = canvas._logicalHeight || canvas.height;
             const treeHeight = getHeight(root);
-            const levelHeight = Math.min(70, (canvas.height - 100) / treeHeight);
+            const levelHeight = Math.min(70, (h - 100) / treeHeight);
 
             function setPos(node, x, y, spread) {
                 if (!node) return;
@@ -167,7 +177,7 @@
                 node.targetY = y;
 
                 if (node.x === 0 && node.y === 0) {
-                    node.x = canvas.width / 2;
+                    node.x = w / 2;
                     node.y = 0;
                 }
 
@@ -175,8 +185,8 @@
                 setPos(node.right, x + spread, y + levelHeight, spread * 0.55);
             }
 
-            const spread = Math.min(canvas.width / 4, 150);
-            setPos(root, canvas.width / 2, 50, spread);
+            const spread = Math.min(w / 4, 150);
+            setPos(root, w / 2, 50, spread);
         }
 
         function getHeight(node) {
@@ -212,8 +222,10 @@
         }
 
         function draw() {
+            const w = canvas._logicalWidth || canvas.width;
+            const h = canvas._logicalHeight || canvas.height;
             ctx.fillStyle = '#0a0a0f';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, w, h);
 
             if (!root) return;
 
@@ -313,6 +325,7 @@
             const text = document.getElementById('input').value;
             if (!text) return;
 
+            animationCancelled = true;
             codes.clear();
             highlightPath = [];
 
@@ -362,7 +375,10 @@
         }
 
         async function animateEncoding(text) {
-            for (let i = 0; i < text.length; i++) {
+            animationCancelled = false;
+            const maxChars = Math.min(text.length, 50);
+            for (let i = 0; i < maxChars; i++) {
+                if (animationCancelled) return;
                 const char = text[i];
                 highlightPath = [];
 
@@ -386,8 +402,10 @@
                 await new Promise(r => setTimeout(r, 300));
             }
 
-            highlightPath = [];
-            draw();
+            if (!animationCancelled) {
+                highlightPath = [];
+                draw();
+            }
         }
 
         document.getElementById('encode').addEventListener('click', encode);

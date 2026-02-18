@@ -98,6 +98,14 @@
             border-radius: 50%;
             cursor: pointer;
         }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
 
         input[type="color"] {
             width: 40px;
@@ -210,6 +218,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             width: 350px;
+            max-width: 90%;
             padding: 32px;
             border-radius: 16px;
             text-align: center;
@@ -655,14 +664,18 @@
   box-shadow: 0 8px ${shadowBlur}px ${shadowRgba};
 }`;
 
-            navigator.clipboard.writeText(cssText);
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(() => {
-                btn.textContent = 'Copy CSS';
-                btn.classList.remove('copied');
-            }, 1500);
+            navigator.clipboard.writeText(cssText).then(() => {
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy CSS';
+                    btn.classList.remove('copied');
+                }, 1500);
+            }).catch(() => {
+                btn.textContent = 'Failed';
+                setTimeout(() => btn.textContent = 'Copy CSS', 1500);
+            });
         });
 
         // Initialize

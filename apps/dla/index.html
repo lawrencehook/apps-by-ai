@@ -212,6 +212,14 @@
         function update() {
             let stuck = false;
 
+            // Clear previous walker positions (only non-grid pixels)
+            for (const w of walkers) {
+                if (grid[w.y * width + w.x] !== 1) {
+                    ctx.fillStyle = '#0a0a0f';
+                    ctx.fillRect(w.x, w.y, 1, 1);
+                }
+            }
+
             for (let i = walkers.length - 1; i >= 0; i--) {
                 const w = walkers[i];
 
@@ -253,7 +261,7 @@
                 }
             }
 
-            // Draw walkers (dim)
+            // Draw walkers at new positions (dim)
             ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
             for (const w of walkers) {
                 ctx.fillRect(w.x, w.y, 1, 1);
@@ -282,6 +290,13 @@
         document.getElementById('walkers').addEventListener('input', e => {
             numWalkers = parseInt(e.target.value);
             document.getElementById('walkersLabel').textContent = numWalkers;
+            // Adjust active walker count to match
+            while (walkers.length < numWalkers) {
+                spawnWalker();
+            }
+            while (walkers.length > numWalkers) {
+                walkers.pop();
+            }
         });
 
         document.getElementById('sticky').addEventListener('input', e => {

@@ -205,12 +205,16 @@
 
         .control-btn {
             width: 40px;
+            min-width: 40px;
             height: 40px;
+            padding: 0;
+            margin-top: 0;
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
             color: #fff;
             font-size: 1.2rem;
+            font-weight: normal;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -220,6 +224,8 @@
 
         .control-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+            transform: none;
+            box-shadow: none;
         }
 
         .tooltip {
@@ -413,6 +419,7 @@
 
         let nodes = [];
         let edges = [];
+        let nodeMap = new Map();
         let zoom = 1;
         let panX = 0;
         let panY = 0;
@@ -603,8 +610,8 @@
 
             // Link attraction
             edges.forEach(edge => {
-                const source = nodes.find(n => n.id === edge.source);
-                const target = nodes.find(n => n.id === edge.target);
+                const source = nodeMap.get(edge.source);
+                const target = nodeMap.get(edge.target);
                 if (!source || !target) return;
 
                 const dx = target.x - source.x;
@@ -654,8 +661,8 @@
 
             // Draw edges
             edges.forEach(edge => {
-                const source = nodes.find(n => n.id === edge.source);
-                const target = nodes.find(n => n.id === edge.target);
+                const source = nodeMap.get(edge.source);
+                const target = nodeMap.get(edge.target);
                 if (!source || !target) return;
 
                 ctx.beginPath();
@@ -802,6 +809,7 @@
 
             nodes = parsed.nodes;
             edges = parsed.edges;
+            nodeMap = new Map(nodes.map(n => [n.id, n]));
 
             zoom = 1;
             panX = 0;
@@ -977,7 +985,7 @@ black==23.1.0`;
             hoveredNode = null;
             tooltip.style.display = 'none';
         });
-        canvas.addEventListener('wheel', handleWheel);
+        canvas.addEventListener('wheel', handleWheel, { passive: false });
 
         window.addEventListener('resize', resize);
         resize();

@@ -398,7 +398,9 @@
             const gain = volumeSlider.value / 100;
             const adjustedPeak = originalPeak * gain;
             const db = peakToDb(adjustedPeak);
-            document.getElementById('adjustedPeak').textContent = db > 0 ? '+' + db.toFixed(1) : db.toFixed(1);
+            const peakEl = document.getElementById('adjustedPeak');
+            peakEl.textContent = db > 0 ? '+' + db.toFixed(1) : db.toFixed(1);
+            peakEl.style.color = adjustedPeak > 1 ? '#ff6b6b' : '#4ecdc4';
         }
 
         volumeSlider.addEventListener('input', () => {
@@ -511,7 +513,7 @@
             a.download = `${baseName}_volume${volumeSlider.value}.wav`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = `Audio saved with ${volumeSlider.value}% volume!`;
             status.classList.add('show');

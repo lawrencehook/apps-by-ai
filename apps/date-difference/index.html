@@ -143,12 +143,12 @@
         <div class="card">
             <div class="date-row">
                 <div class="form-group">
-                    <label>Start Date</label>
+                    <label for="startDate">Start Date</label>
                     <input type="date" id="startDate">
                 </div>
                 <button class="swap-btn" id="swapBtn" title="Swap dates">⇄</button>
                 <div class="form-group">
-                    <label>End Date</label>
+                    <label for="endDate">End Date</label>
                     <input type="date" id="endDate">
                 </div>
             </div>
@@ -257,7 +257,10 @@
         });
 
         function formatDateInput(date) {
-            return date.toISOString().split('T')[0];
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
         function calculate() {

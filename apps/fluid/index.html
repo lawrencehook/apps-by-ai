@@ -49,6 +49,15 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .back-link:hover { color: #fff; }
+        @media (max-width: 600px) {
+            .controls {
+                min-width: unset;
+                right: 20px;
+                padding: 14px;
+                font-size: 13px;
+            }
+            .back-link { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -327,7 +336,7 @@
             const dy = e.clientY - pmouseY;
 
             if (mouseDown && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
-                addDensity(x, y, mouseDown ? 0.8 : 0.3);
+                addDensity(x, y, 0.8);
                 addVelocity(x, y, dx * 0.3, dy * 0.3);
             }
 

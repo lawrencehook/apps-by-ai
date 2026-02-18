@@ -405,20 +405,40 @@ function greet(name) {
         });
 
         document.getElementById('copyMd').addEventListener('click', () => {
-            navigator.clipboard.writeText(editor.value);
             const btn = document.getElementById('copyMd');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy MD', 1500);
+            navigator.clipboard.writeText(editor.value).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy MD', 1500);
+            }).catch(() => {
+                btn.textContent = 'Failed';
+                setTimeout(() => btn.textContent = 'Copy MD', 1500);
+            });
         });
 
         document.getElementById('copyHtml').addEventListener('click', () => {
-            navigator.clipboard.writeText(preview.innerHTML);
             const btn = document.getElementById('copyHtml');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy HTML', 1500);
+            navigator.clipboard.writeText(preview.innerHTML).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy HTML', 1500);
+            }).catch(() => {
+                btn.textContent = 'Failed';
+                setTimeout(() => btn.textContent = 'Copy HTML', 1500);
+            });
         });
 
         editor.addEventListener('input', updatePreview);
+
+        // Tab key support for indentation
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                updatePreview();
+            }
+        });
 
         // Pre-fill with sample data
         editor.value = `# Welcome to Markdown Preview

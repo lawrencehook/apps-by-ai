@@ -415,9 +415,24 @@
                 analyser.fftSize = 2048;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                // Set up media recorder
-                const mimeType = selectedFormat === 'webm' ? 'audio/webm' : 'audio/wav';
-                const options = MediaRecorder.isTypeSupported(mimeType) ? { mimeType } : {};
+                // Set up media recorder - determine best supported MIME type
+                let mimeType;
+                if (selectedFormat === 'webm') {
+                    mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+                               MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined;
+                } else {
+                    // WAV is rarely supported by MediaRecorder; try it, then fall back
+                    mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav' : undefined;
+                    if (!mimeType) {
+                        // Fall back to webm with a note
+                        mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+                                   MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined;
+                        selectedFormat = 'webm';
+                        document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelector('.format-btn[data-format="webm"]').classList.add('active');
+                    }
+                }
+                const options = mimeType ? { mimeType } : {};
                 mediaRecorder = new MediaRecorder(stream, options);
                 chunks = [];
 
@@ -428,8 +443,11 @@
                 };
 
                 mediaRecorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: selectedFormat === 'webm' ? 'audio/webm' : 'audio/wav' });
-                    const duration = formatTime(Date.now() - startTime + pausedTime);
+                    const actualMime = mediaRecorder.mimeType || 'audio/webm';
+                    const blob = new Blob(chunks, { type: actualMime });
+                    // Calculate correct duration: if paused, pausedTime holds total active time
+                    const totalElapsed = isPaused ? pausedTime : (Date.now() - startTime + pausedTime);
+                    const duration = formatTime(totalElapsed);
                     addRecording(blob, duration);
                     cleanup();
                 };
@@ -524,13 +542,15 @@
         // Add recording to list
         function addRecording(blob, duration) {
             const url = URL.createObjectURL(blob);
+            // Determine actual file extension from blob type
+            const actualFormat = blob.type.includes('wav') ? 'wav' : 'webm';
             const recording = {
                 id: Date.now(),
                 url,
                 blob,
                 duration,
                 name: `Recording ${recordings.length + 1}`,
-                format: selectedFormat,
+                format: actualFormat,
                 date: new Date().toLocaleTimeString()
             };
             recordings.unshift(recording);

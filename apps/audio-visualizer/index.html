@@ -177,9 +177,12 @@
         let audioContext = null;
         let analyser = null;
         let dataArray = null;
+        let timeDataArray = null;
         let source = null;
         let isActive = false;
         let animationId = null;
+        let mediaElementSource = null;
+        let currentStream = null;
 
         // Settings
         let vizMode = 'bars';
@@ -207,19 +210,37 @@
                 audioContext.resume();
             }
 
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = smoothing;
+            if (!analyser) {
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = smoothing;
 
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                timeDataArray = new Uint8Array(analyser.fftSize);
+            }
         }
 
         async function startMicrophone() {
             try {
                 initAudio();
 
+                // Stop any existing audio file playback
+                audioPlayer.pause();
+                audioPlayer.src = '';
+                audioControls.style.display = 'none';
+
+                // Stop previous microphone stream if any
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                }
+
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                currentStream = stream;
+
                 if (source) source.disconnect();
+                if (mediaElementSource) {
+                    mediaElementSource.disconnect();
+                }
 
                 source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
@@ -227,7 +248,6 @@
                 isActive = true;
                 status.textContent = '🎤 Microphone active';
                 status.classList.add('active');
-                audioControls.style.display = 'none';
 
                 if (!animationId) animate();
             } catch (err) {
@@ -239,17 +259,30 @@
         function loadAudioFile(file) {
             initAudio();
 
+            // Stop microphone stream if active
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+                currentStream = null;
+            }
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+
             const url = URL.createObjectURL(file);
             audioPlayer.src = url;
             audioControls.style.display = 'block';
 
-            if (source) source.disconnect();
+            // Only create MediaElementSource once per element
+            if (!mediaElementSource) {
+                mediaElementSource = audioContext.createMediaElementSource(audioPlayer);
+                mediaElementSource.connect(analyser);
+                analyser.connect(audioContext.destination);
+            }
 
             audioPlayer.onplay = () => {
-                if (!source || source.mediaElement !== audioPlayer) {
-                    source = audioContext.createMediaElementSource(audioPlayer);
-                    source.connect(analyser);
-                    analyser.connect(audioContext.destination);
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
                 }
                 isActive = true;
                 status.textContent = '🎵 Playing: ' + file.name.slice(0, 25);
@@ -344,11 +377,12 @@
             ctx.beginPath();
             ctx.lineWidth = 3;
 
-            const sliceWidth = width / dataArray.length;
+            const bufferLength = timeDataArray.length;
+            const sliceWidth = width / bufferLength;
             let x = 0;
 
-            for (let i = 0; i < dataArray.length; i++) {
-                const v = (dataArray[i] * sensitivity) / 128.0;
+            for (let i = 0; i < bufferLength; i++) {
+                const v = (timeDataArray[i] / 128.0 - 1.0) * sensitivity + 1.0;
                 const y = (v * height) / 2;
 
                 if (i === 0) {
@@ -547,6 +581,7 @@
 
             if (analyser && isActive) {
                 analyser.getByteFrequencyData(dataArray);
+                analyser.getByteTimeDomainData(timeDataArray);
 
                 switch (vizMode) {
                     case 'bars': drawBars(); break;

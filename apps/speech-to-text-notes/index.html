@@ -428,7 +428,7 @@
                 <div class="status-dot" id="statusDot"></div>
                 <span class="status-text" id="statusText">Ready</span>
             </div>
-            <select class="language-select" id="languageSelect">
+            <select class="language-select" id="languageSelect" aria-label="Recognition language">
                 <option value="en-US">English (US)</option>
                 <option value="en-GB">English (UK)</option>
                 <option value="es-ES">Spanish</option>
@@ -710,20 +710,22 @@ You can also type or edit the notes manually."></textarea>
             wordCount.textContent = words + ' word' + (words !== 1 ? 's' : '');
         }
 
+        let autoSaveTimer = null;
         function autoSave() {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
             saveStatus.innerHTML = '<span>⏳</span> Saving...';
             saveStatus.className = 'auto-save-status saving';
 
-            const session = {
-                id: getCurrentSessionId(),
-                text: notesArea.value,
-                date: new Date().toISOString(),
-                language: languageSelect.value
-            };
+            autoSaveTimer = setTimeout(() => {
+                const session = {
+                    id: getCurrentSessionId(),
+                    text: notesArea.value,
+                    date: new Date().toISOString(),
+                    language: languageSelect.value
+                };
 
-            localStorage.setItem('stt_current_session', JSON.stringify(session));
+                localStorage.setItem('stt_current_session', JSON.stringify(session));
 
-            setTimeout(() => {
                 saveStatus.innerHTML = '<span>✓</span> Saved';
                 saveStatus.className = 'auto-save-status saved';
             }, 500);
@@ -794,15 +796,21 @@ You can also type or edit the notes manually."></textarea>
                 return;
             }
 
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
             container.innerHTML = sessions.map(session => {
                 const date = new Date(session.date);
                 const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 return `
-                    <div class="session-item" data-id="${session.id}">
+                    <div class="session-item" data-id="${escapeHtml(session.id)}">
                         <div class="session-info">
-                            <div class="session-date">${dateStr}</div>
-                            <div class="session-preview">${session.preview}...</div>
+                            <div class="session-date">${escapeHtml(dateStr)}</div>
+                            <div class="session-preview">${escapeHtml(session.preview)}...</div>
                         </div>
                         <div class="session-actions">
                             <button class="session-btn load-session">Load</button>
@@ -848,15 +856,32 @@ You can also type or edit the notes manually."></textarea>
         }
 
         function copyToClipboard() {
-            notesArea.select();
-            document.execCommand('copy');
+            const text = notesArea.value;
+            if (!text.trim()) {
+                showError('Nothing to copy. Record or type some notes first.');
+                return;
+            }
 
             const btn = document.getElementById('copyBtn');
             const originalText = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => {
-                btn.textContent = originalText;
-            }, 2000);
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = originalText; }, 2000);
+                }).catch(() => {
+                    // Fallback for clipboard API failure
+                    notesArea.select();
+                    document.execCommand('copy');
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = originalText; }, 2000);
+                });
+            } else {
+                notesArea.select();
+                document.execCommand('copy');
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = originalText; }, 2000);
+            }
         }
 
         function downloadAsText() {

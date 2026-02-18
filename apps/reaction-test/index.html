@@ -303,8 +303,10 @@
 
         function showTooEarly() {
             gameArea.className = 'game-area too-early';
-            gameText.textContent = 'Too Early!';
-            gameSubtext.textContent = 'Wait for green, then click. Click to retry.';
+            gameArea.innerHTML = `
+                <div class="game-text">Too Early!</div>
+                <div class="game-subtext">Wait for green, then click. Click to retry.</div>
+            `;
         }
 
         function startWaiting() {

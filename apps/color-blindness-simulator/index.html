@@ -311,6 +311,9 @@
                 <button class="download-btn" onclick="downloadImage()">
                     <span>📥</span> Download Simulated Image
                 </button>
+                <button class="download-btn" onclick="changeImage()" style="background: rgba(255,255,255,0.1); margin-left: 8px;">
+                    Change Image
+                </button>
 
                 <div class="info-box" id="infoBox">
                     <h3>About Deuteranopia</h3>
@@ -636,6 +639,9 @@
 
         function renderView() {
             const container = document.getElementById('viewContainer');
+            // Clean up previous slider event listeners
+            const prevSlider = container.querySelector('.slider-container');
+            if (prevSlider && prevSlider._cleanup) prevSlider._cleanup();
 
             if (currentView === 'slider') {
                 renderSliderView(container);
@@ -685,7 +691,9 @@
 
             let isDragging = false;
             sliderContainer.addEventListener('mousedown', () => isDragging = true);
-            document.addEventListener('mouseup', () => isDragging = false);
+            const mouseUpHandler = () => isDragging = false;
+            document.addEventListener('mouseup', mouseUpHandler);
+            sliderContainer._cleanup = () => document.removeEventListener('mouseup', mouseUpHandler);
             sliderContainer.addEventListener('mousemove', e => {
                 if (!isDragging) return;
                 const rect = sliderContainer.getBoundingClientRect();
@@ -693,7 +701,14 @@
                 drawSlider();
             });
 
+            sliderContainer.addEventListener('touchstart', e => {
+                e.preventDefault();
+                const rect = sliderContainer.getBoundingClientRect();
+                sliderPosition = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width));
+                drawSlider();
+            });
             sliderContainer.addEventListener('touchmove', e => {
+                e.preventDefault();
                 const rect = sliderContainer.getBoundingClientRect();
                 sliderPosition = Math.max(0, Math.min(1, (e.touches[0].clientX - rect.left) / rect.width));
                 drawSlider();
@@ -740,6 +755,13 @@
                 <h3>${info.title}</h3>
                 <p>${info.text}</p>
             `;
+        }
+
+        function changeImage() {
+            comparisonView.classList.remove('active');
+            uploadCard.style.display = '';
+            currentImage = null;
+            fileInput.value = '';
         }
 
         function downloadImage() {

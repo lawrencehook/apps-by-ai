@@ -296,7 +296,7 @@
             <div class="controls-panel">
                 <div class="control-section">
                     <div class="section-title">Image</div>
-                    <div class="upload-area" id="uploadArea">
+                    <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="Upload image area. Drop an image here or press Enter to browse.">
                         <div class="upload-icon">🖼️</div>
                         <div class="upload-text">Drop image here or click to upload</div>
                     </div>
@@ -411,9 +411,23 @@
         let currentImage = null;
         let currentChars = ' .:-=+*#%@';
         let currentAscii = '';
+        let convertDebounceTimer = null;
+
+        function debouncedConvert() {
+            if (convertDebounceTimer) clearTimeout(convertDebounceTimer);
+            convertDebounceTimer = setTimeout(() => {
+                if (currentImage) convertToAscii();
+            }, 50);
+        }
 
         // Upload handling
         uploadArea.addEventListener('click', () => imageInput.click());
+        uploadArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                imageInput.click();
+            }
+        });
 
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -579,9 +593,11 @@
         }
 
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
         }
 
         copyBtn.addEventListener('click', () => {

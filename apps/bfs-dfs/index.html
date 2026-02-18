@@ -88,12 +88,14 @@
         const QUEUED = 4;
 
         function resize() {
-            const rect = bfsCanvas.parentElement.getBoundingClientRect();
-            bfsCanvas.width = rect.width - 40;
-            bfsCanvas.height = rect.height - 80;
-            dfsCanvas.width = rect.width - 40;
-            dfsCanvas.height = rect.height - 80;
-            init();
+            const bfsRect = bfsCanvas.parentElement.getBoundingClientRect();
+            const dfsRect = dfsCanvas.parentElement.getBoundingClientRect();
+            bfsCanvas.width = bfsRect.width - 40;
+            bfsCanvas.height = bfsRect.height - 80;
+            dfsCanvas.width = dfsRect.width - 40;
+            dfsCanvas.height = dfsRect.height - 80;
+            if (!running) init();
+            else draw();
         }
 
         function init() {
@@ -201,6 +203,7 @@
         async function runSearch() {
             if (running) return;
             running = true;
+            document.getElementById('start').textContent = 'Running...';
 
             // Reset grids but keep walls
             for (let y = 0; y < gridSize; y++) {
@@ -281,13 +284,15 @@
             }
 
             running = false;
+            document.getElementById('start').textContent = 'Start';
             draw();
         }
 
         document.getElementById('start').addEventListener('click', runSearch);
         document.getElementById('reset').addEventListener('click', () => {
             running = false;
-            setTimeout(init, 100);
+            document.getElementById('start').textContent = 'Start';
+            setTimeout(init, 150);
         });
 
         document.getElementById('speed').addEventListener('input', e => {

@@ -242,6 +242,31 @@
             border-radius: 6px;
             font-size: 0.75rem;
             color: #666;
+            z-index: 50;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+            }
+            body {
+                overflow: auto;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            .canvas-container {
+                min-height: 60vh;
+            }
+            .stats {
+                bottom: auto;
+                top: 70px;
+            }
         }
     </style>
 </head>
@@ -433,6 +458,22 @@
             updateStats();
         }
 
+        // Global drag state to avoid per-node document listeners
+        let dragState = { isDragging: false, node: null, el: null, offsetX: 0, offsetY: 0 };
+
+        document.addEventListener('mousemove', e => {
+            if (dragState.isDragging && dragState.node && dragState.el) {
+                dragState.node.x = e.clientX - dragState.offsetX;
+                dragState.node.y = e.clientY - dragState.offsetY;
+                dragState.el.style.left = dragState.node.x + 'px';
+                dragState.el.style.top = dragState.node.y + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            dragState.isDragging = false;
+        });
+
         function renderNodes() {
             // Remove existing DOM nodes
             document.querySelectorAll('.node').forEach(el => el.remove());
@@ -459,31 +500,16 @@
                 // Store reference for measurements
                 node.element = el;
 
-                // Drag handling
-                let isDragging = false;
-                let dragOffsetX, dragOffsetY;
-
                 el.addEventListener('mousedown', e => {
                     if (e.target.classList.contains('port') || e.target.classList.contains('node-delete')) return;
 
-                    isDragging = true;
-                    dragOffsetX = e.clientX - node.x;
-                    dragOffsetY = e.clientY - node.y;
+                    dragState.isDragging = true;
+                    dragState.node = node;
+                    dragState.el = el;
+                    dragState.offsetX = e.clientX - node.x;
+                    dragState.offsetY = e.clientY - node.y;
                     selectedNode = node;
                     renderNodes();
-                });
-
-                document.addEventListener('mousemove', e => {
-                    if (isDragging) {
-                        node.x = e.clientX - dragOffsetX;
-                        node.y = e.clientY - dragOffsetY;
-                        el.style.left = node.x + 'px';
-                        el.style.top = node.y + 'px';
-                    }
-                });
-
-                document.addEventListener('mouseup', () => {
-                    isDragging = false;
                 });
 
                 // Port connections
@@ -770,7 +796,18 @@
                 exportCtx.strokeStyle = node.color;
                 exportCtx.lineWidth = 2;
                 exportCtx.beginPath();
-                exportCtx.roundRect(node.x, node.y, node.width, node.height, 12);
+                if (exportCtx.roundRect) {
+                    exportCtx.roundRect(node.x, node.y, node.width, node.height, 12);
+                } else {
+                    // Fallback for browsers without roundRect
+                    const r = 12, x = node.x, y = node.y, w = node.width, h = node.height;
+                    exportCtx.moveTo(x + r, y);
+                    exportCtx.arcTo(x + w, y, x + w, y + h, r);
+                    exportCtx.arcTo(x + w, y + h, x, y + h, r);
+                    exportCtx.arcTo(x, y + h, x, y, r);
+                    exportCtx.arcTo(x, y, x + w, y, r);
+                    exportCtx.closePath();
+                }
                 exportCtx.fill();
                 exportCtx.stroke();
 

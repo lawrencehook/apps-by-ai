@@ -25,6 +25,7 @@
             border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
         }
         .back-link:hover { color: #fff; }
+        .back-link { z-index: 100; }
         .input-section {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.08);
@@ -322,7 +323,6 @@
             // MD5 (using our implementation)
             let md5Hash = md5(text);
             document.getElementById('md5Hash').textContent = isUppercase ? md5Hash.toUpperCase() : md5Hash;
-            document.getElementById('md5Hash').classList.toggle('uppercase', isUppercase);
 
             // SHA hashes using Web Crypto API
             try {
@@ -347,9 +347,22 @@
                 const hashType = btn.dataset.hash;
                 const hashValue = document.getElementById(hashType + 'Hash').textContent;
                 if (hashValue && hashValue !== '-') {
-                    navigator.clipboard.writeText(hashValue);
-                    btn.textContent = 'Copied!';
-                    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                    navigator.clipboard.writeText(hashValue).then(() => {
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                    }).catch(() => {
+                        // Fallback for non-HTTPS or denied clipboard permission
+                        const textarea = document.createElement('textarea');
+                        textarea.value = hashValue;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+                    });
                 }
             });
         });

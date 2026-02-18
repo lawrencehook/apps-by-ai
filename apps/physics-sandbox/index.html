@@ -27,6 +27,10 @@
             align-items: center;
             gap: 20px;
             z-index: 100;
+            overflow-x: auto;
+            overflow-y: hidden;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
 
         .toolbar-title {
@@ -295,6 +299,7 @@
             }
         });
 
+        Composite.add(engine.world, mouseConstraint);
         render.mouse = mouse;
 
         // Custom event handling
@@ -515,6 +520,8 @@
 
         // Add some initial bodies for fun
         setTimeout(() => {
+            const savedTool = currentTool;
+            const savedColor = currentColor;
             for (let i = 0; i < 5; i++) {
                 const x = 200 + i * 150;
                 const tools = ['circle', 'box', 'triangle', 'polygon'];
@@ -522,8 +529,8 @@
                 currentColor = COLORS[i % COLORS.length];
                 createBody(x, 100, { x: 0, y: 0 });
             }
-            currentTool = 'circle';
-            currentColor = COLORS[3];
+            currentTool = savedTool;
+            currentColor = savedColor;
         }, 500);
     </script>
 </body>

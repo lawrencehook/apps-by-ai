@@ -23,6 +23,7 @@
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
             border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
         }
         .back-link:hover { color: #fff; }
         .mode-toggle {
@@ -372,7 +373,11 @@
                 messageEl.innerHTML = '<div class="success">Conversion successful!</div>';
             } catch (e) {
                 output.value = '';
-                messageEl.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = 'Error: ' + e.message;
+                messageEl.innerHTML = '';
+                messageEl.appendChild(errorDiv);
             }
         }
 
@@ -431,13 +436,22 @@ Alice Brown,36,Houston,true`;
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(output.value);
+            if (!output.value) return;
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy', 1500);
+            navigator.clipboard.writeText(output.value).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            }).catch(() => {
+                btn.textContent = 'Failed';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            });
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!output.value) {
+                messageEl.innerHTML = '<div class="error">Nothing to download. Convert some data first.</div>';
+                return;
+            }
             const ext = mode === 'csv-to-json' ? 'json' : 'csv';
             const type = mode === 'csv-to-json' ? 'application/json' : 'text/csv';
             const blob = new Blob([output.value], { type });

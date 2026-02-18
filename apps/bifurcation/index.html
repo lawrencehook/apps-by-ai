@@ -165,15 +165,29 @@
             render();
         }
 
+        let renderTimer = null;
+        function debouncedRender() {
+            if (renderTimer) cancelAnimationFrame(renderTimer);
+            renderTimer = requestAnimationFrame(render);
+        }
+
         function render() {
-            const rMin = parseFloat(rMinSlider.value);
-            const rMax = parseFloat(rMaxSlider.value);
+            let rMin = parseFloat(rMinSlider.value);
+            let rMax = parseFloat(rMaxSlider.value);
             const iterations = parseInt(iterSlider.value);
             const skip = 200; // Skip initial transient
+
+            // Ensure rMin < rMax
+            if (rMin >= rMax) {
+                rMax = rMin + 0.1;
+                rMaxSlider.value = rMax;
+            }
 
             document.getElementById('rMinVal').textContent = rMin.toFixed(2);
             document.getElementById('rMaxVal').textContent = rMax.toFixed(2);
             document.getElementById('iterVal').textContent = iterations;
+
+            if (width <= 0 || height <= 0) return;
 
             // Initialize density array
             density = new Array(width).fill(null).map(() => new Array(height).fill(0));
@@ -317,8 +331,14 @@
                 const newRMax = rMin + (Math.max(dragStart.x, endX) / width) * (rMax - rMin);
 
                 if (Math.abs(endX - dragStart.x) > 10) {
-                    rMinSlider.value = Math.max(0, newRMin);
-                    rMaxSlider.value = Math.min(4, newRMax);
+                    const clampedMin = Math.max(0, newRMin);
+                    const clampedMax = Math.min(4, newRMax);
+                    rMinSlider.min = 0;
+                    rMinSlider.max = 4;
+                    rMaxSlider.min = 0;
+                    rMaxSlider.max = 4;
+                    rMinSlider.value = clampedMin;
+                    rMaxSlider.value = clampedMax;
                     render();
                 }
             }
@@ -332,9 +352,9 @@
             render();
         });
 
-        rMinSlider.addEventListener('input', render);
-        rMaxSlider.addEventListener('input', render);
-        iterSlider.addEventListener('input', render);
+        rMinSlider.addEventListener('input', debouncedRender);
+        rMaxSlider.addEventListener('input', debouncedRender);
+        iterSlider.addEventListener('input', debouncedRender);
         colorSelect.addEventListener('change', draw);
 
         window.addEventListener('resize', resize);

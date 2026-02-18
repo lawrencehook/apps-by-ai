@@ -155,6 +155,7 @@
         }
 
         function hslToRgb(h, s, l) {
+            h = ((h % 360) + 360) % 360;
             s /= 100; l /= 100;
             const c = (1 - Math.abs(2 * l - 1)) * s;
             const x = c * (1 - Math.abs((h / 60) % 2 - 1));
@@ -183,6 +184,17 @@
         });
 
         canvas.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
             mouseX = -1000;
             mouseY = -1000;
         });

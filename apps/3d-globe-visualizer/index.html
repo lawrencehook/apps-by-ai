@@ -248,8 +248,9 @@
 
         function isVisible(lon, lat) {
             // Check if point is on visible hemisphere using spherical distance
+            // D3 rotate([lambda, phi]) places center of view at [-lambda, -phi]
             const lambda = rotation[0] * Math.PI / 180;
-            const phi = rotation[1] * Math.PI / 180;
+            const phi = -rotation[1] * Math.PI / 180; // Negate to get center latitude
             const lonRad = lon * Math.PI / 180;
             const latRad = lat * Math.PI / 180;
 
@@ -499,13 +500,39 @@
         canvas.addEventListener('mouseup', () => isDragging = false);
         canvas.addEventListener('mouseleave', () => isDragging = false);
 
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            isDragging = true;
+            lastMouseX = touch.clientX;
+            lastMouseY = touch.clientY;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (isDragging && e.touches.length === 1) {
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - lastMouseX;
+                const deltaY = touch.clientY - lastMouseY;
+                const sensitivity = 0.3 / zoom;
+                rotation[0] += deltaX * sensitivity;
+                rotation[1] -= deltaY * sensitivity;
+                rotation[1] = Math.max(-90, Math.min(90, rotation[1]));
+                lastMouseX = touch.clientX;
+                lastMouseY = touch.clientY;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => isDragging = false);
+
         canvas.addEventListener('wheel', e => {
             e.preventDefault();
             zoom *= e.deltaY > 0 ? 0.95 : 1.05;
             zoom = Math.max(0.5, Math.min(5, zoom));
             radius = Math.min(width, height) * 0.35 * zoom;
             projection.scale(radius);
-        });
+        }, { passive: false });
 
         canvas.addEventListener('dblclick', () => {
             rotation = [0, -20, 0];

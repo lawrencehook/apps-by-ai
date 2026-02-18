@@ -415,7 +415,7 @@
 
             const pos = getMousePos(e);
 
-            sourceCtx.strokeStyle = colors[colorIndex];
+            sourceCtx.strokeStyle = colors[Math.floor(colorIndex)];
             sourceCtx.lineWidth = brushSize;
             sourceCtx.lineCap = 'round';
             sourceCtx.lineJoin = 'round';
@@ -453,14 +453,14 @@
             const pos = getMousePos(touch);
             lastX = pos.x;
             lastY = pos.y;
-        });
+        }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             if (!isDrawing || source !== 'draw') return;
             e.preventDefault();
             const touch = e.touches[0];
             draw(touch);
-        });
+        }, { passive: false });
 
         canvas.addEventListener('touchend', () => isDrawing = false);
 
@@ -470,7 +470,7 @@
             zoom = Math.max(0.5, Math.min(3, zoom - e.deltaY * 0.001));
             document.getElementById('zoom').value = zoom;
             document.getElementById('zoomValue').textContent = zoom.toFixed(1);
-        });
+        }, { passive: false });
 
         function drawKaleidoscope() {
             ctx.fillStyle = '#000';

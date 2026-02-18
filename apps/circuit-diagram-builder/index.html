@@ -279,9 +279,23 @@
         @media (max-width: 1000px) {
             .app-container {
                 grid-template-columns: 1fr;
+                grid-template-rows: 60px auto 1fr auto;
             }
-            .components-panel, .properties-panel {
-                display: none;
+            .components-panel {
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                overflow-x: auto;
+                overflow-y: hidden;
+                max-height: 120px;
+            }
+            .component-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            }
+            .properties-panel {
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                max-height: 200px;
+                overflow-y: auto;
             }
         }
     </style>
@@ -545,6 +559,8 @@
             canvas.addEventListener('mouseup', onMouseUp);
             canvas.addEventListener('dblclick', onDoubleClick);
 
+            document.addEventListener('keydown', onKeyDown);
+
             render();
         }
 
@@ -584,7 +600,8 @@
                 width: def.width,
                 height: def.height,
                 rotation: 0,
-                ...def
+                color: def.color,
+                connectors: def.connectors.map(c => [...c])
             };
 
             // Copy default values
@@ -614,12 +631,21 @@
             // Check if clicking on a component
             const clicked = components.find(c => isPointInComponent(x, y, c));
 
-            if (currentTool === 'delete' && clicked) {
-                components = components.filter(c => c !== clicked);
-                if (selectedComponent === clicked) selectedComponent = null;
-                updatePropertiesPanel();
-                render();
-                return;
+            if (currentTool === 'delete') {
+                if (clicked) {
+                    components = components.filter(c => c !== clicked);
+                    if (selectedComponent === clicked) selectedComponent = null;
+                    updatePropertiesPanel();
+                    render();
+                    return;
+                }
+                // Try to delete a wire
+                const wireIdx = wires.findIndex(w => isPointNearWire(x, y, w));
+                if (wireIdx !== -1) {
+                    wires.splice(wireIdx, 1);
+                    render();
+                    return;
+                }
             }
 
             if (clicked) {
@@ -698,6 +724,33 @@
         function isPointInComponent(x, y, c) {
             return x >= c.x && x <= c.x + c.width &&
                    y >= c.y && y <= c.y + c.height;
+        }
+
+        function onKeyDown(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedComponent && document.activeElement === document.body) {
+                    e.preventDefault();
+                    components = components.filter(c => c !== selectedComponent);
+                    selectedComponent = null;
+                    updatePropertiesPanel();
+                    render();
+                }
+            }
+            if (e.key === 'r' && selectedComponent && document.activeElement === document.body) {
+                rotateSelected();
+            }
+        }
+
+        function isPointNearWire(x, y, wire, threshold = 8) {
+            const dx = wire.x2 - wire.x1;
+            const dy = wire.y2 - wire.y1;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) return Math.hypot(x - wire.x1, y - wire.y1) < threshold;
+            let t = ((x - wire.x1) * dx + (y - wire.y1) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            const projX = wire.x1 + t * dx;
+            const projY = wire.y1 + t * dy;
+            return Math.hypot(x - projX, y - projY) < threshold;
         }
 
         function setTool(tool) {

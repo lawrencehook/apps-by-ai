@@ -32,6 +32,10 @@
         }
         .back-link:hover { color: #fff; }
         .status { color: #666; font-size: 12px; margin-top: 8px; }
+        @media (max-width: 600px) {
+            .controls { max-width: 180px; font-size: 12px; padding: 12px; }
+            .controls h1 { font-size: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -78,7 +82,11 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            generateGraph();
+            if (!running) {
+                generateGraph();
+            } else {
+                draw();
+            }
         }
 
         function generateGraph() {
@@ -347,7 +355,7 @@
 
         document.getElementById('reset').addEventListener('click', () => {
             running = false;
-            setTimeout(generateGraph, 100);
+            generateGraph();
         });
 
         window.addEventListener('resize', resize);

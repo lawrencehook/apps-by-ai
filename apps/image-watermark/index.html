@@ -112,6 +112,7 @@
             cursor: pointer;
             font-size: 0.75rem;
             transition: all 0.2s;
+            width: auto;
         }
         .position-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .position-btn.active {
@@ -312,7 +313,16 @@
         });
 
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) return;
+            if (!file.type.startsWith('image/')) {
+                status.textContent = 'Please select a valid image file (PNG, JPEG, or WebP).';
+                status.style.background = 'rgba(255, 107, 107, 0.1)';
+                status.style.color = '#ff6b6b';
+                status.className = 'status show';
+                return;
+            }
+            status.style.background = '';
+            status.style.color = '';
+            status.className = 'status';
 
             currentImage = { file, type: file.type };
 
@@ -565,11 +575,13 @@
         }
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!currentImage || !currentImage.img) return;
             const format = currentImage.type;
             const quality = format === 'image/jpeg' ? 0.92 : undefined;
             const dataUrl = previewCanvas.toDataURL(format, quality);
 
-            const ext = format.split('/')[1];
+            let ext = format.split('/')[1];
+            if (ext === 'jpeg') ext = 'jpg';
             const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
             const a = document.createElement('a');
             a.href = dataUrl;
