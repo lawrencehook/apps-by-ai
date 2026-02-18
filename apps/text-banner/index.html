@@ -190,7 +190,7 @@
             bannerText.textContent = currentText;
 
             // Update page title to show the text
-            document.title = currentText;
+            document.title = textInput.value ? currentText : originalTitle;
         }
 
         // Update text when user types
@@ -234,17 +234,6 @@
             }
         });
 
-        // Handle visibility change - update title when tab becomes hidden/visible
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                // When tabbed away, show the banner text in title
-                document.title = currentText;
-            } else {
-                // When returning, still show the text (it's always synced now)
-                document.title = currentText;
-            }
-        });
-
         // Load from URL params
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
@@ -271,7 +260,9 @@
         // Update URL when settings change
         function updateURL() {
             const params = new URLSearchParams();
-            params.set('text', currentText);
+            if (textInput.value) {
+                params.set('text', textInput.value);
+            }
             params.set('size', currentSize);
             params.set('theme', currentTheme);
             history.replaceState(null, '', '?' + params.toString());

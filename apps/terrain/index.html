@@ -423,17 +423,18 @@
 
         // Event listeners
         canvas.addEventListener('mousedown', e => {
-            if (e.button === 0) {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
                 const tile = screenToGrid(e.clientX, e.clientY);
                 if (tile) {
                     isSculpting = true;
                     const mode = e.shiftKey ? 'lower' : sculptMode;
                     sculptTerrain(tile.x, tile.y, mode);
+                    return;
                 }
             }
             isDragging = true;
-            lastMouseX = e.clientX;
-            lastMouseY = e.clientY;
         });
 
         canvas.addEventListener('mousemove', e => {
@@ -465,7 +466,7 @@
             e.preventDefault();
             zoom *= e.deltaY > 0 ? 0.95 : 1.05;
             zoom = Math.max(0.5, Math.min(3, zoom));
-        });
+        }, { passive: false });
 
         document.getElementById('height').addEventListener('input', e => {
             heightScale = parseInt(e.target.value);
@@ -490,21 +491,23 @@
             document.getElementById('brushLabel').textContent = brushSize;
         });
 
+        const sculptButtons = document.querySelectorAll('#raise, #lower, #flatten');
+
         document.getElementById('raise').addEventListener('click', e => {
             sculptMode = 'raise';
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            sculptButtons.forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
         });
 
         document.getElementById('lower').addEventListener('click', e => {
             sculptMode = 'lower';
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            sculptButtons.forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
         });
 
         document.getElementById('flatten').addEventListener('click', e => {
             sculptMode = 'flatten';
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            sculptButtons.forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
         });
 

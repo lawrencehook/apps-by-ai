@@ -169,7 +169,7 @@
 
         function resize() {
             const container = document.querySelector('.canvas-container');
-            const size = Math.min(container.clientWidth, container.clientHeight) - 20;
+            const size = Math.max(200, Math.min(container.clientWidth, container.clientHeight) - 20);
             width = height = Math.floor(size);
             canvas.width = width;
             canvas.height = height;
@@ -242,25 +242,28 @@
             const steps = Math.max(5000, maxT * 500);
             const dt = maxT / steps;
 
-            ctx.beginPath();
-            const start = getPoint(0);
-            ctx.moveTo(start.x, start.y);
+            ctx.lineWidth = 1.5;
 
-            for (let i = 1; i <= steps; i++) {
-                const pt = getPoint(i * dt);
-                if (rainbowCheck.checked) {
+            if (rainbowCheck.checked) {
+                let prev = getPoint(0);
+                for (let i = 1; i <= steps; i++) {
+                    const pt = getPoint(i * dt);
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(pt.x, pt.y);
                     ctx.strokeStyle = `hsl(${(i / steps) * 360}, 80%, 60%)`;
                     ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(pt.x, pt.y);
-                } else {
+                    prev = pt;
+                }
+            } else {
+                ctx.beginPath();
+                const start = getPoint(0);
+                ctx.moveTo(start.x, start.y);
+                for (let i = 1; i <= steps; i++) {
+                    const pt = getPoint(i * dt);
                     ctx.lineTo(pt.x, pt.y);
                 }
-            }
-
-            if (!rainbowCheck.checked) {
                 ctx.strokeStyle = '#4ecdc4';
-                ctx.lineWidth = 1.5;
                 ctx.stroke();
             }
         }

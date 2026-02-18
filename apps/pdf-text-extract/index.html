@@ -347,7 +347,7 @@
             a.download = currentFile.name.replace(/\.pdf$/i, '.txt');
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {

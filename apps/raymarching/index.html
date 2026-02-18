@@ -139,6 +139,8 @@
                     const size = 0.8 + Math.sin(time + p[0] * 0.5) * 0.2;
                     return sdBox(q, [size, size, size]);
                 }
+                default:
+                    return sdSphere(p, 1);
             }
         }
 
@@ -170,8 +172,17 @@
             const camPos = [Math.sin(time * 0.3) * 5, 2, Math.cos(time * 0.3) * 5];
             const target = [0, 0, 0];
             const forward = vec3.normalize(vec3.sub(target, camPos));
-            const right = vec3.normalize([forward[2], 0, -forward[0]]);
-            const up = [0, 1, 0];
+            const worldUp = [0, 1, 0];
+            const right = vec3.normalize([
+                worldUp[1] * forward[2] - worldUp[2] * forward[1],
+                worldUp[2] * forward[0] - worldUp[0] * forward[2],
+                worldUp[0] * forward[1] - worldUp[1] * forward[0]
+            ]);
+            const up = [
+                forward[1] * right[2] - forward[2] * right[1],
+                forward[2] * right[0] - forward[0] * right[2],
+                forward[0] * right[1] - forward[1] * right[0]
+            ];
 
             const lightDir = vec3.normalize([1, 1, 1]);
 

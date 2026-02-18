@@ -418,7 +418,7 @@
                         if (idx > -1) {
                             pageData[pageIndex].redactions.splice(idx, 1);
                         }
-                        currentBox.remove();
+                        redaction.element.remove();
                         updateCount(pageIndex);
                     });
                     currentBox.appendChild(deleteBtn);
@@ -437,6 +437,87 @@
                     currentBox = null;
                     isDrawing = false;
                 }
+            });
+
+            // Touch support
+            layer.addEventListener('touchstart', e => {
+                if (e.target !== layer) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = layer.getBoundingClientRect();
+                startX = touch.clientX - rect.left;
+                startY = touch.clientY - rect.top;
+                isDrawing = true;
+
+                currentBox = document.createElement('div');
+                currentBox.className = 'redaction-box';
+                currentBox.style.left = startX + 'px';
+                currentBox.style.top = startY + 'px';
+                currentBox.style.width = '0';
+                currentBox.style.height = '0';
+                layer.appendChild(currentBox);
+            }, { passive: false });
+
+            layer.addEventListener('touchmove', e => {
+                if (!isDrawing || !currentBox) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = layer.getBoundingClientRect();
+                const currentX = touch.clientX - rect.left;
+                const currentY = touch.clientY - rect.top;
+
+                const w = currentX - startX;
+                const h = currentY - startY;
+
+                if (w < 0) {
+                    currentBox.style.left = currentX + 'px';
+                    currentBox.style.width = -w + 'px';
+                } else {
+                    currentBox.style.width = w + 'px';
+                }
+                if (h < 0) {
+                    currentBox.style.top = currentY + 'px';
+                    currentBox.style.height = -h + 'px';
+                } else {
+                    currentBox.style.height = h + 'px';
+                }
+            }, { passive: false });
+
+            layer.addEventListener('touchend', e => {
+                if (!isDrawing || !currentBox) return;
+                isDrawing = false;
+
+                const w = parseFloat(currentBox.style.width);
+                const h = parseFloat(currentBox.style.height);
+
+                if (w > 5 && h > 5) {
+                    const redaction = {
+                        x: parseFloat(currentBox.style.left),
+                        y: parseFloat(currentBox.style.top),
+                        width: w,
+                        height: h,
+                        element: currentBox
+                    };
+
+                    pageData[pageIndex].redactions.push(redaction);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '\u00d7';
+                    deleteBtn.addEventListener('click', () => {
+                        const idx = pageData[pageIndex].redactions.indexOf(redaction);
+                        if (idx > -1) {
+                            pageData[pageIndex].redactions.splice(idx, 1);
+                        }
+                        redaction.element.remove();
+                        updateCount(pageIndex);
+                    });
+                    currentBox.appendChild(deleteBtn);
+                    updateCount(pageIndex);
+                } else {
+                    currentBox.remove();
+                }
+                currentBox = null;
             });
         }
 
@@ -515,9 +596,9 @@
                     // Embed image in PDF
                     const pngImage = await newPdf.embedPng(pngData);
 
-                    // Add page with same dimensions as original (in points, 72 per inch)
-                    const pageWidth = page.canvas.width / RENDER_SCALE * 72 / 96;
-                    const pageHeight = page.canvas.height / RENDER_SCALE * 72 / 96;
+                    // Add page with same dimensions as original (pdf.js viewport at scale=1 is in points)
+                    const pageWidth = page.canvas.width / RENDER_SCALE;
+                    const pageHeight = page.canvas.height / RENDER_SCALE;
                     const pdfPage = newPdf.addPage([pageWidth, pageHeight]);
 
                     // Draw image to fill page
@@ -542,7 +623,7 @@
                 a.download = `${baseName}_redacted.pdf`;
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 hideProgress();
                 showStatus(`Exported redacted PDF with ${pageData.length} pages`);
             } catch (err) {

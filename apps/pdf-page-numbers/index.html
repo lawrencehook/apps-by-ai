@@ -331,6 +331,7 @@
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('pageCount').textContent = totalPages + ' pages';
+                document.getElementById('startPage').max = totalPages;
 
                 await renderPreview();
 

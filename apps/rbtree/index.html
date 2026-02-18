@@ -230,10 +230,10 @@
         }
 
         function updateStatus() {
-            const height = getTreeHeight(root);
+            const treeH = getTreeHeight(root);
             const count = countNodes(root);
             document.getElementById('status').textContent =
-                `Nodes: ${count} | Height: ${height}`;
+                `Nodes: ${count} | Height: ${treeH}`;
         }
 
         function countNodes(node) {
@@ -320,10 +320,14 @@
         }
 
         document.getElementById('insert').addEventListener('click', () => {
-            const value = parseInt(document.getElementById('value').value);
+            const input = document.getElementById('value');
+            const value = parseInt(input.value);
             if (!isNaN(value)) {
                 insertValue(value);
-                document.getElementById('value').value = '';
+                input.value = '';
+            } else {
+                input.style.borderColor = '#ff6b6b';
+                setTimeout(() => { input.style.borderColor = ''; }, 1000);
             }
         });
 

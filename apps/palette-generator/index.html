@@ -195,7 +195,7 @@
             <div class="export-formats" id="exportFormats"></div>
         </div>
 
-        <p class="tip">Click a color to lock it, then generate new palettes around locked colors.</p>
+        <p class="tip">Click a color to lock it, then generate new palettes around locked colors. Press spacebar to regenerate.</p>
     </div>
 
     <script>
@@ -258,40 +258,45 @@
             const hsl = hexToHsl(base);
             let newPalette = [];
 
+            // Helper to adjust lightness relative to base, avoiding wash-out
+            function adjL(offset) {
+                return Math.max(10, Math.min(90, hsl.l + offset));
+            }
+
             switch (mode) {
                 case 'complementary':
                     newPalette = [
                         base,
-                        hslToHex(hsl.h, hsl.s * 0.7, hsl.l + 15),
-                        hslToHex(hsl.h, hsl.s * 0.5, hsl.l + 25),
-                        hslToHex(hsl.h + 180, hsl.s * 0.7, hsl.l + 10),
+                        hslToHex(hsl.h, hsl.s * 0.7, adjL(15)),
+                        hslToHex(hsl.h, hsl.s * 0.5, adjL(25)),
+                        hslToHex(hsl.h + 180, hsl.s * 0.7, adjL(10)),
                         hslToHex(hsl.h + 180, hsl.s, hsl.l)
                     ];
                     break;
                 case 'analogous':
                     newPalette = [
                         hslToHex(hsl.h - 30, hsl.s, hsl.l),
-                        hslToHex(hsl.h - 15, hsl.s * 0.9, hsl.l + 10),
+                        hslToHex(hsl.h - 15, hsl.s * 0.9, adjL(10)),
                         base,
-                        hslToHex(hsl.h + 15, hsl.s * 0.9, hsl.l + 10),
+                        hslToHex(hsl.h + 15, hsl.s * 0.9, adjL(10)),
                         hslToHex(hsl.h + 30, hsl.s, hsl.l)
                     ];
                     break;
                 case 'triadic':
                     newPalette = [
                         base,
-                        hslToHex(hsl.h, hsl.s * 0.6, hsl.l + 20),
+                        hslToHex(hsl.h, hsl.s * 0.6, adjL(20)),
                         hslToHex(hsl.h + 120, hsl.s, hsl.l),
-                        hslToHex(hsl.h + 120, hsl.s * 0.6, hsl.l + 15),
+                        hslToHex(hsl.h + 120, hsl.s * 0.6, adjL(15)),
                         hslToHex(hsl.h + 240, hsl.s, hsl.l)
                     ];
                     break;
                 case 'split-complementary':
                     newPalette = [
                         base,
-                        hslToHex(hsl.h, hsl.s * 0.7, hsl.l + 20),
+                        hslToHex(hsl.h, hsl.s * 0.7, adjL(20)),
                         hslToHex(hsl.h + 150, hsl.s, hsl.l),
-                        hslToHex(hsl.h + 180, hsl.s * 0.5, hsl.l + 15),
+                        hslToHex(hsl.h + 180, hsl.s * 0.5, adjL(15)),
                         hslToHex(hsl.h + 210, hsl.s, hsl.l)
                     ];
                     break;
@@ -381,9 +386,10 @@
 
             container.querySelectorAll('.copy-format').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    navigator.clipboard.writeText(decodeURIComponent(btn.dataset.value));
-                    btn.textContent = 'Copied!';
-                    setTimeout(() => btn.textContent = 'Copy', 1500);
+                    safeCopy(decodeURIComponent(btn.dataset.value)).then(() => {
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => btn.textContent = 'Copy', 1500);
+                    });
                 });
             });
         }
@@ -397,11 +403,29 @@
             generatePalette();
         });
 
+        function safeCopy(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text);
+            }
+            return new Promise((resolve, reject) => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try { document.execCommand('copy'); resolve(); }
+                catch (e) { reject(e); }
+                document.body.removeChild(textarea);
+            });
+        }
+
         document.getElementById('copyAllBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(palette.join(', '));
-            const btn = document.getElementById('copyAllBtn');
-            btn.textContent = '✓ Copied!';
-            setTimeout(() => btn.textContent = '📋 Copy All', 1500);
+            safeCopy(palette.join(', ')).then(() => {
+                const btn = document.getElementById('copyAllBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy All', 1500);
+            });
         });
 
         // Spacebar to regenerate

@@ -109,14 +109,41 @@
             color: #888;
             font-size: 0.9rem;
         }
-        .test-content {
+        .test-content-wrapper {
+            position: relative;
+            min-height: 150px;
+        }
+        .test-highlight {
             padding: 16px;
             font-family: 'SF Mono', Monaco, monospace;
             font-size: 0.95rem;
             line-height: 1.8;
             min-height: 150px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: transparent;
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
-        .test-content[contenteditable] { outline: none; }
+        .test-textarea {
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            min-height: 150px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            resize: vertical;
+            position: relative;
+            z-index: 1;
+        }
+        .test-textarea:focus { outline: none; }
         .match { background: rgba(78, 205, 196, 0.3); border-radius: 2px; }
         .match-group { background: rgba(255, 193, 7, 0.3); border-radius: 2px; }
         .results-section {
@@ -209,10 +236,13 @@
 
         <div class="test-input">
             <div class="test-header">Test String</div>
-            <div class="test-content" id="testContent" contenteditable="true">The quick brown fox jumps over the lazy dog.
+            <div class="test-content-wrapper">
+                <div class="test-highlight" id="testHighlight"></div>
+                <textarea class="test-textarea" id="testTextarea" spellcheck="false">The quick brown fox jumps over the lazy dog.
 Email: john@example.com, jane@test.org
 Phone: 123-456-7890, (555) 123-4567
-URL: https://www.example.com/path?query=value</div>
+URL: https://www.example.com/path?query=value</textarea>
+            </div>
         </div>
 
         <div class="results-section">
@@ -229,13 +259,12 @@ URL: https://www.example.com/path?query=value</div>
     <script>
         const regexInput = document.getElementById('regexInput');
         const flagsInput = document.getElementById('flagsInput');
-        const testContent = document.getElementById('testContent');
+        const testTextarea = document.getElementById('testTextarea');
+        const testHighlight = document.getElementById('testHighlight');
         const regexWrapper = document.getElementById('regexWrapper');
         const errorText = document.getElementById('errorText');
         const matchCount = document.getElementById('matchCount');
         const resultsContent = document.getElementById('resultsContent');
-
-        let originalText = testContent.textContent;
 
         function updateFlags() {
             const flags = flagsInput.value;

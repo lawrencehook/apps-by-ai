@@ -93,6 +93,13 @@
             font-size: 1.5rem;
             text-align: center;
             font-family: 'SF Mono', Monaco, monospace;
+            color-scheme: dark;
+            -moz-appearance: textfield;
+        }
+        .timer-input-group input::-webkit-inner-spin-button,
+        .timer-input-group input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         .timer-input-group input:focus { outline: none; border-color: #4ecdc4; }
         .presets {
@@ -155,6 +162,10 @@
         .lap:last-child { border-bottom: none; }
         .lap-number { color: #4ecdc4; }
         .hidden { display: none !important; }
+        @media (max-width: 400px) {
+            .time-display { font-size: 2.5rem; }
+            .ms { font-size: 1.3rem; }
+        }
     </style>
 </head>
 <body>
@@ -387,6 +398,7 @@
                 }
                 if (timerRemaining <= 0) return;
 
+                requestNotificationPermission();
                 timerEndTime = Date.now() + timerRemaining;
                 timerInterval = setInterval(updateTimer, 100);
                 document.getElementById('timerStart').textContent = 'Pause';
@@ -433,22 +445,32 @@
         }
 
         function playBeep() {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = ctx.createOscillator();
-            const gain = ctx.createGain();
-            oscillator.connect(gain);
-            gain.connect(ctx.destination);
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            oscillator.start(ctx.currentTime);
-            oscillator.stop(ctx.currentTime + 0.5);
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                for (let i = 0; i < 3; i++) {
+                    const oscillator = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    oscillator.connect(gain);
+                    gain.connect(ctx.destination);
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'sine';
+                    const startTime = ctx.currentTime + i * 0.6;
+                    gain.gain.setValueAtTime(0.3, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + 0.4);
+                }
+                setTimeout(() => ctx.close(), 3000);
+            } catch (e) {
+                // AudioContext not available
+            }
         }
 
-        // Request notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+        // Request notification permission on first timer start (requires user gesture)
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
         }
     </script>
 </body>

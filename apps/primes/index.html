@@ -272,7 +272,10 @@
         function updateStats(primeSet, max) {
             const count = primeSet.size;
             const density = ((count / max) * 100).toFixed(2);
-            const largest = Math.max(...primeSet);
+            let largest = 0;
+            for (const p of primeSet) {
+                if (p > largest) largest = p;
+            }
 
             document.getElementById('primeCount').textContent = count.toLocaleString();
             document.getElementById('density').textContent = density + '%';
@@ -497,6 +500,11 @@
         }
 
         function generate() {
+            // Stop any running animation first
+            if (isRunning) {
+                isRunning = false;
+            }
+
             const type = vizType.value;
             const max = Math.min(100000, Math.max(100, parseInt(maxNumInput.value) || 10000));
             maxNumInput.value = max;

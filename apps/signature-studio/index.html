@@ -281,6 +281,7 @@
             justify-content: center;
             align-items: flex-start;
             padding: 20px;
+            isolation: isolate;
         }
 
         #documentCanvas {
@@ -324,6 +325,7 @@
             border: 2px dashed #667eea;
             padding: 5px;
             background: rgba(255, 255, 255, 0.9);
+            z-index: 10;
         }
 
         .signature-overlay img {
@@ -799,7 +801,7 @@
         // ============ State Management ============
         const state = {
             currentTab: 'draw',
-            signatures: JSON.parse(localStorage.getItem('signatures') || '[]'),
+            signatures: (() => { try { return JSON.parse(localStorage.getItem('signatures') || '[]'); } catch(e) { return []; } })(),
             selectedSignatureIndex: -1,
             document: {
                 loaded: false,
@@ -1421,12 +1423,11 @@
                 <div class="delete-handle">×</div>
             `;
 
-            const rect = elements.documentCanvas.getBoundingClientRect();
-            overlay.style.left = `${rect.left + 50}px`;
-            overlay.style.top = `${rect.top + 50}px`;
+            overlay.style.left = '50px';
+            overlay.style.top = '50px';
             overlay.style.width = '200px';
 
-            document.body.appendChild(overlay);
+            elements.documentArea.appendChild(overlay);
 
             makeOverlayDraggable(overlay);
             makeOverlayResizable(overlay);
@@ -1442,31 +1443,43 @@
             let isDragging = false;
             let startX, startY, initialX, initialY;
 
-            overlay.addEventListener('mousedown', (e) => {
+            function onPointerDown(e) {
                 if (e.target.classList.contains('resize-handle') ||
                     e.target.classList.contains('delete-handle') ||
                     e.target.classList.contains('rotate-handle')) return;
 
                 isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX;
+                startY = clientY;
                 initialX = overlay.offsetLeft;
                 initialY = overlay.offsetTop;
-            });
+                if (e.touches) e.preventDefault();
+            }
 
-            document.addEventListener('mousemove', (e) => {
+            function onPointerMove(e) {
                 if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
+                const dx = clientX - startX;
+                const dy = clientY - startY;
 
                 overlay.style.left = `${initialX + dx}px`;
                 overlay.style.top = `${initialY + dy}px`;
-            });
+            }
 
-            document.addEventListener('mouseup', () => {
+            function onPointerUp() {
                 isDragging = false;
-            });
+            }
+
+            overlay.addEventListener('mousedown', onPointerDown);
+            overlay.addEventListener('touchstart', onPointerDown, { passive: false });
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('mouseup', onPointerUp);
+            document.addEventListener('touchend', onPointerUp);
         }
 
         function makeOverlayResizable(overlay) {

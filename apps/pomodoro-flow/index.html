@@ -630,7 +630,7 @@
             updateDisplay();
 
             // Show notification if supported
-            if (Notification.permission === 'granted') {
+            if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification(state.isWorkPhase ? 'Break Over!' : 'Focus Complete!', {
                     body: state.isWorkPhase ? 'Time to focus again.' : 'Take a well-deserved break!',
                     icon: '🍅'

@@ -483,31 +483,31 @@
         // Slider value displays
         widthSlider.addEventListener('input', () => {
             document.getElementById('widthValue').textContent = widthSlider.value;
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         brightnessSlider.addEventListener('input', () => {
             document.getElementById('brightnessValue').textContent = brightnessSlider.value;
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         contrastSlider.addEventListener('input', () => {
             document.getElementById('contrastValue').textContent = contrastSlider.value;
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         invertCheck.addEventListener('change', () => {
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         colorCheck.addEventListener('change', () => {
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         bgSelect.addEventListener('change', () => {
             const isDark = bgSelect.value === 'dark';
             asciiOutput.style.background = isDark ? '#000' : '#fff';
-            if (currentImage) convertToAscii();
+            debouncedConvert();
         });
 
         convertBtn.addEventListener('click', convertToAscii);
@@ -535,8 +535,12 @@
             const colored = colorCheck.checked;
             const isDarkBg = bgSelect.value === 'dark';
 
-            let ascii = '';
-            let htmlAscii = '';
+            const asciiParts = [];
+            const htmlParts = [];
+
+            // Pre-compute contrast factor once
+            const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+            const charsLen = currentChars.length - 1;
 
             for (let y = 0; y < targetHeight; y++) {
                 for (let x = 0; x < targetWidth; x++) {
@@ -551,7 +555,6 @@
                     b = Math.min(255, Math.max(0, b + brightness));
 
                     // Apply contrast
-                    const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
                     r = Math.min(255, Math.max(0, factor * (r - 128) + 128));
                     g = Math.min(255, Math.max(0, factor * (g - 128) + 128));
                     b = Math.min(255, Math.max(0, factor * (b - 128) + 128));
@@ -567,22 +570,25 @@
                     }
 
                     // Map to character
-                    const charIndex = Math.floor((gray / 255) * (currentChars.length - 1));
+                    const charIndex = Math.floor((gray / 255) * charsLen);
                     const char = currentChars[charIndex];
 
-                    ascii += char;
+                    asciiParts.push(char);
 
                     if (colored) {
                         const color = isDarkBg ? `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})` :
                                                  `rgb(${Math.round(r*0.8)},${Math.round(g*0.8)},${Math.round(b*0.8)})`;
-                        htmlAscii += `<span style="color:${color}">${char === ' ' ? '&nbsp;' : escapeHtml(char)}</span>`;
+                        htmlParts.push(`<span style="color:${color}">${char === ' ' ? '&nbsp;' : escapeHtml(char)}</span>`);
                     } else {
-                        htmlAscii += char === ' ' ? '&nbsp;' : escapeHtml(char);
+                        htmlParts.push(char === ' ' ? '&nbsp;' : escapeHtml(char));
                     }
                 }
-                ascii += '\n';
-                htmlAscii += '\n';
+                asciiParts.push('\n');
+                htmlParts.push('\n');
             }
+
+            const ascii = asciiParts.join('');
+            const htmlAscii = htmlParts.join('');
 
             currentAscii = ascii;
 
@@ -602,13 +608,35 @@
 
         copyBtn.addEventListener('click', () => {
             if (currentAscii) {
-                navigator.clipboard.writeText(currentAscii);
-                copyBtn.textContent = 'Copied!';
-                copyBtn.classList.add('copied');
-                setTimeout(() => {
-                    copyBtn.textContent = 'Copy';
-                    copyBtn.classList.remove('copied');
-                }, 1500);
+                navigator.clipboard.writeText(currentAscii).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 1500);
+                }).catch(() => {
+                    // Fallback for non-HTTPS environments
+                    const textarea = document.createElement('textarea');
+                    textarea.value = currentAscii;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        copyBtn.textContent = 'Copied!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copy';
+                            copyBtn.classList.remove('copied');
+                        }, 1500);
+                    } catch (err) {
+                        copyBtn.textContent = 'Failed';
+                        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+                    }
+                    document.body.removeChild(textarea);
+                });
             }
         });
 

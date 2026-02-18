@@ -213,9 +213,21 @@
         let mirror = false;
 
         function resizeCanvas() {
+            // Preserve existing content during resize
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
             canvas.width = window.innerWidth * window.devicePixelRatio;
             canvas.height = window.innerHeight * window.devicePixelRatio;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            // Restore previous content
+            ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height,
+                          0, 0, window.innerWidth, window.innerHeight);
         }
 
         function hexToRgb(hex) {
@@ -306,6 +318,12 @@
                     alpha: 1,
                     color: color
                 });
+            }
+
+            // Limit trails to prevent performance issues
+            const MAX_TRAILS = 5000;
+            if (trails.length > MAX_TRAILS) {
+                trails.splice(0, trails.length - MAX_TRAILS);
             }
         }
 

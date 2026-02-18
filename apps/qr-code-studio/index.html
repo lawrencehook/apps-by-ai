@@ -443,13 +443,24 @@
 
         function generateQR() {
             const content = getContent();
+            if (!content || content.trim() === '') return;
             const size = parseInt(document.getElementById('size').value);
             const errorLevel = document.getElementById('errorCorrection').value;
 
             canvas.width = size;
             canvas.height = size;
 
-            currentQR = new QRCode(content, errorLevel);
+            try {
+                currentQR = new QRCode(content, errorLevel);
+            } catch (e) {
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.font = '14px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText('Content too long or invalid', size / 2, size / 2);
+                return;
+            }
 
             const colors = currentPreset === 'custom' ? {
                 fg: document.getElementById('fgColor').value,
@@ -625,8 +636,10 @@
             const blob = new Blob([svg], { type: 'image/svg+xml' });
             const link = document.createElement('a');
             link.download = 'qrcode.svg';
-            link.href = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            link.href = url;
             link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
         document.getElementById('copyToClipboard').addEventListener('click', async () => {
@@ -703,6 +716,7 @@
             if (!file) return;
 
             const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
             img.onload = () => {
                 const offscreen = document.createElement('canvas');
                 offscreen.width = img.width;
@@ -719,8 +733,9 @@
                     scanResult.className = 'error';
                 }
                 scanResult.style.display = 'block';
+                URL.revokeObjectURL(objectUrl);
             };
-            img.src = URL.createObjectURL(file);
+            img.src = objectUrl;
         });
 
         // Initialize

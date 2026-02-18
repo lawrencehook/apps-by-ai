@@ -541,21 +541,21 @@
             itemsList.innerHTML = items.map(item => `
                 <div class="item-row">
                     <input type="text" value="${escapeHtml(item.name)}"
-                           onchange="updateItemName(${item.id}, this.value)" placeholder="Item name">
+                           onchange="updateItemName('${item.id}', this.value)" placeholder="Item name">
                     <input type="number" value="${item.price.toFixed(2)}"
-                           onchange="updateItemPrice(${item.id}, this.value)"
+                           onchange="updateItemPrice('${item.id}', this.value)"
                            class="item-price" step="0.01" min="0">
                     <div class="item-assignees">
                         ${people.map(p => `
                             <div class="item-assignee ${item.assignees.includes(p.id) ? 'assigned' : ''}"
                                  style="background: ${p.color}"
-                                 onclick="toggleItemAssignee(${item.id}, ${p.id})"
+                                 onclick="toggleItemAssignee('${item.id}', '${p.id}')"
                                  title="${escapeHtml(p.name)}">
                                 ${p.name.charAt(0).toUpperCase()}
                             </div>
                         `).join('')}
                     </div>
-                    <button class="item-remove" onclick="removeItem(${item.id})">&times;</button>
+                    <button class="item-remove" onclick="removeItem('${item.id}')">&times;</button>
                 </div>
             `).join('');
         }

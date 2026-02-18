@@ -151,7 +151,7 @@
                 <input type="number" id="value1" placeholder="Y" step="any">
                 <span class="equals">=</span>
                 <div class="result-box">
-                    <div class="result-value" id="result1">0</div>
+                    <div class="result-value" id="result1">-</div>
                 </div>
             </div>
         </div>
@@ -164,7 +164,7 @@
                 <input type="number" id="whole2" placeholder="Y" step="any">
                 <span class="equals">=</span>
                 <div class="result-box">
-                    <div class="result-value" id="result2">0%</div>
+                    <div class="result-value" id="result2">-</div>
                 </div>
             </div>
         </div>
@@ -178,7 +178,7 @@
                 <span class="calc-text">% of</span>
                 <span class="equals">=</span>
                 <div class="result-box">
-                    <div class="result-value" id="result3">0</div>
+                    <div class="result-value" id="result3">-</div>
                 </div>
             </div>
         </div>
@@ -192,7 +192,7 @@
                 <input type="number" id="to4" placeholder="Y" step="any">
                 <span class="equals">=</span>
                 <div class="result-box">
-                    <div class="result-value" id="result4">0%</div>
+                    <div class="result-value" id="result4">-</div>
                 </div>
             </div>
         </div>
@@ -201,7 +201,7 @@
             <div class="common-title">Quick Percentage Reference</div>
             <div class="quick-calc">
                 <div class="quick-input">
-                    <label>Enter a number</label>
+                    <label for="quickValue">Enter a number</label>
                     <input type="number" id="quickValue" placeholder="100" step="any" value="100">
                 </div>
             </div>
@@ -211,39 +211,71 @@
 
     <script>
         function formatNumber(num) {
-            if (isNaN(num) || !isFinite(num)) return '0';
+            if (isNaN(num) || !isFinite(num)) return '-';
             return parseFloat(num.toFixed(4)).toString();
+        }
+
+        function hasValue(inputId) {
+            return document.getElementById(inputId).value.trim() !== '';
         }
 
         // Calculator 1: What is X% of Y?
         function calc1() {
-            const percent = parseFloat(document.getElementById('percent1').value) || 0;
-            const value = parseFloat(document.getElementById('value1').value) || 0;
+            if (!hasValue('percent1') || !hasValue('value1')) {
+                document.getElementById('result1').textContent = '-';
+                return;
+            }
+            const percent = parseFloat(document.getElementById('percent1').value);
+            const value = parseFloat(document.getElementById('value1').value);
             const result = (percent / 100) * value;
             document.getElementById('result1').textContent = formatNumber(result);
         }
 
         // Calculator 2: X is what % of Y?
         function calc2() {
-            const part = parseFloat(document.getElementById('part2').value) || 0;
-            const whole = parseFloat(document.getElementById('whole2').value) || 0;
-            const result = whole !== 0 ? (part / whole) * 100 : 0;
+            if (!hasValue('part2') || !hasValue('whole2')) {
+                document.getElementById('result2').textContent = '-';
+                return;
+            }
+            const part = parseFloat(document.getElementById('part2').value);
+            const whole = parseFloat(document.getElementById('whole2').value);
+            if (whole === 0) {
+                document.getElementById('result2').textContent = '-';
+                return;
+            }
+            const result = (part / whole) * 100;
             document.getElementById('result2').textContent = formatNumber(result) + '%';
         }
 
         // Calculator 3: X is Y% of what?
         function calc3() {
-            const part = parseFloat(document.getElementById('part3').value) || 0;
-            const percent = parseFloat(document.getElementById('percent3').value) || 0;
-            const result = percent !== 0 ? (part / percent) * 100 : 0;
+            if (!hasValue('part3') || !hasValue('percent3')) {
+                document.getElementById('result3').textContent = '-';
+                return;
+            }
+            const part = parseFloat(document.getElementById('part3').value);
+            const percent = parseFloat(document.getElementById('percent3').value);
+            if (percent === 0) {
+                document.getElementById('result3').textContent = '-';
+                return;
+            }
+            const result = (part / percent) * 100;
             document.getElementById('result3').textContent = formatNumber(result);
         }
 
         // Calculator 4: Percentage change
         function calc4() {
-            const from = parseFloat(document.getElementById('from4').value) || 0;
-            const to = parseFloat(document.getElementById('to4').value) || 0;
-            const result = from !== 0 ? ((to - from) / Math.abs(from)) * 100 : 0;
+            if (!hasValue('from4') || !hasValue('to4')) {
+                document.getElementById('result4').textContent = '-';
+                return;
+            }
+            const from = parseFloat(document.getElementById('from4').value);
+            const to = parseFloat(document.getElementById('to4').value);
+            if (from === 0) {
+                document.getElementById('result4').textContent = '-';
+                return;
+            }
+            const result = ((to - from) / Math.abs(from)) * 100;
             const sign = result > 0 ? '+' : '';
             document.getElementById('result4').textContent = sign + formatNumber(result) + '%';
         }

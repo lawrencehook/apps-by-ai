@@ -84,6 +84,10 @@
             outline: none;
             border-color: #4ecdc4;
         }
+        input[type="number"][readonly] {
+            opacity: 0.7;
+            cursor: default;
+        }
         select {
             width: 100%;
             background: rgba(255,255,255,0.05);
@@ -204,7 +208,10 @@
                 </div>
             </div>
 
-            <div class="common-conversions" id="commonConversions"></div>
+            <div class="common-conversions" id="commonConversions">
+                <div class="common-title">Common Conversions</div>
+                <div class="common-list" id="commonList"></div>
+            </div>
         </div>
     </div>
 
@@ -288,6 +295,7 @@
             if (keys.length > 1) toUnit.value = keys[1];
 
             convert();
+            updateCommonConversions();
         }
 
         function convert() {
@@ -363,6 +371,33 @@
         fromValue.addEventListener('input', convert);
         fromUnit.addEventListener('change', convert);
         toUnit.addEventListener('change', convert);
+
+        function updateCommonConversions() {
+            const categoryUnits = units[currentCategory];
+            const keys = Object.keys(categoryUnits);
+            const list = document.getElementById('commonList');
+            list.innerHTML = '';
+
+            const pairs = [];
+            for (let i = 0; i < keys.length && pairs.length < 6; i++) {
+                for (let j = i + 1; j < keys.length && pairs.length < 6; j++) {
+                    pairs.push([keys[i], keys[j]]);
+                }
+            }
+
+            pairs.forEach(([from, to]) => {
+                let val;
+                if (currentCategory === 'temperature') {
+                    val = convertTemperature(1, from, to);
+                } else {
+                    val = categoryUnits[from].factor / categoryUnits[to].factor;
+                }
+                const item = document.createElement('div');
+                item.className = 'common-item';
+                item.innerHTML = `1 ${categoryUnits[from].name} = <span>${formatNumber(val)}</span> ${categoryUnits[to].name}`;
+                list.appendChild(item);
+            });
+        }
 
         populateUnits();
     </script>

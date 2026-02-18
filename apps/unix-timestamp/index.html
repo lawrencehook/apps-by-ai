@@ -218,20 +218,28 @@
 
         // Update current timestamp
         function updateCurrent() {
+            const el = document.getElementById('currentTimestamp');
+            if (el.dataset.copied === 'true') {
+                el.textContent = 'Copied!';
+                return;
+            }
             const now = Math.floor(Date.now() / 1000);
-            document.getElementById('currentTimestamp').textContent = now;
+            el.textContent = now;
         }
         updateCurrent();
         setInterval(updateCurrent, 1000);
 
         // Copy current timestamp
+        let copyFeedbackTimeout = null;
         document.getElementById('currentTimestamp').addEventListener('click', () => {
-            const ts = document.getElementById('currentTimestamp').textContent;
-            navigator.clipboard.writeText(ts);
             const el = document.getElementById('currentTimestamp');
-            const original = el.textContent;
-            el.textContent = 'Copied!';
-            setTimeout(() => el.textContent = original, 1000);
+            const ts = Math.floor(Date.now() / 1000).toString();
+            navigator.clipboard.writeText(ts);
+            el.dataset.copied = 'true';
+            if (copyFeedbackTimeout) clearTimeout(copyFeedbackTimeout);
+            copyFeedbackTimeout = setTimeout(() => {
+                el.dataset.copied = '';
+            }, 1500);
         });
 
         // Unit toggle
@@ -294,6 +302,7 @@
         timeInput.value = now.toTimeString().slice(0, 8);
 
         loadFromURL();
+        convertTimestamp();
 
         dateInput.addEventListener('change', () => { convertDate(); updateURL(); });
         timeInput.addEventListener('change', () => { convertDate(); updateURL(); });

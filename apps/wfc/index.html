@@ -198,8 +198,17 @@
 
             while (stack.length > 0) {
                 const cell = stack.pop();
-                const cellTile = tileset.tiles.find(t => t.id === cell.options[0]);
-                if (!cellTile) continue;
+
+                // Gather all possible edge values for each direction from this cell's remaining options
+                const possibleEdges = [new Set(), new Set(), new Set(), new Set()];
+                for (const optId of cell.options) {
+                    const tile = tileset.tiles.find(t => t.id === optId);
+                    if (tile) {
+                        for (let d = 0; d < 4; d++) {
+                            possibleEdges[d].add(tile.edges[d]);
+                        }
+                    }
+                }
 
                 const neighbors = [
                     { cell: getCell(cell.x, cell.y - 1), dir: 0 }, // Top
@@ -212,12 +221,12 @@
                     if (!neighbor || neighbor.collapsed) continue;
 
                     const opposite = (dir + 2) % 4;
-                    const requiredEdge = cellTile.edges[dir];
+                    const allowedEdges = possibleEdges[dir];
 
                     const before = neighbor.options.length;
                     neighbor.options = neighbor.options.filter(optId => {
                         const tile = tileset.tiles.find(t => t.id === optId);
-                        return tile && tile.edges[opposite] === requiredEdge;
+                        return tile && allowedEdges.has(tile.edges[opposite]);
                     });
 
                     if (neighbor.options.length < before && neighbor.options.length > 0) {
@@ -292,6 +301,7 @@
         document.getElementById('regenerate').addEventListener('click', init);
         document.getElementById('step').addEventListener('click', () => {
             running = false;
+            document.getElementById('status').textContent = 'Paused (stepping)';
             collapse();
             render();
         });

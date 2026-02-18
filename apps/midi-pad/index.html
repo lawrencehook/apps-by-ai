@@ -2946,7 +2946,9 @@
 
             // Hide loading screen
             setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
+                const loading = document.getElementById('loading');
+                loading.classList.add('hidden');
+                loading.addEventListener('transitionend', () => loading.remove());
             }, 500);
         }
 

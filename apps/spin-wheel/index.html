@@ -46,6 +46,8 @@
             display: block;
             cursor: pointer;
             transition: filter 0.3s;
+            max-width: 100%;
+            height: auto;
         }
         canvas.spinning {
             cursor: not-allowed;
@@ -348,7 +350,11 @@ Pasta</textarea>
         }
 
         function spin() {
-            if (spinning || options.length < 2) return;
+            if (spinning) return;
+            if (options.length < 2) {
+                resultEl.textContent = 'Add at least 2 options!';
+                return;
+            }
 
             spinning = true;
             spinBtn.disabled = true;
@@ -399,9 +405,15 @@ Pasta</textarea>
             renderHistory();
         }
 
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function renderHistory() {
             historyList.innerHTML = history.map((item, i) =>
-                `<div class="history-item">${i + 1}. ${item}</div>`
+                `<div class="history-item">${i + 1}. ${escapeHtml(item)}</div>`
             ).join('');
         }
 
@@ -438,10 +450,26 @@ Pasta</textarea>
 
         document.getElementById('shareBtn').addEventListener('click', () => {
             updateURL();
-            navigator.clipboard.writeText(window.location.href);
             const btn = document.getElementById('shareBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy Share Link', 1500);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy Share Link', 1500);
+                }).catch(() => {
+                    btn.textContent = 'Failed to copy';
+                    setTimeout(() => btn.textContent = 'Copy Share Link', 1500);
+                });
+            } else {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = window.location.href;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy Share Link', 1500);
+            }
         });
 
         spinBtn.addEventListener('click', spin);

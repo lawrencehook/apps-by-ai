@@ -47,6 +47,11 @@
             padding: 12px;
             border-radius: 6px;
             font-size: 1rem;
+            color-scheme: dark;
+        }
+        select option {
+            background: #1a1a2e;
+            color: #fff;
         }
         input:focus, select:focus { outline: none; border-color: #4ecdc4; }
         .input-row {
@@ -239,6 +244,26 @@
         fromSelect.addEventListener('change', () => { convert(); updateURL(); });
         toSelect.addEventListener('change', () => { convert(); updateURL(); });
 
+        function getTimezoneOffsetMs(date, tz) {
+            // Get the UTC components of the date as displayed in the given timezone
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            }).formatToParts(date);
+
+            const get = (type) => {
+                const part = parts.find(p => p.type === type);
+                return part ? parseInt(part.value) : 0;
+            };
+
+            let hour = get('hour');
+            if (hour === 24) hour = 0; // midnight edge case
+            const tzDate = new Date(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
+            return tzDate.getTime() - date.getTime();
+        }
+
         function convert() {
             const dateStr = document.getElementById('inputDate').value;
             const timeStr = document.getElementById('inputTime').value;
@@ -248,26 +273,17 @@
             if (!dateStr || !timeStr) return;
 
             try {
-                // Create date in source timezone
+                // Parse input as a local Date
                 const dateTimeStr = `${dateStr}T${timeStr}:00`;
-                const sourceDate = new Date(dateTimeStr);
+                const naiveDate = new Date(dateTimeStr);
 
-                // Format in source timezone to get the actual time
-                const sourceFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: fromTz,
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit',
-                    hour12: false
-                });
+                // Calculate the offset of the "from" timezone at this approximate time
+                const fromOffsetMs = getTimezoneOffsetMs(naiveDate, fromTz);
+                const localOffsetMs = naiveDate.getTimezoneOffset() * -60000;
 
-                // Get offset difference
-                const targetFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: toTz,
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    weekday: 'long',
-                    hour: '2-digit', minute: '2-digit',
-                    hour12: true
-                });
+                // Adjust: we want the UTC instant that corresponds to the entered time in fromTz
+                // naiveDate is interpreted as local time; we need to shift it
+                const utcInstant = new Date(naiveDate.getTime() - fromOffsetMs);
 
                 const timeFormatter = new Intl.DateTimeFormat('en-US', {
                     timeZone: toTz,
@@ -280,14 +296,8 @@
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 });
 
-                // Create a date object and adjust for timezone
-                // This is a simplified conversion
-                const parts = targetFormatter.formatToParts(sourceDate);
-                const timeParts = timeFormatter.format(sourceDate);
-                const dateParts = dateFormatter.format(sourceDate);
-
-                document.getElementById('resultTime').textContent = timeParts;
-                document.getElementById('resultDate').textContent = dateParts;
+                document.getElementById('resultTime').textContent = timeFormatter.format(utcInstant);
+                document.getElementById('resultDate').textContent = dateFormatter.format(utcInstant);
 
                 const tzInfo = timezones.find(t => t.id === toTz);
                 document.getElementById('resultTz').textContent = tzInfo ? tzInfo.name : toTz;
