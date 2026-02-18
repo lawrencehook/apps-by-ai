@@ -229,9 +229,18 @@
                     const value = trimmed.substring(2).trim();
 
                     if (!Array.isArray(parent.obj)) {
+                        // The parent frame represents a key whose value should be an array.
+                        // Go up one level to the grandparent and replace the empty object with an array.
                         const lastKey = parent.lastKey;
-                        parent.obj[lastKey] = [];
-                        stack.push({ indent, obj: parent.obj[lastKey], isArray: true });
+                        if (stack.length >= 2) {
+                            const grandparent = stack[stack.length - 2];
+                            grandparent.obj[lastKey] = [];
+                            // Replace current stack frame with the array
+                            stack[stack.length - 1] = { indent: parent.indent, obj: grandparent.obj[lastKey], isArray: true, lastKey: lastKey };
+                        } else {
+                            parent.obj[lastKey] = [];
+                            stack.push({ indent, obj: parent.obj[lastKey], isArray: true });
+                        }
                     }
 
                     const arr = stack[stack.length - 1].obj;
