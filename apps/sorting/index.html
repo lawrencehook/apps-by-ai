@@ -65,6 +65,7 @@
         let speed = 10;
         let sorters = [];
         let racing = false;
+        let raceAborted = false;
 
         const algorithms = [
             { name: 'Bubble Sort', fn: bubbleSort, color: '#ff6b6b' },
@@ -165,7 +166,12 @@
         }
 
         function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (raceAborted) reject(new Error('aborted'));
+                    else resolve();
+                }, ms);
+            });
         }
 
         async function bubbleSort(sorter) {
@@ -425,13 +431,18 @@
         async function startRace() {
             if (racing) return;
             racing = true;
+            raceAborted = false;
 
             const arr = generateArray();
             for (const sorter of sorters) {
                 sorter.init(arr);
             }
 
-            await Promise.all(sorters.map(s => s.run()));
+            try {
+                await Promise.all(sorters.map(s => s.run()));
+            } catch(e) {
+                // Race was aborted
+            }
             racing = false;
         }
 
@@ -448,7 +459,13 @@
 
         document.getElementById('start').addEventListener('click', startRace);
         document.getElementById('reset').addEventListener('click', () => {
-            if (!racing) init();
+            if (racing) {
+                raceAborted = true;
+                // Allow the abort to propagate, then reinit
+                setTimeout(() => { racing = false; init(); }, 100);
+            } else {
+                init();
+            }
         });
 
         window.addEventListener('resize', () => {

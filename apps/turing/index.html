@@ -6,7 +6,7 @@
     <title>Turing Machine - AI Showcase</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: #0a0a0f; overflow: hidden; overflow-y: auto; font-family: system-ui, sans-serif; }
         canvas { display: block; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
@@ -74,6 +74,7 @@
         </div>
 
         <button id="run">Run</button>
+        <button id="stop" style="display:none;">Stop</button>
         <button id="step">Step</button>
         <button id="reset">Reset</button>
 
@@ -293,15 +294,31 @@
             return !halted;
         }
 
+        const MAX_STEPS = 10000;
+
         async function run() {
             if (running || halted) return;
             running = true;
+            document.getElementById('run').style.display = 'none';
+            document.getElementById('stop').style.display = '';
 
-            while (!halted && running) {
+            while (!halted && running && stepCount < MAX_STEPS) {
                 step();
                 await new Promise(r => setTimeout(r, 200));
             }
 
+            if (stepCount >= MAX_STEPS && !halted) {
+                const resultEl = document.getElementById('result');
+                resultEl.textContent = `Stopped: ${MAX_STEPS} step limit reached`;
+                resultEl.className = 'result running';
+            }
+
+            running = false;
+            document.getElementById('run').style.display = '';
+            document.getElementById('stop').style.display = 'none';
+        }
+
+        function stopRunning() {
             running = false;
         }
 

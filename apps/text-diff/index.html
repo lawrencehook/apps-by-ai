@@ -239,9 +239,25 @@
 
         document.getElementById('compareBtn').addEventListener('click', compare);
 
+        // Ctrl+Enter shortcut to compare
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                compare();
+            }
+        });
+
         function compare() {
             const text1 = document.getElementById('text1').value;
             const text2 = document.getElementById('text2').value;
+
+            if (!text1 && !text2) {
+                document.getElementById('diffOutput').innerHTML = '<span style="color: #444;">Enter text in both fields and click "Compare Texts"</span>';
+                document.getElementById('addedCount').textContent = '0';
+                document.getElementById('removedCount').textContent = '0';
+                document.getElementById('unchangedCount').textContent = '0';
+                return;
+            }
 
             if (currentMode === 'line') {
                 diffByLine(text1, text2);
@@ -310,6 +326,23 @@
         function computeLCS(arr1, arr2) {
             const m = arr1.length;
             const n = arr2.length;
+
+            // Guard against extremely large inputs that would freeze the browser
+            const MAX_CELLS = 5000000; // 5 million cells max
+            if (m * n > MAX_CELLS) {
+                // Fall back to a simple line-by-line comparison for very large inputs
+                const result = [];
+                const maxLen = Math.max(m, n);
+                for (let i = 0; i < maxLen; i++) {
+                    if (i < m && i < n && arr1[i] === arr2[i]) {
+                        result.push({ type: 'unchanged', value: arr1[i] });
+                    } else {
+                        if (i < m) result.push({ type: 'removed', value: arr1[i] });
+                        if (i < n) result.push({ type: 'added', value: arr2[i] });
+                    }
+                }
+                return result;
+            }
 
             // Create LCS table
             const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));

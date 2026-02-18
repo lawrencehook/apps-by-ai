@@ -270,6 +270,12 @@ Example: Hello World! Special chars: @#$%&*"></textarea>
         }
 
         function updateMode(newMode) {
+            // Swap input and output when switching modes
+            const previousOutput = outputText.value;
+            if (previousOutput) {
+                inputText.value = previousOutput;
+            }
+
             mode = newMode;
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
@@ -298,6 +304,7 @@ Example: Hello World! Special chars: @#$%&*"></textarea>
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
+            if (!outputText.value) return;
             navigator.clipboard.writeText(outputText.value);
             document.getElementById('copyBtn').textContent = 'Copied!';
             setTimeout(() => {

@@ -141,6 +141,7 @@
             <div class="editor-panel">
                 <div class="editor-header">
                     <span class="editor-title">Output (Unique Lines)</span>
+                    <span class="line-count" id="outputCount">0 lines</span>
                     <button class="copy-btn" id="copyBtn">Copy</button>
                 </div>
                 <textarea id="outputText" readonly placeholder="Unique lines will appear here..."></textarea>
@@ -200,6 +201,7 @@
             // Update stats
             const linesAfterEmpty = removeEmpty ? lines.length : originalCount;
             document.getElementById('inputCount').textContent = originalCount + ' lines';
+            document.getElementById('outputCount').textContent = result.length + ' lines';
             document.getElementById('statOriginal').textContent = originalCount;
             document.getElementById('statUnique').textContent = unique.length;
             document.getElementById('statRemoved').textContent = linesAfterEmpty - unique.length;

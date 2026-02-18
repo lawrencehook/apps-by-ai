@@ -380,9 +380,12 @@
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
                 updateMode();
-                const temp = input.value;
-                input.value = output.value;
-                output.value = temp;
+                // Only swap if output has content (successful prior conversion)
+                if (output.value.trim()) {
+                    const temp = input.value;
+                    input.value = output.value;
+                    output.value = temp;
+                }
                 convert();
             });
         });
@@ -468,6 +471,7 @@
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
+            if (!output.value.trim()) return;
             const ext = mode === 'xml-to-json' ? 'json' : 'xml';
             const type = mode === 'xml-to-json' ? 'application/json' : 'text/xml';
             const blob = new Blob([output.value], { type });

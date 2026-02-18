@@ -627,6 +627,7 @@
         }
 
         // Animation loop
+        let animCycle = 0;
         function animate(startTime) {
             if (!isPlaying) return;
 
@@ -643,8 +644,7 @@
 
             // Handle direction
             if (direction === 'alternate') {
-                const cycle = Math.floor(elapsed / duration);
-                if (cycle % 2 === 1) {
+                if (animCycle % 2 === 1) {
                     progress = 1 - easedT;
                 } else {
                     progress = easedT;
@@ -657,6 +657,10 @@
 
             if (t >= 1) {
                 if (loop) {
+                    animCycle++;
+                    animationId = requestAnimationFrame(() => animate(Date.now()));
+                } else if (direction === 'alternate' && animCycle % 2 === 0) {
+                    animCycle++;
                     animationId = requestAnimationFrame(() => animate(Date.now()));
                 } else {
                     stopAnimation();
@@ -687,6 +691,7 @@
         function resetAnimation() {
             stopAnimation();
             progress = 0;
+            animCycle = 0;
             updateProgress();
         }
 
@@ -891,9 +896,10 @@
         document.getElementById('direction').addEventListener('change', updateCode);
 
         // Progress bar scrubbing
-        document.getElementById('progressContainer').addEventListener('click', e => {
-            const rect = e.target.getBoundingClientRect();
-            progress = (e.clientX - rect.left) / rect.width;
+        const progressContainer = document.getElementById('progressContainer');
+        progressContainer.addEventListener('click', e => {
+            const rect = progressContainer.getBoundingClientRect();
+            progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             updateProgress();
         });
 
@@ -927,6 +933,7 @@
 
         document.getElementById('downloadSvgBtn').addEventListener('click', () => {
             const d = pathInput.value.trim();
+            if (!d) return;
             const duration = document.getElementById('duration').value;
             const strokeColor = document.getElementById('strokeColor').value;
             const strokeWidth = document.getElementById('strokeWidth').value;
@@ -949,10 +956,14 @@
 </svg>`;
 
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = 'animated-path.svg';
-            link.href = URL.createObjectURL(blob);
+            link.href = url;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
 
         // Initialize
