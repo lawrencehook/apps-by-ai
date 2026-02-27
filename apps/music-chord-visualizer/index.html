@@ -692,7 +692,10 @@
                 analyser.getByteFrequencyData(dataArray);
 
                 // Check if audio has gone silent
-                const maxVal = Math.max(...dataArray);
+                let maxVal = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    if (dataArray[i] > maxVal) maxVal = dataArray[i];
+                }
                 if (maxVal < 2) {
                     silentFrames++;
                     if (silentFrames > 60) {

@@ -565,8 +565,10 @@
             const key = normalizeKey(e);
             if (!key || !keyElements[key]) return;
 
-            // Prevent default browser actions for recorded keys (e.g., Backspace navigating back)
-            e.preventDefault();
+            // Prevent default for non-input elements (e.g., Backspace navigating back)
+            if (!e.target.matches('input, textarea, select, [contenteditable]')) {
+                e.preventDefault();
+            }
 
             keyData[key] = (keyData[key] || 0) + 1;
 
