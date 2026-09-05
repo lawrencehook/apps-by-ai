@@ -107,6 +107,7 @@
         canvas {
             display: block;
             background: linear-gradient(to bottom, #0a0a12 0%, #1a1a2e 100%);
+            touch-action: none;
         }
 
         .instructions {
@@ -306,7 +307,7 @@
         let mouseDownPos = null;
         let isCreatingBody = false;
 
-        render.canvas.addEventListener('mousedown', (e) => {
+        render.canvas.addEventListener('pointerdown', (e) => {
             const pos = { x: e.offsetX, y: e.offsetY };
             mouseDownPos = pos;
 
@@ -328,13 +329,13 @@
             }
         });
 
-        render.canvas.addEventListener('mousemove', (e) => {
+        render.canvas.addEventListener('pointermove', (e) => {
             if (isDragging && isCreatingBody) {
                 // Could show preview here
             }
         });
 
-        render.canvas.addEventListener('mouseup', (e) => {
+        render.canvas.addEventListener('pointerup', (e) => {
             if (!isCreatingBody) {
                 isDragging = false;
                 return;

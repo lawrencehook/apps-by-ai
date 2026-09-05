@@ -6,7 +6,8 @@
 
 set -e
 
-REPO_DIR="/mnt/c/Users/lawre/github/ai-showcase"
+# Defaults to the directory containing this script; override with REPO_DIR=... if needed
+REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 LOG_FILE="$REPO_DIR/auto-brainstorm.log"
 ITERATION=0
 
@@ -42,7 +43,8 @@ while true; do
     # Phase 1: Brainstorm
     log "${GREEN}Phase 1: Brainstorming new app ideas...${NC}"
 
-    BRAINSTORM_PROMPT="You are working on an AI showcase repository with ~110 small web apps/tools.
+    APP_COUNT=$(find "$REPO_DIR/apps" -mindepth 1 -maxdepth 1 -type d | wc -l)
+    BRAINSTORM_PROMPT="You are working on an AI showcase repository with ~$APP_COUNT small web apps/tools.
 
 Current apps include: utilities (calculators, converters, generators), visualizations (fractals, simulations, algorithms), and tools (PDF, image, audio manipulation).
 
@@ -88,11 +90,13 @@ For each app:
 2. Create index.html with a complete, working single-page implementation
 3. Use vanilla HTML/CSS/JavaScript (no external dependencies except CDN libs if needed)
 4. Make it visually polished with good UX
-5. After creating each app, update metadata.json to add the new app entry
+5. After creating each app, update metadata.json to add the new app entry (include a completeness rating 1-5)
+
+Read DEVELOPMENT_GUIDELINES.md first and follow every rule in it (escape user input before innerHTML, use Pointer Events so touch works, guard browser APIs, etc.).
 
 Follow the patterns established by existing apps in the repo. Each app should be self-contained and immediately functional.
 
-Implement all 3 apps now, one at a time. After each app, verify it was created correctly."
+Implement all 3 apps now, one at a time. After each app, run 'node check-syntax.js <app-name>' and fix any errors before moving on."
 
     claude -p "$IMPLEMENT_PROMPT" \
         --continue \
@@ -104,6 +108,23 @@ Implement all 3 apps now, one at a time. After each app, verify it was created c
 
     if [ $IMPLEMENT_EXIT -ne 0 ]; then
         log "${YELLOW}Implementation phase encountered an issue.${NC}"
+    fi
+
+    # Phase 3: Gate on syntax. An app that doesn't parse is dead on arrival,
+    # and a read-only self-review won't catch it.
+    log "${GREEN}Phase 3: Syntax-checking all apps...${NC}"
+    if ! SYNTAX_OUTPUT=$(node "$REPO_DIR/check-syntax.js" 2>&1); then
+        log "${YELLOW}Syntax errors found; asking for a fix pass.${NC}"
+        echo "$SYNTAX_OUTPUT" | tee -a "$LOG_FILE"
+        claude -p "The syntax check failed with the output below. Fix every error, then re-run 'node check-syntax.js' until it passes.
+
+$SYNTAX_OUTPUT" \
+            --continue \
+            --allowedTools "Bash,Glob,Grep,Read,Edit,Write" \
+            --output-format text \
+            2>&1 | tee -a "$LOG_FILE"
+    else
+        log "Syntax check passed."
     fi
 
     echo ""

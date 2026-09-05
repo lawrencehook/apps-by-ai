@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; cursor: crosshair; }
+        canvas { display: block; cursor: crosshair; touch-action: none; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
@@ -225,19 +225,20 @@
             return null;
         }
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             const idx = getPointAt(e.clientX, e.clientY);
             if (idx !== null) {
                 selectedPoint = idx;
                 isDragging = true;
                 hasDragged = false;
+                canvas.setPointerCapture(e.pointerId);
             } else {
                 hasDragged = false;
                 isDragging = false;
             }
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (isDragging && selectedPoint !== null) {
                 controlPoints[selectedPoint].x = e.clientX;
                 controlPoints[selectedPoint].y = e.clientY;
@@ -245,7 +246,7 @@
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('pointerup', () => {
             isDragging = false;
         });
 

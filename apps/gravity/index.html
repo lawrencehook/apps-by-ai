@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; cursor: crosshair; }
+        canvas { display: block; cursor: crosshair; touch-action: none; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
@@ -236,18 +236,19 @@
             requestAnimationFrame(render);
         }
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             dragStart = { x: e.clientX, y: e.clientY };
             dragEnd = { x: e.clientX, y: e.clientY };
+            canvas.setPointerCapture(e.pointerId);
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (dragStart) {
                 dragEnd = { x: e.clientX, y: e.clientY };
             }
         });
 
-        canvas.addEventListener('mouseup', e => {
+        canvas.addEventListener('pointerup', e => {
             if (dragStart) {
                 const vx = (dragStart.x - e.clientX) * 0.05;
                 const vy = (dragStart.y - e.clientY) * 0.05;

@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; cursor: grab; }
+        canvas { display: block; cursor: grab; touch-action: none; }
         canvas:active { cursor: grabbing; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
@@ -422,7 +422,7 @@
         }
 
         // Event listeners
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
             if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
@@ -437,7 +437,7 @@
             isDragging = true;
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (isSculpting) {
                 const tile = screenToGrid(e.clientX, e.clientY);
                 if (tile) {
@@ -452,12 +452,12 @@
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('pointerup', () => {
             isDragging = false;
             isSculpting = false;
         });
 
-        canvas.addEventListener('mouseleave', () => {
+        canvas.addEventListener('pointerleave', () => {
             isDragging = false;
             isSculpting = false;
         });

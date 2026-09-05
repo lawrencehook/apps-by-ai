@@ -82,6 +82,7 @@
             max-height: 100%;
             border-radius: 8px;
             cursor: crosshair;
+            touch-action: none;
         }
         .info {
             position: absolute;
@@ -283,8 +284,8 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
-        // Mouse tracking
-        canvas.addEventListener('mousemove', (e) => {
+        // Pointer tracking
+        canvas.addEventListener('pointermove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const px = e.clientX - rect.left;
             const py = e.clientY - rect.top;
@@ -309,16 +310,17 @@
             }
         });
 
-        canvas.addEventListener('mousedown', (e) => {
+        canvas.addEventListener('pointerdown', (e) => {
             const rect = canvas.getBoundingClientRect();
             dragStart = {
                 x: e.clientX - rect.left,
                 y: e.clientY - rect.top
             };
             isDragging = true;
+            canvas.setPointerCapture(e.pointerId);
         });
 
-        canvas.addEventListener('mouseup', (e) => {
+        canvas.addEventListener('pointerup', (e) => {
             if (isDragging && dragStart) {
                 const rect = canvas.getBoundingClientRect();
                 const endX = e.clientX - rect.left;

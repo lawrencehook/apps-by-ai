@@ -20,9 +20,9 @@ function escapeHtml(str) {
 
 ## Mobile & Touch
 
-4. **Always add touch event handlers alongside mouse handlers.** Any `mousedown`/`mousemove`/`mouseup` interaction needs matching `touchstart`/`touchmove`/`touchend` listeners with `{ passive: false }` and `e.preventDefault()` to suppress scroll interference.
+4. **Use Pointer Events for canvas interaction, not mouse events.** `pointerdown`/`pointermove`/`pointerup`/`pointerleave` fire for mouse, touch, and pen alike and expose the same `clientX`/`offsetX`/`button` properties, so one handler covers every input. Add `touch-action: none` to the interactive canvas (only the canvas — never `body` or control panels) so the browser doesn't hijack drags for scrolling. Call `canvas.setPointerCapture(e.pointerId)` in `pointerdown` if a drag must finish cleanly after leaving the canvas — but not if you rely on `pointerleave` to cancel it. Only write separate `touchstart`/`touchmove` handlers when you genuinely need multi-touch (pinch zoom).
 
-5. **Avoid `overflow: hidden` on body.** It clips controls on small screens. Use `overflow-x: hidden` if you only need to suppress horizontal scroll, or add responsive breakpoints that reflow the layout.
+5. **`body { overflow: hidden }` is fine for full-viewport canvas apps — but nothing else.** Most visualizations here fill the window with a canvas and correctly suppress scrollbars. The failure mode is a fixed-position control panel that grows past the viewport height and becomes unreachable. If the panel can be tall, give it `max-height` + `overflow-y: auto`, or make it `position: relative` below a small-screen breakpoint.
 
 6. **Design responsive layouts from the start.** Use `flex-wrap`, `overflow-x: auto` on toolbars, and media queries for narrow viewports. Test that all controls are reachable at 320px width.
 
@@ -60,3 +60,11 @@ document.addEventListener('keydown', e => {
 ## Code Quality
 
 15. **Use `<textarea>` instead of `contentEditable` for text input.** `contentEditable` breaks paste handling (inserts HTML), loses cursor position on DOM updates, and makes highlight synchronization fragile. Use a textarea with a transparent overlay div for syntax highlighting.
+
+## Verification
+
+16. **Run `node check-syntax.js` before every commit.** It parses the inline `<script>` of every app. This is the minimum bar: one app in this repo shipped with a `SyntaxError` (curly quotes flattened to `'''`) and sat dead through a full read-only review that "fixed" four other things in it. Reading code is not running code.
+
+17. **When reviewing a fix, re-derive it from the code — don't restore the old value because it looks more familiar.** A review pass reverted the BMI scale stops from 14/40/60 back to 18.5/25/30 because the latter are the well-known thresholds; but the marker formula maps BMI 15–40 onto 0–100%, so 14/40/60 was correct. When a change touches a number, find the formula it has to agree with and check the arithmetic; leave a comment that names the constraint so the next reader doesn't have to.
+
+18. **Keep the `Math.max(...array)` guard proportional to the array.** Spreading a fixed-size array (histogram buckets, 12 note names, a few files) is fine and clearer. Spreading anything derived from user data or a size slider — CSV rows, prime lists, audio samples — must be a loop or `reduce`, since V8 throws past roughly 100k arguments.

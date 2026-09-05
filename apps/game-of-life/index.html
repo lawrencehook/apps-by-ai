@@ -7,7 +7,7 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; cursor: crosshair; }
+        canvas { display: block; cursor: crosshair; touch-action: none; }
         .controls {
             position: fixed;
             top: 20px;
@@ -245,7 +245,7 @@
         }
 
         // Event handlers
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             const x = Math.floor(e.clientX / cellSize);
             const y = Math.floor(e.clientY / cellSize);
             if (x < 0 || x >= cols || y < 0 || y >= rows) return;
@@ -256,7 +256,7 @@
             }
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (e.buttons === 1 && selectedPattern === 'none') {
                 const x = Math.floor(e.clientX / cellSize);
                 const y = Math.floor(e.clientY / cellSize);
