@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><body><div id="a"></div><canvas id="c"></canvas>
+<script>
+document.addEventListener('DOMContentLoaded', () => { document.getElementById('a').addEventListener('click', ()=>{}); });
+const ctx = document.getElementById('c').getContext('2d'); ctx.fillRect(0,0,1,1); const w = ctx.measureText('hi').width + 1;
+const ac = new AudioContext(); ac.createOscillator().connect(ac.destination);
+localStorage.setItem('x','1'); const m = matchMedia('(prefers-color-scheme: dark)').matches;
+new ResizeObserver(()=>{}).observe(document.body);
+crypto.subtle.digest('SHA-256', new TextEncoder().encode('x')).then(()=>{});
+</script></body></html>

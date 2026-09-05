@@ -1,1 +1,3 @@
+node_modules/
+tools/loadtest/results*.json
 auto-brainstorm.log

@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><body><div id="a"></div><canvas id="c"></canvas>
+<script>
+document.addEventListener('DOMContentLoaded', () => { document.getElementById('nope').addEventListener('click', ()=>{}); });
+window.addEventListener('load', () => { undefinedFn(); });
+requestAnimationFrame(() => { requestAnimationFrame(() => { null.x; }); });
+setTimeout(() => { throw new RangeError('timer boom'); }, 50);
+const ctx = document.getElementById('c').getContext('2d'); ctx.fillRect(0,0,1,1); ctx.fillStyle='red';
+Promise.reject(new Error('rej boom'));
+</script></body></html>

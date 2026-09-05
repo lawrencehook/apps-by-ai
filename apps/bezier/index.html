@@ -97,7 +97,9 @@
 
         // De Casteljau's algorithm
         function deCasteljau(points, t) {
-            if (points.length === 1) return points;
+            // Every level is an array of points, including the final single point;
+            // the recursive case spreads the result, so the base case must be wrapped.
+            if (points.length === 1) return [points];
 
             const newPoints = [];
             for (let i = 0; i < points.length - 1; i++) {

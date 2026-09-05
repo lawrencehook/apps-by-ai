@@ -1,0 +1,11 @@
+{
+  "name": "apps-by-ai-loadtest",
+  "private": true,
+  "description": "Loads every app in a stubbed jsdom and reports uncaught errors at startup",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "dependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

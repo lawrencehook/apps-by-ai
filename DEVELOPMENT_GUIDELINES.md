@@ -63,7 +63,7 @@ document.addEventListener('keydown', e => {
 
 ## Verification
 
-16. **Run `node check-syntax.js` before every commit.** It parses the inline `<script>` of every app. This is the minimum bar: one app in this repo shipped with a `SyntaxError` (curly quotes flattened to `'''`) and sat dead through a full read-only review that "fixed" four other things in it. Reading code is not running code.
+16. **Run `node check-syntax.js` before every commit, and `node tools/loadtest/run.js` (after a one-time `npm install` in `tools/loadtest`) before calling an app done.** The first parses every app's inline `<script>`; the second actually loads each app in jsdom and reports anything thrown at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
 
 17. **When reviewing a fix, re-derive it from the code — don't restore the old value because it looks more familiar.** A review pass reverted the BMI scale stops from 14/40/60 back to 18.5/25/30 because the latter are the well-known thresholds; but the marker formula maps BMI 15–40 onto 0–100%, so 14/40/60 was correct. When a change touches a number, find the formula it has to agree with and check the arithmetic; leave a comment that names the constraint so the next reader doesn't have to.
 

@@ -112,8 +112,13 @@ Implement all 3 apps now, one at a time. After each app, run 'node check-syntax.
 
     # Phase 3: Gate on syntax. An app that doesn't parse is dead on arrival,
     # and a read-only self-review won't catch it.
-    log "${GREEN}Phase 3: Syntax-checking all apps...${NC}"
-    if ! SYNTAX_OUTPUT=$(node "$REPO_DIR/check-syntax.js" 2>&1); then
+    log "${GREEN}Phase 3: Checking all apps...${NC}"
+    CHECK_CMD="node \"$REPO_DIR/check-syntax.js\""
+    if [ -d "$REPO_DIR/tools/loadtest/node_modules" ]; then
+        # Runtime check is only available once its jsdom dependency is installed
+        CHECK_CMD="$CHECK_CMD && node \"$REPO_DIR/tools/loadtest/run.js\""
+    fi
+    if ! SYNTAX_OUTPUT=$(eval "$CHECK_CMD" 2>&1); then
         log "${YELLOW}Syntax errors found; asking for a fix pass.${NC}"
         echo "$SYNTAX_OUTPUT" | tee -a "$LOG_FILE"
         claude -p "The syntax check failed with the output below. Fix every error, then re-run 'node check-syntax.js' until it passes.
