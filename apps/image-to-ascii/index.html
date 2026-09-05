@@ -648,7 +648,7 @@
                 a.href = url;
                 a.download = 'ascii-art.txt';
                 a.click();
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
             }
         });
 

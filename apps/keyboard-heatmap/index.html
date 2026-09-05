@@ -665,7 +665,7 @@
             a.href = url;
             a.download = 'keyboard-heatmap-stats.txt';
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         // Event listeners

@@ -2626,7 +2626,7 @@
             a.href = url;
             a.download = 'midi-pad-pattern.json';
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         function importPattern(file) {

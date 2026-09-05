@@ -287,6 +287,18 @@
             font-size: 0.65rem;
         }
 
+        .card-rating {
+            margin-left: auto;
+            color: #666;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .card-rating .filled {
+            color: #f1c40f;
+        }
+
         .card-link {
             color: #555;
             font-size: 0.7rem;
@@ -592,6 +604,7 @@
                         <div class="card-meta">
                             ${app.category ? `<span class="card-category">${app.category}</span>` : ''}
                             ${app.tags.slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            ${app.completeness ? `<span class="card-rating" title="Completeness: ${app.completeness}/5"><span class="filled">${'★'.repeat(app.completeness)}</span>${'★'.repeat(5 - app.completeness)}</span>` : ''}
                         </div>
                     </div>
                     ${app.link ? `

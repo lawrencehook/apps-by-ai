@@ -460,7 +460,7 @@ Alice Brown,36,Houston,true`;
             a.href = url;
             a.download = `converted.${ext}`;
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
         input.addEventListener('input', convert);

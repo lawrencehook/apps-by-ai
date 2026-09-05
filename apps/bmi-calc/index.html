@@ -115,11 +115,13 @@
         }
         .bmi-scale {
             height: 12px;
+            /* Bar spans BMI 15-40 to match the marker formula ((bmi - 15) / 25).
+               Thresholds 18.5 / 25 / 30 therefore sit at 14% / 40% / 60%. */
             background: linear-gradient(to right,
-                #3498db 0%, #3498db 18.5%,
-                #4ecdc4 18.5%, #4ecdc4 25%,
-                #f1c40f 25%, #f1c40f 30%,
-                #ff6b6b 30%, #ff6b6b 100%
+                #3498db 0%, #3498db 14%,
+                #4ecdc4 14%, #4ecdc4 40%,
+                #f1c40f 40%, #f1c40f 60%,
+                #ff6b6b 60%, #ff6b6b 100%
             );
             border-radius: 6px;
             position: relative;

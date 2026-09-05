@@ -496,7 +496,7 @@
             a.href = url;
             a.download = 'favicon.ico';
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         // Download all as ZIP
@@ -542,7 +542,7 @@
             a.href = url;
             a.download = 'favicons.zip';
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
         function generateIcoBlob(sizes) {

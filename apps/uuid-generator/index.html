@@ -261,16 +261,41 @@
             const timeMid = timeHex.slice(-12, -8);
             const timeHi = timeHex.slice(-16, -12);
             const timeHiAndVersion = '1' + timeHi.slice(-3);
-            const clockSeq = (Math.random() * 0x3fff | 0x8000).toString(16).padStart(4, '0');
-            const node = Array.from({length: 6}, () =>
-                Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
-            ).join('');
+            const rnd = new Uint8Array(8);
+            if (crypto && crypto.getRandomValues) {
+                crypto.getRandomValues(rnd);
+            } else {
+                for (let i = 0; i < rnd.length; i++) rnd[i] = Math.floor(Math.random() * 256);
+            }
+            const clockSeq = (((rnd[0] << 8 | rnd[1]) & 0x3fff) | 0x8000).toString(16).padStart(4, '0');
+            rnd[2] |= 0x01; // multicast bit marks a random (non-MAC) node id per RFC 4122
+            const node = Array.from(rnd.slice(2), b => b.toString(16).padStart(2, '0')).join('');
             return `${timeLow}-${timeMid}-${timeHiAndVersion}-${clockSeq}-${node}`;
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
         }
 
         function copyText(text) {
             if (text && text !== '-') {
-                navigator.clipboard.writeText(text);
+                copyToClipboard(text);
                 const btn = document.getElementById('copyBtn');
                 btn.querySelector('.icon-copy').style.display = 'none';
                 btn.querySelector('.icon-check').style.display = 'block';
@@ -286,7 +311,7 @@
         function copyAll() {
             const uuids = Array.from(document.querySelectorAll('.uuid-line'))
                 .map(el => el.textContent).join('\n');
-            navigator.clipboard.writeText(uuids);
+            copyToClipboard(uuids);
             const btn = document.getElementById('copyAllBtn');
             btn.textContent = 'Copied!';
             setTimeout(() => {

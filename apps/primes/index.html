@@ -399,7 +399,7 @@
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, 600, 300);
 
-            const maxGap = Math.max(...gaps.map(g => g.gap));
+            const maxGap = gaps.reduce((m, g) => g.gap > m ? g.gap : m, 1);
             const barWidth = Math.max(1, 580 / gaps.length);
             const scale = 260 / maxGap;
 

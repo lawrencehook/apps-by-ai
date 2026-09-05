@@ -761,12 +761,35 @@
             text += `═══════════════════════\n`;
             text += `Grand Total: $${grandTotal.toFixed(2)}\n`;
 
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copyResultsBtn');
+            const btn = document.getElementById('copyResultsBtn');
+            copyToClipboard(text).then(() => {
                 btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy Summary', 2000);
+            }).catch(() => {
+                btn.textContent = 'Copy failed';
                 setTimeout(() => btn.textContent = 'Copy Summary', 2000);
             });
         });
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
 
         // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {

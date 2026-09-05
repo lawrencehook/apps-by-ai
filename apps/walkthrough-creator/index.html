@@ -1797,7 +1797,7 @@
                 a.href = url;
                 a.download = `walkthrough-${Date.now()}.json`;
                 a.click();
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
 
                 showToast('Project saved!');
             });

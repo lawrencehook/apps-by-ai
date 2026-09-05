@@ -231,12 +231,32 @@
         updateCurrent();
         setInterval(updateCurrent, 1000);
 
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
+
         // Copy current timestamp
         let copyFeedbackTimeout = null;
         document.getElementById('currentTimestamp').addEventListener('click', () => {
             const el = document.getElementById('currentTimestamp');
             const ts = Math.floor(Date.now() / 1000).toString();
-            navigator.clipboard.writeText(ts);
+            copyToClipboard(ts);
             el.dataset.copied = 'true';
             if (copyFeedbackTimeout) clearTimeout(copyFeedbackTimeout);
             copyFeedbackTimeout = setTimeout(() => {
@@ -342,7 +362,7 @@
             el.addEventListener('click', () => {
                 const text = el.textContent;
                 if (text && text !== '-' && text !== 'Invalid') {
-                    navigator.clipboard.writeText(text);
+                    copyToClipboard(text);
                     const original = text;
                     el.textContent = 'Copied!';
                     setTimeout(() => el.textContent = original, 1000);

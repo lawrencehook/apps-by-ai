@@ -409,7 +409,8 @@
                 messageEl.innerHTML = '<div class="success">Conversion successful!</div>';
             } catch (e) {
                 output.value = '';
-                messageEl.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+                messageEl.innerHTML = '<div class="error"></div>';
+                messageEl.firstChild.textContent = 'Error: ' + e.message;
             }
         }
 
@@ -529,7 +530,7 @@ settings:
             a.href = url;
             a.download = `converted.${ext}`;
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
 
         input.addEventListener('input', convert);

@@ -1077,8 +1077,8 @@ Olivia,32,65000,Marketing,6`;
             const xSelect = document.getElementById('xAxis');
             const ySelect = document.getElementById('yAxis');
 
-            xSelect.innerHTML = numericColumns.map(c => `<option value="${c}">${c}</option>`).join('');
-            ySelect.innerHTML = numericColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+            xSelect.innerHTML = numericColumns.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            ySelect.innerHTML = numericColumns.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
 
             // Default: first two numeric columns
             ySelect.selectedIndex = Math.min(1, numericColumns.length - 1);
@@ -1101,8 +1101,10 @@ Olivia,32,65000,Marketing,6`;
             const xVals = data.map(row => row[xCol]).filter(v => typeof v === 'number');
             const yVals = data.map(row => row[yCol]).filter(v => typeof v === 'number');
 
-            const xMin = Math.min(...xVals), xMax = Math.max(...xVals);
-            const yMin = Math.min(...yVals), yMax = Math.max(...yVals);
+            // Loop rather than spread: large CSVs can exceed the argument limit
+            let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+            for (const v of xVals) { if (v < xMin) xMin = v; if (v > xMax) xMax = v; }
+            for (const v of yVals) { if (v < yMin) yMin = v; if (v > yMax) yMax = v; }
             const xRange = xMax - xMin || 1;
             const yRange = yMax - yMin || 1;
 
