@@ -88,7 +88,7 @@ Be creative but realistic - these should be implementable as single-page web app
 For each app:
 1. Create a new folder in ./apps/ with the app name
 2. Create index.html with a complete, working single-page implementation
-3. Use vanilla HTML/CSS/JavaScript (no external dependencies except CDN libs if needed)
+3. Use vanilla HTML/CSS/JavaScript. Never load code from a CDN or any URL: if a library is genuinely needed, vendor it into libs/<name>-<version>/ (see libs/README.md) and reference it as ../../libs/...
 4. Make it visually polished with good UX
 5. After creating each app, update metadata.json to add the new app entry (include a completeness rating 1-5)
 

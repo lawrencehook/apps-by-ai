@@ -18,12 +18,17 @@ const files = wanted.length
         .filter(f => fs.existsSync(f))];
 
 const scriptRe = /<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi;
+// Code must come from the repo (see libs/README.md). Google Fonts is the one
+// allowed remote host: two apps preview arbitrary fonts by design, and that is data, not code.
+const externalRe = /<script[^>]*\ssrc\s*=\s*["']https?:\/\/|workerSrc\s*=\s*["'`]https?:\/\/|importScripts\(\s*["'`]https?:\/\/|<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*href\s*=\s*["']https?:\/\/(?!fonts\.googleapis\.com)/i;
 let ok = 0;
 const failures = [];
 
 for (const file of files) {
     const name = file.includes(`${path.sep}apps${path.sep}`) ? path.basename(path.dirname(file)) : 'gallery';
     const html = fs.readFileSync(file, 'utf8');
+    const ext = html.match(externalRe);
+    if (ext) failures.push({ name, msg: `loads code from a URL: ${ext[0]}… — vendor it into libs/ instead` });
     let match, idx = 0;
     while ((match = scriptRe.exec(html))) {
         const attrs = match[1] || '';

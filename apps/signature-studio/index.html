@@ -791,12 +791,12 @@
     <div class="toast" id="toast">Signature saved!</div>
 
     <!-- PDF.js library for PDF handling -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
+    <script src="../../libs/jspdf-2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         // Configure PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '../../libs/pdfjs-3.11.174/pdf.worker.min.js';
 
         // ============ State Management ============
         const state = {

@@ -4,9 +4,11 @@
 //
 // Setup once:  cd tools/loadtest && npm install
 // Usage:       node tools/loadtest/run.js [appName ...]   (no args = all apps)
-// Exit code is non-zero if any app throws. Remote CDN libraries are replaced
-// with permissive stubs, so errors that only appear with the real library are
-// out of scope; so is anything behind user interaction.
+// Exit code is non-zero if any app throws. Vendored libraries (libs/) are
+// replaced with permissive stubs, so errors that only appear with the real
+// library are out of scope; so is anything behind user interaction.
+// LOADTEST_REAL_LIBS=1 executes the real library code instead — useful after
+// upgrading a library, but expect three.js to fail on the fake WebGL context.
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');

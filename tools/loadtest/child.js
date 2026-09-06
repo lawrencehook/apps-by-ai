@@ -20,11 +20,20 @@ const result = {
   status: 'ok',
 };
 
-// ---- 1. Strip remote <script src>, inline local ones -----------------------
+// ---- 1. Strip library <script src>, inline the app's own local ones ----------
+// Vendored libraries under libs/ are replaced by the global stubs in section 3,
+// like remote CDN scripts were before vendoring: real three.js probes the fake
+// WebGL context and dies inside itself, which says nothing about the app.
+// Set LOADTEST_REAL_LIBS=1 to inline and execute the real library code instead.
+const REAL_LIBS = !!process.env.LOADTEST_REAL_LIBS;
 html = html.replace(/<script\b([^>]*)\bsrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/script>/gi, (m, pre, src, post) => {
   if (/^(https?:)?\/\//i.test(src)) {
     result.externalLibs.push(src);
     return `<!-- stripped external script ${src} -->`;
+  }
+  if (!REAL_LIBS && /(^|\/)libs\//.test(src)) {
+    result.externalLibs.push(src);
+    return `<!-- stripped vendored library ${src} (stubbed) -->`;
   }
   const local = path.join(appDir, src);
   if (fs.existsSync(local)) {
@@ -356,8 +365,9 @@ function beforeParse(window) {
   window.FontFace = class FontFace { constructor() {} load() { return Promise.resolve(this); } };
   doc.fonts = { ready: Promise.resolve(), load: () => Promise.resolve([]), check: () => true, add() {}, addEventListener() {} };
 
-  // Optional: stub the stripped CDN globals so the rest of the app script runs (STUB_LIBS=1)
-  if (process.env.STUB_LIBS) {
+  // Stub the globals of the stripped libraries so the rest of the app script runs.
+  // Skipped when LOADTEST_REAL_LIBS=1, because the real libraries define them.
+  if (!REAL_LIBS) {
     const libStub = (n) => makeStub(n, { version: '0.0.0-stub' });
     // pdf.js: getDocument returns a thenable-like object with .promise
     const pdfjsLib = makeStub('pdfjsLib', {

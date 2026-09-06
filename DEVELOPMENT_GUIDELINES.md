@@ -61,6 +61,10 @@ document.addEventListener('keydown', e => {
 
 15. **Use `<textarea>` instead of `contentEditable` for text input.** `contentEditable` breaks paste handling (inserts HTML), loses cursor position on DOM updates, and makes highlight synchronization fragile. Use a textarea with a transparent overlay div for syntax highlighting.
 
+## Dependencies
+
+19. **No code from outside the repo.** Third-party scripts go in `libs/<name>-<version>/` and are referenced as `../../libs/...` — never a CDN `<script src>`, never a remote `workerSrc`. The repo must work from `file://` with the network unplugged. See `libs/README.md` for the vendoring steps; `check-syntax.js` fails on any remote script.
+
 ## Verification
 
 16. **Run `node check-syntax.js` before every commit, and `node tools/loadtest/run.js` (after a one-time `npm install` in `tools/loadtest`) before calling an app done.** The first parses every app's inline `<script>`; the second actually loads each app in jsdom and reports anything thrown at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
