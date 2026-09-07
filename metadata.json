@@ -1,5 +1,17 @@
 [
     {
+        "id": "lantern-labyrinth",
+        "title": "Dungeon",
+        "description": "A first-person dungeon crawler with a safe town, bow combat, upgrades, and increasingly dangerous and rewarding dungeon floors.",
+        "path": "games/lantern-labyrinth/index.html",
+        "emoji": "⊞",
+        "previewGradient": "linear-gradient(135deg, #333, #444)",
+        "dateCreated": "2026-09-07",
+        "category": "Games",
+        "tags": ["game", "3d", "maze", "adventure", "procedural", "interactive"],
+        "completeness": 4
+    },
+    {
         "id": "arpeggios",
         "title": "Arpeggios",
         "description": "Interactive chord arpeggiator with a 12x12 grid of all root notes and chord types. Configure waveform, pattern, speed, octave, and effects globally, then click any cell to play beautiful arpeggios.",

@@ -20,6 +20,11 @@ const TIMEOUT_MS = 5000;
 let apps = process.argv.slice(2);
 if (!apps.length) {
   apps = fs.readdirSync(APPS_ROOT).filter((d) => fs.existsSync(path.join(APPS_ROOT, d, 'index.html'))).sort();
+  const gamesRoot = path.resolve(APPS_ROOT, '..', 'games');
+  if (fs.existsSync(gamesRoot)) {
+    apps.push('../games');
+    apps.push(...fs.readdirSync(gamesRoot).filter(d => fs.existsSync(path.join(gamesRoot, d, 'index.html'))).sort().map(d => `../games/${d}`));
+  }
 }
 
 const results = [];
