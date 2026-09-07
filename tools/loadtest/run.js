@@ -4,7 +4,7 @@
 //
 // Setup once:  cd tools/loadtest && npm install
 // Usage:       node tools/loadtest/run.js [appName ...]   (no args = all apps)
-// Exit code is non-zero if any app throws. Vendored libraries (libs/) are
+// Exit code is non-zero if any app throws or has an unhandled rejection. Vendored libraries (libs/) are
 // replaced with permissive stubs, so errors that only appear with the real
 // library are out of scope; so is anything behind user interaction.
 // LOADTEST_REAL_LIBS=1 executes the real library code instead — useful after
@@ -41,5 +41,5 @@ for (const app of apps) {
 }
 fs.writeFileSync(path.join(HERE, 'results.json'), JSON.stringify(results, null, 2));
 const clean = results.filter((r) => r.status === 'ok' && !r.errors.length && !r.rejections.length).length;
-console.log(`\n${results.length} apps, ${clean} fully clean, ${results.filter((r) => r.errors.length).length} with uncaught errors, ${results.filter((r) => r.status !== 'ok').length} non-ok status`);
-process.exit(results.some((r) => r.status !== 'ok' || r.errors.length) ? 1 : 0);
+console.log(`\n${results.length} apps, ${clean} fully clean, ${results.filter((r) => r.errors.length).length} with uncaught errors, ${results.filter((r) => r.rejections.length).length} with unhandled rejections, ${results.filter((r) => r.status !== 'ok').length} non-ok status`);
+process.exit(clean === results.length ? 0 : 1);

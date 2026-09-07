@@ -3,7 +3,8 @@
   "private": true,
   "description": "Loads every app in a stubbed jsdom and reports uncaught errors at startup",
   "scripts": {
-    "test": "node run.js"
+    "test": "node run.js",
+    "test:regression": "node regression-test.js"
   },
   "dependencies": {
     "jsdom": "^30.0.1"
