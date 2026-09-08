@@ -6,13 +6,13 @@
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const position = { x: 0, z: 0 };
     const keys = new Set();
-    let scene, renderer, camera, world, avatar, light, leftLeg, rightLeg, leftArm, rightArm, walls;
+    let scene, renderer, camera, world, avatar, light, hemisphere, sunlight, leftLeg, rightLeg, leftArm, rightArm, walls;
     let depth = 0, deepest = 1, shopService = 'bowyer';
     const services = [
-        { id: 'bowyer', name: 'Bowyer', x: 3, z: 4, color: 0x87613a },
+        { id: 'bowyer', name: 'Workshop', x: 3, z: 4, color: 0x87613a },
         { id: 'outfitter', name: 'Outfitter', x: 11, z: 4, color: 0x5c7758 },
-        { id: 'inn', name: 'Inn', x: 3, z: 10, color: 0x9d804e },
-        { id: 'waygate', name: 'Waygate', x: 11, z: 10, color: 0x577d8f }
+        { id: 'inn', name: 'Inn', x: 3, z: 11, doorX: 5.5, color: 0x9d804e },
+        { id: 'waygate', name: 'Waygate', x: 7, z: 2, doorX: 7, color: 0x577d8f }
     ];
     let savedSignature = "", exploredCell = "", minimapClock = 0, nextRevealAt = 0;
     const floors = new Map();
@@ -23,12 +23,12 @@
     let shotClock = -1, bowString, nockedArrow, mantleMesh;
     let strideBlend = 0, landing = 0;
     let combat, bow, shootHeld = false, hitTime = 0, hurtTime = 0;
-    let doorObjects = [], chestObjects = [];
+    let doorObjects = [], chestObjects = [], townDoors = [], gatewayMaterial = null;
     let enemyObjects = new Map(), arrowObjects = new Map();
     const touchDevice = window.matchMedia?.('(pointer: coarse)').matches || false;
-    let wallTextures, floorTexture, paintTexture, paintMaterial, paintGeometry;
+    let wallTextures, floorTexture, roofTexture, paintTexture, paintMaterial, paintGeometry;
     let marks = new Map(), paintFeedback = 0;
-    let jumpHeight = 0, verticalSpeed = 0;
+    let jumpHeight = 0, verticalSpeed = 0, groundHeight = 0, townWorld = null;
     let enemyAudio = null;
     let audio = null, wind = null, windGain = null, stepBuffer = null, lastStep = 0;
 
@@ -75,11 +75,15 @@
             scene = new THREE.Scene(); scene.background = new THREE.Color(0x687173);
             scene.fog = new THREE.Fog(0x687173, 10, 36);
             camera = new THREE.PerspectiveCamera(68, 1, 0.06, 80);
-            scene.add(new THREE.HemisphereLight(0xc2c6c8, 0x50504d, 0.68));
-            const overhead = new THREE.DirectionalLight(0xc6c9c8, 0.55); overhead.position.set(3, 12, 5); scene.add(overhead);
+            hemisphere = new THREE.HemisphereLight(0xc2c6c8, 0x50504d, 0.68); scene.add(hemisphere);
+            sunlight = new THREE.DirectionalLight(0xc6c9c8, 0.55); sunlight.position.set(3, 12, 5); scene.add(sunlight); scene.add(sunlight.target);
+            if (renderer.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
+            sunlight.shadow.mapSize.set(2048, 2048); sunlight.shadow.camera.left = -35; sunlight.shadow.camera.right = 35;
+            sunlight.shadow.camera.top = 35; sunlight.shadow.camera.bottom = -35; sunlight.shadow.camera.far = 140;
+            sunlight.shadow.bias = -0.0003; sunlight.shadow.normalBias = 0.035;
             // A small pool of neutral light preserves legibility without revealing distant corridors.
             light = new THREE.PointLight(0xd3cebc, 0.6, 10, 1.2); scene.add(light);
-            wallTextures = [0, 1, 2].map(i => concrete('wall-' + i, false, i)); floorTexture = concrete('floor', true);
+            wallTextures = [0, 1, 2].map(i => concrete('wall-' + i, false, i)); floorTexture = concrete('floor', true); roofTexture = concrete('roof', false, 1); roofTexture.repeat.set(7, 5); roofTexture.encoding = THREE.sRGBEncoding;
             createPaint();
             createPlayer(); createBow();
             weaponRig = new THREE.Group(); weaponRig.position.y = -1.6;
@@ -197,11 +201,11 @@
     }
     function createMaze(size, seed) {
         enemyAudio?.silence();
-        clearWorld(); marks = new Map(); paintFeedback = 0; resetPaintButton();
+        clearWorld(); gatewayMaterial = null; marks = new Map(); paintFeedback = 0; resetPaintButton();
         const hero = combat ? { coins: combat.coins, multishotLevel: combat.multishotLevel, vitalityLevel: combat.vitalityLevel, highestDepth: combat.highestDepth, bowStyle: combat.bowStyle, bowUnlocks: [...combat.bowUnlocks], bowLevel: combat.bowLevel, speedLevel: combat.speedLevel, health: combat.health } : null;
         const saved = floors.get(depth);
         maze = depth === 0 ? MazeWorld.town() : saved ? saved.maze : MazeWorld.dungeon(size, seed);
-        size = maze.size;
+        size = maze.size; townWorld = depth === 0 ? TownWorld.build(maze) : null;
         combat = depth > 0 && saved ? saved.combat : new DungeonCombat.Run(maze, depth);
         if (hero) Object.assign(combat, hero);
         else { try { Object.assign(combat, DungeonProgress.read(localStorage)); } catch (_) {} }
@@ -211,17 +215,22 @@
         deepest = combat.highestDepth;
         if (depth > 0) floors.set(depth, { maze, combat });
         combat.arrows = []; combat.cooldown = 0;
+        hemisphere.intensity = depth === 0 ? 0.42 : 0.68;
+        sunlight.intensity = depth === 0 ? 1.05 : 0.55; sunlight.color.setHex(depth === 0 ? 0xffddb0 : 0xc6c9c8); sunlight.castShadow = depth === 0;
+        sunlight.position.set(depth === 0 ? -12 : 3, depth === 0 ? 42 : 12, depth === 0 ? 8 : 5); sunlight.target.position.set(depth === 0 ? 22 : 0, 0, depth === 0 ? 22 : 0);
+        renderer.toneMappingExposure = depth === 0 ? 0.9 : 1.15;
         scene.background.setHex(depth === 0 ? 0x929e9d : 0x303638);
         scene.fog.color.copy(scene.background); scene.fog.near = depth === 0 ? 65 : 8; scene.fog.far = depth === 0 ? 250 : 30;
         camera.far = depth === 0 ? 400 : 80; camera.updateProjectionMatrix(); enemyObjects = new Map(); arrowObjects = new Map(); hitTime = 0; hurtTime = 0;
         strideBlend = 0; landing = 0; shotClock = -1; if (bow) poseBow(0, false);
-        walked = 0; lastStep = 0; jumpHeight = 0; verticalSpeed = 0;
+        walked = 0; lastStep = 0; groundHeight = 0; jumpHeight = 0; verticalSpeed = 0;
         world = new THREE.Group(); scene.add(world);
         position.x = maze.start[0] * CELL; position.z = maze.start[1] * CELL;
         const rng = MazeWorld.random(seed + '-surface');
         const fenceCells = new Set((maze.fences || []).map(c => c.join(',')));
         const groups = [[], [], []];
         for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (maze.grid[z][x] && !fenceCells.has(`${x},${z}`)) {
+            if (depth === 0 && maze.buildings.some(b => b.cells.some(c => c[0] === x && c[1] === z))) continue;
             // Related courses in each small area, with distinct stone shapes and weathering.
             const region = MazeWorld.random(`${seed}-stone-${Math.floor(x / 4)}-${Math.floor(z / 4)}`);
             groups[Math.floor(region() * groups.length)].push([x, z]);
@@ -233,15 +242,16 @@
             const batch = new THREE.InstancedMesh(geometry, wallMaterial, cells.length);
             const matrix = new THREE.Matrix4(), color = new THREE.Color();
             cells.forEach(([x, z], index) => {
-                const height = depth === 0 && (x === 0 || z === 0 || x === size - 1 || z === size - 1) ? 1.1 : WALL_HEIGHT;
+                const building = maze.buildings?.find(b => b.cells.some(c => c[0] === x && c[1] === z));
+                const height = depth === 0 ? (building ? (building.id === 'inn' && z < 10 ? 3.6 : building.height) : 1.1) : WALL_HEIGHT;
                 matrix.makeScale(1, height / WALL_HEIGHT, 1); matrix.setPosition(x * CELL, height / 2, z * CELL); batch.setMatrixAt(index, matrix);
-                color.setScalar(0.87 + rng() * 0.13); batch.setColorAt(index, color);
+                color.setHex(building ? ({ workshop: 0xc99562, inn: 0xb96e52, cottage: 0x739889, house: 0x7d91ae, tower: 0xc1b489 }[building.id]) : 0xffffff); color.multiplyScalar(0.87 + rng() * 0.13); batch.setColorAt(index, color);
             });
             batch.instanceMatrix.needsUpdate = true;
             if (batch.instanceColor) batch.instanceColor.needsUpdate = true;
             batch.userData.cells = cells; world.add(batch); return batch;
         });
-        doorObjects = [];
+        doorObjects = []; townDoors = [];
         const timber = new THREE.MeshStandardMaterial({ color: 0x58412a, roughness: 0.94 });
         const metal = new THREE.MeshStandardMaterial({ color: 0x343933, roughness: 0.65, metalness: 0.5 });
         const trim = new THREE.MeshStandardMaterial({ color: 0x53584d, roughness: 1 });
@@ -276,16 +286,46 @@
         const extent = size * CELL, center = (size - 1) * CELL / 2;
         if (depth > 0) mesh(new THREE.BoxGeometry(extent, 0.2, extent), new THREE.MeshStandardMaterial({ color: 0x464a43, roughness: 1, map: wallTextures[1] }), world, center, WALL_HEIGHT + 0.1, center);
         if (depth === 0) createTownLandscape(center);
-        floorTexture.repeat.set(size, size);
+        floorTexture.repeat.set(depth === 0 ? size * 2 : size, depth === 0 ? size * 2 : size);
         mesh(new THREE.BoxGeometry(extent, 0.2, extent), new THREE.MeshStandardMaterial({ color: 0x777668, roughness: 1, map: floorTexture, bumpMap: floorTexture, bumpScale: 0.035 }), world, center, -0.1, center);
         const exit = new THREE.Group(); exit.position.set(maze.exit[0] * CELL, 0, maze.exit[1] * CELL); world.add(exit);
         if (maze.outward[0]) exit.rotation.y = Math.PI / 2;
         const frame = new THREE.MeshStandardMaterial({ color: 0x5e6255, roughness: 1 });
+        if (depth === 0) {
+            const stone = new THREE.MeshStandardMaterial({ color: 0x777d73, roughness: 0.95, map: wallTextures[1] });
+            const bronze = new THREE.MeshStandardMaterial({ color: 0xb09962, metalness: 0.5, roughness: 0.5 });
+            const rune = new THREE.MeshStandardMaterial({ color: 0x89d8cf, emissive: 0x3e9f9e, emissiveIntensity: 0.8 });
+            for (let i = 0; i < 3; i++) mesh(new THREE.CylinderGeometry(2.3 - i * 0.16, 2.4 - i * 0.16, 0.12, 12), stone, exit, 0, i * 0.12, 0.35);
+            const ring = mesh(new THREE.TorusGeometry(1.5, 0.28, 8, 32), stone, exit, 0, 2.05, 0);
+            ring.scale.y = 1.2;
+            const inner = mesh(new THREE.TorusGeometry(1.23, 0.045, 6, 48), bronze, exit, 0, 2.05, 0.04); inner.scale.y = 1.2;
+            for (let i = 0; i < 12; i++) {
+                const angle = i / 12 * Math.PI * 2;
+                const mark = mesh(new THREE.BoxGeometry(0.07, 0.2, 0.035), rune, exit, Math.sin(angle) * 1.5, 2.05 + Math.cos(angle) * 1.8, 0.28);
+                mark.rotation.z = -angle;
+            }
+            for (const x of [-1.8, 1.8]) {
+                mesh(new THREE.BoxGeometry(0.5, 2.8, 0.65), stone, exit, x, 1.4, 0);
+                mesh(new THREE.SphereGeometry(0.16, 10, 8), rune, exit, x, 2.96, 0);
+            }
+            gatewayMaterial = new THREE.ShaderMaterial({ side: THREE.DoubleSide, transparent: true,
+                uniforms: { time: { value: 0 } },
+                vertexShader: `varying vec2 uvGate; void main(){uvGate=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+                fragmentShader: `varying vec2 uvGate; uniform float time;
+                    void main(){vec2 p=(uvGate-.5)*2.; float r=length(p); if(r>1.)discard;
+                    float a=atan(p.y,p.x); float flow=sin(a*3.+r*12.-time*.65)*.5+.5;
+                    float mist=sin(p.x*9.+sin(p.y*7.+time*.3))*sin(p.y*11.-time*.4)*.5+.5;
+                    vec3 c=mix(vec3(.025,.08,.11),vec3(.12,.38,.4),flow*.45+mist*.35);
+                    c+=vec3(.25,.65,.58)*pow(r,8.)*.6;
+                    gl_FragColor=vec4(c,.94*(1.-smoothstep(.96,1.,r)));}` });
+            mesh(new THREE.PlaneGeometry(2.43, 2.92), gatewayMaterial, exit, 0, 2.05, 0.015);
+        } else {
         for (const x of [-1.25, 1.25]) mesh(new THREE.BoxGeometry(0.22, 3.1, 0.4), frame, exit, x, 1.55, 0);
         mesh(new THREE.BoxGeometry(2.72, 0.2, 0.4), frame, exit, 0, 3.2, 0);
         // Dark stairwell and shallow steps make the descent a physical landmark.
         mesh(new THREE.BoxGeometry(2.3, 3.0, 0.1), new THREE.MeshStandardMaterial({ color: 0x151919 }), exit, 0, 1.5, -0.2);
         for (let i = 0; i < 5; i++) mesh(new THREE.BoxGeometry(2.2, 0.1 + i * 0.1, 0.35), frame, exit, 0, 0.05 + i * 0.05, 1.4 - i * 0.35);
+        }
         if (depth > 0) {
             const entry = new THREE.Group(); world.add(entry); entry.position.set(maze.start[0] * CELL, 0, maze.start[1] * CELL);
             if (depth % 5 === 0) {
@@ -297,15 +337,108 @@
             for (let i = 0; i < 5; i++) mesh(new THREE.BoxGeometry(1.8, 0.12 + i * 0.16, 0.3), frame, entry, 0, 0.06 + i * 0.08, -0.5 - i * 0.3);
             mesh(new THREE.BoxGeometry(1.8, 0.05, 1.8), new THREE.MeshStandardMaterial({ color: 0xb7ac88 }), entry, 0, 0.03, 0);
         } else {
-            const roof = new THREE.MeshStandardMaterial({ color: 0x49433b, roughness: 1 });
-            for (const service of services) {
+            const timberTown = new THREE.MeshStandardMaterial({ color: 0x4c4439, roughness: 1 });
+            for (const b of townWorld.boxes) {
+                if (b.kind === 'fountain') continue;
+                const color = b.kind === 'wall' ? { workshop: 0xc99562, inn: 0xb96e52, cottage: 0x739889, house: 0x7d91ae, tower: 0xc1b489 }[b.building] : b.kind === 'furniture' ? 0x664931 : 0x847157;
+                const material = new THREE.MeshStandardMaterial({ color, roughness: 0.95, map: b.kind === 'wall' ? wallTextures[0] : null });
+                const object = mesh(new THREE.BoxGeometry(b.w, b.h, b.d), material, world, b.x, b.y, b.z); walls.push(object);
+            }
+            const glass = new THREE.MeshPhysicalMaterial({ color: 0xaccfc8, transparent: true, opacity: 0.16,
+                roughness: 0.12, metalness: 0.08, clearcoat: 1, clearcoatRoughness: 0.08,
+                side: THREE.DoubleSide, depthWrite: false });
+            for (const building of maze.buildings) {
+                const cx = building.x * CELL, cz = building.z * CELL;
+                const halfW = building.width * CELL / 2, halfD = building.length * CELL / 2;
+                const stories = Math.max(1, Math.floor((building.height - 0.3) / 2.8));
+                for (let level = 0; level < stories; level++) {
+                    const y = level * 2.8 + 1.6;
+                    for (const side of [-1, 1]) {
+                        const front = side === (building.x < 7 ? 1 : -1);
+                        for (const offset of front ? [-1.9, 1.9] : [0]) {
+                            const pane = mesh(new THREE.PlaneGeometry(0.95, 1.09), glass, world, cx + side * halfW, y, cz + offset);
+                            pane.rotation.y = Math.PI / 2; pane.castShadow = false;
+                        }
+                        mesh(new THREE.PlaneGeometry(0.95, 1.09), glass, world, cx, y, cz + side * halfD).castShadow = false;
+                    }
+                }
+            }
+            for (const building of maze.buildings) {
+                const { x, z, width, length, height } = building;
+                const roof = new THREE.MeshStandardMaterial({ color: building.roof, roughness: 0.85, map: roofTexture, bumpMap: roofTexture, bumpScale: 0.08 });
+                const top = mesh(new THREE.ConeGeometry(1, building.id === 'tower' ? 3.8 : 2.4, 4), roof, world, x * CELL, height + (building.id === 'tower' ? 1.9 : 1.2), z * CELL);
+                top.geometry.rotateY(Math.PI / 4); top.scale.set((width * CELL + 0.9) / Math.SQRT2, 1, (length * CELL + 0.9) / Math.SQRT2);
+                const inward = x < 7 ? 1 : -1, faceX = (x + inward * width / 2) * CELL + inward * 0.04;
+
+                const accent = new THREE.MeshStandardMaterial({ color: { workshop: 0x386b65, inn: 0x6b3440, cottage: 0x496638, house: 0x364e70, tower: 0x387d80 }[building.id], roughness: 0.85 });
+                const gold = new THREE.MeshStandardMaterial({ color: 0xb69455, metalness: 0.45, roughness: 0.5 });
+                const pale = new THREE.MeshStandardMaterial({ color: 0xd5c29a, roughness: 0.9 });
+                const facade = new THREE.Group(); facade.position.set(faceX + inward * 0.07, 0, z * CELL); facade.rotation.y = inward * Math.PI / 2; world.add(facade);
+                // Shallow facade relief stays within the building's collision margin.
+                for (const side of [-1, 1]) {
+                    mesh(new THREE.BoxGeometry(0.18, height, 0.13), timberTown, facade, side * (length * CELL / 2 - 0.16), height / 2, 0);
+                    mesh(new THREE.BoxGeometry(0.16, 2.4, 0.18), pale, facade, side * 0.75, 1.2, 0.03);
+                }
+                mesh(new THREE.TorusGeometry(0.75, 0.1, 6, 18, Math.PI), pale, facade, 0, 2.35, 0.05);
+                mesh(new THREE.BoxGeometry(1.4, 0.16, 0.18), pale, facade, 0, 2.25, 0.03);
+                const doorHinge = new THREE.Group(); facade.add(doorHinge); doorHinge.position.set(-0.67, 0, -0.1);
+                const doorWood = new THREE.MeshStandardMaterial({ color: building.id === 'inn' ? 0x663e30 : 0x4d5341, roughness: 0.9 });
+                mesh(new THREE.BoxGeometry(1.32, 2.24, 0.12), doorWood, doorHinge, 0.66, 1.12, 0);
+                for (let plank = 1; plank < 6; plank++) mesh(new THREE.BoxGeometry(0.018, 2.17, 0.014), timberTown, doorHinge, plank * 0.22, 1.12, 0.066);
+                for (const y of [0.35, 1.9]) {
+                    mesh(new THREE.BoxGeometry(1.15, 0.09, 0.04), gold, doorHinge, 0.65, y, 0.08);
+                    for (const x of [0.13, 1.17]) mesh(new THREE.SphereGeometry(0.035, 6, 4), gold, doorHinge, x, y, 0.11);
+                }
+                for (const side of [-1, 1]) mesh(new THREE.TorusGeometry(0.11, 0.025, 5, 12), gold, doorHinge, 1.07, 1.1, side * 0.1);
+                townDoors.push({ hinge: doorHinge, x: faceX, z: z * CELL });
+                for (let y = 1.6; y < Math.floor((height - 0.3) / 2.8) * 2.8; y += 2.8) for (const offset of [-1.9, 1.9]) {
+                    for (const side of [-1, 1]) {
+                        mesh(new THREE.BoxGeometry(0.3, 1.12, 0.16), accent, facade, offset + side * 0.57, y, 0.04);
+                        for (let slat = -2; slat <= 2; slat++) mesh(new THREE.BoxGeometry(0.28, 0.035, 0.04), timberTown, facade, offset + side * 0.57, y + slat * 0.19, 0.14);
+                    }
+                    mesh(new THREE.BoxGeometry(0.055, 1.02, 0.16), pale, facade, offset, y, 0.03);
+                    mesh(new THREE.BoxGeometry(0.86, 0.06, 0.16), pale, facade, offset, y, 0.03);
+                    mesh(new THREE.BoxGeometry(1.05, 0.12, 0.24), pale, facade, offset, y - 0.56, 0.06);
+                    if (y > 4) {
+                        const brace = mesh(new THREE.BoxGeometry(0.12, 1.6, 0.12), timberTown, facade, offset, y - 1.45, 0);
+                        brace.rotation.z = offset < 0 ? 0.65 : -0.65;
+                    }
+                }
+                const lanternMetal = new THREE.MeshStandardMaterial({ color: 0x383d36, metalness: 0.5, roughness: 0.6 });
+                const lanternGlow = new THREE.MeshStandardMaterial({ color: 0xf4c273, emissive: 0xe39b45, emissiveIntensity: 0.8 });
+                mesh(new THREE.BoxGeometry(0.08, 0.4, 0.35), lanternMetal, facade, 1.05, 2.65, 0.13);
+                mesh(new THREE.BoxGeometry(0.24, 0.38, 0.2), lanternGlow, facade, 1.05, 2.32, 0.24);
+                for (const y of [2.1, 2.55]) mesh(new THREE.BoxGeometry(0.34, 0.07, 0.3), lanternMetal, facade, 1.05, y, 0.24);
+                for (const side of [-1, 1]) mesh(new THREE.BoxGeometry(0.035, 0.42, 0.24), lanternMetal, facade, 1.05 + side * 0.13, 2.32, 0.24);
+                const planter = new THREE.MeshStandardMaterial({ color: 0x85523d, roughness: 1 });
+                const leaves = new THREE.MeshStandardMaterial({ color: 0x435e3b, roughness: 1 });
+                const petals = new THREE.MeshStandardMaterial({ color: building.id === 'inn' ? 0xa86c8b : 0xc3a34e, roughness: 1 });
+                for (const side of [-1, 1]) {
+                    mesh(new THREE.BoxGeometry(0.94, 0.25, 0.27), planter, facade, side * 1.9, 0.78, 0.09);
+                    for (let n = 0; n < 5; n++) {
+                        mesh(new THREE.SphereGeometry(0.13, 6, 5), leaves, facade, side * 1.9 - 0.35 + n * 0.17, 0.96 + (n % 2) * 0.05, 0.13);
+                        mesh(new THREE.SphereGeometry(0.055, 5, 4), petals, facade, side * 1.9 - 0.35 + n * 0.17, 1.08 + (n % 2) * 0.05, 0.15);
+                    }
+                }
+                // Alternating carved brackets beneath the eaves.
+                for (let offset = -length * CELL / 2 + 0.5; offset < length * CELL / 2; offset += 0.65) {
+                    mesh(new THREE.BoxGeometry(0.16, 0.3, 0.25), pale, facade, offset, height - 0.14, 0.06);
+                }
+                if (building.id === 'tower') {
+                    mesh(new THREE.SphereGeometry(0.22, 10, 8), gold, world, x * CELL, height + 3.95, z * CELL);
+                    mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.5, 6), gold, world, x * CELL, height + 4.5, z * CELL);
+                    mesh(new THREE.BoxGeometry(1.1, 0.42, 0.04), accent, world, x * CELL + 0.55, height + 4.9, z * CELL);
+                    mesh(new THREE.TorusGeometry(0.58, 0.09, 6, 24), gold, facade, 0, 7.9, 0.08);
+                    for (const rotation of [0, Math.PI / 2]) { const spoke = mesh(new THREE.BoxGeometry(0.055, 0.9, 0.08), gold, facade, 0, 7.9, 0.08); spoke.rotation.z = rotation; }
+                }
+                if (building.id !== 'tower') mesh(new THREE.BoxGeometry(0.8, 2.6, 0.9), timberTown, world, x * CELL + 1, height + 1.5, z * CELL - 1);
+            }
+            // The kitchen wing is an open covered porch.
+            mesh(new THREE.BoxGeometry(2 * CELL + 0.3, 0.25, 2 * CELL + 0.3), timberTown, world, 1.5 * CELL, 3.72, 8.5 * CELL);
+            for (const service of services.filter(s => s.id === 'bowyer' || s.id === 'inn')) {
                 const { x, z } = service;
-                const top = mesh(new THREE.ConeGeometry(7, 2.5, 4), roof, world, x * CELL, 7.25, z * CELL); top.rotation.y = Math.PI / 4;
-                const inward = x < 7 ? 1 : -1, faceX = (x + inward * 1.5) * CELL + inward * 0.02;
-                mesh(new THREE.BoxGeometry(0.12, 2.2, 1.2), new THREE.MeshStandardMaterial({ color: 0x47382c }), world, faceX, 1.1, z * CELL);
-                const windowMaterial = new THREE.MeshStandardMaterial({ color: 0xc4a26a, emissive: 0x8a582a, emissiveIntensity: 0.3 });
-                for (const offset of [-2.4, 2.4]) mesh(new THREE.BoxGeometry(0.14, 1.1, 0.85), windowMaterial, world, faceX, 3.3, z * CELL + offset);
-                const awning = mesh(new THREE.BoxGeometry(1.5, 0.12, 2.4), new THREE.MeshStandardMaterial({ color: service.color, roughness: 1 }), world, faceX + inward * 0.65, 2.7, z * CELL); awning.rotation.z = inward * -0.15;
+                const inward = 1, faceX = (service.doorX ?? x + 1.5) * CELL + 0.05;
+                const awning = mesh(new THREE.BoxGeometry(1.5, 0.12, 2.4), new THREE.MeshStandardMaterial({ color: service.color, roughness: 1 }), world, faceX + 0.65, 2.7, z * CELL); awning.rotation.z = -0.15;
                 const signCanvas = document.createElement('canvas'); signCanvas.width = 256; signCanvas.height = 64;
                 const ctx = signCanvas.getContext('2d');
                 if (ctx) {
@@ -316,11 +449,18 @@
                 }
 
 
-                mesh(new THREE.BoxGeometry(1.2, 2.2, 0.12), new THREE.MeshStandardMaterial({ color: 0x684f35 }), world, x * CELL, 1.1, (z + 1.5) * CELL + 0.02);
+
+            }
+            const turf = new THREE.MeshStandardMaterial({ color: 0x626d50, roughness: 1 });
+            for (const [x, z, radius, stretch] of [[3, 7, 2.5, 1.6], [11.5, 8, 2.8, 1.1], [5.2, 1.4, 2.1, 1.4], [4.3, 13, 2.4, 1.8]]) {
+                const patch = mesh(new THREE.CylinderGeometry(radius, radius, 0.02, 11), turf, world, x * CELL, 0.012, z * CELL);
+                patch.scale.z = stretch; patch.rotation.y = x;
             }
             const stone = new THREE.MeshStandardMaterial({ color: 0x777b70 });
-            mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.8, 16), stone, world, 7 * CELL, -0.37, 7 * CELL);
-            mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.04, 16), new THREE.MeshStandardMaterial({ color: 0x566e70, roughness: 0.25 }), world, 7 * CELL, 0.035, 7 * CELL);
+            const rim = mesh(new THREE.TorusGeometry(1.04, 0.15, 8, 24), stone, world, 5.8 * CELL, 0.73, 6.4 * CELL); rim.rotation.x = Math.PI / 2;
+            mesh(new THREE.CylinderGeometry(0.16, 0.25, 0.7, 8), stone, world, 5.8 * CELL, 0.94, 6.4 * CELL);
+            mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.8, 16), stone, world, 5.8 * CELL, 0.27, 6.4 * CELL);
+            mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.04, 16), new THREE.MeshStandardMaterial({ color: 0x566e70, roughness: 0.25 }), world, 5.8 * CELL, 0.69, 6.4 * CELL);
         }
         chestObjects = [];
         for (const chest of combat.chests) {
@@ -341,11 +481,11 @@
     }
     function createTownLandscape(center) {
         const skyMaterial = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
-            vertexShader: `varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            vertexShader: `varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w * .999; }`,
             fragmentShader: `varying vec3 direction;
                 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
                 float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-                    return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x); }
+                    return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y); }
                 void main() {
                     vec3 d = normalize(direction); float h = max(0., d.y);
                     vec3 color = mix(vec3(.69,.72,.69), vec3(.22,.37,.48), pow(h,.55));
@@ -356,7 +496,7 @@
                     color += vec3(.20,.16,.09)*sun; gl_FragColor = vec4(color,1.);
                 }`
         });
-        const sky = mesh(new THREE.SphereGeometry(320, 40, 24), skyMaterial, world, center, 0, center); sky.renderOrder = -10;
+        const sky = mesh(new THREE.SphereGeometry(180, 40, 24), skyMaterial, world, center, 0, center); skyMaterial.side = THREE.BackSide; skyMaterial.depthWrite = false; skyMaterial.depthTest = false; sky.frustumCulled = false; sky.renderOrder = -1; sky.castShadow = false; sky.receiveShadow = false;
         const grass = new THREE.MeshStandardMaterial({ color: 0x566450, roughness: 1 });
         mesh(new THREE.CylinderGeometry(210, 210, 1, 64), grass, world, center, -0.65, center);
         const rng = MazeWorld.random('town-highlands');
@@ -364,7 +504,7 @@
         for (let layer = 0; layer < 2; layer++) {
             const positions = [], count = 72, radius = 95 + layer * 65;
             const ridge = Array.from({ length: count + 1 }, (_, i) => ({ angle: i / count * Math.PI * 2,
-                radius: radius + rng() * 18, height: 12 + layer * 20 + rng() * (16 + layer * 16) }));
+                radius: radius + rng() * 18, height: 12 + layer * 17 + 7 * Math.sin(i / count * Math.PI * 6 + layer) + 4 * Math.sin(i / count * Math.PI * 14) + rng() * 4 }));
             ridge[count] = { ...ridge[0], angle: Math.PI * 2 };
             for (let i = 0; i < count; i++) {
                 const a = ridge[i], b = ridge[i + 1];
@@ -642,10 +782,10 @@
     function renderShop() {
         $('shopTitle').textContent = services.find(s => s.id === shopService).name;
         for (const id of ['bow-balanced', 'bow-quick', 'bow-heavy', 'bow-piercing', 'buyBow', 'buyMultishot']) $(id).classList.toggle('hidden', shopService !== 'bowyer');
-        for (const id of ['buySpeed', 'buyVitality']) $(id).classList.toggle('hidden', shopService !== 'outfitter');
+        for (const id of ['buySpeed', 'buyVitality']) $(id).classList.toggle('hidden', !['outfitter', 'bowyer'].includes(shopService));
         $('buyHeal').classList.toggle('hidden', shopService !== 'inn');
         $('checkpointChoices').classList.toggle('hidden', shopService !== 'waygate');
-        $('serviceInfo').textContent = { bowyer: 'Improve damage without a level cap. Switch owned bows for free.', outfitter: 'Train vitality for more health, or improve movement.', inn: 'Rest here to restore your health for free.', waygate: `Deepest floor: ${deepest}. Reach every fifth floor to unlock a permanent destination.` }[shopService];
+        $('serviceInfo').textContent = { bowyer: 'Bows, vitality, and movement training. Switch owned bows for free.', outfitter: 'Train vitality for more health, or improve movement.', inn: 'Rest here to restore your health for free.', waygate: `Deepest floor: ${deepest}. Reach every fifth floor to unlock a permanent destination.` }[shopService];
         $('checkpointChoices').replaceChildren();
         if (shopService === 'waygate') for (let level = 0; level <= Math.floor(deepest / 5); level++) {
             const destination = level === 0 ? 1 : level * 5, button = document.createElement('button');
@@ -699,7 +839,7 @@
     function spray() {
         if (phase !== 'playing') return false;
         const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-        const ray = new THREE.Raycaster(new THREE.Vector3(position.x, 1.4 + jumpHeight, position.z), forward, 0.02, 2.8);
+        const ray = new THREE.Raycaster(new THREE.Vector3(position.x, 1.4 + groundHeight + jumpHeight, position.z), forward, 0.02, 2.8);
         world.updateMatrixWorld(true);
         const hit = ray.intersectObjects(walls, false)[0];
         paintFeedback = 0.85;
@@ -798,8 +938,8 @@
         depth = 0; createMaze(SIZE, randomSeed()); setPlaying();
     }
     function nearbyService() {
-        if (depth !== 0) return null;
-        return services.find(s => Math.hypot(position.x - (s.x + (s.x < 7 ? 1.5 : -1.5)) * CELL, position.z - s.z * CELL) < 3.8);
+        if (depth !== 0 || groundHeight > 0.5) return null;
+        return services.find(s => s.id !== 'outfitter' && Math.hypot(position.x - (s.doorX ?? s.x + (s.x < 7 ? 1.5 : -1.5)) * CELL, position.z - s.z * CELL) < 3.8);
     }
     function fastTravel(destination) {
         if (phase !== 'shop' || shopService !== 'waygate' || !Number.isInteger(destination) ||
@@ -848,11 +988,13 @@
     }
     function move(dt) {
         if (phase !== 'playing') return;
+        const previousJump = jumpHeight;
         if (jumpHeight > 0 || verticalSpeed > 0) {
             jumpHeight += verticalSpeed * dt - 8 * dt * dt;
             verticalSpeed -= 16 * dt;
             if (jumpHeight <= 0) { jumpHeight = 0; verticalSpeed = 0; landing = 1; }
         }
+        if (townWorld && verticalSpeed > 0 && !TownWorld.canStand(maze, townWorld, position.x, position.z, groundHeight + jumpHeight)) { jumpHeight = previousJump; verticalSpeed = 0; }
         // Q/E are an optional keyboard-look fallback. A/D always strafe.
         yaw -= (Number(keys.has('KeyE')) - Number(keys.has('KeyQ'))) * dt * 1.8;
         avatar.rotation.y = yaw;
@@ -864,13 +1006,28 @@
         const dx = (Math.cos(yaw) * strafe - Math.sin(yaw) * forward) * speed * dt;
         const dz = (-Math.sin(yaw) * strafe - Math.cos(yaw) * forward) * speed * dt;
         const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.1)), beforeX = position.x, beforeZ = position.z;
+        function tryMove(x, z) {
+            if (!townWorld) { if (MazeWorld.canStand(maze.grid, x, z, CELL, PLAYER_RADIUS)) { position.x = x; position.z = z; } return; }
+            const feet = groundHeight + jumpHeight, support = TownWorld.support(townWorld, x, z, feet);
+            const nextFeet = Math.max(feet, support);
+            if (!TownWorld.canStand(maze, townWorld, x, z, nextFeet)) return;
+            position.x = x; position.z = z;
+            if (jumpHeight === 0 && Math.abs(support - groundHeight) <= 0.32) groundHeight = support;
+            else { groundHeight = support; jumpHeight = Math.max(0, nextFeet - support); }
+        }
         for (let i = 0; i < steps; i++) {
-            if (MazeWorld.canStand(maze.grid, position.x + dx / steps, position.z, CELL, PLAYER_RADIUS)) position.x += dx / steps;
-            if (MazeWorld.canStand(maze.grid, position.x, position.z + dz / steps, CELL, PLAYER_RADIUS)) position.z += dz / steps;
+            tryMove(position.x + dx / steps, position.z);
+            tryMove(position.x, position.z + dz / steps);
+        }
+        for (const door of townDoors) {
+            const distance = Math.hypot(position.x - door.x, position.z - door.z);
+            const target = groundHeight < 1 && distance < 3.4 ? Math.PI / 2 : 0;
+            // Fully clear the opening before the player reaches it, including at upgraded speed.
+            door.hinge.rotation.y = target && distance < 1.7 ? target : door.hinge.rotation.y + (target - door.hinge.rotation.y) * (1 - Math.exp(-dt * 10));
         }
         const distance = Math.hypot(position.x - beforeX, position.z - beforeZ); walked += distance;
 
-        avatar.position.set(position.x, jumpHeight, position.z);
+        avatar.position.set(position.x, groundHeight + jumpHeight, position.z);
         animatePlayer(dt, distance, forward, strafe);
 
     }
@@ -895,15 +1052,15 @@
         rightArm.rotation.z = airborne ? 0.18 : -stride * strafe * 0.12;
         leftArm.rotation.x = 0; leftArm.rotation.z = 0;
         // Secondary motion stays on the model, leaving the aiming camera stable.
-        avatar.position.y = jumpHeight - (reducedMotion ? 0 : landing * 0.055);
+        avatar.position.y = groundHeight + jumpHeight - (reducedMotion ? 0 : landing * 0.055);
         mantleMesh.rotation.x = reducedMotion ? 0 : strideBlend * 0.06 + Math.sin(cycle - 0.5) * strideBlend * 0.035 + tuck * 0.1;
         mantleMesh.rotation.z = reducedMotion ? 0 : -strafe * strideBlend * 0.035;
     }
     function updateCamera(dt) {
         avatar.rotation.y = yaw;
-        camera.position.set(position.x, 1.6 + jumpHeight, position.z);
+        camera.position.set(position.x, 1.6 + groundHeight + jumpHeight, position.z);
         camera.rotation.order = 'YXZ'; camera.rotation.set(pitch, yaw, 0);
-        light.position.set(position.x, 2.7 + jumpHeight, position.z);
+        light.position.set(position.x, 2.7 + groundHeight + jumpHeight, position.z);
     }
     function look(dx, dy) {
         if (phase !== 'playing') return;
@@ -942,6 +1099,7 @@
         hitTime = Math.max(0, hitTime - dt); hurtTime = Math.max(0, hurtTime - dt);
         $('crosshair').classList.toggle('hit', hitTime > 0); $('hurtFrame').style.opacity = String(hurtTime * 1.5);
         if (paintFeedback > 0) { paintFeedback -= dt; if (paintFeedback <= 0) resetPaintButton(); }
+        if (gatewayMaterial) gatewayMaterial.uniforms.time.value = reducedMotion ? 0 : performance.now() / 1000;
         renderer.render(scene, camera); frameId = requestAnimationFrame(frame);
     }
     function resize() {
@@ -961,7 +1119,7 @@
         $('closeMap').addEventListener('click', setPlaying); $('resetProgress').addEventListener('click', resetProgress);
         $('travel').addEventListener('click', travel);
         $('openShop').addEventListener('click', () => { const service = nearbyService(); if (service) openShop(service.id); }); $('closeShop').addEventListener('click', setPlaying);
-        for (const [id, kind] of [['buyBow', 'bow'], ['buyMultishot', 'multishot'], ['buySpeed', 'speed'], ['buyHeal', 'heal'], ['buyVitality', 'vitality']]) $(id).addEventListener('click', () => { if (phase === 'shop' && ((shopService === 'bowyer' && ['bow', 'multishot'].includes(kind)) || (shopService === 'outfitter' && ['speed', 'vitality'].includes(kind)) || (shopService === 'inn' && kind === 'heal'))) { combat.buy(kind); renderShop(); updateHud(); } });
+        for (const [id, kind] of [['buyBow', 'bow'], ['buyMultishot', 'multishot'], ['buySpeed', 'speed'], ['buyHeal', 'heal'], ['buyVitality', 'vitality']]) $(id).addEventListener('click', () => { if (phase === 'shop' && ((shopService === 'bowyer' && ['bow', 'multishot'].includes(kind)) || (['outfitter', 'bowyer'].includes(shopService) && ['speed', 'vitality'].includes(kind)) || (shopService === 'inn' && kind === 'heal'))) { combat.buy(kind); renderShop(); updateHud(); } });
         $('sound').addEventListener('change', () => { if (!$('sound').checked) quietSound(); else if (phase === 'playing') resumeSound(); });
         $('spray').addEventListener('click', () => { spray(); if (phase === 'playing') $('world').focus({ preventScroll: true }); });
         $('jump').addEventListener('click', () => { jump(); if (phase === 'playing') $('world').focus({ preventScroll: true }); });

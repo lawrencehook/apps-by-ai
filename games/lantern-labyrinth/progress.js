@@ -28,13 +28,17 @@
             const y = from.y + (to.y - from.y) * t;
             if (x === tx && z === tz) continue;
             const height = map.grid.blocked?.has(`${x},${z}`) ? 3.25 : map.grid[z]?.[x] !== 0 ?
-                (map.seed === 'town' && (x === 0 || z === 0 || x === map.size - 1 || z === map.size - 1) ? 1.1 : 6) : 0;
+                (map.seed === 'town' ? (map.buildings?.find(b => b.cells.some(c => c[0] === x && c[1] === z))?.height ?? 1.1) : 6) : 0;
             if (height > y && !map.fences?.some(c => c[0] === x && c[1] === z)) return false;
         }
         return true;
     }
     function reveal(map, position, clearLine, view = {}) {
         if (!map.visited) map.visited = new Set();
+        if (map.seed === 'town') {
+            for (let z = 0; z < map.size; z++) for (let x = 0; x < map.size; x++) map.visited.add(`${x},${z}`);
+            return;
+        }
         const { yaw = 0, pitch = 0, fov = 68, aspect = 1, height = 1.6, range = 28 } = view;
         const cx = Math.round(position.x / 3.2), cz = Math.round(position.z / 3.2), cells = Math.ceil(range / 3.2);
         const sy = Math.sin(yaw), cy = Math.cos(yaw), sp = Math.sin(pitch), cp = Math.cos(pitch);

@@ -8,13 +8,10 @@ the main site. Games also appear in `metadata.json`.
 Open `/games/lantern-labyrinth/`. The existing URL is retained. Run
 `python3 -m http.server 8000` from the repository root for local development.
 
-Start in a safe town. Approach a signed building and press F or B: Bowyer sells
-damage ranks and bow options; Outfitter trains movement and vitality; Inn restores
-health for free; Waygate travels to unlocked checkpoints. Walk to the dark stairwell
-and press F to enter the dungeon. Underground floors use nine uneven, lobed chambers with offset centers linked by bending passageways,
+Start in a safe town of five unequal buildings, with a tall tower, a two-story inn and kitchen wing, cottages, and a workshop. Approach a sign or the outdoor waygate and press F or B: Workshop sells bows, damage ranks, movement, and vitality; Inn restores health for free; Waygate travels to unlocked checkpoints. The single town Waygate offers floor 1 and all unlocked checkpoints with F or B. Its oval stone frame surrounds a slowly animated teal surface, with bronze trim and glowing markings. Underground floors use nine uneven, lobed chambers with offset centers linked by bending passageways,
 with ceilings, wooden doors, stone ribs, and barred cell partitions. F operates
 nearby doors; enemies can open them too. Closed doors and bars block arrows. F at the entrance stairs returns to town; F at
-the far stairwell descends one floor. Town's entrance starts at floor 1. Reaching floors 5, 10, 15, and so on
+the far stairwell descends one floor. Choose floor 1 at the town Waygate to start from the beginning. Reaching floors 5, 10, 15, and so on
 permanently unlocks those destinations at the Waygate, including after defeat or
 refresh. Checkpoint floors have marked arrival stairs and stronger guardians with
 double coin rewards. Cleared enemies stay cleared on revisits (ambient reinforcements resume
@@ -48,7 +45,9 @@ Reset saved progress action. NPC quests, loot equipment, and magic remain future
 - **Escape:** pause and release mouse
 - **Touch:** movement pad, drag to aim, Fire, Jump, Spray, and stair button
 
-The map reveals cells within the camera’s actual field of view and clear sightlines,
+Town maps are fully revealed from arrival. All five town buildings have open walk-through entrances and real window openings; the inn, house, and tower have upper floors reached by interior stairs.
+
+Underground, the map reveals cells within the camera’s actual field of view and clear sightlines,
 including when turning in place. Walls and closed doors occlude exploration;
 previously seen cells remain revealed. It shows
 stairs only once discovered. A compact top-left minimap tracks the player with heading and view cone; M opens the full map. Sound is optional in Controls.
@@ -80,3 +79,11 @@ They use real Three.js geometry and raycasting with a stub renderer; GPU output
 still requires hands-on browser playtesting.
 
 Enemy health, damage, and coin rewards grow with a quadratic depth curve. Deeper floors favor hunters and sentinels, including opening encounters and reinforcements. Movement speed grows gradually toward a 35% bonus so positioning remains viable.
+
+Town buildings use individual weathered color palettes, painted shutters, window crossbars, timber braces, arched door surrounds, brass knockers, and carved eave brackets. The tower has a brass medallion and rooftop pennant.
+
+`town.js` shares building shells, stair supports, floor slabs, and height-aware collision between rendering and movement. Building interiors use the existing WASD and jump controls.
+
+Town visual polish includes warm directional sunlight with soft shadows, textured roofs, entrance lanterns, flower boxes, a raised fountain with collision, and broad surrounding hills. The procedural cloud shader is verified in the browser. Dungeon lighting retains its previous settings.
+
+Possible future iterations and deferred ideas are tracked in [NEXT-STEPS.md](NEXT-STEPS.md).

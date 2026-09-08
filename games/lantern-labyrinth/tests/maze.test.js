@@ -81,3 +81,14 @@ test('irregular chambers stay connected at every supported size and doors fit pa
         assert.ok(map.grid[0].every(Boolean) && map.grid[size - 1].every(Boolean));
     }
 });
+
+test('five varied town buildings leave services and dungeon stairs reachable', () => {
+    const map = Maze.town(), reachable = Maze.paths(map.grid, map.start).distance;
+    assert.equal(map.buildings.length, 5);
+    assert.ok(new Set(map.buildings.map(b => b.height)).size >= 4);
+    for (const point of [[5, 4], [6, 11], [8, 7], map.exit]) assert.ok(reachable.has(point.join(',')), 'service approach is reachable');
+    for (const building of map.buildings) for (const [x, z] of building.cells) {
+        assert.equal(map.grid[z][x], 1);
+        assert.equal(Maze.canStand(map.grid, x * 3.2, z * 3.2, 3.2), false);
+    }
+});

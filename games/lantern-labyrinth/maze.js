@@ -165,11 +165,28 @@
     }
     function town() {
         const size = 15, grid = Array.from({ length: size }, (_, z) => Array.from({ length: size }, (_, x) => x === 0 || z === 0 || x === size - 1 || z === size - 1 ? 1 : 0));
-        for (const [x, z] of [[2, 3], [10, 3], [2, 9], [10, 9]]) {
-            for (let dz = 0; dz < 3; dz++) for (let dx = 0; dx < 3; dx++) grid[z + dz][x + dx] = 1;
+        for (let z = 1; z < size - 1; z++) for (let x = 1; x < size - 1; x++) {
+            if (x + z < 4 || x - z > 11 || z - x > 11 || x + z > 25) grid[z][x] = 1;
         }
-        return { size, seed: 'town', grid, start: [7, 10], exit: [7, 2], outward: [0, -1] };
+        const buildings = [
+            { id: 'workshop', x: 3, z: 4, width: 3, length: 3, height: 5, roof: 0x526e69 },
+            { id: 'inn', x: 3, z: 11, width: 5, length: 3, height: 8.4, roof: 0x823f36 },
+            { id: 'cottage', x: 11, z: 5.5, width: 3, length: 2, height: 3.6, roof: 0x4c7055 },
+            { id: 'house', x: 10.5, z: 11, width: 2, length: 3, height: 6.5, roof: 0x3e546f },
+            { id: 'tower', x: 10.5, z: 1.5, width: 2, length: 2, height: 11, roof: 0x3d7777 }
+        ];
+        for (const b of buildings) {
+            b.cells = [];
+            for (let z = Math.ceil(b.z - b.length / 2); z < b.z + b.length / 2; z++)
+                for (let x = Math.ceil(b.x - b.width / 2); x < b.x + b.width / 2; x++) {
+                    grid[z][x] = 1; b.cells.push([x, z]);
+                }
+        }
+        // The inn's lower kitchen wing gives the courtyard an uneven edge.
+        for (const [x, z] of [[1, 8], [2, 8], [1, 9], [2, 9]]) { grid[z][x] = 1; buildings[1].cells.push([x, z]); }
+        return { size, seed: 'town', grid, buildings, start: [7, 10], exit: [7, 2], outward: [0, -1] };
     }
+
     const api = { random, generate, dungeon, town, paths, route, canStand, cameraPosition };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.MazeWorld = api;

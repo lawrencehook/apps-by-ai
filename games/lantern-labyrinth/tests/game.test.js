@@ -30,6 +30,7 @@ function openGame({ webgl = true, town = false, saved = null } = {}) {
         setPixelRatio() {} setSize() {} render(scene, camera) { scene.updateMatrixWorld(); camera.updateMatrixWorld(); }
     } };
     window.eval(fs.readFileSync(path.join(root, 'maze.js'), 'utf8'));
+    window.eval(fs.readFileSync(path.join(root, 'town.js'), 'utf8'));
     window.eval(fs.readFileSync(path.join(root, 'combat.js'), 'utf8'));
     window.eval(fs.readFileSync(path.join(root, 'progress.js'), 'utf8'));
     const source = fs.readFileSync(path.join(root, 'game.js'), 'utf8').replace('let depth = 0,', `let depth = ${town ? 0 : 1},`);
@@ -37,7 +38,7 @@ function openGame({ webgl = true, town = false, saved = null } = {}) {
     window.eval(source.replace('\n})();', `
     window.gameTest = { start, move, pause, newMaze, travel, fastTravel, spray, jump, shoot, animateBow, openShop, die, syncCombat, clearInput, createMaze, updateCamera, position,
         setHeading(angle) { yaw = angle; avatar.rotation.y = angle; updateCamera(0); },
-        get state() { return { depth, phase, maze, keys, camera, walls, marks, avatar, world, wallTextures, jumpHeight, verticalSpeed, combat, bow, weaponRig, leftArm, rightArm, bowString }; } };
+        get state() { return { groundHeight, townWorld, depth, phase, maze, keys, camera, walls, marks, avatar, world, wallTextures, jumpHeight, verticalSpeed, combat, bow, weaponRig, leftArm, rightArm, bowString }; } };
 })();`));
     window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
     return { dom, window, api: window.gameTest, errors, tick: now => frame?.(now) };
@@ -292,13 +293,14 @@ test('town is safe; stairs preserve progression and cleared floors; defeat recov
         assert.equal(api.shoot(), false);
         townRun.coins = 80; townRun.bowLevel = 1;
         const exit = api.state.maze.exit; api.position.x = exit[0] * 3.2; api.position.z = exit[1] * 3.2;
-        api.travel(); assert.equal(api.state.depth, 1); assert.equal(api.state.combat.coins, 80);
+        api.travel(); assert.equal(api.state.phase, 'shop'); assert.equal(window.document.getElementById('shopTitle').textContent, 'Waygate');
+        api.fastTravel(1); assert.equal(api.state.depth, 1); assert.equal(api.state.combat.coins, 80);
         api.openShop(); assert.equal(api.state.phase, 'playing', 'no shop underground');
         const floor = api.state.combat; floor.enemies = []; floor.health = 40;
         api.travel(); assert.equal(api.state.depth, 0); assert.equal(api.state.combat.health, 40);
         api.openShop('inn'); window.document.getElementById('buyHeal').click(); window.document.getElementById('closeShop').click(); assert.equal(api.state.combat.health, 100);
         api.position.x = api.state.maze.exit[0] * 3.2; api.position.z = api.state.maze.exit[1] * 3.2;
-        api.travel(); assert.equal(api.state.combat, floor); assert.equal(floor.enemies.length, 0);
+        api.travel(); api.fastTravel(1); assert.equal(api.state.combat, floor); assert.equal(floor.enemies.length, 0);
         api.position.x = api.state.maze.exit[0] * 3.2; api.position.z = api.state.maze.exit[1] * 3.2;
         api.travel(); assert.equal(api.state.depth, 2); assert.equal(api.state.combat.bowLevel, 1);
         api.state.combat.health = 0; api.die(); api.start();
@@ -312,7 +314,7 @@ test('M pauses for the explored map; reset requires confirmation and updates sav
     try {
         api.start(); press(game, 'KeyM'); assert.equal(api.state.phase, 'map');
         assert.equal(window.document.pointerLockElement, null);
-        assert.ok(api.state.maze.visited.size > 0 && api.state.maze.visited.size < api.state.maze.size ** 2);
+        assert.equal(api.state.maze.visited.size, api.state.maze.size ** 2);
         press(game, 'KeyM'); assert.equal(api.state.phase, 'playing');
         api.state.combat.coins = 40; api.openShop(); window.document.getElementById('buyBow').click();
         assert.equal(JSON.parse(window.localStorage.getItem('dungeon-progress-v1')).bowLevel, 1);
@@ -383,5 +385,24 @@ test('a delayed cursor warp after map closure never changes heading', () => {
         now += 500; move(200, 500, 800); assert.equal(api.state.camera.rotation.y, heading);
         now += 500; move(500, 300, 300); assert.equal(api.state.camera.rotation.y, heading);
         move(500, 300, 10); assert.ok(Math.abs(api.state.camera.rotation.y - (heading - 0.024)) < 1e-8);
+    } finally { game.dom.window.close(); }
+});
+
+test('town movement climbs stairs, supports the upper floor, and returns downstairs', () => {
+    const game = openGame({ town: true });
+    try {
+        const { api } = game; api.start();
+        const r = api.state.townWorld.ramps.find(r => r.building === 'inn');
+        api.position.x = (r.x1 + r.x2) / 2; api.position.z = r.z1 - 0.15;
+        api.setHeading(Math.PI); press(game, 'KeyW');
+        for (let i = 0; i < Math.ceil((r.z2 - r.z1 + 0.45) / (4.4 * 0.02)); i++) api.move(0.02);
+        press(game, 'KeyW', 'keyup'); api.updateCamera(0);
+        assert.ok(Math.abs(api.state.groundHeight - 2.8) < 0.05);
+        assert.ok(Math.abs(api.state.camera.position.y - 4.4) < 0.05);
+        api.setHeading(0); press(game, 'KeyW');
+        for (let i = 0; i < Math.ceil((r.z2 - r.z1 + 0.65) / (4.4 * 0.02)); i++) api.move(0.02);
+        press(game, 'KeyW', 'keyup');
+        assert.ok(api.state.groundHeight < 0.05);
+        assert.deepEqual(game.errors, []);
     } finally { game.dom.window.close(); }
 });
