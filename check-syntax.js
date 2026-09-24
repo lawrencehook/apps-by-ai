@@ -17,9 +17,13 @@ function sectionFiles(section) {
     return [path.join(dir, 'index.html'), ...fs.readdirSync(dir)
         .map(d => path.join(dir, d, 'index.html'))].filter(f => fs.existsSync(f));
 }
+function mathFiles(dir) {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? mathFiles(path.join(dir, entry.name)) : entry.name === 'index.html' ? [path.join(dir, entry.name)] : []);
+}
 const files = wanted.length
     ? wanted.map(n => path.join(root, 'apps', n, 'index.html'))
-    : [path.join(root, 'index.html'), ...sectionFiles('apps'), ...sectionFiles('games')];
+    : [path.join(root, 'index.html'), ...sectionFiles('apps'), ...sectionFiles('games'), ...mathFiles(path.join(root, 'math')), ...mathFiles(path.join(root, 'notes'))];
 
 const scriptRe = /<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi;
 // Code must come from the repo (see libs/README.md). Google Fonts is the one

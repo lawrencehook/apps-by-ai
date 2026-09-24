@@ -1,5 +1,22 @@
 [
     {
+        "id": "reference-notes",
+        "title": "Notes",
+        "description": "A growing reference for mathematics, computer science, and theory of computation: definitions, theorem assumptions, applications, and exercises with hints and solutions.",
+        "path": "notes/index.html",
+        "emoji": "ℳ",
+        "previewGradient": "linear-gradient(135deg, #333, #444)",
+        "dateCreated": "2026-09-08",
+        "category": "Education",
+        "tags": [
+            "math",
+            "reference",
+            "exercises",
+            "learning"
+        ],
+        "completeness": 4
+    },
+    {
         "id": "lantern-labyrinth",
         "title": "Dungeon",
         "description": "A first-person dungeon crawler with a safe town, bow combat, upgrades, and increasingly dangerous and rewarding dungeon floors.",
