@@ -17,13 +17,13 @@ canvas{height:clamp(210px,32vh,340px)}
 <svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
 </div></section>
 <footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/library.js"></script>
 <script src="bach-data/notation/index.js"></script><script src="bach-data/piano.js"></script><script>
 const id = Number(new URLSearchParams(location.search).get('bwv'));
 const piece = library.find(item => item.bwv === id) || FUGUE;
 const isFugue = piece === FUGUE;
 const score = piece.score;
-const names = score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
+const names = score.length === 1 ? ['Cello line'] : score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
 const colors = ['#e9ce80','#8acfc3','#d9a8c1'];
 const enabled = names.map(() => true);
 document.title = piece.title + ' · J. S. Bach';

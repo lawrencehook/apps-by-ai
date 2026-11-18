@@ -37,3 +37,9 @@ The Sinfonias use Olivier Vermersch’s public-domain Mutopia editions. Playback
 ## Sheet music
 
 The player shows one printed staff system at a time and highlights the current measure. The images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
+
+## Featured listening
+
+The “Start here” shelf pairs two widely streamed openings with the catalog's original three-voice fugue. ChartMasters lists individual recordings of the G-major Cello Suite Prelude and C-major keyboard Prelude at the top of its Bach streaming table. Multiple recordings can represent one composition, so the shelf is an editorial selection. [ChartMasters Bach dashboard](https://chartmasters.org/artist/bach-baroque/)
+
+Both additions cover the complete prelude movement. BWV 1007 uses Andreas Scherer's public-domain cello edition, rendered on the catalog piano. BWV 846 uses the public-domain keyboard edition maintained by Tobias Erbsland. The catalog's BWV 851 fugue belongs to Book I of The Well-Tempered Clavier. The familiar organ Toccata and Fugue in D minor is a separate work, BWV 565. [Cello edition](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=517) · [Keyboard edition](https://www.mutopiaproject.org/ftp/BachJS/BWV846/wtk1-prelude1/wtk1-prelude1.ly)

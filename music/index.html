@@ -21,28 +21,49 @@ a:hover h2,a:hover h3{color:var(--gold)}a:focus-visible{outline:2px solid var(--
 footer{margin-top:30px;border-top:1px solid var(--rule);padding-top:14px;flex-wrap:wrap}footer a{text-decoration:underline;text-underline-offset:3px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.feature{grid-template-columns:1fr}.feature canvas{height:95px}.work{grid-template-columns:30px 1fr 65px 35px}.section h2{font-size:26px}}
 nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color:var(--muted)}nav a[aria-current],nav a:hover{color:var(--gold)}
+#featured-works{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+#featured-works .feature{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:20px}
+.feature h3{font-size:clamp(24px,2.5vw,33px);line-height:1.12;margin:0}
+.feature p{font-size:14px;margin:0;color:var(--muted)}.feature .meta{margin-top:auto}
+.feature canvas{height:84px}
 </style>
 <main>
 <nav aria-label="Site sections"><a href="../index.html">Apps</a><a href="../games/index.html">Games</a><a href="../notes/index.html">Notes</a><a href="index.html" aria-current="page">Music</a></nav>
-<header><strong>Johann Sebastian Bach</strong><span>Keyboard works</span></header>
+<header><strong>Johann Sebastian Bach</strong><span>Interactive scores</span></header>
 <h1 class="title">The listening catalog</h1>
-<a class="feature" id="featured"><div><span class="eyebrow">The Well-Tempered Clavier · I</span><h2>Fugue in D minor</h2><div class="meta" id="featured-meta"></div></div><canvas aria-hidden="true"></canvas></a>
+<section aria-labelledby="start-heading"><div class="section"><h2 id="start-heading">Start here</h2></div>
+<div id="featured-works"></div></section>
 <div class="section"><h2>Two-Part Inventions</h2><span class="meta" id="count"></span></div>
 <div class="grid" id="works"></div>
 <div class="section"><h2>Three-Part Sinfonias</h2><span class="meta" id="sinfonia-count"></span></div>
 <div class="grid" id="sinfonias"></div>
 <footer><span>Scores from the Mutopia Project</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a></footer>
 </main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/library.js"></script>
 <script>
-const featured = document.querySelector('#featured');
-featured.href = playerLink(FUGUE);
-document.querySelector('#featured-meta').textContent = 'BWV 851  ·  3 voices  ·  ' + durationText(FUGUE);
+const portraits = [];
+const features = [
+    [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello', 'Listen for the low G returning beneath the opening phrase. Played here on piano.'],
+    [846, 'The Well-Tempered Clavier · I', 'Prelude in C major', 'Follow the repeating pattern as the harmony shifts underneath it.'],
+    [851, 'The Well-Tempered Clavier · I', 'Fugue in D minor', 'Hear the opening melody enter first in the upper voice, then in the middle and bass.']
+];
+for (const [bwv, collection, title, cue] of features) {
+    const piece = library.find(work => work.bwv === bwv);
+    const card = document.createElement('a');
+    card.className = 'feature';
+    card.href = playerLink(piece);
+    card.innerHTML = '<span class="eyebrow"></span><h3></h3><canvas aria-hidden="true"></canvas><p></p><span class="meta"></span>';
+    card.querySelector('.eyebrow').textContent = collection;
+    card.querySelector('h3').textContent = title;
+    card.querySelector('p').textContent = cue;
+    card.querySelector('.meta').textContent = 'BWV ' + bwv + ' · ' + durationText(piece);
+    document.querySelector('#featured-works').append(card);
+    portraits.push([card.querySelector('canvas'), piece, true]);
+}
 const grids = [
     {pieces: INVENTIONS, grid: '#works', count: '#count'},
     {pieces: SINFONIAS, grid: '#sinfonias', count: '#sinfonia-count'}
 ];
-const portraits = [];
 for (const {pieces, grid, count} of grids) {
     const works = document.querySelector(grid);
     document.querySelector(count).textContent = pieces.length + ' works';
@@ -67,7 +88,7 @@ function portrait(canvas, piece, featured) {
     canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);
     const ctx=canvas.getContext('2d');
     ctx.scale(scale,scale);
-    const start=featured?60:0, span=featured?62:52;
+    const start=featured && piece === FUGUE ? 60 : 0, span=featured?62:52;
     const parts=piece.score.map(part=>part.filter(([tick])=>tick>=start&&tick<start+span));
     const notes=parts.flat().map(note=>note[2]);
     const lo=Math.min(...notes),hi=Math.max(...notes);
@@ -85,8 +106,7 @@ function portrait(canvas, piece, featured) {
     });
 }
 const observer=new ResizeObserver(()=>{
-    portrait(featured.querySelector('canvas'),FUGUE,true);
-    portraits.forEach(([canvas, piece]) => portrait(canvas, piece, false));
+    portraits.forEach(([canvas, piece, featured]) => portrait(canvas, piece, featured));
 });
 observer.observe(document.querySelector('main'));
 </script></html>
