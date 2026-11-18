@@ -29,26 +29,36 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <a class="feature" id="featured"><div><span class="eyebrow">The Well-Tempered Clavier · I</span><h2>Fugue in D minor</h2><div class="meta" id="featured-meta"></div></div><canvas aria-hidden="true"></canvas></a>
 <div class="section"><h2>Two-Part Inventions</h2><span class="meta" id="count"></span></div>
 <div class="grid" id="works"></div>
+<div class="section"><h2>Three-Part Sinfonias</h2><span class="meta" id="sinfonia-count"></span></div>
+<div class="grid" id="sinfonias"></div>
 <footer><span>Scores from the Mutopia Project</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a></footer>
 </main>
-<script src="bach-data/scores.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/library.js"></script>
 <script>
 const featured = document.querySelector('#featured');
 featured.href = playerLink(FUGUE);
 document.querySelector('#featured-meta').textContent = 'BWV 851  ·  3 voices  ·  ' + durationText(FUGUE);
-document.querySelector('#count').textContent = INVENTIONS.length + ' works';
-const works = document.querySelector('#works');
-for (const [index, piece] of INVENTIONS.entries()) {
-    const row = document.createElement('a');
-    row.className = 'work';
-    row.href = playerLink(piece);
-    row.innerHTML = '<span class="number"></span><div><h3></h3><div class="meta"></div></div><canvas aria-hidden="true"></canvas><span class="time"></span>';
-    row.querySelector('.number').textContent = String(index+1).padStart(2,'0');
-    row.querySelector('h3').textContent = piece.key;
-    row.querySelector('.meta').textContent = 'BWV ' + piece.bwv;
-    row.querySelector('.time').textContent = durationText(piece);
-    row.setAttribute('aria-label', piece.title + ' in ' + piece.key + ', BWV ' + piece.bwv);
-    works.append(row);
+const grids = [
+    {pieces: INVENTIONS, grid: '#works', count: '#count'},
+    {pieces: SINFONIAS, grid: '#sinfonias', count: '#sinfonia-count'}
+];
+const portraits = [];
+for (const {pieces, grid, count} of grids) {
+    const works = document.querySelector(grid);
+    document.querySelector(count).textContent = pieces.length + ' works';
+    for (const [index, piece] of pieces.entries()) {
+        const row = document.createElement('a');
+        row.className = 'work';
+        row.href = playerLink(piece);
+        row.innerHTML = '<span class="number"></span><div><h3></h3><div class="meta"></div></div><canvas aria-hidden="true"></canvas><span class="time"></span>';
+        row.querySelector('.number').textContent = String(index+1).padStart(2,'0');
+        row.querySelector('h3').textContent = piece.key;
+        row.querySelector('.meta').textContent = 'BWV ' + piece.bwv;
+        row.querySelector('.time').textContent = durationText(piece);
+        row.setAttribute('aria-label', piece.title + ' in ' + piece.key + ', BWV ' + piece.bwv);
+        works.append(row);
+        portraits.push([row.querySelector('canvas'), piece]);
+    }
 }
 
 // The small portraits use actual note onsets from each score.
@@ -76,7 +86,7 @@ function portrait(canvas, piece, featured) {
 }
 const observer=new ResizeObserver(()=>{
     portrait(featured.querySelector('canvas'),FUGUE,true);
-    works.querySelectorAll('canvas').forEach((canvas,i)=>portrait(canvas,INVENTIONS[i],false));
+    portraits.forEach(([canvas, piece]) => portrait(canvas, piece, false));
 });
 observer.observe(document.querySelector('main'));
 </script></html>

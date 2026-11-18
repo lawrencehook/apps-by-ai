@@ -17,18 +17,18 @@ canvas{height:clamp(210px,32vh,340px)}
 <svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
 </div></section>
 <footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
-<script src="bach-data/scores.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/library.js"></script>
 <script src="bach-data/notation/index.js"></script><script src="bach-data/piano.js"></script><script>
 const id = Number(new URLSearchParams(location.search).get('bwv'));
 const piece = library.find(item => item.bwv === id) || FUGUE;
 const isFugue = piece === FUGUE;
 const score = piece.score;
-const names = isFugue ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
-const colors = isFugue ? ['#e9ce80','#8acfc3','#d9a8c1'] : ['#e9ce80','#8acfc3'];
+const names = score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
+const colors = ['#e9ce80','#8acfc3','#d9a8c1'];
 const enabled = names.map(() => true);
 document.title = piece.title + ' · J. S. Bach';
 document.querySelector('h1').textContent = piece.title;
-document.querySelector('header p').textContent = (isFugue ? 'The Well-Tempered Clavier, Book I' : 'Two-Part Inventions · ' + piece.key) + ' · BWV ' + piece.bwv;
+document.querySelector('header p').textContent = (isFugue ? 'The Well-Tempered Clavier, Book I' : (piece.collection || 'Two-Part Inventions') + ' · ' + piece.key) + ' · BWV ' + piece.bwv;
 document.querySelector('#edition').href = piece.source;
 const edition = document.querySelector('#edition');
 edition.textContent = 'Score · ' + piece.credit;
@@ -46,7 +46,7 @@ const bars = piece.barStarts || Array.from({length: Math.ceil(totalBeats / piece
 const measures = bars.length;
 const pitches = voices.flat().flatMap(n => n.pitches);
 const lowest = Math.min(...pitches), highest = Math.max(...pitches);
-const groups = isFugue ? [0, 1, 2, 2] : [0, 1]; // The closing inner bass part shares the Bass control.
+const groups = isFugue ? [0, 1, 2, 2] : score.map((_, i) => i); // The closing inner bass part shares the Bass control.
 const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),play=document.querySelector('#play'),seek=document.querySelector('#seek'),speed=document.querySelector('#speed'),bar=document.querySelector('#bar');
 seek.max = totalBeats;
 seek.setAttribute('aria-label', 'Position in piece');
@@ -198,7 +198,7 @@ engraving.setAttribute('href', 'bach-data/notation/' + piece.bwv + '.webp');
 engraving.setAttribute('width', sheet.width);
 engraving.setAttribute('height', sheet.height);
 const pdfName = isFugue ? 'bwv851_fugue06' : 'bach-invention-' + String(piece.bwv-771).padStart(2, '0');
-document.querySelector('#sheet-pdf').href = 'https://www.mutopiaproject.org/ftp/BachJS/BWV' + piece.bwv + '/' + pdfName + '/' + pdfName + '-a4.pdf';
+document.querySelector('#sheet-pdf').href = piece.pdf || 'https://www.mutopiaproject.org/ftp/BachJS/BWV' + piece.bwv + '/' + pdfName + '/' + pdfName + '-a4.pdf';
 const sheetBars = sheet.systems.flatMap(system => system.x.slice(0, -1).map((x, i) => ({
     system, x, width: system.x[i+1] - x
 })));

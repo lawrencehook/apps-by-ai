@@ -1,6 +1,6 @@
 # Open music collections and listening experiments
 
-The [listening catalog](index.html) opens with Bach's D-minor fugue, BWV 851, and includes all fifteen Two-Part Inventions, BWV 772–786. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
+The [listening catalog](index.html) opens with Bach's D-minor fugue, BWV 851, and includes all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
 
 The catalog combines two independently reusable resources. Mutopia volunteers encoded the notes and their timing. Alexander Holm recorded individual notes on a Yamaha C5 grand piano. The player can therefore change the tempo or isolate a written voice while retaining the sound of a recorded instrument. Each piece links to its edition, and the sample bank carries its own credit. [Mutopia](https://www.mutopiaproject.org/) · [Piano sample credits](bach-data/piano-credits.txt)
 
@@ -10,7 +10,7 @@ Collection sizes below are approximate as of November 2026. A song, a movement, 
 
 | Collection | Material and reuse | What it makes possible |
 | --- | --- | --- |
-| Mutopia | 2,124 pieces with editable LilyPond, printable scores, and MIDI. Each edition identifies its public-domain status or license. [Collection and formats](https://www.mutopiaproject.org/) | Extend the existing player into the Sinfonias, canons, or cello suites. Inspect the encoded voices before assigning colors: a keyboard staff can contain multiple independent melodies. |
+| Mutopia | 2,124 pieces with editable LilyPond, printable scores, and MIDI. Each edition identifies its public-domain status or license. [Collection and formats](https://www.mutopiaproject.org/) | Extend the existing player into the canons or cello suites. Inspect the encoded voices before assigning colors: a keyboard staff can contain multiple independent melodies. |
 | OpenScore | Roughly 1,500 songs, 700 movements across 200 string quartets, and 100 orchestral movements, under CC0. [OpenScore collections](https://fourscoreandmore.org/openscore/) | Follow four named instruments through a quartet, or investigate what the piano does under a particular word in a song. |
 | Kimiko Ishizaka's open Bach projects | The Goldberg Variations and Book I of The Well-Tempered Clavier have public-domain scores and studio performances. [Open Goldberg Variations](https://opengoldbergvariations.org/) · [Open Well-Tempered Clavier](https://welltemperedclavier.org/kimiko-ishizaka-releases-open-well-tempered-clavier.html) | Pair the existing D-minor fugue with Ishizaka's interpretation. Mapping beats to timestamps would let a listener switch versions at the same phrase. |
 | Annotated Beethoven Corpus | Expert harmonic analyses of all Beethoven string quartets, with machine-readable notes, keys, and chords. CC BY-NC-SA 4.0. [Dataset and license](https://github.com/DCMLab/ABC) | Build a noncommercial listening guide in which selecting a labeled modulation plays its musical context. |
@@ -28,9 +28,11 @@ Four Invention editions in this catalog credit jeff covey under CC BY-SA 3.0 (BW
 
 ## Listening experiments to try
 
-1. **Follow a motif.** Select six notes in an Invention. Search both voices for the same sequence of pitch intervals and relative durations, so a move to another key still matches. Play the original and each match back to back with measure and voice labels. Start here because the sixteen existing scores are enough to test whether the discoveries are interesting. Later, let the listener try rhythmic changes or an inversion.
+1. **Follow a motif.** Select six notes in an Invention. Search both voices for the same sequence of pitch intervals and relative durations, so a move to another key still matches. Play the original and each match back to back with measure and voice labels. Start here because the existing scores are enough to test whether the discoveries are interesting. Later, let the listener try rhythmic changes or an inversion.
 2. **Sit inside a quartet.** Introduce the viola alone for two bars, then fade the other players back in. At a handoff, let the listener switch focus to the instrument that finishes the phrase. Start with one OpenScore movement and mark a few handoffs by ear.
 3. **Hear a pianist's decision.** Align one cadence in Ishizaka's BWV 851 with its printed beats. Play the evenly timed score and the studio recording, then replay the sampled instrument using the pianist's timing to isolate the effect of timing from tone. Validate the beat alignment by listening before extending it to the whole work.
+
+The Sinfonias use Olivier Vermersch’s public-domain Mutopia editions. Playback preserves the three melodic voices across staff changes. Each player links to its LilyPond source and the corresponding engraved PDF.
 
 ## Sheet music
 

@@ -9,7 +9,7 @@ const FUGUE = {
 [[506,2,50,54],[508,2,52,55],[510,2,54,57],[512,2,55,58],[514,2,52,55],[516,12,54,57]]
 ]
 };
-const library = [FUGUE, ...INVENTIONS];
+const library = [FUGUE, ...INVENTIONS, ...SINFONIAS];
 function durationBeats(piece) {
     return piece.totalBeats ?? Math.max(...piece.score.flat().map(([tick, length]) => (tick + length) / 4));
 }
