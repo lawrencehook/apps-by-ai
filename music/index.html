@@ -21,7 +21,7 @@ a:hover h2,a:hover h3{color:var(--gold)}a:focus-visible{outline:2px solid var(--
 footer{margin-top:30px;border-top:1px solid var(--rule);padding-top:14px;flex-wrap:wrap}footer a{text-decoration:underline;text-underline-offset:3px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.feature{grid-template-columns:1fr}.feature canvas{height:95px}.work{grid-template-columns:30px 1fr 65px 35px}.section h2{font-size:26px}}
 nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color:var(--muted)}nav a[aria-current],nav a:hover{color:var(--gold)}
-#featured-works{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+#featured-works{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px}
 #featured-works .feature{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:20px}
 .feature h3{font-size:clamp(24px,2.5vw,33px);line-height:1.12;margin:0}
 .feature p{font-size:14px;margin:0;color:var(--muted)}.feature .meta{margin-top:auto}
@@ -37,12 +37,13 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <div class="grid" id="works"></div>
 <div class="section"><h2>Three-Part Sinfonias</h2><span class="meta" id="sinfonia-count"></span></div>
 <div class="grid" id="sinfonias"></div>
-<footer><span>Scores from the Mutopia Project</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a></footer>
+<footer><span>Scores from Mutopia and Project Gutenberg</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a><a href="bach-data/concerto-credits.txt">Concerto recordings</a></footer>
 </main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/library.js"></script>
 <script>
 const portraits = [];
 const features = [
+    [1050, 'I. Allegro · D major', 'Brandenburg Concerto No. 5', 'Listen for the harpsichord behind the flute and violin. Eventually it has the stage to itself.'],
     [565, 'Organ · D minor', 'Toccata and Fugue', 'Listen to the opening flourish in octaves, then follow the bass when the pedals enter.'],
     [1068, 'Orchestral Suite No. 3 · D major', 'Air', 'Follow the first violin’s long opening note while the bass moves beneath it.'],
     [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello', 'Listen for the low G returning beneath the opening phrase.'],
@@ -96,7 +97,7 @@ function portrait(canvas, piece, featured) {
     const lo=Math.min(...notes),hi=Math.max(...notes);
     parts.forEach((part,i)=>{
         let prev;
-        ctx.strokeStyle=ctx.fillStyle=['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb'][piece === FUGUE && i === 3 ? 2 : i];
+        ctx.strokeStyle=ctx.fillStyle=voiceColors[voiceGroups(piece)[i]];
         for (const [tick, length, ...pitches] of part) {
             const x = 3 + (tick-start)*(w-7)/span;
             const ys = pitches.sort((a,b) => a-b).map(pitch => h-5-(pitch-lo)*(h-10)/(hi-lo||1));

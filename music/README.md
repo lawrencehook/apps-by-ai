@@ -1,6 +1,6 @@
 # Open music collections and listening experiments
 
-The [listening catalog](index.html) features Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It also includes all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
+The [listening catalog](index.html) features the first movement of Brandenburg Concerto No. 5, Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It also includes all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
 
 The catalog combines two independently reusable resources. Mutopia volunteers encoded the notes and their timing. Alexander Holm recorded individual notes on a Yamaha C5 grand piano. The player can therefore change the tempo or isolate a written voice while retaining the sound of a recorded instrument. Each piece links to its edition, and the instrument recordings carry their own credits. The organ, solo cello line, and orchestral strings use CC0 Versilian samples. [Mutopia](https://www.mutopiaproject.org/) · [Piano sample credits](bach-data/piano-credits.txt) · [Organ and string credits](bach-data/ensemble-credits.txt)
 
@@ -36,7 +36,7 @@ The Sinfonias use Olivier Vermersch’s public-domain Mutopia editions. Playback
 
 ## Sheet music
 
-The player shows one printed staff system at a time and highlights the current measure. The images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
+The player shows one printed staff system at a time and highlights the current measure. The Brandenburg engraving comes from the same MusicXML as the player. The other images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
 
 ## Featured listening
 
@@ -45,3 +45,7 @@ The “Start here” shelf includes three familiar instrumental colors: organ, s
 Both featured preludes are complete movements. BWV 1007 uses Andreas Scherer's public-domain cello edition, played with recorded cello samples. BWV 846 uses the public-domain keyboard edition maintained by Tobias Erbsland. The catalog's BWV 851 fugue belongs to Book I of The Well-Tempered Clavier. The familiar organ Toccata and Fugue in D minor is a separate work, BWV 565. [Cello edition](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=517) · [Keyboard edition](https://www.mutopiaproject.org/ftp/BachJS/BWV846/wtk1-prelude1/wtk1-prelude1.ly)
 
 The complete BWV 565 follows the timing of the Mutopia MIDI edition (quarter note = 60). The three paths correspond to right hand, left hand, and pedal. The Air uses jeff covey’s CC BY-SA 3.0 edition, including the printed repeats and alternate endings. Its two violins, viola, and continuo bass can be muted independently. The local staff images are cropped reproductions of the credited editions. [Organ edition](https://www.mutopiaproject.org/ftp/BachJS/BWV565/ToccataFugue/ToccataFugue.ly) · [Air edition](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=242)
+
+## Brandenburg Concerto No. 5
+
+The opening Allegro uses Geof Pawlicki’s public-domain MusicXML edition. Playback follows the edition’s 120 quarter notes per minute. Trills and mordents are shown in the notation and left unembellished in playback. Seven controls cover flute, solo violin, ripieno violin, viola, cello, violone, and the two harpsichord staves. The violone line uses a modern contrabass sample. Measure 154 starts the harpsichord cadenza, and the ensemble returns in measure 219. [Score edition](https://www.gutenberg.org/ebooks/5190) · [Concerto sample credits](bach-data/concerto-credits.txt)

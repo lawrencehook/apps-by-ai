@@ -9,7 +9,13 @@ const FUGUE = {
 [[506,2,50,54],[508,2,52,55],[510,2,54,57],[512,2,55,58],[514,2,52,55],[516,12,54,57]]
 ]
 };
-const library = [ORGAN_WORK, AIR_WORK, FUGUE, ...PRELUDES, ...INVENTIONS, ...SINFONIAS];
+const voiceColors = ['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb','#e8a17b','#b5c888','#d1b2ff'];
+function voiceGroups(piece) {
+    if (piece.groups) return piece.groups;
+    if (piece === FUGUE) return [0, 1, 2, 2];
+    return piece.score.map((_, i) => i);
+}
+const library = [BRANDENBURG, ORGAN_WORK, AIR_WORK, FUGUE, ...PRELUDES, ...INVENTIONS, ...SINFONIAS];
 function durationBeats(piece) {
     return piece.totalBeats ?? Math.max(...piece.score.flat().map(([tick, length]) => (tick + length) / 4));
 }

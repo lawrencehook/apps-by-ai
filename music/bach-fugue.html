@@ -17,8 +17,8 @@ canvas{height:clamp(210px,32vh,340px)}
 <svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
 </div></section>
 <footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a id="instrument-credit" href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/library.js"></script>
-<script src="bach-data/notation/index.js"></script><script src="bach-data/notation/565.js"></script><script src="bach-data/notation/1068.js"></script><script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/notation/index.js"></script><script src="bach-data/notation/565.js"></script><script src="bach-data/notation/1068.js"></script><script src="bach-data/notation/1050.js"></script><script>
 const id = Number(new URLSearchParams(location.search).get('bwv'));
 const piece = library.find(item => item.bwv === id) || FUGUE;
 const isFugue = piece === FUGUE;
@@ -26,7 +26,11 @@ const score = piece.score;
 const names = piece.names || (score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower']);
 const colors = ['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb'];
 const instruments = piece.instruments || score.map(() => 'piano');
-if (piece.instruments) {
+if (piece === BRANDENBURG) {
+    const credit = document.querySelector('#instrument-credit');
+    credit.href = 'bach-data/concerto-credits.txt';
+    credit.textContent = 'Concerto samples';
+} else if (piece.instruments) {
     const credit = document.querySelector('#instrument-credit');
     credit.href = 'bach-data/ensemble-credits.txt';
     credit.textContent = instruments.includes('organ') ? 'Pipe organ samples' : 'String samples';
@@ -52,24 +56,52 @@ const bars = piece.barStarts || Array.from({length: Math.ceil(totalBeats / piece
 const measures = bars.length;
 const pitches = voices.flat().flatMap(n => n.pitches);
 const lowest = Math.min(...pitches), highest = Math.max(...pitches);
-const groups = isFugue ? [0, 1, 2, 2] : score.map((_, i) => i); // The closing inner bass part shares the Bass control.
+const groups = voiceGroups(piece);
+const legatoStarts = (piece.legatoStarts || []).map(onsets => new Set(onsets));
 const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),play=document.querySelector('#play'),seek=document.querySelector('#seek'),speed=document.querySelector('#speed'),bar=document.querySelector('#bar');
 seek.max = totalBeats;
 seek.setAttribute('aria-label', 'Position in piece');
 let audio, master, clock;
+let concertoOutputs;
+function connectInstrumentOutputs(context) {
+    master = context.createGain();
+    master.gain.value = piece === BRANDENBURG ? .55 : .72;
+    master.connect(context.destination);
+    if (piece !== BRANDENBURG) return;
+    // Keep the two violin desks and the soloists distinct on headphones.
+    const seating = {flute: -.22, soloViolin: .16, violin: -.48, viola: .36,
+        cello: .22, contrabass: .12, harpsichord: 0};
+    concertoOutputs = {};
+    for (const [instrument, pan] of Object.entries(seating)) {
+        const seat = context.createStereoPanner();
+        seat.pan.value = pan;
+        seat.connect(master);
+        concertoOutputs[instrument] = seat;
+    }
+}
 // Resolve the sample once per instrument and pitch, before the playback clock starts.
 const samples = new Map();
-let bankLoaded = false;
-async function loadBank() {
-    if (bankLoaded) return;
+const sampleLibraries = {
+    piano: {file: 'piano', read: () => ({piano: PIANO_SAMPLES})},
+    ensemble: {file: 'ensemble-samples', read: () => ENSEMBLE_SAMPLES},
+    concerto: {file: 'concerto-samples', read: () => CONCERTO_SAMPLES}
+};
+const libraryFor = {
+    piano: 'piano', organ: 'ensemble', violin: 'ensemble', viola: 'ensemble', cello: 'ensemble',
+    harpsichord: 'concerto', flute: 'concerto', soloViolin: 'concerto', contrabass: 'concerto'
+};
+const banks = {};
+async function loadBank(name) {
+    if (banks[name]) return;
+    const library = sampleLibraries[name];
     const script = document.createElement('script');
-    script.src = piece.instruments ? 'bach-data/ensemble-samples.js' : 'bach-data/piano.js';
+    script.src = 'bach-data/' + library.file + '.js';
     await new Promise((resolve, reject) => {
         script.onload = resolve;
         script.onerror = () => { script.remove(); reject(new Error('Sample bank unavailable')); };
         document.head.append(script);
     });
-    bankLoaded = true;
+    banks[name] = library.read();
 }
 let running = false, offset = 0, start = 0, rate = piece.bpm / 60;
 let nextNote = [];
@@ -78,18 +110,17 @@ const playing = new Set();
 async function prepareInstrument() {
     if (!audio) {
         audio = new AudioContext();
-        master = audio.createGain();
-        master.gain.value = .72;
-        master.connect(audio.destination);
+        connectInstrumentOutputs(audio);
     }
     await audio.resume();
     if (samples.size) return;
-    await loadBank();
+    const neededBanks = new Set(instruments.map(instrument => libraryFor[instrument]));
+    await Promise.all([...neededBanks].map(loadBank));
     const decoded = new Map();
     const notes = new Map();
     for (const [voice, part] of voices.entries()) {
         const instrument = instruments[voice];
-        const bank = instrument === 'piano' ? PIANO_SAMPLES : ENSEMBLE_SAMPLES[instrument];
+        const bank = banks[libraryFor[instrument]][instrument];
         const roots = Object.keys(bank).map(Number);
         for (const pitch of new Set(part.flatMap(n => n.pitches))) {
             const root = roots.reduce((best, r) => Math.abs(pitch-r) < Math.abs(pitch-best) ? r : best);
@@ -108,9 +139,10 @@ async function prepareInstrument() {
     }
 }
 
-// In the Air, adjacent pitches in a bowed line share an attack/release overlap.
-function bowOverlap(left, right) {
-    if (piece !== AIR_WORK || !left || !right) return 0;
+// Join adjacent pitches in the Air and explicitly slurred concerto phrases.
+function bowOverlap(left, right, voice) {
+    if (!left || !right) return 0;
+    if (piece !== AIR_WORK && !legatoStarts[voice]?.has(right.t * 4)) return 0;
     if (left.pitches.length !== 1 || right.pitches.length !== 1 ||
         left.pitches[0] === right.pitches[0]) return 0;
     // The MIDI engraving leaves gaps of up to one tick around ornaments.
@@ -136,7 +168,7 @@ function sound(pitch, when, duration, age, instrument, fadeIn, fadeOut) {
     } else if (skip >= source.buffer.duration) return;
     const envelope = audio.createGain();
     const end = when + duration;
-    const releaseSeconds = fadeOut || (instrument === 'piano' ? .22 : .14);
+    const releaseSeconds = fadeOut || (instrument === 'harpsichord' ? .075 : instrument === 'piano' ? .22 : .14);
     const attack = Math.min(duration, fadeIn && age < .001 ? fadeIn : .004);
     envelope.gain.setValueAtTime(0, when);
     if (fadeIn) envelope.gain.linearRampToValueAtTime(Math.SQRT1_2, when + attack / 2);
@@ -148,7 +180,7 @@ function sound(pitch, when, duration, age, instrument, fadeIn, fadeOut) {
     } else {
         envelope.gain.exponentialRampToValueAtTime(.0001, end + releaseSeconds);
     }
-    source.connect(envelope).connect(master);
+    source.connect(envelope).connect(concertoOutputs?.[instrument] || master);
     const note = {source, envelope};
     playing.add(note);
     source.onended = () => {
@@ -185,8 +217,8 @@ function pump() {
             const when = Math.max(onset, start, audio.currentTime);
             const duration = onset + n.length / rate - when;
             if (duration <= 0 || !enabled[groups[voice]]) continue;
-            const fadeIn = bowOverlap(notes[index - 1], n);
-            const fadeOut = bowOverlap(n, notes[index + 1]);
+            const fadeIn = bowOverlap(notes[index - 1], n, voice);
+            const fadeOut = bowOverlap(n, notes[index + 1], voice);
             for (const pitch of n.pitches) {
                 sound(pitch, when, duration, when - onset, instruments[voice], fadeIn, fadeOut);
             }
@@ -241,6 +273,13 @@ play.onclick = async () => {
     schedule();
 };
 seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change(()=>rate=piece.bpm/60*Number(speed.value));
+if (piece === BRANDENBURG) {
+    const jump = document.createElement('button');
+    jump.textContent = 'Jump to cadenza';
+    jump.title = 'Harpsichord cadenza · measure 154';
+    jump.onclick = () => change(() => { offset = bars[153]; });
+    document.querySelector('.controls').append(jump);
+}
 names.forEach((name,v)=>{const b=document.createElement('button');b.innerHTML='<i></i>'+name;b.querySelector('i').style.background=colors[v];b.setAttribute('aria-pressed','true');b.title='Toggle '+name.toLowerCase()+' voice';b.onclick=()=>change(()=>{enabled[v]=!enabled[v];b.setAttribute('aria-pressed',enabled[v])});document.querySelector('.voices').append(b)});
 // The Invention in E major repeats two sections (written measures 1–20 and 21–62).
 function printedIndex(playIndex) {
@@ -255,14 +294,14 @@ function measureLabel(index) {
     return 'm. ' + (printedIndex(index) + (piece.bwv === 774 ? 0 : 1));
 }
 
-const sheet = piece === ORGAN_WORK ? ORGAN_NOTATION : piece === AIR_WORK ? AIR_NOTATION : NOTATION[piece.bwv];
+const sheet = piece === BRANDENBURG ? BRANDENBURG_NOTATION : piece === ORGAN_WORK ? ORGAN_NOTATION : piece === AIR_WORK ? AIR_NOTATION : NOTATION[piece.bwv];
 const staff = document.querySelector('#staff');
 const paper = document.querySelector('.paper');
 const engraving = document.querySelector('#engraving');
 const highlight = document.querySelector('#measure-highlight');
-engraving.setAttribute('href', 'bach-data/notation/' + piece.bwv + '.webp');
+let imageFile;
 engraving.setAttribute('width', sheet.width);
-engraving.setAttribute('height', sheet.height);
+
 const pdfName = isFugue ? 'bwv851_fugue06' : 'bach-invention-' + String(piece.bwv-771).padStart(2, '0');
 document.querySelector('#sheet-pdf').href = piece.pdf || 'https://www.mutopiaproject.org/ftp/BachJS/BWV' + piece.bwv + '/' + pdfName + '/' + pdfName + '-a4.pdf';
 const sheetBars = sheet.systems.flatMap(system => system.x.slice(0, -1).map((x, i) => ({
@@ -275,6 +314,12 @@ function showMeasure(index) {
     const label = measureLabel(index);
     bar.textContent = label + ' / ' + (sheetBars.length - (piece.bwv === 774 ? 1 : 0));
     const {system, x, width} = sheetBars[printedIndex(index)];
+    const file = system.file || piece.bwv + '.webp';
+    if (file !== imageFile) {
+        imageFile = file;
+        engraving.setAttribute('href', 'bach-data/notation/' + file);
+        engraving.setAttribute('height', system.imageHeight || sheet.height);
+    }
     staff.setAttribute('viewBox', [0, system.y, sheet.width, system.h].join(' '));
     staff.setAttribute('aria-label', piece.title + ', ' + label);
     highlight.setAttribute('x', x);
@@ -292,7 +337,7 @@ function draw(){
  const t=Math.max(0,position());if(running&&t>=totalBeats)stop();if(document.activeElement!==seek||running)seek.value=t;showMeasure(bars.findLastIndex(beat=>beat<=t));
  const w=canvas.clientWidth,h=canvas.clientHeight,d=devicePixelRatio;if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
  const span=w<600?8:16,left=Math.min(totalBeats-span,Math.max(0,t-span*.38)),x=b=>12+(b-left)*(w-24)/span,y=p=>h-44-(p-lowest)*(h-80)/(highest-lowest);
- for(let i=0;i<measures;i++){const xx=x(bars[i]);ctx.fillStyle='#647371';ctx.font='11px monospace';ctx.fillText(measureLabel(i).replace('m. ', ''),xx+4,h-12);ctx.fillStyle='#1d2929';ctx.fillRect(xx,18,1,h-48)}
+ for(let i=0;i<measures;i++){const xx=x(bars[i]);if(xx<0)continue;if(xx>w)break;ctx.fillStyle='#647371';ctx.font='11px monospace';ctx.fillText(measureLabel(i).replace('m. ', ''),xx+4,h-12);ctx.fillStyle='#1d2929';ctx.fillRect(xx,18,1,h-48)}
  voices.forEach((notes,v)=>{
     const group=groups[v];
     ctx.strokeStyle=ctx.fillStyle=colors[group];

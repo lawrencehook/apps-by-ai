@@ -1,0 +1,58 @@
+Brandenburg Concerto No. 5 instrument recordings
+
+The flute, solo violin, and double bass come from Versilian Studios' VS Chamber Orchestra 2 Community Edition, recorded by Sam Gossner and Simon Dalzell with sample cutting by Elan Hickler / Soundemote. The double bass plays the violone line.
+https://versilian-studios.com/vsco-community/
+https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e
+
+The English Zuckermann kit harpsichord comes from the Versilian Community Sample Library's normal register.
+https://github.com/sgossner/VCSL/tree/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e
+https://versilian-studios.com/vcsl/
+
+Both sample libraries are released under CC0 1.0.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The local samples are trimmed, level-balanced, and downmixed to mono FLAC at 24 kHz. Bowed strings and flute have crossfaded sustain loops. The harpsichord retains the recorded pluck and decay. The ripieno strings use the additional recordings listed in ensemble-credits.txt.
+
+Source mappings for flute, solo violin, and bass
+FluteSusNV.sfz, SViolinVib.sfz, and ContrabassSusNV.sfz
+https://github.com/sgossner/VSCO-2-CE/tree/6dd651d55dde97fd4028699be9d4481f26917891
+
+Instrument, MIDI root pitch, and path in the source WAV library
+contrabass 28  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_E0_v1_rr1.wav
+contrabass 31  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_G0_v1_rr1.wav
+contrabass 34  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_A#0_v1_rr1.wav
+contrabass 38  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_D1_v1_rr1.wav
+contrabass 42  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_F#1_v1_rr1.wav
+contrabass 45  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_A1_v1_rr1.wav
+contrabass 49  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_C#2_v1_rr1.wav
+contrabass 52  Strings/Solo Contrabass/SusNV/BKCtbss_SusNV_E2_v1_rr1.wav
+flute 60  Woodwinds/Flute/susNV/LDFlute_susNV_C3_v1_1.wav
+flute 64  Woodwinds/Flute/susNV/LDFlute_susNV_E3_v1_1.wav
+flute 69  Woodwinds/Flute/susNV/LDFlute_susNV_A3_v1_1.wav
+flute 72  Woodwinds/Flute/susNV/LDFlute_susNV_C4_v1_1.wav
+flute 76  Woodwinds/Flute/susNV/LDFlute_susNV_E4_v1_1.wav
+flute 81  Woodwinds/Flute/susNV/LDFlute_susNV_A4_v1_1.wav
+flute 84  Woodwinds/Flute/susNV/LDFlute_susNV_C5_v1_1.wav
+flute 88  Woodwinds/Flute/susNV/LDFlute_susNV_E5_v1_1.wav
+harpsichord 36  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_C1_rr1.wav
+harpsichord 40  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_E1_rr1.wav
+harpsichord 44  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_G#1_rr1.wav
+harpsichord 48  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_C2_rr1.wav
+harpsichord 52  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_E2_rr1.wav
+harpsichord 56  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_G#2_rr1.wav
+harpsichord 60  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_C3_rr1.wav
+harpsichord 64  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_E3_rr1.wav
+harpsichord 68  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_G#3_rr1.wav
+harpsichord 72  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_C4_rr1.wav
+harpsichord 76  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_E4_rr1.wav
+harpsichord 80  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_G#4_rr1.wav
+harpsichord 84  Chordophones/Zithers/Harpsichord, English/Sustains/Normal/ZuckermannKitHarpsi_Normal_Sus_C5_rr1.wav
+soloViolin 55  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_G3_f.wav
+soloViolin 60  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_C4_f.wav
+soloViolin 64  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_E4_f.wav
+soloViolin 67  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_G4_f.wav
+soloViolin 72  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_C5_f.wav
+soloViolin 76  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_E5_f.wav
+soloViolin 79  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_G5_f.wav
+soloViolin 84  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_C6_f.wav
+soloViolin 88  Strings/Solo Violin/Arco Vib/LLVln_ArcoVib_E6_f.wav
