@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fugue in D minor · J. S. Bach</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1012;color:#edece1;font:16px "Instrument Sans",system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:clamp(22px,5vw,68px)}header,footer,.controls,.voices{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}header{border-bottom:1px solid #344041;padding-bottom:22px}h1{font:normal clamp(40px,7vw,86px)/1 Georgia,serif;margin:14px 0 10px;letter-spacing:-.055em}p{margin:0;color:#b5bfbb}.composer,small{font-size:12px;letter-spacing:.09em}.composer{text-transform:uppercase;color:#d4c486}canvas{display:block;width:100%;height:clamp(275px,44vh,480px)}button,select{font:inherit;background:#172022;color:#edece1;border:1px solid #445051;padding:9px 13px;border-radius:8px;cursor:pointer}button[aria-pressed=false]{opacity:.52}button i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}.voices{justify-content:flex-start;gap:8px}.controls{justify-content:flex-start}.play{background:#e5dbb4;color:#171c1b;min-width:90px}input{flex:1;min-width:100px;accent-color:#ded3a7}.bar{font-variant-numeric:tabular-nums}footer{margin-top:22px;border-top:1px solid #344041;padding-top:18px;color:#acb9b5;font-size:14px}a{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e6ce85}
+ .back{color:#ddcd9f;text-underline-offset:5px}.credit{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.credit a{text-underline-offset:3px} [role=status]{color:#e9ce80} </style><main><header><div><span class="composer">Johann Sebastian Bach</span><h1>Fugue in D minor</h1><p>The Well-Tempered Clavier, Book I · BWV 851</p></div><a class="back" href="index.html">← All works</a></header>
+<canvas aria-label="Colored paths show note onsets from left to right, with higher pitches higher on screen."></canvas>
+<div class="controls"><button class="play" id="play">Play</button><input id="seek" type="range" min="0" max="132" step=".01" value="0" aria-label="Position in fugue"><span class="bar" id="bar"></span><select id="speed" aria-label="Playback speed"><option value=".5">½ speed</option><option value=".75">¾ speed</option><option value="1" selected>1× speed</option></select></div>
+<footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
+<script src="bach-data/scores.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/piano.js"></script><script>
+const id = Number(new URLSearchParams(location.search).get('bwv'));
+const piece = library.find(item => item.bwv === id) || FUGUE;
+const isFugue = piece === FUGUE;
+const score = piece.score;
+const names = isFugue ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
+const colors = isFugue ? ['#e9ce80','#8acfc3','#d9a8c1'] : ['#e9ce80','#8acfc3'];
+const enabled = names.map(() => true);
+document.title = piece.title + ' · J. S. Bach';
+document.querySelector('h1').textContent = piece.title;
+document.querySelector('header p').textContent = (isFugue ? 'The Well-Tempered Clavier, Book I' : 'Two-Part Inventions · ' + piece.key) + ' · BWV ' + piece.bwv;
+document.querySelector('#edition').href = piece.source;
+const edition = document.querySelector('#edition');
+edition.textContent = 'Score · ' + piece.credit;
+if (piece.licenseUrl) {
+    const license = document.createElement('a');
+    license.href = piece.licenseUrl;
+    license.textContent = piece.license;
+    edition.after(' ', license);
+}
+const voices = score.map(part => part.map(([tick, duration, ...pitches]) => ({
+    t: tick / 4, length: duration / 4, pitches
+})));
+const totalBeats = durationBeats(piece);
+const bars = piece.barStarts || Array.from({length: Math.ceil(totalBeats / piece.meter)}, (_, i) => i * piece.meter);
+const measures = bars.length;
+const pitches = voices.flat().flatMap(n => n.pitches);
+const lowest = Math.min(...pitches), highest = Math.max(...pitches);
+const groups = isFugue ? [0, 1, 2, 2] : [0, 1]; // The closing inner bass part shares the Bass control.
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),play=document.querySelector('#play'),seek=document.querySelector('#seek'),speed=document.querySelector('#speed'),bar=document.querySelector('#bar');
+seek.max = totalBeats;
+seek.setAttribute('aria-label', 'Position in piece');
+let audio, master, clock;
+const buffers = new Map();
+const roots = Object.keys(PIANO_SAMPLES).map(Number);
+const rootFor = pitch => roots.reduce((best, root) => Math.abs(root-pitch) < Math.abs(best-pitch) ? root : best);
+let running = false, offset = 0, start = 0, rate = piece.bpm / 60;
+let nextNote = [];
+const playing = new Set();
+
+async function prepareInstrument() {
+    if (!audio) {
+        audio = new AudioContext();
+        master = audio.createGain();
+        master.gain.value = .72;
+        master.connect(audio.destination);
+    }
+    await audio.resume();
+    const needed = new Set(pitches.map(rootFor));
+    await Promise.all([...needed].map(async root => {
+        if (buffers.has(root)) return;
+        const bytes = Uint8Array.from(atob(PIANO_SAMPLES[root]), char => char.charCodeAt(0));
+        buffers.set(root, await audio.decodeAudioData(bytes.buffer));
+    }));
+}
+
+function sound(pitch, when, duration, age) {
+    const root = rootFor(pitch);
+    const source = audio.createBufferSource();
+    source.buffer = buffers.get(root);
+    const transpose = 2 ** ((pitch - root) / 12);
+    source.playbackRate.value = transpose;
+    const skip = age * transpose;
+    if (skip >= source.buffer.duration) return;
+    const envelope = audio.createGain();
+    const end = when + duration;
+    envelope.gain.setValueAtTime(0, when);
+    envelope.gain.linearRampToValueAtTime(1, Math.min(end, when + .004));
+    envelope.gain.setValueAtTime(1, end);
+    envelope.gain.exponentialRampToValueAtTime(.0001, end + .22);
+    source.connect(envelope).connect(master);
+    const note = {source, envelope};
+    playing.add(note);
+    source.onended = () => {
+        playing.delete(note);
+        source.disconnect();
+        envelope.disconnect();
+    };
+    source.start(when, skip);
+    source.stop(end + .23);
+}
+
+function position() {
+    if (!running) return offset;
+    return Math.min(totalBeats, offset + Math.max(0, audio.currentTime - start) * rate);
+}
+
+function release(note) {
+    const now = audio.currentTime;
+    if (note.envelope.gain.cancelAndHoldAtTime) note.envelope.gain.cancelAndHoldAtTime(now);
+    else note.envelope.gain.cancelScheduledValues(now);
+    note.envelope.gain.setTargetAtTime(.0001, now, .005);
+    note.source.stop(now + .025);
+}
+
+function pump() {
+    const deadline = audio.currentTime + .18;
+    voices.forEach((notes, voice) => {
+        while (nextNote[voice] < notes.length) {
+            const n = notes[nextNote[voice]];
+            const onset = start + (n.t - offset) / rate;
+            if (onset > deadline) break;
+            nextNote[voice]++;
+            const when = Math.max(onset, start, audio.currentTime);
+            const duration = onset + n.length / rate - when;
+            if (duration <= 0 || !enabled[groups[voice]]) continue;
+            for (const pitch of n.pitches) sound(pitch, when, duration, when - onset);
+        }
+    });
+}
+
+function stop() {
+    offset = position();
+    running = false;
+    clearInterval(clock);
+    playing.forEach(release);
+    play.textContent = offset >= totalBeats ? 'Replay' : 'Play';
+}
+
+function schedule() {
+    start = audio.currentTime + .025;
+    nextNote = voices.map(notes => {
+        const index = notes.findIndex(n => n.t + n.length > offset);
+        return index < 0 ? notes.length : index;
+    });
+    running = true;
+    play.textContent = 'Pause';
+    pump();
+    clock = setInterval(pump, 40);
+}
+
+function change(fn) {
+    const resume = running;
+    stop();
+    fn();
+    if (resume && offset < totalBeats) schedule();
+    else play.textContent = offset >= totalBeats ? 'Replay' : 'Play';
+}
+
+play.onclick = async () => {
+    if (running) { stop(); return; }
+    play.disabled = true;
+    play.textContent = 'Loading…';
+    try {
+        await prepareInstrument();
+        document.querySelector('#status').textContent = '';
+    } catch (error) {
+        play.textContent = 'Retry';
+        document.querySelector('#status').textContent = 'Piano samples could not be loaded. Please try again.';
+        console.error(error);
+        return;
+    } finally {
+        play.disabled = false;
+    }
+    if (offset >= totalBeats) offset = 0;
+    schedule();
+};
+seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change(()=>rate=piece.bpm/60*Number(speed.value));
+names.forEach((name,v)=>{const b=document.createElement('button');b.innerHTML='<i></i>'+name;b.querySelector('i').style.background=colors[v];b.setAttribute('aria-pressed','true');b.title='Toggle '+name.toLowerCase()+' voice';b.onclick=()=>change(()=>{enabled[v]=!enabled[v];b.setAttribute('aria-pressed',enabled[v])});document.querySelector('.voices').append(b)});
+function draw(){
+ const t=Math.max(0,position());if(running&&t>=totalBeats)stop();if(document.activeElement!==seek||running)seek.value=t;bar.textContent='m. '+(1+bars.findLastIndex(beat=>beat<=t))+' / '+measures;
+ const w=canvas.clientWidth,h=canvas.clientHeight,d=devicePixelRatio;if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
+ const span=w<600?8:16,left=Math.min(totalBeats-span,Math.max(0,t-span*.38)),x=b=>12+(b-left)*(w-24)/span,y=p=>h-44-(p-lowest)*(h-80)/(highest-lowest);
+ for(let i=0;i<measures;i++){const xx=x(bars[i]);ctx.fillStyle='#647371';ctx.font='11px monospace';ctx.fillText(String(i+1).padStart(2,'0'),xx+4,h-12);ctx.fillStyle='#1d2929';ctx.fillRect(xx,18,1,h-48)}
+ voices.forEach((notes,v)=>{
+    const group=groups[v];
+    ctx.strokeStyle=ctx.fillStyle=colors[group];
+    ctx.lineWidth=1.5;
+    let prev;
+    for(const n of notes){
+        const xx=x(n.t);
+        if(xx>w+25) break;
+        if(xx < -30){ prev=n; continue; }
+        const active=running && t>=n.t && t<n.t+n.length;
+        n.pitches.forEach((pitch,i)=>{
+            const yy=y(pitch);
+            if(prev && Math.abs(prev.t+prev.length-n.t)<.004){
+                const last=prev.pitches[Math.min(i,prev.pitches.length-1)];
+                ctx.globalAlpha=enabled[group] ? .68 : .09;
+                ctx.beginPath();ctx.moveTo(x(prev.t),y(last));ctx.lineTo(xx,yy);ctx.stroke();
+            }
+            ctx.globalAlpha=enabled[group] ? (active ? 1 : .65) : .12;
+            ctx.beginPath();ctx.arc(xx,yy,3+Math.sqrt(n.length)*4,0,Math.PI*2);
+            if(n.t>=t||active)ctx.fill();else ctx.stroke();
+            if(active&&enabled[group]){
+                ctx.globalAlpha=.22;ctx.beginPath();ctx.arc(xx,yy,14,0,Math.PI*2);ctx.fill();
+            }
+        });
+        prev=n;
+    }
+ });ctx.globalAlpha=.5;ctx.fillStyle='#eeeedd';ctx.fillRect(x(t),15,1,h-47);ctx.globalAlpha=1;requestAnimationFrame(draw)
+}draw();
+</script></html>

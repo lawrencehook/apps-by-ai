@@ -1,0 +1,12 @@
+Salamander Grand Piano
+Yamaha C5 grand piano recorded by Alexander Holm.
+https://rytmenpinne.wordpress.com/sounds-and-such/salamander-grandpiano/
+
+The MP3 files come from the Tone.js audio collection.
+https://github.com/Tonejs/audio/tree/master/salamander
+
+The distribution credits Alexander Holm under Creative Commons Attribution 3.0 Unported.
+https://github.com/Tonejs/audio/blob/master/salamander/README
+https://creativecommons.org/licenses/by/3.0/
+
+This edition embeds 20 original MP3 files in Base64 for offline access. Playback transposes nearby samples and applies a release when each note ends.
