@@ -108,13 +108,24 @@ async function prepareInstrument() {
     }
 }
 
-function sound(pitch, when, duration, age, instrument) {
+// In the Air, adjacent pitches in a bowed line share an attack/release overlap.
+function bowOverlap(left, right) {
+    if (piece !== AIR_WORK || !left || !right) return 0;
+    if (left.pitches.length !== 1 || right.pitches.length !== 1 ||
+        left.pitches[0] === right.pitches[0]) return 0;
+    // The MIDI engraving leaves gaps of up to one tick around ornaments.
+    if (Math.abs(right.t - left.t - left.length) > .003) return 0;
+    return Math.min(.07, left.length / rate / 3, right.length / rate / 3);
+}
+
+function sound(pitch, when, duration, age, instrument, fadeIn, fadeOut) {
     const sample = samples.get(instrument + pitch);
     const source = audio.createBufferSource();
     source.buffer = sample.buffer;
     const transpose = 2 ** ((pitch - sample.root) / 12);
     source.playbackRate.value = transpose;
-    let skip = age * transpose;
+    // A connected bow is already sounding. Enter at the recorded sustain.
+    let skip = age * transpose + (fadeIn ? sample.loopStart : 0);
     if (sample.loopEnd > sample.loopStart) {
         source.loop = true;
         source.loopStart = sample.loopStart;
@@ -125,11 +136,18 @@ function sound(pitch, when, duration, age, instrument) {
     } else if (skip >= source.buffer.duration) return;
     const envelope = audio.createGain();
     const end = when + duration;
-    const releaseSeconds = instrument === 'piano' ? .22 : .14;
+    const releaseSeconds = fadeOut || (instrument === 'piano' ? .22 : .14);
+    const attack = Math.min(duration, fadeIn && age < .001 ? fadeIn : .004);
     envelope.gain.setValueAtTime(0, when);
-    envelope.gain.linearRampToValueAtTime(1, Math.min(end, when + .004));
+    if (fadeIn) envelope.gain.linearRampToValueAtTime(Math.SQRT1_2, when + attack / 2);
+    envelope.gain.linearRampToValueAtTime(1, when + attack);
     envelope.gain.setValueAtTime(1, end);
-    envelope.gain.exponentialRampToValueAtTime(.0001, end + releaseSeconds);
+    if (fadeOut) {
+        envelope.gain.linearRampToValueAtTime(Math.SQRT1_2, end + releaseSeconds / 2);
+        envelope.gain.linearRampToValueAtTime(0, end + releaseSeconds);
+    } else {
+        envelope.gain.exponentialRampToValueAtTime(.0001, end + releaseSeconds);
+    }
     source.connect(envelope).connect(master);
     const note = {source, envelope};
     playing.add(note);
@@ -159,14 +177,19 @@ function pump() {
     const deadline = audio.currentTime + .18;
     voices.forEach((notes, voice) => {
         while (nextNote[voice] < notes.length) {
-            const n = notes[nextNote[voice]];
+            const index = nextNote[voice];
+            const n = notes[index];
             const onset = start + (n.t - offset) / rate;
             if (onset > deadline) break;
             nextNote[voice]++;
             const when = Math.max(onset, start, audio.currentTime);
             const duration = onset + n.length / rate - when;
             if (duration <= 0 || !enabled[groups[voice]]) continue;
-            for (const pitch of n.pitches) sound(pitch, when, duration, when - onset, instruments[voice]);
+            const fadeIn = bowOverlap(notes[index - 1], n);
+            const fadeOut = bowOverlap(n, notes[index + 1]);
+            for (const pitch of n.pitches) {
+                sound(pitch, when, duration, when - onset, instruments[voice], fadeIn, fadeOut);
+            }
         }
     });
 }
