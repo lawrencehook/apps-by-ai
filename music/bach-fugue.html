@@ -16,15 +16,21 @@ canvas{height:clamp(210px,32vh,340px)}
 <div class="paper" tabindex="0" aria-label="Printed score, scroll horizontally on narrow screens">
 <svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
 </div></section>
-<footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/library.js"></script>
-<script src="bach-data/notation/index.js"></script><script src="bach-data/piano.js"></script><script>
+<footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a id="instrument-credit" href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/notation/index.js"></script><script src="bach-data/notation/565.js"></script><script src="bach-data/notation/1068.js"></script><script>
 const id = Number(new URLSearchParams(location.search).get('bwv'));
 const piece = library.find(item => item.bwv === id) || FUGUE;
 const isFugue = piece === FUGUE;
 const score = piece.score;
-const names = score.length === 1 ? ['Cello line'] : score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower'];
-const colors = ['#e9ce80','#8acfc3','#d9a8c1'];
+const names = piece.names || (score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower']);
+const colors = ['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb'];
+const instruments = piece.instruments || score.map(() => 'piano');
+if (piece.instruments) {
+    const credit = document.querySelector('#instrument-credit');
+    credit.href = 'bach-data/ensemble-credits.txt';
+    credit.textContent = instruments.includes('organ') ? 'Pipe organ samples' : 'String samples';
+}
 const enabled = names.map(() => true);
 document.title = piece.title + ' · J. S. Bach';
 document.querySelector('h1').textContent = piece.title;
@@ -39,7 +45,7 @@ if (piece.licenseUrl) {
     edition.after(' ', license);
 }
 const voices = score.map(part => part.map(([tick, duration, ...pitches]) => ({
-    t: tick / 4, length: duration / 4, pitches
+    t: tick / 4, length: duration / 4, pitches: pitches.sort((a,b) => a-b)
 })));
 const totalBeats = durationBeats(piece);
 const bars = piece.barStarts || Array.from({length: Math.ceil(totalBeats / piece.meter)}, (_, i) => i * piece.meter);
@@ -51,9 +57,20 @@ const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),play=d
 seek.max = totalBeats;
 seek.setAttribute('aria-label', 'Position in piece');
 let audio, master, clock;
-const buffers = new Map();
-const roots = Object.keys(PIANO_SAMPLES).map(Number);
-const rootFor = pitch => roots.reduce((best, root) => Math.abs(root-pitch) < Math.abs(best-pitch) ? root : best);
+// Resolve the sample once per instrument and pitch, before the playback clock starts.
+const samples = new Map();
+let bankLoaded = false;
+async function loadBank() {
+    if (bankLoaded) return;
+    const script = document.createElement('script');
+    script.src = piece.instruments ? 'bach-data/ensemble-samples.js' : 'bach-data/piano.js';
+    await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => { script.remove(); reject(new Error('Sample bank unavailable')); };
+        document.head.append(script);
+    });
+    bankLoaded = true;
+}
 let running = false, offset = 0, start = 0, rate = piece.bpm / 60;
 let nextNote = [];
 const playing = new Set();
@@ -66,28 +83,53 @@ async function prepareInstrument() {
         master.connect(audio.destination);
     }
     await audio.resume();
-    const needed = new Set(pitches.map(rootFor));
-    await Promise.all([...needed].map(async root => {
-        if (buffers.has(root)) return;
-        const bytes = Uint8Array.from(atob(PIANO_SAMPLES[root]), char => char.charCodeAt(0));
-        buffers.set(root, await audio.decodeAudioData(bytes.buffer));
-    }));
+    if (samples.size) return;
+    await loadBank();
+    const decoded = new Map();
+    const notes = new Map();
+    for (const [voice, part] of voices.entries()) {
+        const instrument = instruments[voice];
+        const bank = instrument === 'piano' ? PIANO_SAMPLES : ENSEMBLE_SAMPLES[instrument];
+        const roots = Object.keys(bank).map(Number);
+        for (const pitch of new Set(part.flatMap(n => n.pitches))) {
+            const root = roots.reduce((best, r) => Math.abs(pitch-r) < Math.abs(pitch-best) ? r : best);
+            const key = instrument + root;
+            const sample = bank[root];
+            if (!decoded.has(key)) {
+                const bytes = Uint8Array.from(atob(sample.data || sample), char => char.charCodeAt(0));
+                decoded.set(key, audio.decodeAudioData(bytes.buffer));
+            }
+            notes.set(instrument + pitch, {key, root, loopStart:sample.loopStart, loopEnd:sample.loopEnd});
+        }
+    }
+    await Promise.all(decoded.values());
+    for (const [key, note] of notes) {
+        samples.set(key, {...note, buffer: await decoded.get(note.key)});
+    }
 }
 
-function sound(pitch, when, duration, age) {
-    const root = rootFor(pitch);
+function sound(pitch, when, duration, age, instrument) {
+    const sample = samples.get(instrument + pitch);
     const source = audio.createBufferSource();
-    source.buffer = buffers.get(root);
-    const transpose = 2 ** ((pitch - root) / 12);
+    source.buffer = sample.buffer;
+    const transpose = 2 ** ((pitch - sample.root) / 12);
     source.playbackRate.value = transpose;
-    const skip = age * transpose;
-    if (skip >= source.buffer.duration) return;
+    let skip = age * transpose;
+    if (sample.loopEnd > sample.loopStart) {
+        source.loop = true;
+        source.loopStart = sample.loopStart;
+        source.loopEnd = sample.loopEnd;
+        if (skip >= source.loopEnd) {
+            skip = source.loopStart + (skip - source.loopStart) % (source.loopEnd - source.loopStart);
+        }
+    } else if (skip >= source.buffer.duration) return;
     const envelope = audio.createGain();
     const end = when + duration;
+    const releaseSeconds = instrument === 'piano' ? .22 : .14;
     envelope.gain.setValueAtTime(0, when);
     envelope.gain.linearRampToValueAtTime(1, Math.min(end, when + .004));
     envelope.gain.setValueAtTime(1, end);
-    envelope.gain.exponentialRampToValueAtTime(.0001, end + .22);
+    envelope.gain.exponentialRampToValueAtTime(.0001, end + releaseSeconds);
     source.connect(envelope).connect(master);
     const note = {source, envelope};
     playing.add(note);
@@ -97,7 +139,7 @@ function sound(pitch, when, duration, age) {
         envelope.disconnect();
     };
     source.start(when, skip);
-    source.stop(end + .23);
+    source.stop(end + releaseSeconds + .01);
 }
 
 function position() {
@@ -124,7 +166,7 @@ function pump() {
             const when = Math.max(onset, start, audio.currentTime);
             const duration = onset + n.length / rate - when;
             if (duration <= 0 || !enabled[groups[voice]]) continue;
-            for (const pitch of n.pitches) sound(pitch, when, duration, when - onset);
+            for (const pitch of n.pitches) sound(pitch, when, duration, when - onset, instruments[voice]);
         }
     });
 }
@@ -166,7 +208,7 @@ play.onclick = async () => {
         document.querySelector('#status').textContent = '';
     } catch (error) {
         play.textContent = 'Retry';
-        document.querySelector('#status').textContent = 'Piano samples could not be loaded. Please try again.';
+        document.querySelector('#status').textContent = 'Instrument samples could not be loaded. Please try again.';
         console.error(error);
         return;
     } finally {
@@ -179,6 +221,7 @@ seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change
 names.forEach((name,v)=>{const b=document.createElement('button');b.innerHTML='<i></i>'+name;b.querySelector('i').style.background=colors[v];b.setAttribute('aria-pressed','true');b.title='Toggle '+name.toLowerCase()+' voice';b.onclick=()=>change(()=>{enabled[v]=!enabled[v];b.setAttribute('aria-pressed',enabled[v])});document.querySelector('.voices').append(b)});
 // The Invention in E major repeats two sections (written measures 1–20 and 21–62).
 function printedIndex(playIndex) {
+    if (piece.measureNumbers) return piece.measureNumbers[playIndex] - 1;
     if (piece.bwv !== 777 || playIndex < 20) return playIndex;
     if (playIndex < 82) return playIndex - 20;
     return playIndex - 62;
@@ -189,7 +232,7 @@ function measureLabel(index) {
     return 'm. ' + (printedIndex(index) + (piece.bwv === 774 ? 0 : 1));
 }
 
-const sheet = NOTATION[piece.bwv];
+const sheet = piece === ORGAN_WORK ? ORGAN_NOTATION : piece === AIR_WORK ? AIR_NOTATION : NOTATION[piece.bwv];
 const staff = document.querySelector('#staff');
 const paper = document.querySelector('.paper');
 const engraving = document.querySelector('#engraving');

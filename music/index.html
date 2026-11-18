@@ -37,13 +37,15 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <div class="grid" id="works"></div>
 <div class="section"><h2>Three-Part Sinfonias</h2><span class="meta" id="sinfonia-count"></span></div>
 <div class="grid" id="sinfonias"></div>
-<footer><span>Scores from the Mutopia Project</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a></footer>
+<footer><span>Scores from the Mutopia Project</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a></footer>
 </main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/library.js"></script>
 <script>
 const portraits = [];
 const features = [
-    [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello', 'Listen for the low G returning beneath the opening phrase. Played here on piano.'],
+    [565, 'Organ · D minor', 'Toccata and Fugue', 'Listen to the opening flourish in octaves, then follow the bass when the pedals enter.'],
+    [1068, 'Orchestral Suite No. 3 · D major', 'Air', 'Follow the first violin’s long opening note while the bass moves beneath it.'],
+    [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello', 'Listen for the low G returning beneath the opening phrase.'],
     [846, 'The Well-Tempered Clavier · I', 'Prelude in C major', 'Follow the repeating pattern as the harmony shifts underneath it.'],
     [851, 'The Well-Tempered Clavier · I', 'Fugue in D minor', 'Hear the opening melody enter first in the upper voice, then in the middle and bass.']
 ];
@@ -90,18 +92,25 @@ function portrait(canvas, piece, featured) {
     ctx.scale(scale,scale);
     const start=featured && piece === FUGUE ? 60 : 0, span=featured?62:52;
     const parts=piece.score.map(part=>part.filter(([tick])=>tick>=start&&tick<start+span));
-    const notes=parts.flat().map(note=>note[2]);
+    const notes=parts.flat().flatMap(note=>note.slice(2));
     const lo=Math.min(...notes),hi=Math.max(...notes);
     parts.forEach((part,i)=>{
         let prev;
-        ctx.strokeStyle=ctx.fillStyle=['#e9ce80','#8acfc3','#d9a8c1','#d9a8c1'][i];
-        for(const [tick,length,pitch] of part){
-            const x=3+(tick-start)*(w-7)/span, y=h-5-(pitch-lo)*(h-10)/(hi-lo||1);
-            if(prev && tick<=prev.end+0.1){
-                ctx.globalAlpha=.65; ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(x,y);ctx.stroke();
-            }
-            ctx.globalAlpha=.86;ctx.beginPath();ctx.arc(x,y,featured?2.4:1.2,0,2*Math.PI);ctx.fill();
-            prev={x,y,end:tick+length};
+        ctx.strokeStyle=ctx.fillStyle=['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb'][piece === FUGUE && i === 3 ? 2 : i];
+        for (const [tick, length, ...pitches] of part) {
+            const x = 3 + (tick-start)*(w-7)/span;
+            const ys = pitches.sort((a,b) => a-b).map(pitch => h-5-(pitch-lo)*(h-10)/(hi-lo||1));
+            ys.forEach((y, index) => {
+                if (prev && tick <= prev.end+.1) {
+                    ctx.globalAlpha=.65;
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.ys[Math.min(index, prev.ys.length-1)]);
+                    ctx.lineTo(x,y);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha=.86;ctx.beginPath();ctx.arc(x,y,featured?2.4:1.2,0,2*Math.PI);ctx.fill();
+            });
+            prev={x,ys,end:tick+length};
         }
     });
 }

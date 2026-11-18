@@ -1,0 +1,64 @@
+Pipe organ and string sections
+VS Chamber Orchestra 2: Community Edition (VSCO 2 CE), Versilian Studios LLC.
+Recordings by Sam Gossner and Simon Dalzell. Sample cutting by Elan Hickler / Soundemote.
+Pipe organ recorded by Simon Dalzell of Ivy Audio, winter 2015–16.
+
+The publisher releases the samples under CC0 1.0 Universal.
+https://versilian-studios.com/vsco-community/
+https://creativecommons.org/publicdomain/zero/1.0/
+https://github.com/sgossner/VSCO-2-CE/blob/440300901dfe9275fd84e0b7763af1f8443ae62e/Keys/Organ/Info.txt
+
+Local edition
+The organ uses the loud manual registration. Violin, viola and cello use sustained
+ensemble recordings with vibrato. Each note is downmixed to mono, resampled at
+24 kHz, trimmed, level-balanced, and crossfaded into a sustain loop. The FLAC
+audio is embedded in a local script so playback works offline. Pitch centers
+come from the publisher's SFZ mappings.
+
+Source WAV files
+https://github.com/sgossner/VSCO-2-CE/tree/440300901dfe9275fd84e0b7763af1f8443ae62e
+Source SFZ mappings
+https://github.com/sgossner/VSCO-2-CE/tree/6dd651d55dde97fd4028699be9d4481f26917891
+OrganLoud.sfz, ViolinEnsSusVib.sfz, ViolaEnsSusVib.sfz and CelloEnsSusVib.sfz
+
+Instrument, MIDI pitch and source path
+cello 36  Strings/Cello Section/susvib/susvib_C1_v1_1.wav
+cello 40  Strings/Cello Section/susvib/susvib_E1_v1_1.wav
+cello 43  Strings/Cello Section/susvib/susvib_G1_v1_1.wav
+cello 47  Strings/Cello Section/susvib/susvib_B1_v1_1.wav
+cello 50  Strings/Cello Section/susvib/susvib_D2_v1_1.wav
+cello 53  Strings/Cello Section/susvib/susvib_F2_v1_1.wav
+cello 57  Strings/Cello Section/susvib/susvib_A2_v1_1.wav
+cello 60  Strings/Cello Section/susvib/susvib_C3_v1_1.wav
+cello 64  Strings/Cello Section/susvib/susvib_E3_v1_1.wav
+cello 67  Strings/Cello Section/susvib/susvib_G3_v1_1.wav
+cello 71  Strings/Cello Section/susvib/susvib_B3_v1_1.wav
+organ 36  Keys/Organ/Loud/Rode_Man3Open_01.wav
+organ 42  Keys/Organ/Loud/Rode_Man3Open_07.wav
+organ 48  Keys/Organ/Loud/Rode_Man3Open_13.wav
+organ 54  Keys/Organ/Loud/Rode_Man3Open_19.wav
+organ 60  Keys/Organ/Loud/Rode_Man3Open_25.wav
+organ 66  Keys/Organ/Loud/Rode_Man3Open_31.wav
+organ 72  Keys/Organ/Loud/Rode_Man3Open_37.wav
+organ 78  Keys/Organ/Loud/Rode_Man3Open_43.wav
+organ 84  Keys/Organ/Loud/Rode_Man3Open_49.wav
+organ 90  Keys/Organ/Loud/Rode_Man3Open_55.wav
+viola 48  Strings/Viola Section/susvib/ViolaEns_susvib_C2_v1_1.wav
+viola 52  Strings/Viola Section/susvib/ViolaEns_susvib_E2_v1_1.wav
+viola 55  Strings/Viola Section/susvib/ViolaEns_susvib_G2_v1_1.wav
+viola 59  Strings/Viola Section/susvib/ViolaEns_susvib_B2_v1_1.wav
+viola 62  Strings/Viola Section/susvib/ViolaEns_susvib_D3_v1_1.wav
+viola 65  Strings/Viola Section/susvib/ViolaEns_susvib_F3_v1_1.wav
+viola 69  Strings/Viola Section/susvib/ViolaEns_susvib_A3_v1_1.wav
+viola 72  Strings/Viola Section/susvib/ViolaEns_susvib_C4_v1_1.wav
+viola 76  Strings/Viola Section/susvib/ViolaEns_susvib_E4_v1_1.wav
+violin 55  Strings/Violin Section/susVib/VlnEns_susVib_G2_v1.wav
+violin 59  Strings/Violin Section/susVib/VlnEns_susVib_B2_v1.wav
+violin 62  Strings/Violin Section/susVib/VlnEns_susVib_D3_v1.wav
+violin 66  Strings/Violin Section/susVib/VlnEns_susVib_F#3_v1.wav
+violin 69  Strings/Violin Section/susVib/VlnEns_susVib_A3_v1.wav
+violin 72  Strings/Violin Section/susVib/VlnEns_susVib_C4_v1.wav
+violin 76  Strings/Violin Section/susVib/VlnEns_susVib_E4_v1.wav
+violin 79  Strings/Violin Section/susVib/VlnEns_susVib_G4_v1.wav
+violin 83  Strings/Violin Section/susVib/VlnEns_susVib_B4_v1.wav
+violin 86  Strings/Violin Section/susVib/VlnEns_susVib_D5_v1.wav
