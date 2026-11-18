@@ -1,3 +1,5 @@
 node_modules/
-tools/loadtest/results*.json
+tools/smoketest/results*.json
 auto-brainstorm.log
+tools/browsertest/results.json
+tools/browsertest/screenshots/

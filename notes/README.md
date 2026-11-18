@@ -33,10 +33,10 @@ Useful next branches: differential equations, functional analysis, optimization,
 ```sh
 python3 notes/build.py
 node check-syntax.js
-NODE_PATH=tools/loadtest/node_modules node --test notes/tests/*.test.js
+NODE_PATH=tools/smoketest/node_modules node --test notes/tests/*.test.js
 ```
 
-The Node tests require the repository's existing `tools/loadtest` jsdom dependency. Set NODE_PATH to that installation if it is elsewhere. Tests check generated routes, fragments, exercise structure, search, and keyboard behavior. They do not certify mathematical correctness; review theorem assumptions and solutions as content changes.
+The Node tests require the repository's existing `tools/smoketest` jsdom dependency. Set NODE_PATH to that installation if it is elsewhere. Tests check generated routes, fragments, exercise structure, search, and keyboard behavior. They do not certify mathematical correctness; review theorem assumptions and solutions as content changes.
 
 The site is static, uses no external runtime scripts, makes no search requests, and does not save visitor data. No new hosting service is required; it follows the repository's existing deployment workflow.
 

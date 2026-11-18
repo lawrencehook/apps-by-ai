@@ -1,5 +1,5 @@
 {
-  "name": "apps-by-ai-loadtest",
+  "name": "apps-by-ai-smoketest",
   "private": true,
   "description": "Loads every app in a stubbed jsdom and reports uncaught errors at startup",
   "scripts": {

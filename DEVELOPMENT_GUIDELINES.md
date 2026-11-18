@@ -65,11 +65,13 @@ document.addEventListener('keydown', e => {
 
 ## Verification
 
-17. **Run `node check-syntax.js` before every commit, and `node tools/loadtest/run.js` (after a one-time `npm install` in `tools/loadtest`) before calling an app done.** The first parses every script, rejects remote code and validates `metadata.json`; the second actually loads each page in jsdom and fails on anything thrown, rejected or logged with `console.error` at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
+17. **Run `node check-syntax.js` before every commit, and `node tools/smoketest/run.js` (after a one-time `npm install` in `tools/smoketest`) before calling an app done.** The first parses every script, rejects remote code and validates `metadata.json`; the second actually loads each page in jsdom and fails on anything thrown, rejected or logged with `console.error` at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
 
 18. **When reviewing a fix, re-derive it from the code — don't restore the old value because it looks more familiar.** A review pass reverted the BMI scale stops from 14/40/60 back to 18.5/25/30 because the latter are the well-known thresholds; but the marker formula maps BMI 15–40 onto 0–100%, so 14/40/60 was correct. When a change touches a number, find the formula it has to agree with and check the arithmetic; leave a comment that names the constraint so the next reader doesn't have to.
 
 19. **Keep the `Math.max(...array)` guard proportional to the array.** Spreading a fixed-size array (histogram buckets, 12 note names, a few files) is fine and clearer. Spreading anything derived from user data or a size slider — CSV rows, prime lists, audio samples — must be a loop or `reduce`, since V8 throws past roughly 100k arguments.
+
+25. **Run `node tools/browsertest/run.js <app>` on any app you add or change, and look at the screenshots.** It opens the app in real headless Chrome at desktop and phone size (no install needed beyond Node 22 and Chrome), fails on uncaught errors, missing local files and remote scripts, and saves `tools/browsertest/screenshots/<app>-desktop.png` and `-phone.png`. The smoke test cannot see pixels, layout, or the real vendored libraries; this can. It still loads the page without interacting, so try the controls yourself.
 
 ## State & Timing
 

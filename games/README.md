@@ -63,11 +63,11 @@ and `game.js` handles rendering, input, travel, and session progression.
 ## Verification
 
 `node check-syntax.js` checks both games pages and their first-party scripts.
-`node tools/loadtest/run.js` includes the games directory in its startup checks.
-After installing the existing `tools/loadtest` dependencies:
+`node tools/smoketest/run.js` includes the games directory in its startup checks.
+After installing the existing `tools/smoketest` dependencies:
 
 ```sh
-NODE_PATH=tools/loadtest/node_modules node --test games/lantern-labyrinth/tests/*.test.js
+NODE_PATH=tools/smoketest/node_modules node --test games/lantern-labyrinth/tests/*.test.js
 ```
 
 Tests cover 120 generated mazes, exit reachability, loops, collision, a complete

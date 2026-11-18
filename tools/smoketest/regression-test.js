@@ -5,7 +5,7 @@ const { spawnSync } = require('node:child_process');
 
 for (const [fixture, expectedExit] of [['good', 0], ['bad', 1], ['rejection', 1], ['ce', 1]]) {
   const result = spawnSync(process.execPath, [path.join(__dirname, 'run.js'),
-    `../tools/loadtest/fixtures/${fixture}`], { encoding: 'utf8', timeout: 10000 });
+    `../tools/smoketest/fixtures/${fixture}`], { encoding: 'utf8', timeout: 10000 });
   assert.ifError(result.error);
   assert.equal(result.status, expectedExit, `${fixture}: ${result.stdout}\n${result.stderr}`);
   if (fixture === 'rejection') {

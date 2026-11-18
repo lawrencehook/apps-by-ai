@@ -42,8 +42,8 @@ fi
 run_checks() {
     node "$REPO_DIR/check-syntax.js" || return 1
     # Runtime check is only available once its jsdom dependency is installed
-    if [ -d "$REPO_DIR/tools/loadtest/node_modules" ]; then
-        node "$REPO_DIR/tools/loadtest/run.js" || return 1
+    if [ -d "$REPO_DIR/tools/smoketest/node_modules" ]; then
+        node "$REPO_DIR/tools/smoketest/run.js" || return 1
     fi
 }
 
@@ -138,7 +138,7 @@ Implement all 3 apps now, one at a time. After each app, run 'node check-syntax.
     if ! CHECK_OUTPUT=$(run_checks 2>&1); then
         log "${YELLOW}Checks failed; asking for a fix pass.${NC}"
         echo "$CHECK_OUTPUT" | tee -a "$LOG_FILE"
-        claude -p "The repo checks failed with the output below. Fix every error, then re-run 'node check-syntax.js' and 'node tools/loadtest/run.js' until both pass.
+        claude -p "The repo checks failed with the output below. Fix every error, then re-run 'node check-syntax.js' and 'node tools/smoketest/run.js' until both pass.
 
 $CHECK_OUTPUT" \
             --continue \

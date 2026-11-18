@@ -1,13 +1,13 @@
-// Runtime load test: opens each app in a stubbed jsdom and reports uncaught errors
+// Smoke test: opens each app in a stubbed jsdom and reports uncaught errors
 // thrown during initial load (ReferenceError, TypeError, ...). Complements
 // check-syntax.js, which only proves the code parses.
 //
-// Setup once:  cd tools/loadtest && npm install
-// Usage:       node tools/loadtest/run.js [appName ...]   (no args = all apps, games, the gallery and notes)
+// Setup once:  cd tools/smoketest && npm install
+// Usage:       node tools/smoketest/run.js [appName ...]   (no args = all apps, games, the gallery and notes)
 // Exit code is non-zero if any app throws or has an unhandled rejection. Vendored libraries (libs/) are
 // replaced with permissive stubs, so errors that only appear with the real
 // library are out of scope; so is anything behind user interaction.
-// LOADTEST_REAL_LIBS=1 executes the real library code instead — useful after
+// SMOKETEST_REAL_LIBS=1 executes the real library code instead — useful after
 // upgrading a library, but expect three.js to fail on the fake WebGL context.
 const fs = require('fs');
 const path = require('path');

@@ -24,8 +24,8 @@ const result = {
 // Vendored libraries under libs/ are replaced by the global stubs in section 3,
 // like remote CDN scripts were before vendoring: real three.js probes the fake
 // WebGL context and dies inside itself, which says nothing about the app.
-// Set LOADTEST_REAL_LIBS=1 to inline and execute the real library code instead.
-const REAL_LIBS = !!process.env.LOADTEST_REAL_LIBS;
+// Set SMOKETEST_REAL_LIBS=1 to inline and execute the real library code instead.
+const REAL_LIBS = !!process.env.SMOKETEST_REAL_LIBS;
 const deferred = [];
 html = html.replace(/<script\b([^>]*)\bsrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/script>/gi, (m, pre, src, post) => {
   if (/^(https?:)?\/\//i.test(src)) {
@@ -381,7 +381,7 @@ function beforeParse(window) {
   doc.fonts = { ready: Promise.resolve(), load: () => Promise.resolve([]), check: () => true, add() {}, addEventListener() {} };
 
   // Stub the globals of the stripped libraries so the rest of the app script runs.
-  // Skipped when LOADTEST_REAL_LIBS=1, because the real libraries define them.
+  // Skipped when SMOKETEST_REAL_LIBS=1, because the real libraries define them.
   if (!REAL_LIBS) {
     const libStub = (n) => makeStub(n, { version: '0.0.0-stub' });
     // pdf.js: getDocument returns a thenable-like object with .promise

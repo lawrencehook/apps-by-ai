@@ -11,8 +11,8 @@ Findings from a full read of the repo (156 apps, gallery, tooling, game, notes) 
 
 - [x] `escapeHtml` did not escape quotes (the guideline's own snippet). Replaced in 14 apps and in rule 1. This closes the attribute-injection findings in invoice-generator, receipt-splitter and data-explorer (attribute uses only), and makes jwt-decoder's key/string highlighting work.
 - [x] `URL.revokeObjectURL` called immediately after `a.click()` (rule 8): audio-fade, audio-waveform, pdf-watermark, photo-time-lapse-creator, svg-path-animator, speech-to-text-notes.
-- [x] Load test dropped local scripts with a `?v=` suffix, so lantern-labyrinth passed without running. It now strips the suffix and fails on a missing local script.
-- [x] Load test: fails on `console.error` at startup, fails on `<script type="module">` (jsdom can't run it), runs `defer` scripts after the body, covers the gallery and `notes/`, and runs pages in parallel (5 min down to under 1 min). The `ce` fixture is in the regression test.
+- [x] Smoke test dropped local scripts with a `?v=` suffix, so lantern-labyrinth passed without running. It now strips the suffix and fails on a missing local script.
+- [x] Smoke test: fails on `console.error` at startup, fails on `<script type="module">` (jsdom can't run it), runs `defer` scripts after the body, covers the gallery and `notes/`, and runs pages in parallel (5 min down to under 1 min). The `ce` fixture is in the regression test.
 - [x] `check-syntax.js`: catches protocol-relative and unquoted remote `src`, `href`-before-`rel` stylesheets, remote `import`/`Worker`; no longer skips `type="text/JavaScript"` or `data-type=` blocks; compiles classic scripts as classic (rejects top-level `await`); checks every first-party `.js` file.
 - [x] `check-syntax.js` validates `metadata.json` (required fields, unique ids, paths exist, tag case clashes, every `apps/*` directory has an entry).
 - [x] Gallery: escapes metadata fields, tolerates entries without `tags`, validates `?category=`/`?tags=` against known values, checks `response.ok`, Tags arrow starts in the right state, relative favicon paths.
@@ -51,8 +51,8 @@ Findings from a full read of the repo (156 apps, gallery, tooling, game, notes) 
 
 - [ ] `[L]` Gallery needs `fetch('metadata.json')`, which fails on `file://` (contradicts rule 16). Ship the data as a `.js` global or inline it.
 - [ ] `[M]` `auto-brainstorm.sh` still gives `claude -p` unrestricted Bash/Edit/Write, and `--continue` resumes whichever conversation is most recent in the directory, so a concurrent session there gets the "implement the TOP 3" prompt. Capture and resume an explicit session id; restrict Bash to the check commands.
-- [ ] `[L]` No single entry point or CI: add one command that runs check-syntax, loadtest, the loadtest regression test, the game and notes tests, and "build.py leaves git clean".
-- [ ] `[L]` Load test library stubs have no `Papa` (papaparse); a startup use would be a false failure.
+- [ ] `[L]` No single entry point or CI: add one command that runs check-syntax, smoketest, the smoketest regression test, the game and notes tests, and "build.py leaves git clean".
+- [ ] `[L]` Smoke test library stubs have no `Papa` (papaparse); a startup use would be a false failure.
 - [ ] `[L]` `?v=N` cache-busters in `notes/build.py:32-33` and the game's `index.html` are bumped by hand; derive from a content hash.
 - [ ] `[L]` 155 of 156 app pages declare no favicon.
 - [ ] `[L]` `todo.md` is a fully checked-off list plus an old brainstorm table.
