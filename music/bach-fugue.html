@@ -2,12 +2,23 @@
 <title>Fugue in D minor · J. S. Bach</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0b1012;color:#edece1;font:16px "Instrument Sans",system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:clamp(22px,5vw,68px)}header,footer,.controls,.voices{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}header{border-bottom:1px solid #344041;padding-bottom:22px}h1{font:normal clamp(40px,7vw,86px)/1 Georgia,serif;margin:14px 0 10px;letter-spacing:-.055em}p{margin:0;color:#b5bfbb}.composer,small{font-size:12px;letter-spacing:.09em}.composer{text-transform:uppercase;color:#d4c486}canvas{display:block;width:100%;height:clamp(275px,44vh,480px)}button,select{font:inherit;background:#172022;color:#edece1;border:1px solid #445051;padding:9px 13px;border-radius:8px;cursor:pointer}button[aria-pressed=false]{opacity:.52}button i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}.voices{justify-content:flex-start;gap:8px}.controls{justify-content:flex-start}.play{background:#e5dbb4;color:#171c1b;min-width:90px}input{flex:1;min-width:100px;accent-color:#ded3a7}.bar{font-variant-numeric:tabular-nums}footer{margin-top:22px;border-top:1px solid #344041;padding-top:18px;color:#acb9b5;font-size:14px}a{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e6ce85}
- .back{color:#ddcd9f;text-underline-offset:5px}.credit{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.credit a{text-underline-offset:3px} [role=status]{color:#e9ce80} </style><main><header><div><span class="composer">Johann Sebastian Bach</span><h1>Fugue in D minor</h1><p>The Well-Tempered Clavier, Book I · BWV 851</p></div><a class="back" href="index.html">← All works</a></header>
+ .back{color:#ddcd9f;text-underline-offset:5px}.credit{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.credit a{text-underline-offset:3px} [role=status]{color:#e9ce80}
+canvas{height:clamp(210px,32vh,340px)}
+.sheet{margin-top:20px}.sheet header{padding:0 0 8px;border:0;align-items:baseline}
+.sheet h2{font:normal 22px Georgia,serif;margin:0}.sheet a{font-size:14px;color:#c7d0c9}
+.paper{overflow-x:auto;background:#f7f5ea;border-radius:5px}.paper svg{display:block;width:100%;min-width:590px}
+.paper image{mix-blend-mode:multiply}.paper rect{fill:#e4b93d;opacity:.21;mix-blend-mode:multiply}
+</style><main><header><div><span class="composer">Johann Sebastian Bach</span><h1>Fugue in D minor</h1><p>The Well-Tempered Clavier, Book I · BWV 851</p></div><a class="back" href="index.html">← All works</a></header>
 <canvas aria-label="Colored paths show note onsets from left to right, with higher pitches higher on screen."></canvas>
 <div class="controls"><button class="play" id="play">Play</button><input id="seek" type="range" min="0" max="132" step=".01" value="0" aria-label="Position in fugue"><span class="bar" id="bar"></span><select id="speed" aria-label="Playback speed"><option value=".5">½ speed</option><option value=".75">¾ speed</option><option value="1" selected>1× speed</option></select></div>
+<section class="sheet" aria-labelledby="sheet-heading">
+<header><h2 id="sheet-heading">Sheet music</h2><a id="sheet-pdf">Full score (PDF)</a></header>
+<div class="paper" tabindex="0" aria-label="Printed score, scroll horizontally on narrow screens">
+<svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
+</div></section>
 <footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
 <script src="bach-data/scores.js"></script><script src="bach-data/library.js"></script>
-<script src="bach-data/piano.js"></script><script>
+<script src="bach-data/notation/index.js"></script><script src="bach-data/piano.js"></script><script>
 const id = Number(new URLSearchParams(location.search).get('bwv'));
 const piece = library.find(item => item.bwv === id) || FUGUE;
 const isFugue = piece === FUGUE;
@@ -166,11 +177,56 @@ play.onclick = async () => {
 };
 seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change(()=>rate=piece.bpm/60*Number(speed.value));
 names.forEach((name,v)=>{const b=document.createElement('button');b.innerHTML='<i></i>'+name;b.querySelector('i').style.background=colors[v];b.setAttribute('aria-pressed','true');b.title='Toggle '+name.toLowerCase()+' voice';b.onclick=()=>change(()=>{enabled[v]=!enabled[v];b.setAttribute('aria-pressed',enabled[v])});document.querySelector('.voices').append(b)});
+// The Invention in E major repeats two sections (written measures 1–20 and 21–62).
+function printedIndex(playIndex) {
+    if (piece.bwv !== 777 || playIndex < 20) return playIndex;
+    if (playIndex < 82) return playIndex - 20;
+    return playIndex - 62;
+}
+
+function measureLabel(index) {
+    if (piece.bwv === 774 && index === 0) return 'Pickup';
+    return 'm. ' + (printedIndex(index) + (piece.bwv === 774 ? 0 : 1));
+}
+
+const sheet = NOTATION[piece.bwv];
+const staff = document.querySelector('#staff');
+const paper = document.querySelector('.paper');
+const engraving = document.querySelector('#engraving');
+const highlight = document.querySelector('#measure-highlight');
+engraving.setAttribute('href', 'bach-data/notation/' + piece.bwv + '.webp');
+engraving.setAttribute('width', sheet.width);
+engraving.setAttribute('height', sheet.height);
+const pdfName = isFugue ? 'bwv851_fugue06' : 'bach-invention-' + String(piece.bwv-771).padStart(2, '0');
+document.querySelector('#sheet-pdf').href = 'https://www.mutopiaproject.org/ftp/BachJS/BWV' + piece.bwv + '/' + pdfName + '/' + pdfName + '-a4.pdf';
+const sheetBars = sheet.systems.flatMap(system => system.x.slice(0, -1).map((x, i) => ({
+    system, x, width: system.x[i+1] - x
+})));
+let lastMeasure = -1;
+function showMeasure(index) {
+    if (index === lastMeasure) return;
+    lastMeasure = index;
+    const label = measureLabel(index);
+    bar.textContent = label + ' / ' + (sheetBars.length - (piece.bwv === 774 ? 1 : 0));
+    const {system, x, width} = sheetBars[printedIndex(index)];
+    staff.setAttribute('viewBox', [0, system.y, sheet.width, system.h].join(' '));
+    staff.setAttribute('aria-label', piece.title + ', ' + label);
+    highlight.setAttribute('x', x);
+    highlight.setAttribute('y', system.y);
+    highlight.setAttribute('width', width);
+    highlight.setAttribute('height', system.h);
+    const scale = staff.clientWidth / sheet.width;
+    const left = x * scale, right = (x + width) * scale;
+    if (left < paper.scrollLeft || right > paper.scrollLeft + paper.clientWidth) {
+        paper.scrollLeft = (left + right - paper.clientWidth) / 2;
+    }
+}
+
 function draw(){
- const t=Math.max(0,position());if(running&&t>=totalBeats)stop();if(document.activeElement!==seek||running)seek.value=t;bar.textContent='m. '+(1+bars.findLastIndex(beat=>beat<=t))+' / '+measures;
+ const t=Math.max(0,position());if(running&&t>=totalBeats)stop();if(document.activeElement!==seek||running)seek.value=t;showMeasure(bars.findLastIndex(beat=>beat<=t));
  const w=canvas.clientWidth,h=canvas.clientHeight,d=devicePixelRatio;if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
  const span=w<600?8:16,left=Math.min(totalBeats-span,Math.max(0,t-span*.38)),x=b=>12+(b-left)*(w-24)/span,y=p=>h-44-(p-lowest)*(h-80)/(highest-lowest);
- for(let i=0;i<measures;i++){const xx=x(bars[i]);ctx.fillStyle='#647371';ctx.font='11px monospace';ctx.fillText(String(i+1).padStart(2,'0'),xx+4,h-12);ctx.fillStyle='#1d2929';ctx.fillRect(xx,18,1,h-48)}
+ for(let i=0;i<measures;i++){const xx=x(bars[i]);ctx.fillStyle='#647371';ctx.font='11px monospace';ctx.fillText(measureLabel(i).replace('m. ', ''),xx+4,h-12);ctx.fillStyle='#1d2929';ctx.fillRect(xx,18,1,h-48)}
  voices.forEach((notes,v)=>{
     const group=groups[v];
     ctx.strokeStyle=ctx.fillStyle=colors[group];

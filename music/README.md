@@ -31,3 +31,7 @@ Four Invention editions in this catalog credit jeff covey under CC BY-SA 3.0 (BW
 1. **Follow a motif.** Select six notes in an Invention. Search both voices for the same sequence of pitch intervals and relative durations, so a move to another key still matches. Play the original and each match back to back with measure and voice labels. Start here because the sixteen existing scores are enough to test whether the discoveries are interesting. Later, let the listener try rhythmic changes or an inversion.
 2. **Sit inside a quartet.** Introduce the viola alone for two bars, then fade the other players back in. At a handoff, let the listener switch focus to the instrument that finishes the phrase. Start with one OpenScore movement and mark a few handoffs by ear.
 3. **Hear a pianist's decision.** Align one cadence in Ishizaka's BWV 851 with its printed beats. Play the evenly timed score and the studio recording, then replay the sampled instrument using the pianist's timing to isolate the effect of timing from tone. Validate the beat alignment by listening before extending it to the whole work.
+
+## Sheet music
+
+The player shows one printed staff system at a time and highlights the current measure. The images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
