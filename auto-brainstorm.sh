@@ -2,7 +2,7 @@
 
 # Continuous AI App Brainstorm & Implement Loop
 # This script alternates between brainstorming new app ideas and implementing them
-# Press Ctrl+C to stop
+# Press Ctrl+C to stop, or set MAX_ITERATIONS=N to stop after N rounds
 
 set -e
 
@@ -10,6 +10,8 @@ set -e
 REPO_DIR="${REPO_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 LOG_FILE="$REPO_DIR/auto-brainstorm.log"
 ITERATION=0
+MAX_ITERATIONS="${MAX_ITERATIONS:-0}"   # 0 = no limit
+FAILURES=0
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -31,12 +33,26 @@ trap cleanup SIGINT SIGTERM
 
 cd "$REPO_DIR"
 
+if ! command -v claude >/dev/null 2>&1; then
+    echo "claude CLI not found on PATH" >&2
+    exit 1
+fi
+
+# Prints the failing gate's output and returns non-zero if either gate fails
+run_checks() {
+    node "$REPO_DIR/check-syntax.js" || return 1
+    # Runtime check is only available once its jsdom dependency is installed
+    if [ -d "$REPO_DIR/tools/loadtest/node_modules" ]; then
+        node "$REPO_DIR/tools/loadtest/run.js" || return 1
+    fi
+}
+
 log "${GREEN}Starting continuous brainstorm & implement loop${NC}"
 log "Working directory: $REPO_DIR"
 log "Press Ctrl+C to stop"
 echo ""
 
-while true; do
+while [ "$MAX_ITERATIONS" -eq 0 ] || [ "$ITERATION" -lt "$MAX_ITERATIONS" ]; do
     ITERATION=$((ITERATION + 1))
     log "${BLUE}========== ITERATION $ITERATION ==========${NC}"
 
@@ -74,10 +90,16 @@ Be creative but realistic - these should be implementable as single-page web app
     BRAINSTORM_EXIT=${PIPESTATUS[0]}
 
     if [ $BRAINSTORM_EXIT -ne 0 ]; then
+        FAILURES=$((FAILURES + 1))
+        if [ $FAILURES -ge 5 ]; then
+            log "${YELLOW}Brainstorm failed $FAILURES times in a row; giving up.${NC}"
+            exit 1
+        fi
         log "${YELLOW}Brainstorm phase encountered an issue. Waiting 30s before retry...${NC}"
         sleep 30
         continue
     fi
+    FAILURES=0
 
     echo ""
     log "${GREEN}Phase 2: Implementing top 3 brainstormed apps...${NC}"
@@ -110,26 +132,27 @@ Implement all 3 apps now, one at a time. After each app, run 'node check-syntax.
         log "${YELLOW}Implementation phase encountered an issue.${NC}"
     fi
 
-    # Phase 3: Gate on syntax. An app that doesn't parse is dead on arrival,
-    # and a read-only self-review won't catch it.
+    # Phase 3: Gate on the checks. An app that doesn't parse or load is dead on
+    # arrival, and a read-only self-review won't catch it.
     log "${GREEN}Phase 3: Checking all apps...${NC}"
-    CHECK_CMD="node \"$REPO_DIR/check-syntax.js\""
-    if [ -d "$REPO_DIR/tools/loadtest/node_modules" ]; then
-        # Runtime check is only available once its jsdom dependency is installed
-        CHECK_CMD="$CHECK_CMD && node \"$REPO_DIR/tools/loadtest/run.js\""
-    fi
-    if ! SYNTAX_OUTPUT=$(eval "$CHECK_CMD" 2>&1); then
-        log "${YELLOW}Syntax errors found; asking for a fix pass.${NC}"
-        echo "$SYNTAX_OUTPUT" | tee -a "$LOG_FILE"
-        claude -p "The syntax check failed with the output below. Fix every error, then re-run 'node check-syntax.js' until it passes.
+    if ! CHECK_OUTPUT=$(run_checks 2>&1); then
+        log "${YELLOW}Checks failed; asking for a fix pass.${NC}"
+        echo "$CHECK_OUTPUT" | tee -a "$LOG_FILE"
+        claude -p "The repo checks failed with the output below. Fix every error, then re-run 'node check-syntax.js' and 'node tools/loadtest/run.js' until both pass.
 
-$SYNTAX_OUTPUT" \
+$CHECK_OUTPUT" \
             --continue \
             --allowedTools "Bash,Glob,Grep,Read,Edit,Write" \
             --output-format text \
             2>&1 | tee -a "$LOG_FILE"
+        if ! CHECK_OUTPUT=$(run_checks 2>&1); then
+            log "${YELLOW}Checks still failing after the fix pass; stopping so broken apps don't pile up.${NC}"
+            echo "$CHECK_OUTPUT" | tee -a "$LOG_FILE"
+            exit 1
+        fi
+        log "Checks pass after the fix pass."
     else
-        log "Syntax check passed."
+        log "Checks passed."
     fi
 
     echo ""

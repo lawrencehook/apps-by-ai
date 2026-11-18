@@ -12,7 +12,7 @@ static host.
 | `jspdf-2.5.1` | `jspdf@2.5.1` | `jspdf.umd.min.js` | MIT | blueprint-annotation-tool, signature-studio, walkthrough-creator |
 | `d3-7.9.0` | `d3@7.9.0` | `d3.min.js` | ISC | 3d-globe-visualizer |
 | `topojson-client-3.1.0` | `topojson-client@3.1.0` | `topojson-client.min.js` | ISC | 3d-globe-visualizer |
-| `three-0.128.0` | `three@0.128.0` (r128) | `three.min.js` | MIT | 3d-room-planner |
+| `three-0.128.0` | `three@0.128.0` (r128) | `three.min.js` | MIT | 3d-room-planner, games/lantern-labyrinth |
 | `matter-js-0.19.0` | `matter-js@0.19.0` | `matter.min.js` | MIT | physics-sandbox |
 | `jszip-3.10.1` | `jszip@3.10.1` | `jszip.min.js` | MIT or GPL-3.0-or-later | favicon-generator |
 | `html2pdf.js-0.10.1` | `html2pdf.js@0.10.1` | `html2pdf.bundle.min.js` | MIT | invoice-generator |
@@ -36,7 +36,7 @@ on-the-fly minification of the same files.
 3. Add a row to the table above.
 4. Remove the old version's folder once nothing references it.
 
-`node check-syntax.js` fails if any app still loads a script from a URL.
+`node check-syntax.js` fails if any page loads a script, stylesheet (other than Google Fonts), worker or module from a URL.
 
 ## What is still external
 

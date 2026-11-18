@@ -4,13 +4,11 @@ Rules and patterns derived from reviewing all 156 apps in this repo. Follow thes
 
 ## Security
 
-1. **Never use `innerHTML` with user input.** Use `textContent` for plain text, or sanitize with an `escapeHtml()` helper before inserting into templates. This includes filenames from file uploads, text field values, and any string the user controls.
+1. **Never use `innerHTML` with user input.** Use `textContent` for plain text, or sanitize with an `escapeHtml()` helper before inserting into templates. This includes filenames from file uploads, text field values, parsed file contents (CSV cells, JSON keys, pasted logs), and any string the user controls. The helper must escape quotes too, because the result often lands inside an attribute (`value="${escapeHtml(name)}"`); the older `div.textContent` → `div.innerHTML` trick leaves `"` alone and is not safe there. URLs need more than escaping: only allow `http(s):`, `mailto:`, `#` and relative targets in `href`/`src`.
 
 ```javascript
 function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 ```
 
@@ -63,12 +61,37 @@ document.addEventListener('keydown', e => {
 
 ## Dependencies
 
-19. **No code from outside the repo.** Third-party scripts go in `libs/<name>-<version>/` and are referenced as `../../libs/...` — never a CDN `<script src>`, never a remote `workerSrc`. The repo must work from `file://` with the network unplugged. See `libs/README.md` for the vendoring steps; `check-syntax.js` fails on any remote script.
+16. **No code from outside the repo.** Third-party scripts go in `libs/<name>-<version>/` and are referenced as `../../libs/...` — never a CDN `<script src>`, never a remote `workerSrc`. The repo must work from `file://` with the network unplugged. See `libs/README.md` for the vendoring steps; `check-syntax.js` fails on any remote script, stylesheet, worker or module import.
 
 ## Verification
 
-16. **Run `node check-syntax.js` before every commit, and `node tools/loadtest/run.js` (after a one-time `npm install` in `tools/loadtest`) before calling an app done.** The first parses every app's inline `<script>`; the second actually loads each app in jsdom and reports anything thrown at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
+17. **Run `node check-syntax.js` before every commit, and `node tools/loadtest/run.js` (after a one-time `npm install` in `tools/loadtest`) before calling an app done.** The first parses every script, rejects remote code and validates `metadata.json`; the second actually loads each page in jsdom and fails on anything thrown, rejected or logged with `console.error` at startup. Both exist because reading code is not running code: one app shipped with a `SyntaxError` (curly quotes flattened to `'''`) and another threw `TypeError` on its first frame, and both sat dead through a full read-only review that "fixed" other things in them.
 
-17. **When reviewing a fix, re-derive it from the code — don't restore the old value because it looks more familiar.** A review pass reverted the BMI scale stops from 14/40/60 back to 18.5/25/30 because the latter are the well-known thresholds; but the marker formula maps BMI 15–40 onto 0–100%, so 14/40/60 was correct. When a change touches a number, find the formula it has to agree with and check the arithmetic; leave a comment that names the constraint so the next reader doesn't have to.
+18. **When reviewing a fix, re-derive it from the code — don't restore the old value because it looks more familiar.** A review pass reverted the BMI scale stops from 14/40/60 back to 18.5/25/30 because the latter are the well-known thresholds; but the marker formula maps BMI 15–40 onto 0–100%, so 14/40/60 was correct. When a change touches a number, find the formula it has to agree with and check the arithmetic; leave a comment that names the constraint so the next reader doesn't have to.
 
-18. **Keep the `Math.max(...array)` guard proportional to the array.** Spreading a fixed-size array (histogram buckets, 12 note names, a few files) is fine and clearer. Spreading anything derived from user data or a size slider — CSV rows, prime lists, audio samples — must be a loop or `reduce`, since V8 throws past roughly 100k arguments.
+19. **Keep the `Math.max(...array)` guard proportional to the array.** Spreading a fixed-size array (histogram buckets, 12 note names, a few files) is fine and clearer. Spreading anything derived from user data or a size slider — CSV rows, prime lists, audio samples — must be a loop or `reduce`, since V8 throws past roughly 100k arguments.
+
+## State & Timing
+
+20. **Give every async animation or step loop a run token.** A boolean `running` flag cannot tell an old loop from a new one: Reset, resize or a second click during an `await sleep()` leaves the old loop alive, and it resumes against the new state. Capture a counter when the run starts and bail out after every `await` if it has changed.
+
+```javascript
+let runId = 0;
+async function run() {
+    const id = ++runId;
+    while (!done) {
+        step();
+        await sleep(delay);
+        if (id !== runId) return; // reset, resize or a newer run took over
+    }
+}
+function reset() { runId++; /* then rebuild state */ }
+```
+
+21. **Local dates come from local getters, never `toISOString()`.** `toISOString().split('T')[0]` is the UTC date, which is tomorrow or yesterday for part of every day outside UTC. Build date keys and `<input type="date">` defaults from `getFullYear()`/`getMonth()`/`getDate()`, parse `YYYY-MM-DD` with `new Date(y, m - 1, d)`, and count days between dates with `Math.round` (or `Date.UTC`) so DST days of 23 or 25 hours don't shift the result.
+
+22. **Measure real time with the clock, not by counting callbacks.** `setInterval` and `requestAnimationFrame` are throttled in background tabs and run at the display's refresh rate. Timers store an end time and compute the remainder from `Date.now()`; simulations scale by the frame's time delta.
+
+23. **Don't rebuild the element the user is interacting with.** Re-rendering a list with `innerHTML` from an `input`/`change`/`pointerdown` handler destroys the focused field or the element being dragged. Update the affected cell in place and re-render only on add or remove.
+
+24. **Size and draw after showing, and keep state across resize.** A canvas measured while its panel is still `display: none` is 0x0, so unhide first. A `resize` handler should rescale or redraw what exists; regenerating the scene throws away the user's work every time a phone's URL bar hides.

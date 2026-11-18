@@ -797,9 +797,7 @@ You can also type or edit the notes manually."></textarea>
             }
 
             function escapeHtml(str) {
-                const div = document.createElement('div');
-                div.textContent = str;
-                return div.innerHTML;
+                return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             }
 
             container.innerHTML = sessions.map(session => {
@@ -899,7 +897,7 @@ You can also type or edit the notes manually."></textarea>
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         // Event listeners

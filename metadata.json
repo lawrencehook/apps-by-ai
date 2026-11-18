@@ -63,7 +63,7 @@
         "previewGradient": "linear-gradient(135deg, #0d1117 0%, #238636 50%, #58a6ff 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Developer Tools",
+        "category": "Developer",
         "tags": ["git", "visualization", "commits", "version-control"],
         "link": "https://en.wikipedia.org/wiki/Git",
         "completeness": 3
@@ -91,7 +91,7 @@
         "previewGradient": "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #a8edea 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Developer Tools",
+        "category": "Developer",
         "tags": ["dependencies", "graph", "npm", "python", "visualization"],
         "link": "https://en.wikipedia.org/wiki/Dependency_graph",
         "completeness": 3
@@ -133,7 +133,7 @@
         "previewGradient": "linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 50%, #f093fb 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Image",
+        "category": "Images",
         "tags": ["timelapse", "video", "animation", "photos"],
         "link": "https://en.wikipedia.org/wiki/Time-lapse_photography",
         "completeness": 3
@@ -217,7 +217,7 @@
         "previewGradient": "linear-gradient(135deg, #11998e 0%, #38ef7d 50%, #4ecdc4 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Image",
+        "category": "Images",
         "tags": ["ascii", "art", "converter"],
         "link": "https://en.wikipedia.org/wiki/ASCII_art",
         "completeness": 3
@@ -245,7 +245,7 @@
         "previewGradient": "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
-        "category": "Developer Tools",
+        "category": "Developer",
         "tags": ["code", "screenshot", "developer"],
         "link": "https://en.wikipedia.org/wiki/Syntax_highlighting",
         "completeness": 3
@@ -442,7 +442,7 @@
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
-        "tags": ["3D", "rendering"],
+        "tags": ["3d", "rendering"],
         "link": "https://en.wikipedia.org/wiki/Ray_marching",
         "completeness": 4
     },
@@ -498,7 +498,7 @@
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
         "category": "Computer Graphics",
-        "tags": ["procedural", "3D", "interactive"],
+        "tags": ["procedural", "3d", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Procedural_generation",
         "completeness": 4
     },
@@ -526,7 +526,7 @@
         "dateCreated": "2024-12-24",
         "model": "Claude Opus 4.5",
         "category": "Mathematics",
-        "tags": ["chaos", "3D"],
+        "tags": ["chaos", "3d"],
         "link": "https://en.wikipedia.org/wiki/Lorenz_system",
         "completeness": 4
     },
@@ -1940,7 +1940,7 @@
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
         "category": "Visualization",
-        "tags": ["3D", "globe", "interactive", "data"],
+        "tags": ["3d", "globe", "interactive", "data"],
         "link": "https://en.wikipedia.org/wiki/Globe",
         "completeness": 4
     },
@@ -2038,7 +2038,7 @@
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
         "category": "Design",
-        "tags": ["gradient", "design", "CSS", "interactive"],
+        "tags": ["gradient", "design", "css", "interactive"],
         "link": "https://en.wikipedia.org/wiki/Color_gradient",
         "completeness": 4
     },
@@ -2094,7 +2094,7 @@
         "dateCreated": "2024-12-28",
         "model": "Claude Opus 4.5",
         "category": "Visualization",
-        "tags": ["data", "charts", "animation", "interactive", "CSV", "JSON"],
+        "tags": ["data", "charts", "animation", "interactive", "csv", "json"],
         "link": "https://en.wikipedia.org/wiki/Data_visualization",
         "completeness": 3
     },

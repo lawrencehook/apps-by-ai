@@ -534,7 +534,7 @@
             a.download = `${baseName}_faded.wav`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             const fadeInEnabled = document.getElementById('fadeInEnabled').checked;
             const fadeOutEnabled = document.getElementById('fadeOutEnabled').checked;

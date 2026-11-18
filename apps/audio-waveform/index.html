@@ -687,7 +687,7 @@ ${rects}
             a.download = `${baseName}_waveform.svg`;
             a.click();
 
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = `Waveform SVG saved (${settings.width} × ${settings.height})!`;
             status.classList.add('show');

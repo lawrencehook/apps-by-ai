@@ -33,7 +33,7 @@ Useful next branches: differential equations, functional analysis, optimization,
 ```sh
 python3 notes/build.py
 node check-syntax.js
-NODE_PATH=/tmp/apps-by-ai-review/tools/loadtest/node_modules node --test notes/tests/*.test.js
+NODE_PATH=tools/loadtest/node_modules node --test notes/tests/*.test.js
 ```
 
 The Node tests require the repository's existing `tools/loadtest` jsdom dependency. Set NODE_PATH to that installation if it is elsewhere. Tests check generated routes, fragments, exercise structure, search, and keyboard behavior. They do not certify mathematical correctness; review theorem assumptions and solutions as content changes.

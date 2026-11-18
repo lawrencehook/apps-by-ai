@@ -817,7 +817,7 @@
                 a.download = 'timelapse.webm';
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
 
                 progressBar.classList.add('hidden');
                 statusText.classList.add('hidden');

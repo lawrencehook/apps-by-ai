@@ -10,7 +10,7 @@ const htmlPath = path.join(appDir, 'index.html');
 let html = fs.readFileSync(htmlPath, 'utf8');
 
 const result = {
-  app: appName,
+  app: path.relative(path.resolve(__dirname, '..', '..'), appDir) || appName,
   externalLibs: [],
   inlinedLocal: [],
   errors: [],          // uncaught errors (window 'error' + jsdomError)
@@ -26,6 +26,7 @@ const result = {
 // WebGL context and dies inside itself, which says nothing about the app.
 // Set LOADTEST_REAL_LIBS=1 to inline and execute the real library code instead.
 const REAL_LIBS = !!process.env.LOADTEST_REAL_LIBS;
+const deferred = [];
 html = html.replace(/<script\b([^>]*)\bsrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/script>/gi, (m, pre, src, post) => {
   if (/^(https?:)?\/\//i.test(src)) {
     result.externalLibs.push(src);
@@ -35,15 +36,28 @@ html = html.replace(/<script\b([^>]*)\bsrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/s
     result.externalLibs.push(src);
     return `<!-- stripped vendored library ${src} (stubbed) -->`;
   }
-  const local = path.join(appDir, src);
+  // Cache-busting suffixes (game.js?v=23) are not part of the file name
+  const local = path.join(appDir, src.split(/[?#]/)[0]);
   if (fs.existsSync(local)) {
     result.inlinedLocal.push(src);
     const code = fs.readFileSync(local, 'utf8');
-    return `<script${pre}${post}>${code.replace(/<\/script/gi, '<\\/script')}</script>`;
+    const attrs = `${pre}${post}`;
+    const tag = `<script${attrs.replace(/\s(defer|async)\b(=["'][^"']*["'])?/gi, '')}>${code.replace(/<\/script/gi, '<\\/script')}</script>`;
+    // Inline scripts ignore defer, so run deferred ones where a browser would: after the body is parsed
+    if (/\sdefer\b/i.test(attrs) && !/\stype\s*=\s*["']module["']/i.test(attrs)) { deferred.push(tag); return `<!-- deferred ${src} -->`; }
+    return tag;
   }
-  result.externalLibs.push(src + ' (missing local)');
+  result.errors.push({ source: 'loader', name: 'MissingScript', message: `local script not found: ${src}`, stack: '' });
   return `<!-- stripped missing script ${src} -->`;
 });
+if (deferred.length) {
+  const tags = deferred.join('\n');
+  html = /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, () => `${tags}\n</body>`) : html + tags;
+}
+// jsdom does not execute module scripts, so a page built on them would pass without running anything
+if (/<script\b[^>]*\stype\s*=\s*["']module["']/i.test(html)) {
+  result.errors.push({ source: 'loader', name: 'NotExecuted', message: 'page uses <script type="module">, which this harness cannot run', stack: '' });
+}
 
 // ---- 2. Error capture -------------------------------------------------------
 function fmtErr(e) {
@@ -75,7 +89,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // ---- 3. Stubs ---------------------------------------------------------------
-function makeStub(name = 'stub', overrides = {}) {
+function makeStub(name = 'stub', overrides = {}, opts = {}) {
   const target = function () {};
   const proxy = new Proxy(target, {
     get(t, prop) {
@@ -85,7 +99,8 @@ function makeStub(name = 'stub', overrides = {}) {
       if (prop === Symbol.iterator) return function* () {};
       if (prop === 'toString') return () => `[${name}]`;
       if (prop === 'valueOf') return () => 0;
-      if (prop === 'length') return 0;
+      // three.js vectors have a length() method; everywhere else length is a count
+      if (prop === 'length') return opts.callableLength ? proxy : 0;
       if (prop === 'constructor') return target;
       if (prop === 'prototype') return t.prototype;
       return proxy;
@@ -377,7 +392,7 @@ function beforeParse(window) {
     });
     const libs = {
       d3: libStub('d3'), topojson: libStub('topojson'),
-      THREE: makeStub('THREE', { version: '0.0.0-stub', domElement: doc.createElement('canvas') }),
+      THREE: makeStub('THREE', { version: '0.0.0-stub', domElement: doc.createElement('canvas') }, { callableLength: true }),
       pdfjsLib, PDFLib: libStub('PDFLib'), Matter: libStub('Matter'), JSZip: libStub('JSZip'),
       jspdf: makeStub('jspdf', { jsPDF: libStub('jsPDF') }), jsPDF: libStub('jsPDF'),
       html2pdf: libStub('html2pdf'), qrcode: libStub('qrcode'), jsQR: () => null,

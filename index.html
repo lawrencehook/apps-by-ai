@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apps by AI</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
-    <link rel="manifest" href="/favicons/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicons/apple-touch-icon.png">
+    <link rel="manifest" href="favicons/site.webmanifest">
     <style>
         * {
             margin: 0;
@@ -358,7 +358,7 @@
     <div class="filters">
         <div class="category-filters" id="categoryFilters"></div>
         <div class="tags-header">
-            <button class="tags-toggle" id="tagsToggle">
+            <button class="tags-toggle collapsed" id="tagsToggle">
                 <span class="arrow">▼</span> Tags
             </button>
         </div>
@@ -381,17 +381,23 @@
         let selectedCategory = null;
         let searchQuery = '';
 
+        function esc(value) {
+            return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         // Load filters from URL params
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
 
-            if (params.get('category')) {
+            if (allCategories.includes(params.get('category'))) {
                 selectedCategory = params.get('category');
             }
 
             if (params.get('tags')) {
                 params.get('tags').split(',').forEach(tag => {
-                    selectedTags.add(decodeURIComponent(tag.trim()));
+                    let name = tag.trim();
+                    try { name = decodeURIComponent(name); } catch (e) {}
+                    if (allTags.includes(name)) selectedTags.add(name);
                 });
             }
 
@@ -433,7 +439,13 @@
         async function loadApps() {
             try {
                 const response = await fetch('metadata.json');
-                allApps = await response.json();
+                if (!response.ok) throw new Error(`metadata.json: HTTP ${response.status}`);
+                // One malformed entry must not blank the whole gallery
+                allApps = (await response.json()).filter(app => app && app.title && app.path);
+                allApps.forEach(app => {
+                    app.description = app.description || '';
+                    app.tags = Array.isArray(app.tags) ? app.tags : [];
+                });
 
                 // Extract all unique categories
                 const categorySet = new Set();
@@ -465,13 +477,13 @@
         function applyActiveStates() {
             // Apply active state to category
             if (selectedCategory) {
-                const catBtn = document.querySelector(`.category-filter[data-category="${selectedCategory}"]`);
+                const catBtn = document.querySelector(`.category-filter[data-category="${CSS.escape(selectedCategory)}"]`);
                 if (catBtn) catBtn.classList.add('active');
             }
 
             // Apply active state to tags
             selectedTags.forEach(tag => {
-                const tagBtn = document.querySelector(`.tag-filter[data-tag="${tag}"]`);
+                const tagBtn = document.querySelector(`.tag-filter[data-tag="${CSS.escape(tag)}"]`);
                 if (tagBtn) tagBtn.classList.add('active');
             });
         }
@@ -479,7 +491,7 @@
         function renderCategoryFilters() {
             const container = document.getElementById('categoryFilters');
             container.innerHTML = allCategories.map(cat => `
-                <button class="category-filter" data-category="${cat}">${cat}</button>
+                <button class="category-filter" data-category="${esc(cat)}">${esc(cat)}</button>
             `).join('');
 
             container.addEventListener('click', e => {
@@ -509,7 +521,7 @@
         function renderTagFilters() {
             const container = document.getElementById('tagFilters');
             container.innerHTML = allTags.map(tag => `
-                <button class="tag-filter" data-tag="${tag}">${tag}</button>
+                <button class="tag-filter" data-tag="${esc(tag)}">${esc(tag)}</button>
             `).join('');
 
             container.addEventListener('click', e => {
@@ -596,21 +608,21 @@
             }
 
             gallery.innerHTML = apps.map(app => `
-                <a href="${app.path}" class="card">
-                    <div class="card-icon" style="${app.previewGradient ? `background: ${app.previewGradient}` : 'background: #333'}">
-                        ${app.emoji || '🤖'}
+                <a href="${esc(app.path)}" class="card">
+                    <div class="card-icon" style="${app.previewGradient ? `background: ${esc(app.previewGradient)}` : 'background: #333'}">
+                        ${esc(app.emoji || '🤖')}
                     </div>
                     <div class="card-content">
-                        <h2 class="card-title">${app.title}</h2>
-                        <p class="card-description">${app.description}</p>
+                        <h2 class="card-title">${esc(app.title)}</h2>
+                        <p class="card-description">${esc(app.description)}</p>
                         <div class="card-meta">
-                            ${app.category ? `<span class="card-category">${app.category}</span>` : ''}
-                            ${app.tags.slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('')}
-                            ${app.completeness ? `<span class="card-rating" title="Completeness: ${app.completeness}/5"><span class="filled">${'★'.repeat(app.completeness)}</span>${'★'.repeat(5 - app.completeness)}</span>` : ''}
+                            ${app.category ? `<span class="card-category">${esc(app.category)}</span>` : ''}
+                            ${app.tags.slice(0, 2).map(tag => `<span class="tag">${esc(tag)}</span>`).join('')}
+                            ${[1, 2, 3, 4, 5].includes(app.completeness) ? `<span class="card-rating" title="Completeness: ${app.completeness}/5"><span class="filled">${'★'.repeat(app.completeness)}</span>${'★'.repeat(5 - app.completeness)}</span>` : ''}
                         </div>
                     </div>
                     ${app.link ? `
-                        <span class="card-link" onclick="event.preventDefault(); event.stopPropagation(); window.open('${app.link}', '_blank');">
+                        <span class="card-link" data-link="${esc(app.link)}" onclick="event.preventDefault(); event.stopPropagation(); window.open(this.dataset.link, '_blank', 'noopener');">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>

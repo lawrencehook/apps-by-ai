@@ -473,7 +473,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_watermarked.pdf');
                 a.click();
 
-                URL.revokeObjectURL(url);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showStatus('Watermark applied successfully');
             } catch (err) {
                 showStatus('Error applying watermark: ' + err.message, true);

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-for (const [fixture, expectedExit] of [['good', 0], ['bad', 1], ['rejection', 1]]) {
+for (const [fixture, expectedExit] of [['good', 0], ['bad', 1], ['rejection', 1], ['ce', 1]]) {
   const result = spawnSync(process.execPath, [path.join(__dirname, 'run.js'),
     `../tools/loadtest/fixtures/${fixture}`], { encoding: 'utf8', timeout: 10000 });
   assert.ifError(result.error);
