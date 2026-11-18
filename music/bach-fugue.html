@@ -17,14 +17,15 @@ canvas{height:clamp(210px,32vh,340px)}
 <svg id="staff" role="img" aria-label="Current staff system"><image id="engraving"/><rect id="measure-highlight"/></svg>
 </div></section>
 <footer><div class="voices" aria-label="Audible voices"></div><div class="credit"><a id="edition">Score edition</a> · <a id="instrument-credit" href="bach-data/piano-credits.txt">Salamander grand piano</a></div></footer><p role="status" id="status"></p></main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/library.js"></script>
-<script src="bach-data/notation/index.js"></script><script src="bach-data/notation/565.js"></script><script src="bach-data/notation/1068.js"></script><script src="bach-data/notation/1050.js"></script><script>
-const id = Number(new URLSearchParams(location.search).get('bwv'));
-const piece = library.find(item => item.bwv === id) || FUGUE;
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/wtc1.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/notation/index.js"></script><script src="bach-data/notation/565.js"></script><script src="bach-data/notation/1068.js"></script><script src="bach-data/notation/wtc1.js"></script><script src="bach-data/notation/1050.js"></script><script>
+const params = new URLSearchParams(location.search);
+const id = Number(params.get('bwv'));
+const piece = library.find(item => item.bwv === id && item.movement === (params.get('movement') || undefined)) || FUGUE;
 const isFugue = piece === FUGUE;
 const score = piece.score;
 const names = piece.names || (score.length >= 3 ? ['Upper', 'Middle', 'Bass'] : ['Upper', 'Lower']);
-const colors = ['#e9ce80','#8acfc3','#d9a8c1','#a6b7eb'];
+const colors = voiceColors;
 const instruments = piece.instruments || score.map(() => 'piano');
 if (piece === BRANDENBURG) {
     const credit = document.querySelector('#instrument-credit');
@@ -103,7 +104,22 @@ async function loadBank(name) {
     });
     banks[name] = library.read();
 }
-let running = false, offset = 0, start = 0, rate = piece.bpm / 60;
+let running = false, offset = 0, start = 0;
+const tempoMap = [];
+for (const [beat, secondsPerBeat] of piece.tempi || [[0, 60 / piece.bpm]]) {
+    const previous = tempoMap.at(-1);
+    const seconds = previous ? previous.seconds + (beat - previous.beat) * previous.secondsPerBeat : 0;
+    tempoMap.push({beat, seconds, secondsPerBeat});
+}
+function scoreSeconds(beat) {
+    const segment = tempoMap.findLast(entry => entry.beat <= beat);
+    return segment.seconds + (beat - segment.beat) * segment.secondsPerBeat;
+}
+function scoreBeat(seconds) {
+    const segment = tempoMap.findLast(entry => entry.seconds <= seconds);
+    return segment.beat + (seconds - segment.seconds) / segment.secondsPerBeat;
+}
+let startSeconds = 0, playbackSpeed = 1;
 let nextNote = [];
 const playing = new Set();
 
@@ -147,7 +163,8 @@ function bowOverlap(left, right, voice) {
         left.pitches[0] === right.pitches[0]) return 0;
     // The MIDI engraving leaves gaps of up to one tick around ornaments.
     if (Math.abs(right.t - left.t - left.length) > .003) return 0;
-    return Math.min(.07, left.length / rate / 3, right.length / rate / 3);
+    const beatsPerSecond = piece.bpm / 60 * playbackSpeed;
+    return Math.min(.07, left.length / beatsPerSecond / 3, right.length / beatsPerSecond / 3);
 }
 
 function sound(pitch, when, duration, age, instrument, fadeIn, fadeOut) {
@@ -194,7 +211,7 @@ function sound(pitch, when, duration, age, instrument, fadeIn, fadeOut) {
 
 function position() {
     if (!running) return offset;
-    return Math.min(totalBeats, offset + Math.max(0, audio.currentTime - start) * rate);
+    return Math.min(totalBeats, scoreBeat(startSeconds + Math.max(0, audio.currentTime - start) * playbackSpeed));
 }
 
 function release(note) {
@@ -211,11 +228,11 @@ function pump() {
         while (nextNote[voice] < notes.length) {
             const index = nextNote[voice];
             const n = notes[index];
-            const onset = start + (n.t - offset) / rate;
+            const onset = start + (scoreSeconds(n.t) - startSeconds) / playbackSpeed;
             if (onset > deadline) break;
             nextNote[voice]++;
             const when = Math.max(onset, start, audio.currentTime);
-            const duration = onset + n.length / rate - when;
+            const duration = start + (scoreSeconds(n.t + n.length) - startSeconds) / playbackSpeed - when;
             if (duration <= 0 || !enabled[groups[voice]]) continue;
             const fadeIn = bowOverlap(notes[index - 1], n, voice);
             const fadeOut = bowOverlap(n, notes[index + 1], voice);
@@ -236,6 +253,8 @@ function stop() {
 
 function schedule() {
     start = audio.currentTime + .025;
+    startSeconds = scoreSeconds(offset);
+    playbackSpeed = Number(speed.value);
     nextNote = voices.map(notes => {
         const index = notes.findIndex(n => n.t + n.length > offset);
         return index < 0 ? notes.length : index;
@@ -249,7 +268,7 @@ function schedule() {
 function change(fn) {
     const resume = running;
     stop();
-    fn();
+    fn?.();
     if (resume && offset < totalBeats) schedule();
     else play.textContent = offset >= totalBeats ? 'Replay' : 'Play';
 }
@@ -272,7 +291,7 @@ play.onclick = async () => {
     if (offset >= totalBeats) offset = 0;
     schedule();
 };
-seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change(()=>rate=piece.bpm/60*Number(speed.value));
+seek.oninput=()=>change(()=>offset=Number(seek.value));speed.onchange=()=>change();
 if (piece === BRANDENBURG) {
     const jump = document.createElement('button');
     jump.textContent = 'Jump to cadenza';
@@ -289,12 +308,14 @@ function printedIndex(playIndex) {
     return playIndex - 62;
 }
 
+const hasPickup = piece.pickup || piece.bwv === 774;
 function measureLabel(index) {
-    if (piece.bwv === 774 && index === 0) return 'Pickup';
-    return 'm. ' + (printedIndex(index) + (piece.bwv === 774 ? 0 : 1));
+    if (piece.barLabels) return 'm. ' + piece.barLabels[index];
+    if (hasPickup && index === 0) return 'Pickup';
+    return 'm. ' + (printedIndex(index) + (hasPickup ? 0 : 1));
 }
 
-const sheet = piece === BRANDENBURG ? BRANDENBURG_NOTATION : piece === ORGAN_WORK ? ORGAN_NOTATION : piece === AIR_WORK ? AIR_NOTATION : NOTATION[piece.bwv];
+const sheet = piece.movement ? WTC_NOTATION[piece.bwv + '-' + piece.movement] : piece === BRANDENBURG ? BRANDENBURG_NOTATION : piece === ORGAN_WORK ? ORGAN_NOTATION : piece === AIR_WORK ? AIR_NOTATION : NOTATION[piece.bwv];
 const staff = document.querySelector('#staff');
 const paper = document.querySelector('.paper');
 const engraving = document.querySelector('#engraving');
@@ -312,7 +333,7 @@ function showMeasure(index) {
     if (index === lastMeasure) return;
     lastMeasure = index;
     const label = measureLabel(index);
-    bar.textContent = label + ' / ' + (sheetBars.length - (piece.bwv === 774 ? 1 : 0));
+    bar.textContent = label + ' / ' + (piece.barLabels?.at(-1) ?? (sheetBars.length - (hasPickup ? 1 : 0)));
     const {system, x, width} = sheetBars[printedIndex(index)];
     const file = system.file || piece.bwv + '.webp';
     if (file !== imageFile) {

@@ -25,6 +25,8 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 .feature h3{font-size:clamp(24px,2.5vw,33px);line-height:1.12;margin:0}
 .feature .meta{margin-top:auto}
 .feature canvas{height:84px}
+.pair{display:grid;grid-template-columns:minmax(140px,1fr) 1fr 1fr;gap:12px;align-items:center;border-top:1px solid var(--rule);padding:12px 0}.pair h3{margin:0;font-size:21px}.pair a{display:block;padding:5px 0}.pair a:hover{text-decoration:underline}.pair small{display:block;color:var(--muted);font-size:12px}
+@media(max-width:540px){.pair{grid-template-columns:1.1fr 1fr 1fr;gap:6px}.pair h3{font-size:17px}.section:has(#clavier-title){flex-wrap:wrap}}
 </style>
 <main>
 <nav aria-label="Site sections"><a href="../index.html">Apps</a><a href="../games/index.html">Games</a><a href="../notes/index.html">Notes</a><a href="index.html" aria-current="page">Music</a></nav>
@@ -35,9 +37,11 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <div class="grid" id="works"></div>
 <div class="section"><h2>Three-Part Sinfonias</h2><span class="meta" id="sinfonia-count"></span></div>
 <div class="grid" id="sinfonias"></div>
-<footer><span>Scores from Mutopia and Project Gutenberg</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a><a href="bach-data/concerto-credits.txt">Concerto recordings</a></footer>
+<div class="section"><h2 id="clavier-title">The Well-Tempered Clavier, Book I</h2><span class="meta">24 pairs</span></div>
+<div id="clavier" aria-labelledby="clavier-title"></div>
+<footer><span>Scores from Mutopia, Project Gutenberg, and Knute Snortum</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a><a href="bach-data/concerto-credits.txt">Concerto recordings</a></footer>
 </main>
-<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/library.js"></script>
+<script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/wtc1.js"></script><script src="bach-data/library.js"></script>
 <script>
 const portraits = [];
 const features = [
@@ -80,6 +84,27 @@ for (const {pieces, grid, count} of grids) {
         works.append(row);
         portraits.push([row.querySelector('canvas'), piece]);
     }
+}
+
+for (const [index, pair] of clavierPairs.entries()) {
+    const [prelude, fugue] = pair;
+    const row = document.createElement('div');
+    row.className = 'pair';
+    row.innerHTML = '<div><h3></h3><small></small></div>';
+    row.querySelector('h3').textContent = (index + 1) + '. ' + prelude.key;
+    row.querySelector('small').textContent = 'BWV ' + prelude.bwv;
+    for (const piece of pair) {
+        const link = document.createElement('a');
+        const detail = document.createElement('small');
+        const isFugue = piece === fugue;
+        link.href = playerLink(piece);
+        link.textContent = isFugue ? 'Fugue' : 'Prelude';
+        link.setAttribute('aria-label', link.textContent + ' in ' + piece.key + ', BWV ' + piece.bwv);
+        detail.textContent = (isFugue ? new Set(voiceGroups(piece)).size + ' voices · ' : '') + durationText(piece);
+        link.append(detail);
+        row.append(link);
+    }
+    document.querySelector('#clavier').append(row);
 }
 
 // The small portraits use actual note onsets from each score.

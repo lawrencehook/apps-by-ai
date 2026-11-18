@@ -15,12 +15,18 @@ function voiceGroups(piece) {
     if (piece === FUGUE) return [0, 1, 2, 2];
     return piece.score.map((_, i) => i);
 }
-const library = [BRANDENBURG, ORGAN_WORK, AIR_WORK, FUGUE, ...PRELUDES, ...INVENTIONS, ...SINFONIAS];
+const library = [BRANDENBURG, ORGAN_WORK, AIR_WORK, FUGUE, ...PRELUDES, ...INVENTIONS, ...SINFONIAS, ...WTC_MOVEMENTS];
+const clavierPairs = Array.from({length: 24}, (_, index) => {
+    const bwv = 846 + index;
+    const prelude = bwv === 846 ? PRELUDES.find(p => p.bwv === bwv) : WTC_MOVEMENTS.find(p => p.bwv === bwv && p.movement === 'prelude');
+    const fugue = bwv === 851 ? FUGUE : WTC_MOVEMENTS.find(p => p.bwv === bwv && p.movement === 'fugue');
+    return [prelude, fugue];
+});
 function durationBeats(piece) {
     return piece.totalBeats ?? Math.max(...piece.score.flat().map(([tick, length]) => (tick + length) / 4));
 }
 function durationText(piece) {
-    const seconds = Math.round(durationBeats(piece) * 60 / piece.bpm);
+    const seconds = Math.round(piece.seconds ?? (durationBeats(piece) * 60 / piece.bpm));
     return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 }
-function playerLink(piece) { return 'bach-fugue.html?bwv=' + piece.bwv; }
+function playerLink(piece) { return 'bach-fugue.html?bwv=' + piece.bwv + (piece.movement ? '&movement=' + piece.movement : ''); }

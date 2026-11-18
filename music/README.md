@@ -1,6 +1,6 @@
 # Open music collections and listening experiments
 
-The [music catalog](index.html) features the first movement of Brandenburg Concerto No. 5, Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It also includes all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
+The [music catalog](index.html) features the first movement of Brandenburg Concerto No. 5, Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It includes all 24 prelude-and-fugue pairs from The Well-Tempered Clavier, Book I, alongside all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
 
 The catalog combines two independently reusable resources. Mutopia volunteers encoded the notes and their timing. Alexander Holm recorded individual notes on a Yamaha C5 grand piano. The player can therefore change the tempo or isolate a written voice while retaining the sound of a recorded instrument. Each piece links to its edition, and the instrument recordings carry their own credits. The organ, solo cello line, and orchestral strings use CC0 Versilian samples. [Mutopia](https://www.mutopiaproject.org/) · [Piano sample credits](bach-data/piano-credits.txt) · [Organ and string credits](bach-data/ensemble-credits.txt)
 
@@ -36,7 +36,7 @@ The Sinfonias use Olivier Vermersch’s public-domain Mutopia editions. Playback
 
 ## Sheet music
 
-The player shows one printed staff system at a time and highlights the current measure. The Brandenburg engraving comes from the same MusicXML as the player. The other images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
+The player shows one printed staff system at a time and highlights the current measure. The Brandenburg engraving comes from the same MusicXML as the player. The Mutopia images in `bach-data/notation/` are cropped, losslessly compressed reproductions of the same Mutopia A4 editions credited on each player page, under their respective edition licenses. The full-score PDF link opens the original engraving. The highlight follows both repeats in BWV 777 and the opening pickup in BWV 774.
 
 ## Selected works
 
@@ -49,3 +49,10 @@ The complete BWV 565 follows the timing of the Mutopia MIDI edition (quarter not
 ## Brandenburg Concerto No. 5
 
 The opening Allegro uses Geof Pawlicki’s public-domain MusicXML edition. Playback follows the edition’s 120 quarter notes per minute. Trills and mordents are shown in the notation and left unembellished in playback. Seven controls cover flute, solo violin, ripieno violin, viola, cello, violone, and the two harpsichord staves. The violone line uses a modern contrabass sample. Measure 154 starts the harpsichord cadenza, and the ensemble returns in measure 219. [Score edition](https://www.gutenberg.org/ebooks/5190) · [Concerto sample credits](bach-data/concerto-credits.txt)
+
+
+## The Well-Tempered Clavier, Book I
+
+The catalog lists BWV 846–869 in the order of the book, with a separate player for each movement. The C-major Prelude and D-minor Fugue retain their Mutopia editions and original links. The other 46 movements use Knute Snortum’s LilyPond edition, release v0.3. Each player links to the individual source and full engraved PDF. [Edition and releases](https://github.com/ksnortum/bach-well-tempered-1/releases/tag/v0.3)
+
+The timing and pitch arrays in `bach-data/wtc1.js` were compiled from the edition’s written parts on separate MIDI tracks. Playback uses the edition’s tempo changes and the local sampled piano. Written-out ornaments play as encoded. Ornament symbols and dynamic markings remain visible in the engraving. The score images in `bach-data/notation/wtc1/` are cropped reproductions of the individual PDFs. The new score data and engraving crops are adaptations of Knute Snortum’s work, distributed under CC BY-SA 4.0. [Source and license statement](https://github.com/ksnortum/bach-well-tempered-1/tree/v0.3#license) · [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
