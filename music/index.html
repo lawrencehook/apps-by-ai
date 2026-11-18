@@ -1,14 +1,13 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bach · The Listening Catalog</title>
+<title>Johann Sebastian Bach · Scores</title>
 <style>
 :root{color-scheme:dark;--ink:#efede0;--muted:#b4beb6;--rule:#36413d;--gold:#e9ce80}
 *{box-sizing:border-box}body{margin:0;background:#0b1012;color:var(--ink);font:16px/1.45 "Instrument Sans",system-ui,sans-serif}
 main{max-width:1180px;margin:auto;padding:clamp(20px,5vw,64px)}
-header,.line,footer,.section{display:flex;align-items:center;justify-content:space-between;gap:12px}
-header{border-bottom:1px solid var(--rule);padding-bottom:14px;color:var(--muted);font-size:13px}
-header strong{color:var(--ink);font-weight:550}.title{font:normal clamp(52px,8vw,94px)/1 Georgia,serif;letter-spacing:-.065em;margin:36px 0 26px}a{color:inherit;text-decoration:none}
+footer,.section{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.title{font:normal clamp(52px,8vw,94px)/1 Georgia,serif;letter-spacing:-.065em;margin:36px 0 26px;padding-bottom:20px;border-bottom:1px solid var(--rule)}a{color:inherit;text-decoration:none}
 .feature{background:#141c1b;border:1px solid #465043;display:grid;grid-template-columns:minmax(215px,.85fr) 1.4fr;align-items:center;padding:24px clamp(20px,3.5vw,42px);gap:20px}
 .feature canvas{width:100%;height:150px;display:block}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold)}
 h2,h3{font-family:Georgia,serif;font-weight:normal;letter-spacing:-.035em}
@@ -24,14 +23,13 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 #featured-works{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px}
 #featured-works .feature{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:20px}
 .feature h3{font-size:clamp(24px,2.5vw,33px);line-height:1.12;margin:0}
-.feature p{font-size:14px;margin:0;color:var(--muted)}.feature .meta{margin-top:auto}
+.feature .meta{margin-top:auto}
 .feature canvas{height:84px}
 </style>
 <main>
 <nav aria-label="Site sections"><a href="../index.html">Apps</a><a href="../games/index.html">Games</a><a href="../notes/index.html">Notes</a><a href="index.html" aria-current="page">Music</a></nav>
-<header><strong>Johann Sebastian Bach</strong><span>Interactive scores</span></header>
-<h1 class="title">The listening catalog</h1>
-<section aria-labelledby="start-heading"><div class="section"><h2 id="start-heading">Start here</h2></div>
+<h1 class="title">Johann Sebastian Bach</h1>
+<section aria-labelledby="selected-heading"><div class="section"><h2 id="selected-heading">Selected works</h2></div>
 <div id="featured-works"></div></section>
 <div class="section"><h2>Two-Part Inventions</h2><span class="meta" id="count"></span></div>
 <div class="grid" id="works"></div>
@@ -43,22 +41,21 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <script>
 const portraits = [];
 const features = [
-    [1050, 'I. Allegro · D major', 'Brandenburg Concerto No. 5', 'Listen for the harpsichord behind the flute and violin. Eventually it has the stage to itself.'],
-    [565, 'Organ · D minor', 'Toccata and Fugue', 'Listen to the opening flourish in octaves, then follow the bass when the pedals enter.'],
-    [1068, 'Orchestral Suite No. 3 · D major', 'Air', 'Follow the first violin’s long opening note while the bass moves beneath it.'],
-    [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello', 'Listen for the low G returning beneath the opening phrase.'],
-    [846, 'The Well-Tempered Clavier · I', 'Prelude in C major', 'Follow the repeating pattern as the harmony shifts underneath it.'],
-    [851, 'The Well-Tempered Clavier · I', 'Fugue in D minor', 'Hear the opening melody enter first in the upper voice, then in the middle and bass.']
+    [1050, 'I. Allegro · D major', 'Brandenburg Concerto No. 5'],
+    [565, 'Organ · D minor', 'Toccata and Fugue'],
+    [1068, 'Orchestral Suite No. 3 · D major', 'Air'],
+    [1007, 'Cello Suite No. 1 · G major', 'Prelude for solo cello'],
+    [846, 'The Well-Tempered Clavier · Book I', 'Prelude in C major'],
+    [851, 'The Well-Tempered Clavier · Book I', 'Fugue in D minor']
 ];
-for (const [bwv, collection, title, cue] of features) {
+for (const [bwv, collection, title] of features) {
     const piece = library.find(work => work.bwv === bwv);
     const card = document.createElement('a');
     card.className = 'feature';
     card.href = playerLink(piece);
-    card.innerHTML = '<span class="eyebrow"></span><h3></h3><canvas aria-hidden="true"></canvas><p></p><span class="meta"></span>';
+    card.innerHTML = '<span class="eyebrow"></span><h3></h3><canvas aria-hidden="true"></canvas><span class="meta"></span>';
     card.querySelector('.eyebrow').textContent = collection;
     card.querySelector('h3').textContent = title;
-    card.querySelector('p').textContent = cue;
     card.querySelector('.meta').textContent = 'BWV ' + bwv + ' · ' + durationText(piece);
     document.querySelector('#featured-works').append(card);
     portraits.push([card.querySelector('canvas'), piece, true]);
