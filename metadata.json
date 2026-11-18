@@ -1,5 +1,19 @@
 [
     {
+        "id": "inverse-kinematics",
+        "title": "Inverse Kinematics",
+        "description": "Drag a target and watch a robot arm work out the joint angles to reach it. Compare three solvers: FABRIK, cyclic coordinate descent, and Jacobian transpose.",
+        "path": "apps/inverse-kinematics/index.html",
+        "emoji": "🦾",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #556270 100%)",
+        "dateCreated": "2026-11-17",
+        "model": "Claude Fable 5.2",
+        "category": "Robotics",
+        "tags": ["robotics", "kinematics", "simulation", "interactive"],
+        "link": "https://en.wikipedia.org/wiki/Inverse_kinematics",
+        "completeness": 4
+    },
+    {
         "id": "reference-notes",
         "title": "Notes",
         "description": "A growing reference for mathematics, computer science, and theory of computation: definitions, theorem assumptions, applications, and exercises with hints and solutions.",

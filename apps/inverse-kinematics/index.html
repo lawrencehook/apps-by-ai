@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inverse Kinematics - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; touch-action: none; cursor: crosshair; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            width: 250px; max-height: calc(100vh - 40px); overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #888; margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 6px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"], .control-group select { width: 100%; }
+        select {
+            background: #16161d; color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px; border-radius: 4px; font-size: 13px;
+        }
+        .check { display: flex; align-items: center; gap: 8px; color: #ccc; font-size: 13px; margin-bottom: 12px; }
+        .check label { margin: 0; color: #ccc; font-size: 13px; }
+        .readout {
+            font-family: ui-monospace, monospace; font-size: 12px; color: #9ad;
+            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; line-height: 1.6;
+        }
+        .solver-note { color: #777; font-size: 12px; line-height: 1.4; margin: -4px 0 12px; }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .error { color: #f88; padding: 40px; font-size: 16px; }
+        @media (max-width: 600px) {
+            .controls { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 42vh; padding: 14px; }
+            .controls p { display: none; }
+            .back-link { top: 10px; right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>Inverse Kinematics</h1>
+        <p>A robot arm knows its joint angles, not where its hand is. Drag the target and watch a solver work out the angles that reach it.</p>
+        <div class="control-group">
+            <label for="solver">Solver</label>
+            <select id="solver">
+                <option value="fabrik">FABRIK</option>
+                <option value="ccd">Cyclic coordinate descent</option>
+                <option value="jt">Jacobian transpose</option>
+            </select>
+        </div>
+        <div class="solver-note" id="solverNote"></div>
+        <div class="control-group">
+            <label for="links">Links: <span id="linksLabel">5</span></label>
+            <input type="range" id="links" min="2" max="14" value="5">
+        </div>
+        <div class="control-group">
+            <label for="iters">Solver steps per frame: <span id="itersLabel">1</span></label>
+            <input type="range" id="iters" min="1" max="20" value="1">
+        </div>
+        <div class="check">
+            <input type="checkbox" id="auto" checked>
+            <label for="auto">Move target automatically</label>
+        </div>
+        <div class="check">
+            <input type="checkbox" id="trail" checked>
+            <label for="trail">Show hand trail</label>
+        </div>
+        <button id="reset">Reset arm</button>
+        <div class="readout" id="readout" aria-live="off"></div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext && canvas.getContext('2d');
+
+        const NOTES = {
+            fabrik: 'Pulls the chain to the target from the hand end, then re-anchors it from the base. Works on positions, no trigonometry.',
+            ccd: 'Rotates one joint at a time, from the hand back to the base, so the hand swings toward the target.',
+            jt: 'Gradient descent on the distance: each joint turns in proportion to how much it would move the hand toward the target. The simplest idea and the slowest to settle, especially with many links.'
+        };
+
+        let width = 0, height = 0, base = { x: 0, y: 0 }, reach = 0;
+        let n = 5, lens = [], angles = [];      // angles are relative to the previous link
+        let pts = [];                           // joint positions; pts[n] is the hand
+        let target = { x: 0, y: 0 };
+        let solver = 'fabrik', itersPerFrame = 1, autoMove = true, showTrail = true;
+        let dragging = false, t = 0, trail = [], stepsSinceMove = 0, settledIn = null;
+
+        function forward() {
+            let a = 0, x = base.x, y = base.y;
+            pts[0] = { x, y };
+            for (let i = 0; i < n; i++) {
+                a += angles[i];
+                x += Math.cos(a) * lens[i];
+                y += Math.sin(a) * lens[i];
+                pts[i + 1] = { x, y };
+            }
+            pts.length = n + 1;
+        }
+
+        function anglesFromPoints() {
+            let prev = 0;
+            for (let i = 0; i < n; i++) {
+                const abs = Math.atan2(pts[i + 1].y - pts[i].y, pts[i + 1].x - pts[i].x);
+                angles[i] = abs - prev;
+                prev = abs;
+            }
+        }
+
+        function buildArm() {
+            lens = []; angles = [];
+            for (let i = 0; i < n; i++) {
+                lens.push(reach / n);
+                angles.push(i === 0 ? -Math.PI / 2 : 0.25);
+            }
+            trail = [];
+            forward();
+            targetMoved();
+        }
+
+        function targetMoved() { stepsSinceMove = 0; settledIn = null; }
+
+        function handError() {
+            return Math.hypot(target.x - pts[n].x, target.y - pts[n].y);
+        }
+
+        function stepFabrik() {
+            const total = reach;
+            const d = Math.hypot(target.x - base.x, target.y - base.y);
+            if (d >= total) {                    // out of reach: point straight at it
+                const a = Math.atan2(target.y - base.y, target.x - base.x);
+                for (let i = 0; i < n; i++) angles[i] = i === 0 ? a : 0;
+                forward();
+                return;
+            }
+            pts[n] = { x: target.x, y: target.y };
+            for (let i = n - 1; i >= 0; i--) place(i, i + 1, lens[i]);
+            pts[0] = { x: base.x, y: base.y };
+            for (let i = 0; i < n; i++) place(i + 1, i, lens[i]);
+            anglesFromPoints();
+            forward();
+        }
+
+        // move pts[a] so it sits exactly len away from pts[b], along the line it is already on
+        function place(a, b, len) {
+            let dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y;
+            let d = Math.hypot(dx, dy);
+            if (d < 1e-9) { dx = 1; dy = 0; d = 1; }
+            pts[a] = { x: pts[b].x + dx / d * len, y: pts[b].y + dy / d * len };
+        }
+
+        function stepCcd() {
+            for (let i = n - 1; i >= 0; i--) {
+                const toHand = Math.atan2(pts[n].y - pts[i].y, pts[n].x - pts[i].x);
+                const toTarget = Math.atan2(target.y - pts[i].y, target.x - pts[i].x);
+                let d = toTarget - toHand;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                angles[i] += d;
+                forward();
+            }
+        }
+
+        function stepJacobianTranspose() {
+            const ex = target.x - pts[n].x, ey = target.y - pts[n].y;
+            // column i of the Jacobian: how the hand moves per radian at joint i
+            const jx = [], jy = [], g = [];
+            let jjx = 0, jjy = 0;
+            for (let i = 0; i < n; i++) {
+                jx[i] = -(pts[n].y - pts[i].y);
+                jy[i] = pts[n].x - pts[i].x;
+                g[i] = jx[i] * ex + jy[i] * ey;
+                jjx += jx[i] * g[i];
+                jjy += jy[i] * g[i];
+            }
+            const den = jjx * jjx + jjy * jjy;
+            if (den < 1e-9) {
+                // No joint can move the hand toward the target. If the target is out of reach
+                // the arm is already fully stretched at it; otherwise the arm is folded onto
+                // the target's line (a singularity) and needs a nudge to get off it.
+                if (Math.hypot(target.x - base.x, target.y - base.y) >= reach) return;
+                angles[n - 1] += 0.01;
+                forward();
+                return;
+            }
+            // Best step size along J^T e for the linearised arm, capped so a large step
+            // can't overshoot where the linearisation no longer holds.
+            let alpha = (ex * jjx + ey * jjy) / den;
+            let biggest = 0;
+            for (let i = 0; i < n; i++) biggest = Math.max(biggest, Math.abs(alpha * g[i]));
+            if (biggest > 0.25) alpha *= 0.25 / biggest;
+            for (let i = 0; i < n; i++) angles[i] += alpha * g[i];
+            forward();
+        }
+
+        const STEP = { fabrik: stepFabrik, ccd: stepCcd, jt: stepJacobianTranspose };
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const narrow = width <= 600;
+            const oldBase = base, oldReach = reach;
+            base = { x: narrow ? width / 2 : width / 2 + 120, y: narrow ? height * 0.33 : height / 2 };
+            reach = Math.max(60, Math.min(narrow ? width * 0.45 : (width - 320) * 0.45, (narrow ? height * 0.3 : height * 0.45)));
+            if (!lens.length) {
+                target = { x: base.x + reach * 0.6, y: base.y - reach * 0.3 };
+                buildArm();
+                return;
+            }
+            // Keep the arm's pose and the target across a resize: rescale them about the base.
+            const k = reach / oldReach;
+            lens = lens.map(len => len * k);
+            target = { x: base.x + (target.x - oldBase.x) * k, y: base.y + (target.y - oldBase.y) * k };
+            trail = [];
+            forward();
+            targetMoved();
+        }
+
+        function autoTarget(dt) {
+            t += dt * 0.72;                      // one figure-eight every ~8.7 seconds, whatever the refresh rate
+            target.x = base.x + Math.sin(t) * reach * 0.8;
+            target.y = base.y + Math.sin(t * 2) * reach * 0.45;
+            targetMoved();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.setLineDash([4, 6]);
+            ctx.beginPath(); ctx.arc(base.x, base.y, reach, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            if (showTrail && trail.length > 1) {
+                ctx.strokeStyle = 'rgba(78,205,196,0.35)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(trail[0].x, trail[0].y);
+                for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
+                ctx.stroke();
+            }
+
+            ctx.lineCap = 'round';
+            for (let i = 0; i < n; i++) {
+                ctx.strokeStyle = `hsl(${200 + i * 140 / n}, 70%, 60%)`;
+                ctx.lineWidth = Math.max(3, 12 - i * 9 / n);
+                ctx.beginPath();
+                ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[i + 1].x, pts[i + 1].y);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= n; i++) {
+                ctx.fillStyle = i === n ? '#4ecdc4' : '#0a0a0f';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, i === 0 ? 8 : 5, 0, Math.PI * 2);
+                ctx.fill(); ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 10, 0, Math.PI * 2);
+            ctx.moveTo(target.x - 16, target.y); ctx.lineTo(target.x + 16, target.y);
+            ctx.moveTo(target.x, target.y - 16); ctx.lineTo(target.x, target.y + 16);
+            ctx.stroke();
+        }
+
+        const readout = document.getElementById('readout');
+        function updateReadout() {
+            const inReach = Math.hypot(target.x - base.x, target.y - base.y) <= reach;
+            const lines = [
+                'hand error   ' + handError().toFixed(1) + ' px',
+                'target       ' + (inReach ? 'in reach' : 'out of reach'),
+                'settled in   ' + (settledIn !== null ? settledIn + ' steps' : autoMove && !dragging ? 'target moving' : '-')
+            ];
+            readout.textContent = lines.join('\n');
+            readout.style.whiteSpace = 'pre';
+        }
+
+        let raf = null, lastTime = null;
+        function frame(now) {
+            const dt = lastTime === null ? 0 : Math.min(0.05, (now - lastTime) / 1000);
+            lastTime = now;
+            if (autoMove && !dragging) autoTarget(dt);
+            for (let k = 0; k < itersPerFrame; k++) {
+                if (handError() < 0.5) {
+                    if (settledIn === null) settledIn = stepsSinceMove;
+                    break;
+                }
+                STEP[solver]();
+                stepsSinceMove++;
+            }
+            trail.push({ x: pts[n].x, y: pts[n].y });
+            if (trail.length > 400) trail.shift();
+            draw();
+            updateReadout();
+            raf = requestAnimationFrame(frame);
+        }
+
+        function pointerTarget(e) {
+            const r = canvas.getBoundingClientRect();
+            target.x = e.clientX - r.left; target.y = e.clientY - r.top;
+            targetMoved();
+        }
+
+        function init() {
+            if (!ctx) {
+                const msg = document.createElement('div');
+                msg.className = 'error';
+                msg.textContent = 'This browser does not support the canvas element.';
+                document.body.insertBefore(msg, canvas);
+                return;
+            }
+            document.getElementById('solverNote').textContent = NOTES[solver];
+
+            canvas.addEventListener('pointerdown', e => {
+                dragging = true;
+                try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
+                pointerTarget(e);
+            });
+            canvas.addEventListener('pointermove', e => { if (dragging) pointerTarget(e); });
+            const end = () => { dragging = false; };
+            canvas.addEventListener('pointerup', end);
+            canvas.addEventListener('pointercancel', end);
+
+            document.getElementById('solver').addEventListener('change', e => {
+                solver = STEP[e.target.value] ? e.target.value : 'fabrik';
+                document.getElementById('solverNote').textContent = NOTES[solver];
+                targetMoved();
+            });
+            document.getElementById('links').addEventListener('input', e => {
+                n = Math.min(14, Math.max(2, parseInt(e.target.value, 10) || 5));
+                document.getElementById('linksLabel').textContent = n;
+                buildArm();
+            });
+            document.getElementById('iters').addEventListener('input', e => {
+                itersPerFrame = Math.min(20, Math.max(1, parseInt(e.target.value, 10) || 1));
+                document.getElementById('itersLabel').textContent = itersPerFrame;
+            });
+            document.getElementById('auto').addEventListener('change', e => { autoMove = e.target.checked; });
+            document.getElementById('trail').addEventListener('change', e => { showTrail = e.target.checked; trail = []; });
+            document.getElementById('reset').addEventListener('click', buildArm);
+
+            window.addEventListener('resize', resize);
+            resize();
+            if (raf !== null) cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(frame);
+        }
+
+        init();
+    </script>
+</body>
+</html>
