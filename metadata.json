@@ -1,5 +1,19 @@
 [
     {
+        "id": "rocket-landing",
+        "title": "Rocket Landing",
+        "description": "Watch a rocket compute a fuel-optimal landing with convex optimization and replan it through wind, then try a tower catch with go/no-go checks. A simplified teaching model.",
+        "path": "apps/rocket-landing/index.html",
+        "emoji": "🚀",
+        "previewGradient": "linear-gradient(135deg, #4ecdc4 0%, #ff8a50 100%)",
+        "dateCreated": "2026-11-18",
+        "model": "Claude Opus 5.5",
+        "category": "Robotics",
+        "tags": ["robotics", "rocket", "guidance", "optimization", "simulation", "interactive"],
+        "link": "https://gwern.net/doc/technology/2017-blackmore.pdf",
+        "completeness": 4
+    },
+    {
         "id": "model-t-engine",
         "title": "Model T Engine",
         "description": "Turn a four-cylinder engine through its firing cycle and inspect its crankshaft, pistons, valves, and timing gears beside Ford’s 1919 drawing.",
