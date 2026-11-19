@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>The five elements · Muttusvāmi Dīkṣitar</title>
+<style>
+* { box-sizing:border-box }
+body { margin:0; background:#101819; color:#f0eadb; font:1rem/1.6 system-ui,sans-serif }
+main { width:min(69rem,100%); margin:auto; padding:2rem clamp(1.1rem,5vw,4rem) 4rem }
+a { color:#dcc489; text-underline-offset:.2em }
+h1,h2,h3 { font-family:Georgia,serif; font-weight:400; line-height:1.14; text-wrap:balance }
+h1 { font-size:clamp(2.8rem,8vw,5.8rem); margin:.25rem 0 .9rem }
+h2 { font-size:clamp(1.65rem,4vw,2.7rem); margin:.25rem 0 1rem }
+.intro { max-width:46rem; color:#cbcec3; margin:0 }
+header { padding:2rem 0 }
+.eyebrow,dt { margin:0; color:#c5c2a6; font-size:.76rem; letter-spacing:.1em; text-transform:uppercase }
+.layout { display:grid; grid-template-columns:minmax(15rem, .86fr) minmax(0,1.45fr); gap:clamp(1.5rem,4vw,3rem); border-top:1px solid #52615a; border-bottom:1px solid #52615a; padding:1.75rem 0 }
+nav a { display:block; text-decoration:none; color:#dddfd4; border-left:3px solid transparent; border-bottom:1px solid #354440; padding:.62rem .8rem; line-height:1.4 }
+nav a:hover { background:#1c2828 }
+nav a[aria-current] { color:#f9e2ab; background:#23302d; border-left-color:#dbc17f }
+nav a span { display:block; font:1.12rem/1.4 Georgia,serif }
+nav a small { font-size:.78rem; color:#bcc6bc }
+dl { display:grid; grid-template-columns:auto 1fr; gap:.4rem 1.3rem; margin:1.2rem 0 }
+dt { align-self:center } dd { margin:0 }
+.links,.audio { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem }
+.audio { border-top:1px solid #41504a; padding-top:1rem }
+button { background:#dfcc96; color:#192222; border:0; border-radius:.2rem; padding:.65rem 1rem; font:inherit; font-weight:600; cursor:pointer }
+a:focus-visible,button:focus-visible { outline:2px solid #f2dba4; outline-offset:3px }
+iframe { width:100%; border:0; aspect-ratio:16/9; display:block; margin-top:.75rem }
+footer { max-width:46rem; color:#c4cbc2; margin-top:1.8rem } footer h2 { font-size:1.45rem }
+@media(max-width:650px) { .layout { grid-template-columns:1fr } nav { display:grid; grid-template-columns:1fr 1fr } }
+</style></head>
+<body><main>
+<a href="../index.html">← Music</a>
+<header>
+<p class="eyebrow">Carnatic music · Muttusvāmi Dīkṣitar</p>
+<h1>The five elements</h1>
+<p class="intro">In these five Sanskrit songs, Dīkṣitar (1775–1835) addresses Śiva at five South Indian temples. Each temple is associated with an element, and each song has its own rāga, the melodic framework that shapes a performance.</p>
+</header>
+<noscript><p><a href="https://guruguha.org/wp-content/uploads/2023/11/md_ssp_mal.pdf#page=29">Index of the five compositions</a> · <a href="https://www.youtube.com/watch?v=oFOsg7ClO8E&amp;t=482s">D. K. Jayaraman’s recording</a></p></noscript>
+<div class="layout">
+<nav aria-label="Five compositions" id="catalog"></nav>
+<section aria-labelledby="title">
+<p class="eyebrow" id="element"></p><h2 id="title"></h2>
+<dl><dt>Temple town</dt><dd id="town"></dd><dt>Rāga</dt><dd id="raga"></dd><dt>Tāḷa in score</dt><dd id="tala"></dd></dl>
+<p class="links"><a id="words">Lyrics</a><a id="score">Notation</a></p>
+<div class="audio"><button type="button" id="play">Play recording</button><a id="listen">Open on YouTube</a></div>
+<p id="credit"></p><div id="player"></div>
+</section>
+</div>
+<footer><h2>Sources</h2>
+<p>Subbarāma Dīkṣitar published the <i>Saṅgīta Sampradāya Pradarśini</i> in 1904. P. P. Narayanaswami’s 2023 Malayalam edition gathers 221 compositions by Muttusvāmi Dīkṣitar from that work. The notes above the syllables and the marks around them describe melodic movement. The catalogue gives the rhythmic cycle (tāḷa) printed at the head of each score. <a href="https://guruguha.org/wp-content/uploads/2023/11/md_ssp_mal.pdf#page=29">Five-element group in the edition</a></p>
+<p>The performance is D. K. Jayaraman’s <i>Panchalinga Kshetra Krithis</i>, on the Carnatic Classical channel. Each selection begins at the track time listed by the publisher. <a href="https://www.youtube.com/watch?v=oFOsg7ClO8E">Full recording</a></p>
+</footer>
+</main>
+<script>
+const works = [
+  {id:'earth', element:'Earth', title:'Cintaya mākandamūlakandam', town:'Kanchipuram', raga:'Bhairavi', tala:'Tiśra-jāti ēka', page:318, time:482},
+  {id:'water', element:'Water', title:'Jambūpatē', town:'Tiruvanaikaval', raga:'Yamunākalyāṇi', tala:'Tiśra-jāti ēka', page:769, time:1002},
+  {id:'fire', element:'Fire', title:'Aruṇācalanātham', town:'Tiruvannamalai', raga:'Sāraṅgā', tala:'Tiśra-jāti ēka', page:779, time:1683},
+  {id:'air', element:'Air', title:'Śrī Kāḷahastīśa', town:'Srikalahasti', raga:'Husēni', tala:'Jhampa', page:397, time:2121},
+  {id:'space', element:'Space', title:'Ānanda naṭanaprakāśam', town:'Chidambaram', raga:'Kēdāram', tala:'Miśra-jāti ēka', page:640, time:2678}
+];
+const pdf = 'https://guruguha.org/wp-content/uploads/2023/11/md_ssp_mal.pdf';
+const video = 'oFOsg7ClO8E';
+const byId = id => document.getElementById(id);
+const entries = works.map(work => {
+  const link = document.createElement('a');
+  link.href = '#' + work.id;
+  const title = document.createElement('span');
+  title.textContent = work.title;
+  const detail = document.createElement('small');
+  detail.textContent = work.element + ' · ' + work.raga;
+  link.append(title,detail);
+  byId('catalog').append(link);
+  return link;
+});
+let active;
+function selectWork() {
+  active = works.find(work => work.id === location.hash.slice(1)) || works[0];
+  entries.forEach((link,index) => {
+    if (works[index] === active) link.setAttribute('aria-current','true');
+    else link.removeAttribute('aria-current');
+  });
+  for (const key of ['element','title','town','raga','tala']) byId(key).textContent = active[key];
+  byId('words').href = pdf + '#page=' + active.page;
+  byId('words').textContent = 'Lyrics · p. ' + (active.page - 14);
+  byId('score').href = pdf + '#page=' + (active.page + 1);
+  byId('score').textContent = 'Notation · p. ' + (active.page - 13);
+  byId('listen').href = 'https://www.youtube.com/watch?v=' + video + '&t=' + active.time + 's';
+  const time = Math.floor(active.time / 60) + ':' + String(active.time % 60).padStart(2,'0');
+  byId('credit').textContent = 'D. K. Jayaraman · album position ' + time;
+  byId('player').replaceChildren();
+  byId('play').textContent = 'Play recording';
+}
+byId('play').addEventListener('click', () => {
+  const container = byId('player');
+  if (container.firstChild) {
+    container.replaceChildren();
+    byId('play').textContent = 'Play recording';
+    return;
+  }
+  const frame = document.createElement('iframe');
+  frame.title = active.title + ' performed by D. K. Jayaraman';
+  const next = works[works.indexOf(active) + 1];
+  frame.src = 'https://www.youtube-nocookie.com/embed/' + video + '?autoplay=1&start=' + active.time + (next ? '&end=' + next.time : '');
+  frame.allow = 'autoplay; encrypted-media; fullscreen';
+  frame.referrerPolicy = 'strict-origin-when-cross-origin';
+  container.append(frame);
+  byId('play').textContent = 'Close player';
+});
+window.addEventListener('hashchange',selectWork);
+selectWork();
+</script></body></html>

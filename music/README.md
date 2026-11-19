@@ -1,6 +1,17 @@
 # Open music collections and listening experiments
 
-The [music catalog](index.html) features the first movement of Brandenburg Concerto No. 5, Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It includes all 24 prelude-and-fugue pairs from The Well-Tempered Clavier, Book I, alongside all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
+The [music catalog](index.html) includes five collections. Each uses the notation and sources available for its repertoire.
+
+| Collection | Scope and playback |
+| --- | --- |
+| [Guqin](guqin/index.html) | All 64 titles in Zhu Quan’s 1425 handbook, with a facsimile and a playable demonstration of the opening gestures of entry 44. |
+| [Korean jeongganbo](jeongganbo/index.html) | Three columns of *Cheongsanbyeolgok* transcribed from an early Joseon woodblock score. The cursor follows the melody on the facsimile. |
+| [Carnatic kṛtis](carnatic/index.html) | Dīkṣitar’s five-element group, with lyrics and notation in the external Malayalam edition and timestamped performances by D. K. Jayaraman. The edition and recordings require internet access. |
+| [Ottoman saz semâîsi](ottoman/index.html) | Four cycles from each of three instrumental scores, playable offline. The SymbTr-derived excerpts carry the source collection’s CC BY-NC-SA 4.0 license. |
+
+## Johann Sebastian Bach
+
+The Bach collection features the first movement of Brandenburg Concerto No. 5, Bach’s organ Toccata and Fugue, the Air from Orchestral Suite No. 3, two preludes, and the D-minor keyboard fugue. It includes all 24 prelude-and-fugue pairs from The Well-Tempered Clavier, Book I, alongside all fifteen Two-Part Inventions, BWV 772–786, and all fifteen Three-Part Sinfonias, BWV 787–801. Open the catalog in a browser to follow the upper voice, mute it, or slow the piece down and listen for the lower voice taking up its theme. The scores and instrument samples ship with the player and work offline.
 
 The catalog combines two independently reusable resources. Mutopia volunteers encoded the notes and their timing. Alexander Holm recorded individual notes on a Yamaha C5 grand piano. The player can therefore change the tempo or isolate a written voice while retaining the sound of a recorded instrument. Each piece links to its edition, and the instrument recordings carry their own credits. The organ, solo cello line, and orchestral strings use CC0 Versilian samples. [Mutopia](https://www.mutopiaproject.org/) · [Piano sample credits](bach-data/piano-credits.txt) · [Organ and string credits](bach-data/ensemble-credits.txt)
 

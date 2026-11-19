@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Johann Sebastian Bach · Scores</title>
+<title>Music collections · Apps by AI</title>
 <style>
 :root{color-scheme:dark;--ink:#efede0;--muted:#b4beb6;--rule:#36413d;--gold:#e9ce80}
 *{box-sizing:border-box}body{margin:0;background:#0b1012;color:var(--ink);font:16px/1.45 "Instrument Sans",system-ui,sans-serif}
@@ -28,10 +28,21 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 .pair{display:grid;grid-template-columns:minmax(140px,1fr) 1fr 1fr;gap:12px;align-items:center;border-top:1px solid var(--rule);padding:12px 0}.pair h3{margin:0;font-size:21px}.pair a{display:grid;grid-template-columns:minmax(0,1fr) minmax(50px,100px);align-items:center;gap:6px;padding:5px 0}.pair a:hover{text-decoration:underline}.pair small{display:block;color:var(--muted);font-size:12px}
 @media(max-width:720px){.pair a{grid-template-columns:minmax(0,1fr)}.pair canvas{max-width:100px}}
 @media(max-width:540px){.pair{grid-template-columns:1.1fr 1fr 1fr;gap:6px}.pair h3{font-size:17px}.section:has(#clavier-title){flex-wrap:wrap}}
+.collections{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:0 28px}
+.collections a{display:block;border-bottom:1px solid var(--rule);padding:14px 2px}.collections strong{font:normal 24px Georgia,serif}.collections small{display:block;color:var(--muted);margin-top:5px}.collections a:hover strong{color:var(--gold)}
+#bach{font:normal clamp(35px,5vw,60px)/1.1 Georgia,serif;letter-spacing:-.045em;margin:54px 0 0}
 </style>
 <main>
 <nav aria-label="Site sections"><a href="../index.html">Apps</a><a href="../games/index.html">Games</a><a href="../notes/index.html">Notes</a><a href="index.html" aria-current="page">Music</a></nav>
-<h1 class="title">Johann Sebastian Bach</h1>
+<h1 class="title">Music collections</h1>
+<ul class="collections" aria-label="Collections">
+<li><a href="#bach"><strong>Johann Sebastian Bach</strong><small>Keyboard, organ and ensemble scores</small></a></li>
+<li><a href="carnatic/index.html"><strong>Carnatic kṛtis</strong><small>South India · Muttusvāmi Dīkṣitar</small></a></li>
+<li><a href="guqin/index.html"><strong>Shenqi Mipu</strong><small>China · Guqin tablature</small></a></li>
+<li><a href="jeongganbo/index.html"><strong>Jeongganbo</strong><small>Korea · Time-cell notation</small></a></li>
+<li><a href="ottoman/index.html"><strong>Ottoman saz semâîsi</strong><small>Ottoman instrumental music · Three openings</small></a></li>
+</ul>
+<h2 id="bach">Johann Sebastian Bach</h2>
 <section aria-labelledby="selected-heading"><div class="section"><h2 id="selected-heading">Selected works</h2></div>
 <div id="featured-works"></div></section>
 <div class="section"><h2>Two-Part Inventions</h2><span class="meta" id="count"></span></div>

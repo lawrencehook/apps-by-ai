@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ottoman saz semâîsi · Music</title>
+<style>
+:root{color-scheme:dark;--ink:#eee9da;--muted:#b5c0b7;--rule:#43514c;--gold:#ecd393}
+*{box-sizing:border-box}body{background:#101817;color:var(--ink);font:16px/1.55 system-ui,sans-serif;margin:0}
+main{max-width:850px;margin:auto;padding:clamp(20px,5vw,58px)}a{color:var(--gold);text-underline-offset:3px}
+h1,h2{font-family:Georgia,serif;font-weight:400}h1{font-size:clamp(42px,7vw,75px);line-height:1.05;margin:36px 0 16px}
+h2{font-size:26px;margin-bottom:8px}p{max-width:68ch}label,footer,.caption{font-size:14px;color:var(--muted)}
+select,button{border:1px solid var(--rule);border-radius:4px;background:#202e2b;color:var(--ink);font:inherit;padding:8px 12px}
+button{cursor:pointer;min-width:92px}select{max-width:100%}.controls{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:24px 0}
+label{display:grid;gap:4px}figure{margin:16px 0}svg{width:100%;display:block;background:#17211f}
+footer{border-top:1px solid var(--rule);padding-top:16px;margin-top:32px}
+</style>
+<main>
+<a href="../index.html">← Music</a>
+<h1>Ottoman saz semâîsi</h1>
+<p>The saz semâîsi is an instrumental form in the Ottoman classical repertoire. These three openings use aksak semâî, a rhythmic cycle of ten eighth notes. Each row below lasts one cycle. A long first note can occupy two pulses while a run of short notes fits inside one.</p>
+<div class="controls"><label>Score<select id="piece"></select></label><button id="play">Play</button></div>
+<figure><svg id="score" viewBox="0 0 660 340" role="img" aria-label="Pitch and duration of the first four cycles. Each horizontal row spans ten pulses."></svg>
+<figcaption class="caption">Opening section (birinci hâne), cycles 1–4. Height indicates pitch. Each line extends for the written duration.</figcaption></figure>
+<p class="caption">Playback uses a synthesized plucked tone and a common listening tempo. Pitch follows the transcription’s 53 divisions of the octave, with written La4 set to 440 Hz.</p>
+<footer>Digital scores by M. Kemal Karaosmanoğlu and the SymbTr contributors. The three excerpts were converted from their pitch and duration tables and carry the same <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>. <a id="source">Selected score</a> · <a href="https://github.com/MTG/SymbTr">SymbTr collection</a> · <a href="https://www.uni-muenster.de/CMO-Edition/en/">Corpus Musicae Ottomanicae</a></footer>
+</main>
+<script src="excerpts.js"></script>
+<script>
+const selector = document.querySelector('#piece');
+const play = document.querySelector('#play');
+const svg = document.querySelector('#score');
+const pulseSeconds = 0.39;
+let context, output, frame, cursor, generation = 0;
+for (const [index, work] of excerpts.entries()) selector.add(new Option(work.title,index));
+function element(tag, attributes, content) {
+    const item = document.createElementNS('http://www.w3.org/2000/svg',tag);
+    for (const [key,value] of Object.entries(attributes)) item.setAttribute(key,value);
+    if (content) item.textContent = content;
+    svg.append(item);
+    return item;
+}
+function draw() {
+    const work = excerpts[selector.value];
+    document.querySelector('#source').href = work.source;
+    svg.replaceChildren();
+    const pitches = work.notes.map(note => note[0]).filter(value => value > 0);
+    const high = Math.max(...pitches), low = Math.min(...pitches);
+    for (let row=0; row<4; row++) {
+        const top = row*82+12;
+        element('text',{x:10,y:top+40,fill:'#bbc6b8','font-size':15},String(row+1));
+        for (let beat=0; beat<=10; beat++) {
+            const x = 34+beat*61;
+            element('line',{x1:x,x2:x,y1:top,y2:top+74,stroke:beat===0||beat===10?'#697771':'#33403c'});
+        }
+    }
+    let pulse = 0;
+    for (const [pitch,duration,name] of work.notes) {
+        const row = Math.floor(pulse/10);
+        const x = 34+(pulse%10)*61;
+        const y = row*82+20+(high-pitch)*57/(high-low||1);
+        if (pitch>0) {
+            const line = element('line',{x1:x+1,x2:x+duration*61-2,y1:y,y2:y,stroke:'#e4c988','stroke-width':4});
+            const title = document.createElementNS(svg.namespaceURI,'title');
+            title.textContent = name;
+            line.append(title);
+        }
+        pulse += duration;
+    }
+    cursor = element('line',{x1:34,x2:34,y1:12,y2:86,stroke:'#faf6ea','stroke-width':2,visibility:'hidden'});
+}
+function stop() {
+    generation++;
+    cancelAnimationFrame(frame);
+    if (output) {
+        const end = context.currentTime+.025;
+        const old = output;
+        old.gain.linearRampToValueAtTime(0,end);
+        setTimeout(()=>old.disconnect(),60);
+        output = null;
+    }
+    play.textContent = 'Play';
+    cursor.setAttribute('visibility','hidden');
+}
+function pluck(frequency, onset, duration) {
+    const oscillator = context.createOscillator(), gain = context.createGain(), filter = context.createBiquadFilter();
+    oscillator.type = 'triangle';
+    oscillator.frequency.value = frequency;
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(frequency*5,onset);
+    filter.frequency.exponentialRampToValueAtTime(frequency*1.4,onset+duration+.06);
+    gain.gain.setValueAtTime(.0001,onset);
+    gain.gain.exponentialRampToValueAtTime(.29,onset+.009);
+    gain.gain.exponentialRampToValueAtTime(.078,onset+duration);
+    gain.gain.exponentialRampToValueAtTime(.0001,onset+duration+.075);
+    oscillator.connect(filter).connect(gain).connect(output);
+    oscillator.start(onset);
+    oscillator.stop(onset+duration+.08);
+}
+play.onclick = async () => {
+    if (play.textContent === 'Stop') { stop(); return; }
+    const current = ++generation;
+    play.textContent = 'Stop';
+    context ||= new AudioContext();
+    await context.resume();
+    if (current !== generation) return;
+    output = context.createGain();
+    output.connect(context.destination);
+    const start = context.currentTime+.04;
+    let pulse = 0;
+    for (const [pitch,duration] of excerpts[selector.value].notes) {
+        if (pitch>0) pluck(440*2**((pitch-305)/53),start+pulse*pulseSeconds,duration*pulseSeconds);
+        pulse += duration;
+    }
+    function advance() {
+        const position = Math.max(0,(context.currentTime-start)/pulseSeconds);
+        if (position>=pulse) { stop(); return; }
+        const x = 34+(position%10)*61, y = 12+82*Math.floor(position/10);
+        Object.entries({x1:x,x2:x,y1:y,y2:y+74,visibility:'visible'}).forEach(([key,value])=>cursor.setAttribute(key,value));
+        frame = requestAnimationFrame(advance);
+    }
+    advance();
+};
+selector.onchange = () => { stop(); draw(); };
+window.addEventListener('pagehide',stop);
+draw();
+</script>
+</html>
