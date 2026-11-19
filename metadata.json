@@ -1,5 +1,18 @@
 [
     {
+        "id": "wigley-hull",
+        "title": "Wigley Hull",
+        "description": "Rotate an eight-metre towing model and cut transverse sections through its parabolic hull.",
+        "path": "apps/wigley-hull/index.html",
+        "emoji": "⛵",
+        "previewGradient": "linear-gradient(135deg, #172b2d, #73948a)",
+        "dateCreated": "2026-11-18",
+        "category": "Engineering",
+        "tags": ["naval architecture", "3d", "geometry"],
+        "link": "https://www.jstage.jst.go.jp/article/jjasnaoe1968/1972/131/1972_131_17/_pdf",
+        "completeness": 4
+    },
+    {
         "id": "pid-tuner",
         "title": "PID Tuner",
         "description": "Tune the three gains of a PID controller and watch a drone hold its height: overshoot, wobble, a lasting offset, or a clean settle. Live charts show what each term contributes.",
