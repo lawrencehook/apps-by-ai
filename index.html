@@ -163,6 +163,7 @@
         }
 
         .card-icon {
+            background: #303030;
             width: 48px;
             height: 48px;
             border-radius: 6px;
@@ -197,28 +198,11 @@
             overflow: hidden;
         }
 
-        .card-meta {
-            display: flex;
-            gap: 6px;
-            margin-top: 6px;
-            flex-wrap: wrap;
-        }
-
         .card-category {
+            display: block;
+            margin-top: 6px;
             color: #aaa;
             font-size: .75rem;
-        }
-
-        .card-rating {
-            margin-left: auto;
-            color: #666;
-            font-size: 0.65rem;
-            letter-spacing: 1px;
-            white-space: nowrap;
-        }
-
-        .card-rating .filled {
-            color: #f1c40f;
         }
 
         .card-link {
@@ -477,16 +461,13 @@
 
             gallery.innerHTML = apps.map(app => `
                 <a href="${esc(app.path)}" class="card">
-                    <div class="card-icon" style="${app.previewGradient ? `background: ${esc(app.previewGradient)}` : 'background: #333'}">
+                    <div class="card-icon">
                         ${esc(app.emoji || '🤖')}
                     </div>
                     <div class="card-content">
                         <h2 class="card-title">${esc(app.title)}</h2>
                         <p class="card-description">${esc(app.description)}</p>
-                        <div class="card-meta">
-                            ${app.category ? `<span class="card-category">${esc(app.category)}</span>` : ''}
-                            ${[1, 2, 3, 4, 5].includes(app.completeness) ? `<span class="card-rating" title="Completeness: ${app.completeness}/5"><span class="filled">${'★'.repeat(app.completeness)}</span>${'★'.repeat(5 - app.completeness)}</span>` : ''}
-                        </div>
+                        ${app.category ? `<span class="card-category">${esc(app.category)}</span>` : ''}
                     </div>
                     ${app.link ? `
                         <span class="card-link" data-link="${esc(app.link)}" onclick="event.preventDefault(); event.stopPropagation(); window.open(this.dataset.link, '_blank', 'noopener');">
