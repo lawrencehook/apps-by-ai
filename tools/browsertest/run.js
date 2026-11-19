@@ -67,7 +67,7 @@ async function launchChrome() {
   const proc = spawn(chromePath, [
     '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
     '--hide-scrollbars', '--mute-audio', '--no-first-run', '--no-default-browser-check',
-    '--allow-file-access-from-files', 'about:blank',
+    'about:blank',
   ], { stdio: 'ignore' });
   const portFile = path.join(profile, 'DevToolsActivePort');
   for (let i = 0; i < 100; i++) {
