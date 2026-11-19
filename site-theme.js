@@ -36,7 +36,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const host = document.createElement('site-theme-control');
         const nav = document.querySelector('nav[aria-label="Site sections"], [data-site-theme-slot]');
-        if (nav) nav.append(host);
+        if (nav) (nav.closest('.masthead') || nav).append(host);
         else document.body.append(host);
         const shadow = host.attachShadow({mode: 'open'});
         shadow.innerHTML = `
