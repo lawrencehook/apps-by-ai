@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -297,6 +298,7 @@
             color: #666;
             font-size: 0.9rem;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
 
         .action-buttons {
@@ -421,22 +423,22 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Invoice Number</label>
+                        <label for="invoiceNumber">Invoice Number</label>
                         <input type="text" id="invoiceNumber" value="INV-001" placeholder="INV-001">
                     </div>
                     <div class="form-group">
-                        <label>Invoice Date</label>
+                        <label for="invoiceDate">Invoice Date</label>
                         <input type="date" id="invoiceDate">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Due Date</label>
+                        <label for="dueDate">Due Date</label>
                         <input type="date" id="dueDate">
                     </div>
                     <div class="form-group">
-                        <label>Currency</label>
+                        <label for="currency">Currency</label>
                         <select id="currency">
                             <option value="$">USD ($)</option>
                             <option value="€">EUR (€)</option>
@@ -449,29 +451,29 @@
 
                 <h2>From (Your Details)</h2>
                 <div class="form-group">
-                    <label>Company/Name</label>
+                    <label for="fromName">Company/Name</label>
                     <input type="text" id="fromName" placeholder="Your Company Name">
                 </div>
                 <div class="form-group">
-                    <label>Address</label>
+                    <label for="fromAddress">Address</label>
                     <textarea id="fromAddress" placeholder="123 Business St&#10;City, State 12345&#10;Country"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
+                    <label for="fromEmail">Email</label>
                     <input type="email" id="fromEmail" placeholder="billing@company.com">
                 </div>
 
                 <h2>Bill To (Client)</h2>
                 <div class="form-group">
-                    <label>Client Name</label>
+                    <label for="toName">Client Name</label>
                     <input type="text" id="toName" placeholder="Client Name">
                 </div>
                 <div class="form-group">
-                    <label>Client Address</label>
+                    <label for="toAddress">Client Address</label>
                     <textarea id="toAddress" placeholder="456 Client Ave&#10;City, State 67890&#10;Country"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Client Email</label>
+                    <label for="toEmail">Client Email</label>
                     <input type="email" id="toEmail" placeholder="client@example.com">
                 </div>
 
@@ -491,17 +493,17 @@
                 <h2 style="margin-top: 24px;">Additional Options</h2>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Tax Rate (%)</label>
+                        <label for="taxRate">Tax Rate (%)</label>
                         <input type="number" id="taxRate" value="0" min="0" max="100" step="0.5">
                     </div>
                     <div class="form-group">
-                        <label>Discount (%)</label>
+                        <label for="discountRate">Discount (%)</label>
                         <input type="number" id="discountRate" value="0" min="0" max="100" step="0.5">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Notes / Payment Terms</label>
+                    <label for="notes">Notes / Payment Terms</label>
                     <textarea id="notes" placeholder="Payment is due within 30 days. Thank you for your business!"></textarea>
                 </div>
 
@@ -587,8 +589,13 @@
         const dueDate = new Date(today);
         dueDate.setDate(dueDate.getDate() + 30);
 
-        document.getElementById('invoiceDate').value = today.toISOString().split('T')[0];
-        document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
+        // Local calendar date (toISOString would give the UTC date)
+        function toDateInputValue(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        document.getElementById('invoiceDate').value = toDateInputValue(today);
+        document.getElementById('dueDate').value = toDateInputValue(dueDate);
 
         function formatCurrency(amount) {
             return currency + amount.toFixed(2);
@@ -641,12 +648,19 @@
             } else {
                 items[index][field] = value;
             }
-            renderItems();
+            // No re-render here: rebuilding the rows would destroy the field being tabbed into
             updatePreview();
+        }
+
+        function updateAmounts() {
+            document.querySelectorAll('#itemsContainer .item-row input[readonly]').forEach((input, index) => {
+                if (items[index]) input.value = formatCurrency(items[index].quantity * items[index].rate);
+            });
         }
 
         function updatePreview() {
             currency = document.getElementById('currency').value;
+            updateAmounts();
 
             // Update header
             document.getElementById('previewNumber').textContent = document.getElementById('invoiceNumber').value || 'INV-001';
@@ -664,7 +678,8 @@
 
             // Update items
             const previewItems = document.getElementById('previewItems');
-            previewItems.innerHTML = items.filter(item => item.description).map(item => `
+            // Every row that counts towards the total is listed, even without a description
+            previewItems.innerHTML = items.filter(item => item.description || item.quantity * item.rate).map(item => `
                 <tr>
                     <td>${escapeHtml(item.description)}</td>
                     <td>${item.quantity}</td>

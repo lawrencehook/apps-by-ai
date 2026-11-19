@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JWT Decoder - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -235,16 +236,26 @@
 
         function formatJson(obj) {
             const raw = JSON.stringify(obj, null, 2);
-            return escapeHtml(raw)
-                .replace(/&quot;([^&]+?)&quot;:/g, '<span class="json-key">"$1"</span>:')
-                .replace(/: &quot;(.*?)&quot;/g, ': <span class="json-string">"$1"</span>')
-                .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
-                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+            // Tokenize so digits/keywords inside strings are never re-highlighted
+            return raw.replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g, (m, str, colon, bool) => {
+                if (str) return `<span class="${colon ? 'json-key' : 'json-string'}">${escapeHtml(str)}</span>${colon || ''}`;
+                if (bool) return `<span class="json-boolean">${m}</span>`;
+                return `<span class="json-number">${m}</span>`;
+            });
         }
 
         function formatTimestamp(ts) {
             const date = new Date(ts * 1000);
             return date.toLocaleString();
+        }
+
+        function clearDecoded() {
+            decodedHeader = null;
+            decodedPayload = null;
+            headerContent.textContent = '-';
+            payloadContent.textContent = '-';
+            signatureContent.textContent = '-';
+            claimInfo.style.display = 'none';
         }
 
         function decodeJwt() {
@@ -253,10 +264,7 @@
 
             if (!token) {
                 jwtVisual.innerHTML = '<span style="color: #444;">Token visualization will appear here</span>';
-                headerContent.textContent = '-';
-                payloadContent.textContent = '-';
-                signatureContent.textContent = '-';
-                claimInfo.style.display = 'none';
+                clearDecoded();
                 return;
             }
 
@@ -265,6 +273,8 @@
             if (parts.length !== 3) {
                 errorMessage.textContent = 'Invalid JWT format. A JWT should have 3 parts separated by dots.';
                 errorMessage.style.display = 'block';
+                jwtVisual.textContent = '';
+                clearDecoded();
                 return;
             }
 
@@ -338,6 +348,7 @@
                 signatureContent.innerHTML = `<code style="word-break: break-all; color: #4ecdc4;">${escapeHtml(parts[2])}</code>`;
 
             } catch (e) {
+                clearDecoded();
                 errorMessage.textContent = 'Error decoding token: ' + e.message;
                 errorMessage.style.display = 'block';
             }

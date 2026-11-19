@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Page Numbers - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <style>
@@ -133,6 +134,8 @@
         .page-number-preview {
             position: absolute;
             font-family: sans-serif;
+            line-height: 1;
+            white-space: nowrap;
             pointer-events: none;
         }
         .position-row {
@@ -201,7 +204,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Format</label>
+                    <label for="format">Format</label>
                     <select id="format">
                         <option value="number">1, 2, 3...</option>
                         <option value="pageOf">Page 1 of N</option>
@@ -211,22 +214,22 @@
                 </div>
 
                 <div class="form-group hidden" id="customFormatGroup">
-                    <label>Custom Format (use {n} for number, {total} for total)</label>
+                    <label for="customFormat">Custom Format (use {n} for number, {total} for total)</label>
                     <input type="text" id="customFormat" value="Page {n} of {total}" placeholder="Page {n} of {total}">
                 </div>
 
                 <div class="form-group">
-                    <label>Start From Page</label>
+                    <label for="startPage">Start From Page</label>
                     <input type="number" id="startPage" value="1" min="1">
                 </div>
 
                 <div class="form-group">
-                    <label>Start Number</label>
+                    <label for="startNumber">Start Number</label>
                     <input type="number" id="startNumber" value="1" min="1">
                 </div>
 
                 <div class="form-group">
-                    <label>Font Size</label>
+                    <label for="fontSize">Font Size</label>
                     <div class="slider-group">
                         <input type="range" id="fontSize" min="8" max="24" value="12">
                         <span class="slider-value" id="fontSizeValue">12</span>
@@ -234,7 +237,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Margin from Edge</label>
+                    <label for="margin">Margin from Edge</label>
                     <div class="slider-group">
                         <input type="range" id="margin" min="20" max="100" value="40">
                         <span class="slider-value" id="marginValue">40</span>
@@ -273,7 +276,7 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = '../../libs/pdfjs-3.11.174/pdf.worker.min.js';
 
-        const { PDFDocument, rgb } = PDFLib;
+        const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib;
 
         let currentFile = null;
         let pdfDoc = null;
@@ -315,7 +318,7 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }
@@ -338,6 +341,7 @@
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
                 status.classList.remove('show');
+                updatePreview(); // again now that the canvas has a displayed size
             } catch (err) {
                 showStatus('Error loading PDF: ' + err.message, true);
             }
@@ -375,17 +379,66 @@
             }
         }
 
+        // The page the user sees: CropBox clipped to MediaBox (as pdf.js does), normalised
+        function visibleBox(page) {
+            const norm = b => ({
+                x: Math.min(b.x, b.x + b.width), y: Math.min(b.y, b.y + b.height),
+                width: Math.abs(b.width), height: Math.abs(b.height)
+            });
+            const media = norm(page.getMediaBox());
+            const crop = norm(page.getCropBox());
+            const x0 = Math.max(media.x, crop.x), y0 = Math.max(media.y, crop.y);
+            const x1 = Math.min(media.x + media.width, crop.x + crop.width);
+            const y1 = Math.min(media.y + media.height, crop.y + crop.height);
+            if (x1 - x0 <= 0 || y1 - y0 <= 0) return media;
+            return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+        }
+
+        function pageRotation(page) {
+            const angle = page.getRotation().angle;
+            return angle % 90 !== 0 ? 0 : ((angle % 360) + 360) % 360;
+        }
+
+        // Baseline start of the text in displayed-page coordinates (origin bottom-left, y up).
+        // W/H are the displayed page size; textHeight is the height above the baseline.
+        function numberPosition(pos, W, H, margin, textWidth, textHeight) {
+            const [vert, horiz] = pos.split('-');
+            const u = horiz === 'left' ? margin : horiz === 'center' ? (W - textWidth) / 2 : W - margin - textWidth;
+            const v = vert === 'top' ? H - margin - textHeight : margin;
+            return { u, v };
+        }
+
+        // Displayed-page point -> PDF user space, undoing the page's clockwise /Rotate
+        function toPdfPoint(box, rotation, u, v) {
+            let px = u, py = v;
+            if (rotation === 90) { px = box.width - v; py = u; }
+            else if (rotation === 180) { px = box.width - u; py = box.height - v; }
+            else if (rotation === 270) { px = v; py = box.height - u; }
+            return { x: box.x + px, y: box.y + py };
+        }
+
+        function getStartPage() {
+            return Math.max(1, parseInt(document.getElementById('startPage').value) || 1);
+        }
+
         function updatePreview() {
             const startNumber = parseInt(document.getElementById('startNumber').value) || 1;
             const fontSize = parseInt(document.getElementById('fontSize').value);
             const margin = parseInt(document.getElementById('margin').value);
 
-            const text = getFormattedNumber(startNumber, totalPages);
+            // The canvas can be shrunk by CSS (max-width / max-height), so scale by what is displayed
+            const shown = previewCanvas.clientWidth && previewCanvas.width
+                ? previewCanvas.clientWidth / previewCanvas.width : 1;
+            const displayScale = previewScale * shown;
+
+            // Same total as the output: the number the last page gets
+            const lastNumber = totalPages - Math.min(getStartPage(), totalPages) + startNumber;
+            const text = getFormattedNumber(startNumber, lastNumber);
             pageNumberPreview.textContent = text;
-            pageNumberPreview.style.fontSize = (fontSize * previewScale) + 'px';
+            pageNumberPreview.style.fontSize = (fontSize * displayScale) + 'px';
             pageNumberPreview.style.color = '#000';
 
-            const scaledMargin = margin * previewScale;
+            const scaledMargin = margin * displayScale;
 
             // Reset all positions
             pageNumberPreview.style.left = '';
@@ -443,6 +496,8 @@
         });
 
         document.getElementById('startNumber').addEventListener('input', updatePreview);
+        document.getElementById('startPage').addEventListener('input', updatePreview);
+        window.addEventListener('resize', () => { if (pdfDoc) updatePreview(); });
         document.getElementById('customFormat').addEventListener('input', updatePreview);
 
         // Position buttons
@@ -461,62 +516,48 @@
         }
 
         document.getElementById('applyBtn').addEventListener('click', async () => {
+            const startPage = getStartPage();
+            if (startPage > totalPages) {
+                showStatus(`Start From Page is ${startPage}, but the document has only ${totalPages} page${totalPages !== 1 ? 's' : ''}`, true);
+                return;
+            }
+
             showStatus('Adding page numbers...');
 
             try {
                 const pdfLibDoc = await PDFDocument.load(currentFile.arrayBuffer);
                 const pages = pdfLibDoc.getPages();
+                const font = await pdfLibDoc.embedFont(StandardFonts.Helvetica);
 
-                const startPage = parseInt(document.getElementById('startPage').value) || 1;
                 const startNumber = parseInt(document.getElementById('startNumber').value) || 1;
                 const fontSize = parseInt(document.getElementById('fontSize').value);
                 const margin = parseInt(document.getElementById('margin').value);
+                const textHeight = font.heightAtSize(fontSize, { descender: false });
 
                 for (let i = 0; i < pages.length; i++) {
                     if (i + 1 < startPage) continue;
 
                     const page = pages[i];
-                    const { width, height } = page.getSize();
+                    const box = visibleBox(page);
+                    const rotation = pageRotation(page);
+                    const sideways = rotation === 90 || rotation === 270;
+                    const width = sideways ? box.height : box.width;
+                    const height = sideways ? box.width : box.height;
 
                     const pageNum = startNumber + (i - startPage + 1);
-                    const text = getFormattedNumber(pageNum, totalPages - startPage + startNumber);
+                    const text = getFormattedNumber(pageNum, pages.length - startPage + startNumber);
+                    const textWidth = font.widthOfTextAtSize(text, fontSize);
 
-                    // Estimate text width
-                    const textWidth = text.length * fontSize * 0.5;
-
-                    let x, y;
-                    switch (position) {
-                        case 'top-left':
-                            x = margin;
-                            y = height - margin;
-                            break;
-                        case 'top-center':
-                            x = (width - textWidth) / 2;
-                            y = height - margin;
-                            break;
-                        case 'top-right':
-                            x = width - margin - textWidth;
-                            y = height - margin;
-                            break;
-                        case 'bottom-left':
-                            x = margin;
-                            y = margin;
-                            break;
-                        case 'bottom-center':
-                            x = (width - textWidth) / 2;
-                            y = margin;
-                            break;
-                        case 'bottom-right':
-                            x = width - margin - textWidth;
-                            y = margin;
-                            break;
-                    }
+                    const { u, v } = numberPosition(position, width, height, margin, textWidth, textHeight);
+                    const { x, y } = toPdfPoint(box, rotation, u, v);
 
                     page.drawText(text, {
                         x,
                         y,
                         size: fontSize,
-                        color: rgb(0, 0, 0)
+                        font,
+                        color: rgb(0, 0, 0),
+                        rotate: degrees(rotation) // counter-clockwise, cancels the page's clockwise /Rotate
                     });
                 }
 
@@ -538,6 +579,7 @@
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
             totalPages = 0;
             fileInput.value = '';

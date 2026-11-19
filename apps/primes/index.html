@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prime Visualizer - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -171,7 +172,7 @@
 
         <div class="controls-bar">
             <div class="control-group">
-                <label>Mode</label>
+                <label for="vizType">Mode</label>
                 <select id="vizType">
                     <option value="ulam">Ulam Spiral</option>
                     <option value="sieve">Sieve of Eratosthenes</option>
@@ -181,11 +182,11 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Max</label>
+                <label for="maxNum">Max</label>
                 <input type="number" id="maxNum" value="10000" min="100" max="100000" step="100">
             </div>
             <div class="control-group speed-control" id="speedControl" style="display: none;">
-                <label>Speed</label>
+                <label for="speed">Speed</label>
                 <input type="range" id="speed" min="1" max="100" value="50">
             </div>
             <button class="btn" id="startBtn">Generate</button>
@@ -287,7 +288,8 @@
             updateStats(primes, max);
 
             const size = Math.ceil(Math.sqrt(max));
-            const cellSize = Math.min(Math.floor(600 / size), 8);
+            const cellSize = Math.max(1, Math.min(Math.floor(600 / size), 8));
+            const fill = Math.max(1, cellSize - 1); // 1px cells have no room for a gap
             const actualSize = size * cellSize;
 
             canvas.width = actualSize;
@@ -296,15 +298,16 @@
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, actualSize, actualSize);
 
-            let x = Math.floor(size / 2);
-            let y = Math.floor(size / 2);
+            // The spiral grows one more cell right/down than left/up on even sides
+            let x = Math.floor((size - 1) / 2);
+            let y = Math.floor((size - 1) / 2);
             let dx = 1, dy = 0;
             let steps = 1, stepCount = 0, turnCount = 0;
 
             for (let n = 1; n <= max; n++) {
                 if (primes.has(n)) {
                     ctx.fillStyle = '#4ecdc4';
-                    ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                    ctx.fillRect(x * cellSize, y * cellSize, fill, fill);
                 }
 
                 x += dx;
@@ -358,7 +361,8 @@
 
             const cols = Math.ceil(Math.sqrt(max));
             const rows = Math.ceil(max / cols);
-            const cellSize = Math.min(Math.floor(600 / cols), 16);
+            const cellSize = Math.max(1, Math.min(Math.floor(600 / cols), 16));
+            const fill = Math.max(1, cellSize - 1); // 1px cells have no room for a gap
 
             canvas.width = cols * cellSize;
             canvas.height = rows * cellSize;
@@ -375,7 +379,7 @@
                 } else {
                     ctx.fillStyle = '#1a1a2e';
                 }
-                ctx.fillRect(col * cellSize, row * cellSize, cellSize - 1, cellSize - 1);
+                ctx.fillRect(col * cellSize, row * cellSize, fill, fill);
             }
         }
 
@@ -400,12 +404,19 @@
             ctx.fillRect(0, 0, 600, 300);
 
             const maxGap = gaps.reduce((m, g) => g.gap > m ? g.gap : m, 1);
-            const barWidth = Math.max(1, 580 / gaps.length);
+            // More gaps than pixels: each 1px column shows the largest gap that falls in it
+            const barCount = Math.min(gaps.length, 580);
+            const barWidth = 580 / Math.max(1, barCount);
             const scale = 260 / maxGap;
-
+            const bars = new Array(barCount).fill(0);
             gaps.forEach((g, i) => {
-                const height = g.gap * scale;
-                const hue = (g.gap / maxGap) * 60; // Yellow to cyan
+                const b = Math.floor(i * barCount / gaps.length);
+                if (g.gap > bars[b]) bars[b] = g.gap;
+            });
+
+            bars.forEach((gap, i) => {
+                const height = gap * scale;
+                const hue = (gap / maxGap) * 60; // Yellow to cyan
                 ctx.fillStyle = `hsl(${170 - hue}, 70%, 50%)`;
                 ctx.fillRect(10 + i * barWidth, 285 - height, barWidth - 0.5, height);
             });
@@ -427,7 +438,8 @@
 
             const cols = Math.ceil(Math.sqrt(max));
             const rows = Math.ceil(max / cols);
-            const cellSize = Math.min(Math.floor(600 / cols), 16);
+            const cellSize = Math.max(1, Math.min(Math.floor(600 / cols), 16));
+            const fill = Math.max(1, cellSize - 1); // 1px cells have no room for a gap
 
             canvas.width = cols * cellSize;
             canvas.height = rows * cellSize;
@@ -440,7 +452,7 @@
                 const col = (n - 1) % cols;
                 const row = Math.floor((n - 1) / cols);
                 ctx.fillStyle = '#2a4a48';
-                ctx.fillRect(col * cellSize, row * cellSize, cellSize - 1, cellSize - 1);
+                ctx.fillRect(col * cellSize, row * cellSize, fill, fill);
             }
 
             const speed = 101 - speedInput.value;
@@ -452,7 +464,7 @@
                     const col = (i - 1) % cols;
                     const row = Math.floor((i - 1) / cols);
                     ctx.fillStyle = '#4ecdc4';
-                    ctx.fillRect(col * cellSize, row * cellSize, cellSize - 1, cellSize - 1);
+                    ctx.fillRect(col * cellSize, row * cellSize, fill, fill);
 
                     // Cross out multiples
                     let count = 0;
@@ -462,7 +474,7 @@
                             const mcol = (j - 1) % cols;
                             const mrow = Math.floor((j - 1) / cols);
                             ctx.fillStyle = '#3a2020';
-                            ctx.fillRect(mcol * cellSize, mrow * cellSize, cellSize - 1, cellSize - 1);
+                            ctx.fillRect(mcol * cellSize, mrow * cellSize, fill, fill);
 
                             count++;
                             if (count % batchSize === 0) {
@@ -485,7 +497,7 @@
                     } else {
                         ctx.fillStyle = '#1a1a2e';
                     }
-                    ctx.fillRect(col * cellSize, row * cellSize, cellSize - 1, cellSize - 1);
+                    ctx.fillRect(col * cellSize, row * cellSize, fill, fill);
                 }
                 updateStats(primes, max);
             }

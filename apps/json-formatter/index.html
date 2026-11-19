@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Formatter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -144,7 +145,7 @@
         <div class="toolbar">
             <button class="toolbar-btn primary" id="formatBtn">Format</button>
             <button class="toolbar-btn" id="minifyBtn">Minify</button>
-            <select class="indent-select" id="indentSelect">
+            <select class="indent-select" id="indentSelect" aria-label="Indentation">
                 <option value="2">2 spaces</option>
                 <option value="4">4 spaces</option>
                 <option value="tab">Tab</option>
@@ -188,6 +189,47 @@ Example:
             return val === 'tab' ? '\t' : parseInt(val);
         }
 
+        // Re-indent the source text token by token (it has already passed JSON.parse).
+        // JSON.stringify(JSON.parse(text)) would silently rewrite big integers and 1.0
+        // and drop duplicate keys. An indent of '' minifies.
+        function reformat(text, indent) {
+            const pad = typeof indent === 'number' ? ' '.repeat(indent) : indent;
+            const pretty = pad !== '';
+            let out = '';
+            let depth = 0;
+            const newline = () => (pretty ? '\n' + pad.repeat(depth) : '');
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '"') {
+                    let j = i + 1;
+                    while (text[j] !== '"') j += text[j] === '\\' ? 2 : 1;
+                    out += text.slice(i, j + 1);
+                    i = j;
+                } else if (ch === '{' || ch === '[') {
+                    let j = i + 1;
+                    while (/\s/.test(text[j])) j++;
+                    if (text[j] === '}' || text[j] === ']') {
+                        out += ch + text[j]; // empty containers stay on one line
+                        i = j;
+                    } else {
+                        depth++;
+                        out += ch + newline();
+                    }
+                } else if (ch === '}' || ch === ']') {
+                    depth--;
+                    out += newline() + ch;
+                } else if (ch === ',') {
+                    out += ',' + newline();
+                } else if (ch === ':') {
+                    out += pretty ? ': ' : ':';
+                } else if (!/\s/.test(ch)) {
+                    out += ch;
+                }
+            }
+            return out;
+        }
+
         function validate() {
             const text = inputText.value.trim();
 
@@ -197,16 +239,16 @@ Example:
                 errorMessage.style.display = 'none';
                 inputPanel.classList.remove('error');
                 outputText.value = '';
-                return { success: false, parsed: null };
+                return { success: false, text: '' };
             }
 
             try {
-                const parsed = JSON.parse(text);
+                JSON.parse(text);
                 statusBadge.className = 'status-badge valid';
                 statusBadge.textContent = 'Valid JSON';
                 errorMessage.style.display = 'none';
                 inputPanel.classList.remove('error');
-                return { success: true, parsed };
+                return { success: true, text };
             } catch (e) {
                 statusBadge.className = 'status-badge invalid';
                 statusBadge.textContent = 'Invalid JSON';
@@ -214,21 +256,21 @@ Example:
                 errorMessage.style.display = 'block';
                 inputPanel.classList.add('error');
                 outputText.value = '';
-                return { success: false, parsed: null };
+                return { success: false, text: '' };
             }
         }
 
         function format() {
-            const { success, parsed } = validate();
+            const { success, text } = validate();
             if (success) {
-                outputText.value = JSON.stringify(parsed, null, getIndent());
+                outputText.value = reformat(text, getIndent());
             }
         }
 
         function minify() {
-            const { success, parsed } = validate();
+            const { success, text } = validate();
             if (success) {
-                outputText.value = JSON.stringify(parsed);
+                outputText.value = reformat(text, '');
             }
         }
 

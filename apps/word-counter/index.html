@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word Counter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -225,7 +226,7 @@
                 : '-';
 
             // Unique words
-            const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(w => w.length > 0)).size;
+            const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '')).filter(w => w.length > 0)).size;
 
             // Update UI
             document.getElementById('wordCount').textContent = wordCount;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ray Marching - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -33,7 +35,7 @@
         <h1>Ray Marching</h1>
         <p>Real-time 3D rendering using signed distance functions. No polygons—pure math.</p>
         <div class="control-group">
-            <label>Scene</label>
+            <label for="scene">Scene</label>
             <select id="scene">
                 <option value="spheres">Morphing Spheres</option>
                 <option value="fractal">Mandelbulb Fractal</option>
@@ -56,10 +58,13 @@
         let lastFpsTime = performance.now();
 
         const SCALE = 3; // Lower resolution for performance
+        // Every pixel is ray-marched on the CPU, so large windows get a coarser grid
+        const MAX_PIXELS = 60000;
 
         function resize() {
-            width = Math.floor(window.innerWidth / SCALE);
-            height = Math.floor(window.innerHeight / SCALE);
+            const scale = Math.max(SCALE, Math.ceil(Math.sqrt(window.innerWidth * window.innerHeight / MAX_PIXELS)));
+            width = Math.max(1, Math.floor(window.innerWidth / scale));
+            height = Math.max(1, Math.floor(window.innerHeight / scale));
             canvas.width = width;
             canvas.height = height;
             canvas.style.width = window.innerWidth + 'px';
@@ -67,33 +72,33 @@
             canvas.style.imageRendering = 'pixelated';
         }
 
-        // Vector operations
+        // Vector operations (per-frame camera setup only; the per-pixel path below is scalar
+        // because allocating an array per vector op dominated the frame time)
         const vec3 = {
             add: (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]],
             sub: (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]],
             mul: (a, s) => [a[0]*s, a[1]*s, a[2]*s],
             dot: (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2],
             length: a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]),
-            normalize: a => { const l = vec3.length(a); return l > 0 ? [a[0]/l, a[1]/l, a[2]/l] : [0,0,0]; },
-            abs: a => [Math.abs(a[0]), Math.abs(a[1]), Math.abs(a[2])],
-            max: (a, v) => [Math.max(a[0],v), Math.max(a[1],v), Math.max(a[2],v)],
-            mod: (a, m) => [((a[0]%m)+m)%m, ((a[1]%m)+m)%m, ((a[2]%m)+m)%m]
+            normalize: a => { const l = vec3.length(a); return l > 0 ? [a[0]/l, a[1]/l, a[2]/l] : [0,0,0]; }
         };
 
         // Signed distance functions
-        function sdSphere(p, r) {
-            return vec3.length(p) - r;
+        function sdSphere(x, y, z, r) {
+            return Math.sqrt(x*x + y*y + z*z) - r;
         }
 
-        function sdBox(p, b) {
-            const d = vec3.sub(vec3.abs(p), b);
-            return Math.min(Math.max(d[0], Math.max(d[1], d[2])), 0) +
-                   vec3.length(vec3.max(d, 0));
+        function sdBox(x, y, z, b) {
+            const dx = Math.abs(x) - b, dy = Math.abs(y) - b, dz = Math.abs(z) - b;
+            const ox = Math.max(dx, 0), oy = Math.max(dy, 0), oz = Math.max(dz, 0);
+            return Math.min(Math.max(dx, Math.max(dy, dz)), 0) +
+                   Math.sqrt(ox*ox + oy*oy + oz*oz);
         }
 
-        function sdTorus(p, t) {
-            const q = [vec3.length([p[0], p[2]]) - t[0], p[1]];
-            return vec3.length(q) - t[1];
+        // Ring of radius R in the xz plane, tube radius r
+        function sdTorus(x, y, z, R, r) {
+            const q = Math.sqrt(x*x + z*z) - R;
+            return Math.sqrt(q*q + y*y) - r;
         }
 
         function opSmoothUnion(d1, d2, k) {
@@ -101,71 +106,77 @@
             return Math.min(d1, d2) - h * h * k * 0.25;
         }
 
-        function sceneSDF(p) {
+        // Time-dependent terms, refreshed once per frame instead of once per SDF sample
+        let sinT = 0, cosT = 1, sinT07 = 0, cosT13 = 1, power = 8, twistRate = 1;
+
+        function updateFrameConstants() {
+            sinT = Math.sin(time);
+            cosT = Math.cos(time);
+            sinT07 = Math.sin(time * 0.7);
+            cosT13 = Math.cos(time * 1.3);
+            power = 8 + Math.sin(time * 0.5) * 2;
+            twistRate = 1 + Math.sin(time) * 0.5;
+        }
+
+        function sceneSDF(x, y, z) {
             switch(scene) {
                 case 'spheres': {
-                    const d1 = sdSphere(vec3.sub(p, [Math.sin(time) * 1.5, 0, 0]), 1);
-                    const d2 = sdSphere(vec3.sub(p, [-Math.sin(time) * 1.5, Math.cos(time), 0]), 0.8);
-                    const d3 = sdSphere(vec3.sub(p, [0, -Math.sin(time * 0.7), Math.cos(time * 1.3)]), 0.6);
+                    const d1 = sdSphere(x - sinT * 1.5, y, z, 1);
+                    const d2 = sdSphere(x + sinT * 1.5, y - cosT, z, 0.8);
+                    const d3 = sdSphere(x, y + sinT07, z - cosT13, 0.6);
                     return opSmoothUnion(opSmoothUnion(d1, d2, 0.5), d3, 0.5);
                 }
                 case 'fractal': {
-                    let z = [...p];
+                    let zx = x, zy = y, zz = z;
                     let dr = 1;
                     let r = 0;
-                    const power = 8 + Math.sin(time * 0.5) * 2;
                     for (let i = 0; i < 5; i++) {
-                        r = vec3.length(z);
+                        r = Math.sqrt(zx*zx + zy*zy + zz*zz);
                         if (r > 2) break;
-                        let theta = Math.acos(z[2] / r) * power;
-                        let phi = Math.atan2(z[1], z[0]) * power;
-                        let zr = Math.pow(r, power);
+                        const theta = Math.acos(zz / r) * power;
+                        const phi = Math.atan2(zy, zx) * power;
+                        const zr = Math.pow(r, power);
                         dr = Math.pow(r, power - 1) * power * dr + 1;
-                        z = [zr * Math.sin(theta) * Math.cos(phi) + p[0],
-                             zr * Math.sin(theta) * Math.sin(phi) + p[1],
-                             zr * Math.cos(theta) + p[2]];
+                        const st = Math.sin(theta);
+                        zx = zr * st * Math.cos(phi) + x;
+                        zy = zr * st * Math.sin(phi) + y;
+                        zz = zr * Math.cos(theta) + z;
                     }
                     return 0.5 * Math.log(r) * r / dr;
                 }
                 case 'torus': {
-                    const twist = p[1] * (1 + Math.sin(time) * 0.5);
+                    const twist = y * twistRate;
                     const c = Math.cos(twist), s = Math.sin(twist);
-                    const tp = [p[0] * c - p[2] * s, p[1], p[0] * s + p[2] * c];
-                    return sdTorus(tp, [1.5, 0.5]);
+                    return sdTorus(x * c - z * s, y, x * s + z * c, 1.5, 0.5);
                 }
                 case 'boxes': {
-                    const rep = 4;
-                    const q = vec3.sub(vec3.mod(vec3.add(p, [rep/2, rep/2, rep/2]), rep), [rep/2, rep/2, rep/2]);
-                    const size = 0.8 + Math.sin(time + p[0] * 0.5) * 0.2;
-                    return sdBox(q, [size, size, size]);
+                    const rep = 4, half = rep / 2;
+                    const qx = (((x + half) % rep) + rep) % rep - half;
+                    const qy = (((y + half) % rep) + rep) % rep - half;
+                    const qz = (((z + half) % rep) + rep) % rep - half;
+                    const size = 0.8 + Math.sin(time + x * 0.5) * 0.2;
+                    return sdBox(qx, qy, qz, size);
                 }
                 default:
-                    return sdSphere(p, 1);
+                    return sdSphere(x, y, z, 1);
             }
         }
 
-        function getNormal(p) {
-            const e = 0.001;
-            return vec3.normalize([
-                sceneSDF([p[0]+e, p[1], p[2]]) - sceneSDF([p[0]-e, p[1], p[2]]),
-                sceneSDF([p[0], p[1]+e, p[2]]) - sceneSDF([p[0], p[1]-e, p[2]]),
-                sceneSDF([p[0], p[1], p[2]+e]) - sceneSDF([p[0], p[1], p[2]-e])
-            ]);
-        }
-
-        function rayMarch(ro, rd) {
+        // Returns the hit distance along the ray, or -1 for a miss
+        function rayMarch(ox, oy, oz, dx, dy, dz) {
             let t = 0;
             for (let i = 0; i < 64; i++) {
-                const p = vec3.add(ro, vec3.mul(rd, t));
-                const d = sceneSDF(p);
-                if (d < 0.001) return { hit: true, t, p };
+                const d = sceneSDF(ox + dx * t, oy + dy * t, oz + dz * t);
+                if (d < 0.001) return t;
                 if (t > 50) break;
                 t += d;
             }
-            return { hit: false };
+            return -1;
         }
 
         function render() {
+            updateFrameConstants();
+
             const imageData = ctx.createImageData(width, height);
             const data = imageData.data;
 
@@ -185,39 +196,45 @@
             ];
 
             const lightDir = vec3.normalize([1, 1, 1]);
+            const cx = camPos[0], cy = camPos[1], cz = camPos[2];
+            const e = 0.001;
 
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const u = (x / width - 0.5) * 2 * (width / height);
                     const v = (0.5 - y / height) * 2;
 
-                    const rd = vec3.normalize(vec3.add(vec3.add(
-                        forward,
-                        vec3.mul(right, u)),
-                        vec3.mul(up, v)
-                    ));
+                    let dx = forward[0] + right[0] * u + up[0] * v;
+                    let dy = forward[1] + right[1] * u + up[1] * v;
+                    let dz = forward[2] + right[2] * u + up[2] * v;
+                    const dl = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    dx /= dl; dy /= dl; dz /= dl;
 
-                    const result = rayMarch(camPos, rd);
+                    const t = rayMarch(cx, cy, cz, dx, dy, dz);
 
-                    let color = [20, 20, 30];
-                    if (result.hit) {
-                        const normal = getNormal(result.p);
-                        const diff = Math.max(0, vec3.dot(normal, lightDir));
+                    let cr = 20, cg = 20, cb = 30;
+                    if (t >= 0) {
+                        const px = cx + dx * t, py = cy + dy * t, pz = cz + dz * t;
+                        let nx = sceneSDF(px + e, py, pz) - sceneSDF(px - e, py, pz);
+                        let ny = sceneSDF(px, py + e, pz) - sceneSDF(px, py - e, pz);
+                        let nz = sceneSDF(px, py, pz + e) - sceneSDF(px, py, pz - e);
+                        const nl = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                        if (nl > 0) { nx /= nl; ny /= nl; nz /= nl; } else { nx = ny = nz = 0; }
+
+                        const diff = Math.max(0, nx * lightDir[0] + ny * lightDir[1] + nz * lightDir[2]);
                         const ambient = 0.2;
                         const lighting = ambient + diff * 0.8;
 
                         // Color based on normal
-                        color = [
-                            Math.floor((normal[0] * 0.5 + 0.5) * lighting * 255),
-                            Math.floor((normal[1] * 0.5 + 0.5) * lighting * 255),
-                            Math.floor((normal[2] * 0.5 + 0.5) * lighting * 255)
-                        ];
+                        cr = Math.floor((nx * 0.5 + 0.5) * lighting * 255);
+                        cg = Math.floor((ny * 0.5 + 0.5) * lighting * 255);
+                        cb = Math.floor((nz * 0.5 + 0.5) * lighting * 255);
                     }
 
                     const idx = (y * width + x) * 4;
-                    data[idx] = color[0];
-                    data[idx + 1] = color[1];
-                    data[idx + 2] = color[2];
+                    data[idx] = cr;
+                    data[idx + 1] = cg;
+                    data[idx + 2] = cb;
                     data[idx + 3] = 255;
                 }
             }
@@ -225,12 +242,16 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
+        let lastFrameTime = performance.now();
+
         function animate() {
-            time += 0.02;
+            // 0.02 per frame at 60 fps, driven by the clock so slow frames don't slow the scene
+            const now = performance.now();
+            time += Math.min((now - lastFrameTime) / 1000, 0.1) * 1.2;
+            lastFrameTime = now;
             render();
 
             frameCount++;
-            const now = performance.now();
             if (now - lastFpsTime >= 1000) {
                 document.getElementById('fps').textContent = `FPS: ${frameCount}`;
                 frameCount = 0;

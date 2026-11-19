@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gradient Mesh Editor - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -186,6 +187,7 @@
             border: 2px solid #fff;
             transform: translate(-50%, -50%);
             cursor: move;
+            touch-action: none;
             box-shadow: 0 2px 8px rgba(0,0,0,0.5);
             transition: transform 0.1s;
         }
@@ -229,14 +231,14 @@
                             <span class="slider-label">Blur Intensity</span>
                             <span class="slider-value" id="blurValue">80</span>
                         </div>
-                        <input type="range" id="blurSlider" min="20" max="200" value="80">
+                        <input type="range" id="blurSlider" aria-label="Blur Intensity" min="20" max="200" value="80">
                     </div>
                     <div class="slider-group">
                         <div class="slider-header">
                             <span class="slider-label">Node Size</span>
                             <span class="slider-value" id="sizeValue">40</span>
                         </div>
-                        <input type="range" id="sizeSlider" min="20" max="80" value="40">
+                        <input type="range" id="sizeSlider" aria-label="Node Size" min="20" max="80" value="40">
                     </div>
                 </div>
 
@@ -285,6 +287,8 @@
         let isDragging = false;
         let blurIntensity = 80;
         let nodeSize = 40;
+        // Safari has no ctx.filter; widen the gradients instead so the mesh still blends
+        const supportsFilter = typeof ctx.filter === 'string';
 
         const presets = {
             sunset: [
@@ -386,19 +390,20 @@
 
             // Draw blurred color nodes
             ctx.save();
-            ctx.filter = `blur(${blurIntensity}px)`;
+            if (supportsFilter) ctx.filter = `blur(${blurIntensity}px)`;
+            const radius = nodeSize * 3 + (supportsFilter ? 0 : blurIntensity * 2);
 
             nodes.forEach(node => {
                 const gradient = ctx.createRadialGradient(
                     node.x * w, node.y * h, 0,
-                    node.x * w, node.y * h, nodeSize * 3
+                    node.x * w, node.y * h, radius
                 );
                 gradient.addColorStop(0, node.color);
                 gradient.addColorStop(1, 'transparent');
 
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
-                ctx.arc(node.x * w, node.y * h, nodeSize * 3, 0, Math.PI * 2);
+                ctx.arc(node.x * w, node.y * h, radius, 0, Math.PI * 2);
                 ctx.fill();
             });
 
@@ -409,18 +414,23 @@
         }
 
         function updateNodeMarkers() {
-            // Remove old markers
-            container.querySelectorAll('.node-marker').forEach(m => m.remove());
+            // Reuse markers: the one being dragged holds the pointer capture
+            const markers = container.querySelectorAll('.node-marker');
+            for (let i = nodes.length; i < markers.length; i++) markers[i].remove();
 
             const rect = canvas.getBoundingClientRect();
             nodes.forEach((node, i) => {
-                const marker = document.createElement('div');
+                let marker = markers[i];
+                if (!marker) {
+                    marker = document.createElement('div');
+                    marker.dataset.index = i;
+                    container.appendChild(marker);
+                }
                 marker.className = 'node-marker' + (selectedNode === i ? ' selected' : '');
-                marker.style.left = `${16 + node.x * (rect.width - 32)}px`;
-                marker.style.top = `${16 + node.y * (rect.height - 32)}px`;
+                // Same mapping as render() and getEventPos(): fraction of the canvas box
+                marker.style.left = `${canvas.offsetLeft + node.x * rect.width}px`;
+                marker.style.top = `${canvas.offsetTop + node.y * rect.height}px`;
                 marker.style.backgroundColor = node.color;
-                marker.dataset.index = i;
-                container.appendChild(marker);
             });
         }
 
@@ -442,8 +452,8 @@
 
         function getEventPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left - 16) / (rect.width - 32);
-            const y = (e.clientY - rect.top - 16) / (rect.height - 32);
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
             return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
         }
 
@@ -453,15 +463,17 @@
             addNode(pos.x, pos.y);
         });
 
-        container.addEventListener('mousedown', (e) => {
+        container.addEventListener('pointerdown', (e) => {
             if (e.target.classList.contains('node-marker')) {
+                e.preventDefault();
                 selectedNode = parseInt(e.target.dataset.index);
                 isDragging = true;
+                e.target.setPointerCapture(e.pointerId);
                 render();
             }
         });
 
-        document.addEventListener('mousemove', (e) => {
+        container.addEventListener('pointermove', (e) => {
             if (!isDragging || selectedNode === null) return;
             const pos = getEventPos(e);
             nodes[selectedNode].x = pos.x;
@@ -470,42 +482,14 @@
             updateCSS();
         });
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                setTimeout(() => { isDragging = false; }, 10);
-            }
+        function endDrag() {
+            if (!isDragging) return;
+            setTimeout(() => { isDragging = false; }, 10);
             selectedNode = null;
             render();
-        });
-
-        // Touch support
-        container.addEventListener('touchstart', (e) => {
-            if (e.target.classList.contains('node-marker')) {
-                e.preventDefault();
-                selectedNode = parseInt(e.target.dataset.index);
-                isDragging = true;
-                render();
-            }
-        });
-
-        container.addEventListener('touchmove', (e) => {
-            if (!isDragging || selectedNode === null) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const x = (touch.clientX - rect.left - 16) / (rect.width - 32);
-            const y = (touch.clientY - rect.top - 16) / (rect.height - 32);
-            nodes[selectedNode].x = Math.max(0, Math.min(1, x));
-            nodes[selectedNode].y = Math.max(0, Math.min(1, y));
-            render();
-            updateCSS();
-        });
-
-        container.addEventListener('touchend', () => {
-            isDragging = false;
-            selectedNode = null;
-            render();
-        });
+        }
+        container.addEventListener('pointerup', endDrag);
+        container.addEventListener('pointercancel', endDrag);
 
         // Sliders
         document.getElementById('blurSlider').addEventListener('input', (e) => {
@@ -596,18 +580,19 @@
             exportCtx.fillStyle = '#1a1a2e';
             exportCtx.fillRect(0, 0, 1920, 1080);
 
-            exportCtx.filter = `blur(${blurIntensity * 2}px)`;
+            if (supportsFilter) exportCtx.filter = `blur(${blurIntensity * 2}px)`;
+            const radius = nodeSize * 8 + (supportsFilter ? 0 : blurIntensity * 4);
             nodes.forEach(node => {
                 const gradient = exportCtx.createRadialGradient(
                     node.x * 1920, node.y * 1080, 0,
-                    node.x * 1920, node.y * 1080, nodeSize * 8
+                    node.x * 1920, node.y * 1080, radius
                 );
                 gradient.addColorStop(0, node.color);
                 gradient.addColorStop(1, 'transparent');
 
                 exportCtx.fillStyle = gradient;
                 exportCtx.beginPath();
-                exportCtx.arc(node.x * 1920, node.y * 1080, nodeSize * 8, 0, Math.PI * 2);
+                exportCtx.arc(node.x * 1920, node.y * 1080, radius, 0, Math.PI * 2);
                 exportCtx.fill();
             });
 
@@ -620,7 +605,7 @@
         // Export SVG
         document.getElementById('exportSvg').addEventListener('click', () => {
             const defs = nodes.map((node, i) => `
-    <radialGradient id="grad${i}" cx="${node.x * 100}%" cy="${node.y * 100}%" r="50%">
+    <radialGradient id="grad${i}" cx="50%" cy="50%" r="50%">
       <stop offset="0%" style="stop-color:${node.color};stop-opacity:1"/>
       <stop offset="100%" style="stop-color:${node.color};stop-opacity:0"/>
     </radialGradient>`).join('');
@@ -631,8 +616,8 @@
 
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
   <defs>
-    <filter id="blur">
-      <feGaussianBlur stdDeviation="${blurIntensity}"/>
+    <filter id="blur" filterUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+      <feGaussianBlur stdDeviation="${blurIntensity * 2}"/>
     </filter>${defs}
   </defs>
   <rect width="1920" height="1080" fill="#1a1a2e"/>

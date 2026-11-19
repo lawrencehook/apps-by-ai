@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Redact - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <style>
@@ -113,10 +114,13 @@
             background: #1a1a1f;
             border-radius: 4px;
             overflow: hidden;
+            max-width: 100%;
         }
+        /* height must follow the width when max-width shrinks the page, or it is stretched */
         .page-canvas {
             display: block;
             max-width: 100%;
+            height: auto;
         }
         .redaction-layer {
             position: absolute;
@@ -125,12 +129,13 @@
             width: 100%;
             height: 100%;
             cursor: crosshair;
+            touch-action: pinch-zoom; /* one finger draws, two fingers scroll/zoom */
         }
         .redaction-box {
             position: absolute;
             background: #000;
             border: 2px solid #ff6b6b;
-            cursor: move;
+            cursor: default;
         }
         .redaction-box .delete-btn {
             position: absolute;
@@ -150,7 +155,8 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
-        .redaction-box:hover .delete-btn { opacity: 1; }
+        .redaction-box:hover .delete-btn, .redaction-box .delete-btn:focus { opacity: 1; }
+        @media (hover: none) { .redaction-box .delete-btn { opacity: 1; } }
         .status {
             margin-top: 24px;
             padding: 16px;
@@ -201,21 +207,21 @@
             <input type="file" id="fileInput" accept=".pdf">
         </div>
 
+        <div class="progress-bar" id="progressBar" style="display: none;">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
         <div class="hidden" id="editorPanel">
             <div class="warning">
                 ⚠️ Pages are converted to images before redaction. This ensures redactions are permanent and text cannot be recovered.
             </div>
 
             <div class="toolbar">
-                <span class="hint">Click and drag to draw redaction boxes</span>
+                <span class="hint">Click and drag to draw redaction boxes (on touch screens, scroll with two fingers)</span>
                 <span class="spacer"></span>
                 <button id="clearAllBtn" class="danger">Clear All Redactions</button>
                 <button id="exportBtn" class="primary">Export Redacted PDF</button>
                 <button id="resetBtn" class="secondary">Choose Different File</button>
-            </div>
-
-            <div class="progress-bar" id="progressBar" style="display: none;">
-                <div class="progress-fill" id="progressFill"></div>
             </div>
 
             <div id="pagesContainer"></div>
@@ -229,7 +235,8 @@
 
         let currentFile = null;
         let pdfDoc = null;
-        let pageData = []; // { canvas, redactions: [{x, y, width, height}] }
+        let pageData = []; // { canvas, redactions: [{x, y, width, height}] } as fractions (0-1) of the page
+        let loadId = 0;
         const RENDER_SCALE = 2; // High quality rendering
 
         const dropZone = document.getElementById('dropZone');
@@ -265,24 +272,29 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }
 
+            const id = ++loadId; // a second file dropped mid-load takes over
             currentFile = file;
             showStatus('Loading PDF...');
             showProgress(0);
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                if (id !== loadId) { doc.destroy(); return; }
+                if (pdfDoc) pdfDoc.destroy();
+                pdfDoc = doc;
 
                 pageData = [];
                 pagesContainer.innerHTML = '';
 
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
+                for (let i = 1; i <= doc.numPages; i++) {
+                    const page = await doc.getPage(i);
+                    if (id !== loadId) return;
                     const viewport = page.getViewport({ scale: RENDER_SCALE });
 
                     // Create page container
@@ -303,10 +315,10 @@
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
                     canvas.style.width = (viewport.width / RENDER_SCALE) + 'px';
-                    canvas.style.height = (viewport.height / RENDER_SCALE) + 'px';
 
                     const ctx = canvas.getContext('2d');
                     await page.render({ canvasContext: ctx, viewport }).promise;
+                    if (id !== loadId) return;
 
                     wrapper.appendChild(canvas);
 
@@ -330,7 +342,7 @@
                     // Set up drawing
                     setupDrawing(redactionLayer, i - 1);
 
-                    showProgress((i / pdfDoc.numPages) * 100);
+                    showProgress((i / doc.numPages) * 100);
                 }
 
                 hideProgress();
@@ -338,72 +350,85 @@
                 editorPanel.classList.remove('hidden');
                 status.classList.remove('show');
             } catch (err) {
+                if (id !== loadId) return;
                 showStatus('Error loading PDF: ' + err.message, true);
                 hideProgress();
             }
         }
 
+        // Box dragged between two client points, as fractions of the displayed page rect.
+        // Fractions (not CSS pixels) because the page is shown at whatever size fits the screen.
+        function boxFractions(rect, x0, y0, x1, y1) {
+            const fx = v => Math.min(1, Math.max(0, (v - rect.left) / rect.width));
+            const fy = v => Math.min(1, Math.max(0, (v - rect.top) / rect.height));
+            const ax = fx(x0), bx = fx(x1), ay = fy(y0), by = fy(y1);
+            return {
+                x: Math.min(ax, bx), y: Math.min(ay, by),
+                width: Math.abs(bx - ax), height: Math.abs(by - ay)
+            };
+        }
+
+        // Canvas pixels to black out: the box grown outward to whole pixels so no edge is left half covered
+        function redactionPixels(r, canvasWidth, canvasHeight) {
+            const x0 = Math.max(0, Math.floor(r.x * canvasWidth));
+            const y0 = Math.max(0, Math.floor(r.y * canvasHeight));
+            const x1 = Math.min(canvasWidth, Math.ceil((r.x + r.width) * canvasWidth));
+            const y1 = Math.min(canvasHeight, Math.ceil((r.y + r.height) * canvasHeight));
+            return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+        }
+
         function setupDrawing(layer, pageIndex) {
             let isDrawing = false;
+            let pointerId = null;
             let startX, startY;
             let currentBox = null;
+            let currentFrac = null;
 
-            layer.addEventListener('mousedown', e => {
-                if (e.target !== layer) return;
+            function updateBox(e) {
+                // The layer covers the canvas exactly, so percentages of it are fractions of the page
+                currentFrac = boxFractions(layer.getBoundingClientRect(), startX, startY, e.clientX, e.clientY);
+                // Percentages keep the box on the same part of the page when the page is resized
+                currentBox.style.left = (currentFrac.x * 100) + '%';
+                currentBox.style.top = (currentFrac.y * 100) + '%';
+                currentBox.style.width = (currentFrac.width * 100) + '%';
+                currentBox.style.height = (currentFrac.height * 100) + '%';
+            }
+
+            layer.addEventListener('pointerdown', e => {
+                if (e.target !== layer || isDrawing) return;
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
 
                 isDrawing = true;
-                const rect = layer.getBoundingClientRect();
-                startX = e.clientX - rect.left;
-                startY = e.clientY - rect.top;
+                pointerId = e.pointerId;
+                layer.setPointerCapture(e.pointerId);
+                startX = e.clientX;
+                startY = e.clientY;
 
                 currentBox = document.createElement('div');
                 currentBox.className = 'redaction-box';
-                currentBox.style.left = startX + 'px';
-                currentBox.style.top = startY + 'px';
-                currentBox.style.width = '0';
-                currentBox.style.height = '0';
+                updateBox(e);
                 layer.appendChild(currentBox);
             });
 
-            layer.addEventListener('mousemove', e => {
-                if (!isDrawing || !currentBox) return;
-
-                const rect = layer.getBoundingClientRect();
-                const currentX = e.clientX - rect.left;
-                const currentY = e.clientY - rect.top;
-
-                const width = currentX - startX;
-                const height = currentY - startY;
-
-                if (width < 0) {
-                    currentBox.style.left = currentX + 'px';
-                    currentBox.style.width = -width + 'px';
-                } else {
-                    currentBox.style.width = width + 'px';
-                }
-
-                if (height < 0) {
-                    currentBox.style.top = currentY + 'px';
-                    currentBox.style.height = -height + 'px';
-                } else {
-                    currentBox.style.height = height + 'px';
-                }
+            layer.addEventListener('pointermove', e => {
+                if (!isDrawing || e.pointerId !== pointerId) return;
+                updateBox(e);
             });
 
-            layer.addEventListener('mouseup', e => {
-                if (!isDrawing || !currentBox) return;
+            layer.addEventListener('pointerup', e => {
+                if (!isDrawing || e.pointerId !== pointerId) return;
+                updateBox(e);
                 isDrawing = false;
 
-                const width = parseFloat(currentBox.style.width);
-                const height = parseFloat(currentBox.style.height);
+                const rect = layer.getBoundingClientRect();
 
                 // Only keep if it has some size
-                if (width > 5 && height > 5) {
+                if (currentFrac.width * rect.width > 5 && currentFrac.height * rect.height > 5) {
                     const redaction = {
-                        x: parseFloat(currentBox.style.left),
-                        y: parseFloat(currentBox.style.top),
-                        width,
-                        height,
+                        x: currentFrac.x,
+                        y: currentFrac.y,
+                        width: currentFrac.width,
+                        height: currentFrac.height,
                         element: currentBox
                     };
 
@@ -413,6 +438,7 @@
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'delete-btn';
                     deleteBtn.textContent = '×';
+                    deleteBtn.setAttribute('aria-label', 'Remove redaction');
                     deleteBtn.addEventListener('click', () => {
                         const idx = pageData[pageIndex].redactions.indexOf(redaction);
                         if (idx > -1) {
@@ -431,92 +457,11 @@
                 currentBox = null;
             });
 
-            layer.addEventListener('mouseleave', () => {
-                if (isDrawing && currentBox) {
-                    currentBox.remove();
-                    currentBox = null;
-                    isDrawing = false;
-                }
-            });
-
-            // Touch support
-            layer.addEventListener('touchstart', e => {
-                if (e.target !== layer) return;
-                e.preventDefault();
-                const touch = e.touches[0];
-                const rect = layer.getBoundingClientRect();
-                startX = touch.clientX - rect.left;
-                startY = touch.clientY - rect.top;
-                isDrawing = true;
-
-                currentBox = document.createElement('div');
-                currentBox.className = 'redaction-box';
-                currentBox.style.left = startX + 'px';
-                currentBox.style.top = startY + 'px';
-                currentBox.style.width = '0';
-                currentBox.style.height = '0';
-                layer.appendChild(currentBox);
-            }, { passive: false });
-
-            layer.addEventListener('touchmove', e => {
-                if (!isDrawing || !currentBox) return;
-                e.preventDefault();
-                const touch = e.touches[0];
-                const rect = layer.getBoundingClientRect();
-                const currentX = touch.clientX - rect.left;
-                const currentY = touch.clientY - rect.top;
-
-                const w = currentX - startX;
-                const h = currentY - startY;
-
-                if (w < 0) {
-                    currentBox.style.left = currentX + 'px';
-                    currentBox.style.width = -w + 'px';
-                } else {
-                    currentBox.style.width = w + 'px';
-                }
-                if (h < 0) {
-                    currentBox.style.top = currentY + 'px';
-                    currentBox.style.height = -h + 'px';
-                } else {
-                    currentBox.style.height = h + 'px';
-                }
-            }, { passive: false });
-
-            layer.addEventListener('touchend', e => {
-                if (!isDrawing || !currentBox) return;
+            // An interrupted drag (second finger, system gesture) must not leave an unexported box behind
+            layer.addEventListener('pointercancel', e => {
+                if (!isDrawing || e.pointerId !== pointerId) return;
                 isDrawing = false;
-
-                const w = parseFloat(currentBox.style.width);
-                const h = parseFloat(currentBox.style.height);
-
-                if (w > 5 && h > 5) {
-                    const redaction = {
-                        x: parseFloat(currentBox.style.left),
-                        y: parseFloat(currentBox.style.top),
-                        width: w,
-                        height: h,
-                        element: currentBox
-                    };
-
-                    pageData[pageIndex].redactions.push(redaction);
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.textContent = '\u00d7';
-                    deleteBtn.addEventListener('click', () => {
-                        const idx = pageData[pageIndex].redactions.indexOf(redaction);
-                        if (idx > -1) {
-                            pageData[pageIndex].redactions.splice(idx, 1);
-                        }
-                        redaction.element.remove();
-                        updateCount(pageIndex);
-                    });
-                    currentBox.appendChild(deleteBtn);
-                    updateCount(pageIndex);
-                } else {
-                    currentBox.remove();
-                }
+                currentBox.remove();
                 currentBox = null;
             });
         }
@@ -580,13 +525,8 @@
                     // Draw black rectangles for redactions
                     ctx.fillStyle = '#000000';
                     for (const redaction of page.redactions) {
-                        // Scale up coordinates to match canvas resolution
-                        ctx.fillRect(
-                            redaction.x * RENDER_SCALE,
-                            redaction.y * RENDER_SCALE,
-                            redaction.width * RENDER_SCALE,
-                            redaction.height * RENDER_SCALE
-                        );
+                        const px = redactionPixels(redaction, outputCanvas.width, outputCanvas.height);
+                        ctx.fillRect(px.x, px.y, px.width, px.height);
                     }
 
                     // Convert canvas to PNG bytes
@@ -633,7 +573,9 @@
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
+            loadId++;
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
             pageData = [];
             pagesContainer.innerHTML = '';

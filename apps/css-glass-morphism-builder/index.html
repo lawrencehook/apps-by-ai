@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glassmorphism Builder - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -665,17 +666,36 @@
 }`;
 
             const btn = document.getElementById('copyBtn');
-            navigator.clipboard.writeText(cssText).then(() => {
+            const copied = () => {
                 btn.textContent = 'Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => {
                     btn.textContent = 'Copy CSS';
                     btn.classList.remove('copied');
                 }, 1500);
-            }).catch(() => {
-                btn.textContent = 'Failed';
-                setTimeout(() => btn.textContent = 'Copy CSS', 1500);
-            });
+            };
+            const fallbackCopy = () => {
+                const ta = document.createElement('textarea');
+                ta.value = cssText;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                if (ok) {
+                    copied();
+                } else {
+                    btn.textContent = 'Failed';
+                    setTimeout(() => btn.textContent = 'Copy CSS', 1500);
+                }
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(cssText).then(copied).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
         });
 
         // Initialize

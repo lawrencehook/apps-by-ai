@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Trim - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -89,6 +90,7 @@
             align-items: center;
             justify-content: center;
             pointer-events: auto;
+            touch-action: none;
         }
         .trim-handle::after {
             content: '';
@@ -211,11 +213,11 @@
 
             <div class="time-inputs">
                 <div class="time-input-group">
-                    <label>Start Time</label>
+                    <label for="startTime">Start Time</label>
                     <input type="text" id="startTime" value="0:00.000" placeholder="0:00.000">
                 </div>
                 <div class="time-input-group">
-                    <label>End Time</label>
+                    <label for="endTime">End Time</label>
                     <input type="text" id="endTime" value="0:00.000" placeholder="0:00.000">
                 </div>
                 <div class="duration-display">
@@ -281,18 +283,20 @@
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
                 document.getElementById('fileChannels').textContent = audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo';
 
                 trimStart = 0;
                 trimEnd = audioBuffer.duration;
 
+                // Show the panel first: the waveform wrapper has no width while hidden
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+                status.classList.remove('show');
+
                 updateTimeInputs();
                 drawWaveform();
                 updateTrimOverlay();
-
-                dropZone.classList.add('hidden');
-                editorPanel.classList.remove('hidden');
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show');
@@ -305,12 +309,11 @@
             return `${mins}:${secs.toFixed(3).padStart(6, '0')}`;
         }
 
+        // Accepts "ss", "m:ss" or "h:mm:ss" (seconds may have decimals); NaN if it is none of those
         function parseTime(str) {
-            const parts = str.split(':');
-            if (parts.length === 2) {
-                return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-            }
-            return parseFloat(str) || 0;
+            const parts = str.trim().split(':');
+            if (parts.length > 3 || parts.some(p => !/^(\d+\.?\d*|\.\d+)$/.test(p))) return NaN;
+            return parts.reduce((total, p) => total * 60 + parseFloat(p), 0);
         }
 
         function drawWaveform() {
@@ -371,28 +374,20 @@
         // Handle dragging
         let isDragging = null;
 
-        document.getElementById('handleStart').addEventListener('mousedown', e => {
-            e.stopPropagation();
-            isDragging = 'start';
-        });
-        document.getElementById('handleStart').addEventListener('touchstart', e => {
-            e.stopPropagation();
-            e.preventDefault();
-            isDragging = 'start';
-        }, { passive: false });
+        // The click that ends a drag must not also move a handle
+        let suppressClick = false;
 
-        document.getElementById('handleEnd').addEventListener('mousedown', e => {
-            e.stopPropagation();
-            isDragging = 'end';
+        [['handleStart', 'start'], ['handleEnd', 'end']].forEach(([id, which]) => {
+            const handle = document.getElementById(id);
+            handle.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                handle.setPointerCapture(e.pointerId);
+                isDragging = which;
+            });
         });
-        document.getElementById('handleEnd').addEventListener('touchstart', e => {
-            e.stopPropagation();
-            e.preventDefault();
-            isDragging = 'end';
-        }, { passive: false });
 
         document.getElementById('waveformWrapper').addEventListener('click', e => {
-            if (isDragging) return;
+            if (isDragging || suppressClick) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = (e.clientX - rect.left) / rect.width;
             const time = pct * audioBuffer.duration;
@@ -407,7 +402,7 @@
             updateTrimOverlay();
         });
 
-        document.addEventListener('mousemove', e => {
+        document.addEventListener('pointermove', e => {
             if (!isDragging) return;
 
             const wrapper = document.getElementById('waveformWrapper');
@@ -425,43 +420,28 @@
             updateTrimOverlay();
         });
 
-        document.addEventListener('mouseup', () => {
-            isDragging = null;
-        });
-
-        document.addEventListener('touchmove', e => {
-            if (!isDragging) return;
-            e.preventDefault();
-
-            const touch = e.touches[0];
-            const wrapper = document.getElementById('waveformWrapper');
-            const rect = wrapper.getBoundingClientRect();
-            const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-            const time = pct * audioBuffer.duration;
-
-            if (isDragging === 'start') {
-                trimStart = Math.max(0, Math.min(time, trimEnd - 0.01));
-            } else {
-                trimEnd = Math.max(trimStart + 0.01, Math.min(time, audioBuffer.duration));
+        function endDrag() {
+            if (isDragging) {
+                // click is dispatched right after pointerup, before this timer runs
+                suppressClick = true;
+                setTimeout(() => { suppressClick = false; }, 0);
             }
-
-            updateTimeInputs();
-            updateTrimOverlay();
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
             isDragging = null;
-        });
+        }
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
 
         // Time input changes
         document.getElementById('startTime').addEventListener('change', e => {
-            trimStart = Math.max(0, Math.min(parseTime(e.target.value), trimEnd - 0.01));
+            const time = parseTime(e.target.value);
+            if (!isNaN(time)) trimStart = Math.max(0, Math.min(time, trimEnd - 0.01));
             updateTimeInputs();
             updateTrimOverlay();
         });
 
         document.getElementById('endTime').addEventListener('change', e => {
-            trimEnd = Math.max(trimStart + 0.01, Math.min(parseTime(e.target.value), audioBuffer.duration));
+            const time = parseTime(e.target.value);
+            if (!isNaN(time)) trimEnd = Math.max(trimStart + 0.01, Math.min(time, audioBuffer.duration));
             updateTimeInputs();
             updateTrimOverlay();
         });

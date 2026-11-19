@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Watermark - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <style>
@@ -265,7 +266,7 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = '../../libs/pdfjs-3.11.174/pdf.worker.min.js';
 
-        const { PDFDocument, rgb, degrees } = PDFLib;
+        const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib;
 
         let currentFile = null;
         let pdfDoc = null;
@@ -317,6 +318,7 @@
                 const arrayBuffer = await file.arrayBuffer();
                 currentFile = { file, arrayBuffer };
 
+                if (pdfDoc) pdfDoc.destroy();
                 pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
 
                 await renderPreview();
@@ -324,6 +326,7 @@
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
                 status.classList.remove('show');
+                updateWatermarkPreview(); // canvas has a layout size only once the panel is shown
             } catch (err) {
                 showStatus('Error loading PDF: ' + err.message, true);
             }
@@ -357,7 +360,9 @@
             const color = document.getElementById('watermarkColor').value;
 
             watermarkPreview.textContent = text;
-            watermarkPreview.style.fontSize = (fontSize * previewScale) + 'px';
+            // The canvas can be shrunk by CSS (max-width/max-height), so scale by its displayed size
+            const cssShrink = previewCanvas.clientWidth && previewCanvas.width ? previewCanvas.clientWidth / previewCanvas.width : 1;
+            watermarkPreview.style.fontSize = (fontSize * previewScale * cssShrink) + 'px';
             watermarkPreview.style.opacity = opacity;
             watermarkPreview.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
             watermarkPreview.style.color = color;
@@ -397,6 +402,7 @@
         });
 
         document.getElementById('watermarkText').addEventListener('input', updateWatermarkPreview);
+        window.addEventListener('resize', () => { if (pdfDoc) updateWatermarkPreview(); });
         document.getElementById('watermarkColor').addEventListener('input', updateWatermarkPreview);
 
         // Position buttons
@@ -451,16 +457,31 @@
 
                 const pos = positions[position];
 
+                const font = await pdfLibDoc.embedFont(StandardFonts.Helvetica);
+                try {
+                    font.encodeText(text);
+                } catch (e) {
+                    showStatus('Watermark text contains characters the PDF font cannot encode. Use Latin characters only.', true);
+                    return;
+                }
+
+                // CSS rotate() is clockwise, pdf-lib is counter-clockwise and pivots at the
+                // left end of the baseline, so offset the origin to keep the text centre fixed.
+                const angle = -rotation * Math.PI / 180;
+                const halfW = font.widthOfTextAtSize(text, fontSize) / 2;
+                const midH = font.heightAtSize(fontSize, { descender: false }) - font.heightAtSize(fontSize) / 2;
+
                 for (const page of pages) {
                     const { width, height } = page.getSize();
 
                     page.drawText(text, {
-                        x: width * pos.x - (text.length * fontSize * 0.3),
-                        y: height * pos.y,
+                        x: width * pos.x - (halfW * Math.cos(angle) - midH * Math.sin(angle)),
+                        y: height * pos.y - (halfW * Math.sin(angle) + midH * Math.cos(angle)),
                         size: fontSize,
+                        font: font,
                         color: rgb(color.r, color.g, color.b),
                         opacity: opacity,
-                        rotate: degrees(rotation)
+                        rotate: degrees(-rotation)
                     });
                 }
 
@@ -482,6 +503,7 @@
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
             fileInput.value = '';
             dropZone.classList.remove('hidden');

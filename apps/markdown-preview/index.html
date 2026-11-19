@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Preview - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -197,8 +198,8 @@
             <button class="tool-btn" data-insert="- " data-line="true">List</button>
             <button class="tool-btn" data-insert="1. " data-line="true">Numbered</button>
             <button class="tool-btn" data-insert="> " data-line="true">Quote</button>
-            <button class="tool-btn" data-insert="---\n" data-line="true">HR</button>
-            <button class="tool-btn" data-insert="```\n" data-suffix="\n```">Code Block</button>
+            <button class="tool-btn" data-insert="---&#10;" data-line="true">HR</button>
+            <button class="tool-btn" data-insert="```&#10;" data-suffix="&#10;```">Code Block</button>
             <button class="tool-btn" id="sampleBtn">Load Sample</button>
         </div>
 
@@ -231,19 +232,47 @@
             return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
+        // Takes an already HTML-escaped URL; returns it only for http(s), mailto, # and relative targets
+        function safeUrl(url) {
+            url = url.trim();
+            if (url.includes('\u0000')) return null;
+            // Browsers ignore whitespace/control characters when reading the scheme
+            const probe = url.replace(/[\u0000-\u0020\u007f]/g, '');
+            const scheme = probe.match(/^([a-z][a-z0-9+.\-]*):/i);
+            if (scheme && !/^(https?|mailto)$/i.test(scheme[1])) return null;
+            return url;
+        }
+
         function parseMarkdown(md) {
-            let html = md;
+            // NUL-delimited placeholders keep code and URLs out of the later passes
+            let html = md.replace(/\u0000/g, '');
+            const stash = [];
+            const hold = (text) => `\u0000${stash.push(text) - 1}\u0000`;
 
             // Escape HTML
             html = escapeHtml(html);
 
             // Code blocks (before other processing)
             html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-                return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+                return `<pre>${hold(`<code class="language-${lang}">${code.trim()}</code>`)}</pre>`;
             });
 
             // Inline code
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${code}</code>`));
+
+            // Links and images
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+                const src = safeUrl(url);
+                alt = alt.replace(/\u0000\d+\u0000/g, '');
+                return src === null ? alt : hold(`<img src="${src}" alt="${alt}">`);
+            });
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+                const href = safeUrl(url);
+                return href === null ? text : hold(`<a href="${href}" target="_blank">`) + text + '</a>';
+            });
+
+            // Horizontal rules (before emphasis, which would otherwise eat ***)
+            html = html.replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '<hr>');
 
             // Headers
             html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
@@ -254,21 +283,15 @@
             html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
             // Bold and italic
-            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            // (markers must hug the text, so a "* " bullet is not an opening *)
+            html = html.replace(/\*\*\*(?!\s)(.+?)(?<!\s)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(?!\s)(.+?)(?<!\s)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(?!\s)(.+?)(?<!\s)\*/g, '<em>$1</em>');
             html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-
-            // Links and images
-            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
 
             // Blockquotes
             html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
             html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
-
-            // Horizontal rules
-            html = html.replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '<hr>');
 
             // Task lists
             html = html.replace(/^- \[x\] (.+)$/gm, '<li class="task-list-item"><input type="checkbox" checked disabled> $1</li>');
@@ -276,7 +299,7 @@
 
             // Unordered lists
             html = html.replace(/^[*-] (.+)$/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+            html = html.replace(/(<li[ >].*<\/li>\n?)+/g, '<ul>$&</ul>');
 
             // Ordered lists
             html = html.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
@@ -307,6 +330,9 @@
             html = html.replace(/<br><\/(li|h[1-6]|p|blockquote)>/g, '</$1>');
             html = html.replace(/<(ul|ol|table|thead|tbody|tr)><br>/g, '<$1>');
             html = html.replace(/<br><\/(ul|ol|table|thead|tbody|tr)>/g, '</$1>');
+
+            // Put code, links and images back
+            html = html.replace(/\u0000(\d+)\u0000/g, (_, i) => stash[i]);
 
             return html;
         }
@@ -341,12 +367,11 @@
                     let lineStart = text.lastIndexOf('\n', start - 1) + 1;
                     newText = text.substring(0, lineStart) + insert + text.substring(lineStart);
                     cursorPos = start + insert.length;
-                } else if (wrap && selected) {
-                    newText = text.substring(0, start) + insert + selected + insert + text.substring(end);
-                    cursorPos = end + insert.length * 2;
                 } else {
-                    newText = text.substring(0, start) + insert + suffix + text.substring(end);
-                    cursorPos = start + insert.length;
+                    // Wrap the selection; with nothing selected, leave the cursor between the markers
+                    const closing = wrap ? insert : suffix;
+                    newText = text.substring(0, start) + insert + selected + closing + text.substring(end);
+                    cursorPos = selected ? end + insert.length + closing.length : start + insert.length;
                 }
 
                 editor.value = newText;
@@ -402,26 +427,36 @@ function greet(name) {
             updatePreview();
         });
 
+        function copyText(btn, text, label) {
+            const done = (msg) => {
+                btn.textContent = msg;
+                setTimeout(() => btn.textContent = label, 1500);
+            };
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                done(ok ? 'Copied!' : 'Failed');
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => done('Copied!')).catch(fallback);
+            } else {
+                fallback();
+            }
+        }
+
         document.getElementById('copyMd').addEventListener('click', () => {
-            const btn = document.getElementById('copyMd');
-            navigator.clipboard.writeText(editor.value).then(() => {
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy MD', 1500);
-            }).catch(() => {
-                btn.textContent = 'Failed';
-                setTimeout(() => btn.textContent = 'Copy MD', 1500);
-            });
+            copyText(document.getElementById('copyMd'), editor.value, 'Copy MD');
         });
 
         document.getElementById('copyHtml').addEventListener('click', () => {
-            const btn = document.getElementById('copyHtml');
-            navigator.clipboard.writeText(preview.innerHTML).then(() => {
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy HTML', 1500);
-            }).catch(() => {
-                btn.textContent = 'Failed';
-                setTimeout(() => btn.textContent = 'Copy HTML', 1500);
-            });
+            copyText(document.getElementById('copyHtml'), preview.innerHTML, 'Copy HTML');
         });
 
         editor.addEventListener('input', updatePreview);

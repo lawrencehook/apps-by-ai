@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keyboard Heatmap - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -565,8 +566,11 @@
             const key = normalizeKey(e);
             if (!key || !keyElements[key]) return;
 
-            // Prevent default for non-input elements (e.g., Backspace navigating back)
-            if (!e.target.matches('input, textarea, select, [contenteditable]')) {
+            // Prevent default for non-input elements (e.g., Backspace navigating back),
+            // but leave Tab, shortcuts and focused buttons/links alone so Stop stays reachable
+            const isModifierKey = /^(Shift|Ctrl|Alt|Meta)/.test(key);
+            const isShortcut = (e.ctrlKey || e.metaKey || e.altKey) && !isModifierKey;
+            if (key !== 'Tab' && !isShortcut && !e.target.matches('input, textarea, select, button, a, [contenteditable]')) {
                 e.preventDefault();
             }
 
@@ -586,6 +590,7 @@
             const instruction = document.getElementById('instruction');
 
             if (isRecording) {
+                btn.blur(); // otherwise typed Space/Enter would click the button
                 btn.textContent = 'Stop Recording';
                 btn.classList.add('recording');
                 instruction.textContent = 'Recording... Type anywhere on this page';

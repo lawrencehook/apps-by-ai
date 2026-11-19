@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt Splitter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -362,19 +363,19 @@
                 <p class="instructions">Enter tax and tip to split proportionally based on each person's subtotal.</p>
                 <div class="extras-grid">
                     <div class="extra-input">
-                        <label>Tax Amount ($)</label>
+                        <label for="taxAmount">Tax Amount ($)</label>
                         <input type="number" id="taxAmount" placeholder="0.00" step="0.01" min="0">
                     </div>
                     <div class="extra-input">
-                        <label>Tip Amount ($)</label>
+                        <label for="tipAmount">Tip Amount ($)</label>
                         <input type="number" id="tipAmount" placeholder="0.00" step="0.01" min="0">
                     </div>
                     <div class="extra-input">
-                        <label>— OR Tip Percentage —</label>
+                        <label for="tipPercent">— OR Tip Percentage —</label>
                         <input type="number" id="tipPercent" placeholder="18" step="1" min="0" max="100">
                     </div>
                     <div class="extra-input">
-                        <label>Other Fees ($)</label>
+                        <label for="otherFees">Other Fees ($)</label>
                         <input type="number" id="otherFees" placeholder="0.00" step="0.01" min="0">
                     </div>
                 </div>
@@ -444,8 +445,10 @@
         function addPerson(name) {
             if (!name.trim()) return;
             const id = 'p' + nextId++;
-            const colorIndex = people.length % personColors.length;
-            people.push({ id, name: name.trim(), color: personColors[colorIndex] });
+            // First colour nobody is using, so a removal doesn't lead to a duplicate
+            const usedColors = new Set(people.map(p => p.color));
+            const color = personColors.find(c => !usedColors.has(c)) || personColors[people.length % personColors.length];
+            people.push({ id, name: name.trim(), color });
             renderPeople();
             renderItems();
             calculateSummary();
@@ -520,10 +523,11 @@
             calculateSummary();
         }
 
-        function updateItemPrice(id, price) {
+        function updateItemPrice(id, price, input) {
             const item = items.find(i => i.id === id);
             if (item) item.price = parseFloat(price) || 0;
-            renderItems();
+            // Normalise the field in place; re-rendering the list would destroy the field focus just moved to
+            if (item && input) input.value = item.price.toFixed(2);
             calculateSummary();
         }
 
@@ -543,7 +547,7 @@
                     <input type="text" value="${escapeHtml(item.name)}"
                            onchange="updateItemName('${item.id}', this.value)" placeholder="Item name">
                     <input type="number" value="${item.price.toFixed(2)}"
-                           onchange="updateItemPrice('${item.id}', this.value)"
+                           onchange="updateItemPrice('${item.id}', this.value, this)"
                            class="item-price" step="0.01" min="0">
                     <div class="item-assignees">
                         ${people.map(p => `
@@ -551,7 +555,7 @@
                                  style="background: ${p.color}"
                                  onclick="toggleItemAssignee('${item.id}', '${p.id}')"
                                  title="${escapeHtml(p.name)}">
-                                ${p.name.charAt(0).toUpperCase()}
+                                ${escapeHtml(p.name.charAt(0).toUpperCase())}
                             </div>
                         `).join('')}
                     </div>
@@ -560,37 +564,84 @@
             `).join('');
         }
 
-        // Summary Calculation
-        function calculateSummary() {
+        // Split `totalCents` across `weights` so the parts are whole cents that add up
+        // exactly: floor each share, then hand the leftover cents to the largest remainders.
+        function allocateCents(totalCents, weights) {
+            const weightSum = weights.reduce((sum, w) => sum + w, 0);
+            if (weights.length === 0 || weightSum <= 0) return weights.map(() => 0);
+            const exact = weights.map(w => totalCents * w / weightSum);
+            const shares = exact.map(Math.floor);
+            let leftover = totalCents - shares.reduce((sum, c) => sum + c, 0);
+            const order = exact.map((e, i) => i).sort((i, j) => (exact[j] - shares[j]) - (exact[i] - shares[i]) || i - j);
+            for (let k = 0; leftover > 0; k++, leftover--) shares[order[k % order.length]]++;
+            return shares;
+        }
+
+        const toCents = amount => Math.round(amount * 100);
+        const formatCents = cents => (cents / 100).toFixed(2);
+
+        // All amounts are integer cents so the per-person totals add up to the grand total
+        function computeSplit() {
             const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
-            let tip = parseFloat(document.getElementById('tipAmount').value) || 0;
+            const tip = parseFloat(document.getElementById('tipAmount').value) || 0;
             const tipPercent = parseFloat(document.getElementById('tipPercent').value) || 0;
             const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
 
             // Calculate subtotals per person
             const subtotals = {};
-            people.forEach(p => subtotals[p.id] = { items: [], subtotal: 0 });
+            people.forEach(p => subtotals[p.id] = { items: [], subtotal: 0, extras: 0, total: 0 });
+
+            let unassignedCount = 0;
+            let unassignedCents = 0;
 
             items.forEach(item => {
-                if (item.assignees.length === 0) return;
-                const splitAmount = item.price / item.assignees.length;
-                item.assignees.forEach(assigneeId => {
-                    if (subtotals[assigneeId]) {
-                        subtotals[assigneeId].items.push({ name: item.name, amount: splitAmount });
-                        subtotals[assigneeId].subtotal += splitAmount;
-                    }
+                const assignees = item.assignees.filter(id => subtotals[id]);
+                if (assignees.length === 0) {
+                    unassignedCount++;
+                    unassignedCents += toCents(item.price);
+                    return;
+                }
+                const shares = allocateCents(toCents(item.price), assignees.map(() => 1));
+                assignees.forEach((assigneeId, i) => {
+                    subtotals[assigneeId].items.push({ name: item.name, amount: shares[i] });
+                    subtotals[assigneeId].subtotal += shares[i];
                 });
             });
 
             // Total subtotal (for proportional splitting)
-            const totalSubtotal = Object.values(subtotals).reduce((sum, s) => sum + s.subtotal, 0);
+            const totalSubtotal = people.reduce((sum, p) => sum + subtotals[p.id].subtotal, 0);
 
             // Calculate tip from percentage if tipAmount is not set
+            let tipCents = toCents(tip);
             if (tip === 0 && tipPercent > 0) {
-                tip = totalSubtotal * (tipPercent / 100);
+                tipCents = Math.round(totalSubtotal * tipPercent / 100);
             }
 
-            const totalExtras = tax + tip + otherFees;
+            const totalExtras = toCents(tax) + tipCents + toCents(otherFees);
+
+            // Extras follow each person's subtotal; with nothing assigned yet they are split evenly
+            const weights = people.map(p => totalSubtotal > 0 ? subtotals[p.id].subtotal : 1);
+            const extraShares = allocateCents(totalExtras, weights);
+
+            let grandTotalValue = 0;
+            people.forEach((p, i) => {
+                const data = subtotals[p.id];
+                data.extras = extraShares[i];
+                data.total = data.subtotal + data.extras;
+                grandTotalValue += data.total;
+            });
+
+            return { subtotals, grandTotalValue, unassignedCount, unassignedCents };
+        }
+
+        function unassignedNote(split) {
+            return `${split.unassignedCount} unassigned item${split.unassignedCount !== 1 ? 's' : ''} ($${formatCents(split.unassignedCents)}) not included in the split`;
+        }
+
+        // Summary Calculation
+        function calculateSummary() {
+            const split = computeSplit();
+            const subtotals = split.subtotals;
 
             // Render summary
             if (people.length === 0) {
@@ -604,14 +655,8 @@
                 return;
             }
 
-            let grandTotalValue = 0;
-
             summaryGrid.innerHTML = people.map(p => {
                 const data = subtotals[p.id];
-                const proportion = totalSubtotal > 0 ? data.subtotal / totalSubtotal : 0;
-                const extrasShare = totalExtras * proportion;
-                const total = data.subtotal + extrasShare;
-                grandTotalValue += total;
 
                 return `
                     <div class="person-summary">
@@ -623,20 +668,24 @@
                             ${data.items.length} item${data.items.length !== 1 ? 's' : ''}
                         </div>
                         <div class="person-summary-breakdown">
-                            Subtotal: $${data.subtotal.toFixed(2)}
+                            Subtotal: $${formatCents(data.subtotal)}
                         </div>
-                        ${extrasShare > 0 ? `
+                        ${data.extras > 0 ? `
                             <div class="person-summary-breakdown">
-                                + Tax/Tip/Fees: $${extrasShare.toFixed(2)}
+                                + Tax/Tip/Fees: $${formatCents(data.extras)}
                             </div>
                         ` : ''}
-                        <div class="person-summary-total">$${total.toFixed(2)}</div>
+                        <div class="person-summary-total">$${formatCents(data.total)}</div>
                     </div>
                 `;
-            }).join('');
+            }).join('') + (split.unassignedCount > 0 ? `
+                <div class="instructions" style="grid-column: 1 / -1; margin: 0; color: #feca57;">
+                    ${unassignedNote(split)}. Click the colored circles on an item to assign it.
+                </div>
+            ` : '');
 
             grandTotal.style.display = 'flex';
-            grandTotalAmount.textContent = `$${grandTotalValue.toFixed(2)}`;
+            grandTotalAmount.textContent = `$${formatCents(split.grandTotalValue)}`;
         }
 
         // Utility
@@ -708,56 +757,30 @@
 
         // Copy results
         document.getElementById('copyResultsBtn').addEventListener('click', () => {
-            const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
-            let tip = parseFloat(document.getElementById('tipAmount').value) || 0;
-            const tipPercent = parseFloat(document.getElementById('tipPercent').value) || 0;
-            const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
-
-            const subtotals = {};
-            people.forEach(p => subtotals[p.id] = { items: [], subtotal: 0 });
-
-            items.forEach(item => {
-                if (item.assignees.length === 0) return;
-                const splitAmount = item.price / item.assignees.length;
-                item.assignees.forEach(assigneeId => {
-                    if (subtotals[assigneeId]) {
-                        subtotals[assigneeId].items.push({ name: item.name, amount: splitAmount });
-                        subtotals[assigneeId].subtotal += splitAmount;
-                    }
-                });
-            });
-
-            const totalSubtotal = Object.values(subtotals).reduce((sum, s) => sum + s.subtotal, 0);
-            if (tip === 0 && tipPercent > 0) {
-                tip = totalSubtotal * (tipPercent / 100);
-            }
-            const totalExtras = tax + tip + otherFees;
+            const split = computeSplit();
+            const subtotals = split.subtotals;
 
             let text = '🧾 Receipt Split Summary\n';
             text += '═══════════════════════\n\n';
 
-            let grandTotal = 0;
             people.forEach(p => {
                 const data = subtotals[p.id];
-                const proportion = totalSubtotal > 0 ? data.subtotal / totalSubtotal : 0;
-                const extrasShare = totalExtras * proportion;
-                const total = data.subtotal + extrasShare;
-                grandTotal += total;
 
-                text += `${p.name}: $${total.toFixed(2)}\n`;
-                if (data.items.length > 0) {
-                    data.items.forEach(item => {
-                        text += `  • ${item.name}: $${item.amount.toFixed(2)}\n`;
-                    });
-                    if (extrasShare > 0) {
-                        text += `  + Tax/Tip/Fees: $${extrasShare.toFixed(2)}\n`;
-                    }
+                text += `${p.name}: $${formatCents(data.total)}\n`;
+                data.items.forEach(item => {
+                    text += `  • ${item.name}: $${formatCents(item.amount)}\n`;
+                });
+                if (data.extras > 0) {
+                    text += `  + Tax/Tip/Fees: $${formatCents(data.extras)}\n`;
                 }
                 text += '\n';
             });
 
             text += `═══════════════════════\n`;
-            text += `Grand Total: $${grandTotal.toFixed(2)}\n`;
+            text += `Grand Total: $${formatCents(split.grandTotalValue)}\n`;
+            if (split.unassignedCount > 0) {
+                text += `Note: ${unassignedNote(split)}\n`;
+            }
 
             const btn = document.getElementById('copyResultsBtn');
             copyToClipboard(text).then(() => {

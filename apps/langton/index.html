@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Langton's Ant - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,7 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
-            z-index: 100;
+            z-index: 100; max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -40,11 +41,11 @@
         <h1>Langton's Ant</h1>
         <p>Simple rules create complex emergent behavior. After ~10,000 steps, a "highway" pattern emerges.</p>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">100</span> steps/frame</label>
+            <label for="speed">Speed: <span id="speedLabel">100</span> steps/frame</label>
             <input type="range" id="speed" min="1" max="500" value="100">
         </div>
         <div class="control-group">
-            <label>Ants: <span id="antsLabel">1</span></label>
+            <label for="ants">Ants: <span id="antsLabel">1</span></label>
             <input type="range" id="ants" min="1" max="10" value="1">
         </div>
         <button id="reset">Reset</button>
@@ -105,9 +106,37 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            const oldCols = cols, oldRows = rows, oldGrid = grid;
             cols = Math.floor(width / CELL_SIZE);
             rows = Math.floor(height / CELL_SIZE);
-            init();
+            if (!oldCols || !oldRows || !cols || !rows) {
+                init();
+                return;
+            }
+
+            // Keep the existing pattern, centred, instead of restarting
+            const shiftX = Math.floor(cols / 2) - Math.floor(oldCols / 2);
+            const shiftY = Math.floor(rows / 2) - Math.floor(oldRows / 2);
+            grid = new Uint8Array(cols * rows);
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = '#fff';
+            for (let oy = 0; oy < oldRows; oy++) {
+                const y = oy + shiftY;
+                if (y < 0 || y >= rows) continue;
+                for (let ox = 0; ox < oldCols; ox++) {
+                    const x = ox + shiftX;
+                    if (x < 0 || x >= cols || !oldGrid[oy * oldCols + ox]) continue;
+                    grid[y * cols + x] = 1;
+                    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+            }
+            for (const ant of ants) {
+                ant.x = (((ant.x + shiftX) % cols) + cols) % cols;
+                ant.y = (((ant.y + shiftY) % rows) + rows) % rows;
+                ctx.fillStyle = ant.color;
+                ctx.fillRect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
         }
 
         function init() {
@@ -118,7 +147,7 @@
             for (let i = 0; i < numAnts; i++) {
                 const offsetX = Math.floor((i - numAnts / 2) * 20);
                 ants.push(new Ant(
-                    Math.floor(cols / 2) + offsetX,
+                    (((Math.floor(cols / 2) + offsetX) % cols) + cols) % cols,
                     Math.floor(rows / 2),
                     colors[i % colors.length]
                 ));
@@ -129,9 +158,20 @@
             ctx.fillRect(0, 0, width, height);
         }
 
+        let lastTime = performance.now();
+        let stepDebt = 0;
+
         function render() {
+            const now = performance.now();
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
             if (!paused) {
-                for (let s = 0; s < speed; s++) {
+                // "steps/frame" is per 60fps frame; scale by real elapsed time
+                stepDebt += speed * dt * 60;
+                const n = Math.floor(stepDebt);
+                stepDebt -= n;
+                for (let s = 0; s < n; s++) {
                     for (const ant of ants) {
                         const prevX = ant.x;
                         const prevY = ant.y;

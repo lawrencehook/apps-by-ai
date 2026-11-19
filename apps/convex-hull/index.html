@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convex Hull - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -40,14 +41,14 @@
         <h1>Convex Hull</h1>
         <p>Find the smallest convex polygon containing all points. Click to add points.</p>
         <div class="control-group">
-            <label>Algorithm</label>
+            <label for="algorithm">Algorithm</label>
             <select id="algorithm">
                 <option value="jarvis">Jarvis March (Gift Wrapping)</option>
                 <option value="graham">Graham Scan</option>
             </select>
         </div>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">100</span>ms</label>
+            <label for="speed">Speed: <span id="speedLabel">100</span>ms</label>
             <input type="range" id="speed" min="20" max="500" value="100">
         </div>
         <button id="random">Add Random Points</button>
@@ -68,6 +69,7 @@
         let algorithm = 'jarvis';
         let speed = 100;
         let running = false;
+        let runId = 0;
         let currentEdge = null;
         let candidatePoint = null;
         let scanLine = null;
@@ -95,6 +97,7 @@
 
             hull = [];
             running = true;
+            const id = ++runId;
 
             // Find leftmost point
             let leftmost = points[0];
@@ -116,6 +119,7 @@
                     currentEdge = { from: current, to: next };
                     draw();
                     await sleep(speed);
+                    if (id !== runId) return;
 
                     const c = cross(current, next, candidate);
                     if (c > 0 || (c === 0 && distance(current, candidate) > distance(current, next))) {
@@ -133,8 +137,9 @@
 
                 draw();
                 await sleep(speed);
+                if (id !== runId) return;
 
-            } while (current !== leftmost && running);
+            } while (current !== leftmost);
 
             currentEdge = null;
             running = false;
@@ -147,6 +152,7 @@
 
             hull = [];
             running = true;
+            const id = ++runId;
 
             // Find lowest point on screen (largest y) and leftmost if tie
             // In screen coordinates, y increases downward
@@ -170,7 +176,7 @@
             hull = [start];
             if (sorted.length > 0) hull.push(sorted[0]);
 
-            for (let i = 1; i < sorted.length && running; i++) {
+            for (let i = 1; i < sorted.length; i++) {
                 const point = sorted[i];
                 candidatePoint = point;
 
@@ -178,16 +184,19 @@
                 scanLine = { from: start, angle: angle(start, point) };
                 draw();
                 await sleep(speed);
+                if (id !== runId) return;
 
                 while (hull.length > 1 && cross(hull[hull.length - 2], hull[hull.length - 1], point) <= 0) {
                     hull.pop();
                     draw();
                     await sleep(speed / 2);
+                    if (id !== runId) return;
                 }
 
                 hull.push(point);
                 draw();
                 await sleep(speed);
+                if (id !== runId) return;
             }
 
             candidatePoint = null;
@@ -329,9 +338,9 @@
             document.getElementById('run').style.display = 'none';
             document.getElementById('stop').style.display = '';
             if (algorithm === 'jarvis') {
-                jarvisMarch().then(onHullDone);
+                jarvisMarch().then(() => { if (!running) onHullDone(); });
             } else {
-                grahamScan().then(onHullDone);
+                grahamScan().then(() => { if (!running) onHullDone(); });
             }
         });
 
@@ -341,7 +350,16 @@
         }
 
         document.getElementById('stop').addEventListener('click', () => {
+            if (!running) return;
+            runId++;
             running = false;
+            hull = [];
+            currentEdge = null;
+            candidatePoint = null;
+            scanLine = null;
+            document.getElementById('status').textContent = `Stopped - ${points.length} points`;
+            draw();
+            onHullDone();
         });
 
         document.getElementById('clear').addEventListener('click', () => {

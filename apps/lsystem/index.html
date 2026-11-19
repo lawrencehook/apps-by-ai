@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>L-System Trees - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: linear-gradient(to bottom, #1a1a2e 0%, #0d1117 100%); min-height: 100vh; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -19,6 +20,8 @@
             font-size: 14px;
             min-width: 240px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -67,10 +70,10 @@
         <h1>L-System Trees</h1>
         <p>Procedurally generated plants using Lindenmayer systems. Simple rules create organic complexity.</p>
         <div class="control-group">
-            <label>Preset</label>
+            <label for="preset">Preset</label>
             <select id="preset">
                 <option value="tree1">Binary Tree</option>
-                <option value="tree2">Stochastic Tree</option>
+                <option value="tree2">Asymmetric Tree</option>
                 <option value="bush">Bush</option>
                 <option value="fern">Fern</option>
                 <option value="sierpinski">Sierpinski Triangle</option>
@@ -78,18 +81,17 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Iterations: <span id="iterLabel">6</span></label>
+            <label for="iterations">Iterations: <span id="iterLabel">6</span></label>
             <input type="range" id="iterations" min="1" max="10" value="6">
         </div>
         <div class="control-group">
-            <label>Angle: <span id="angleLabel">25</span>°</label>
+            <label for="angle">Angle: <span id="angleLabel">25</span>°</label>
             <input type="range" id="angle" min="5" max="90" value="25">
         </div>
         <div class="control-group">
-            <label>Length: <span id="lengthLabel">10</span></label>
+            <label for="length">Length: <span id="lengthLabel">10</span></label>
             <input type="range" id="length" min="2" max="30" value="10">
         </div>
-        <button id="generate">Regenerate</button>
     </div>
     <a href="../../index.html" class="back-link">← Back</a>
 
@@ -177,6 +179,63 @@
             draw(sentence, preset);
         }
 
+        // Bounding box of the turtle path, relative to a start at (0, 0)
+        function measure(sentence, preset, len) {
+            const stack = [];
+            let x = 0, y = 0;
+            let currentAngle = preset.startAngle * Math.PI / 180;
+            let minX = 0, maxX = 0, minY = 0, maxY = 0;
+            for (let char of sentence) {
+                switch (char) {
+                    case 'F':
+                    case 'G':
+                        x += len * Math.cos(currentAngle);
+                        y += len * Math.sin(currentAngle);
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        break;
+                    case '+':
+                        currentAngle += angle * Math.PI / 180;
+                        break;
+                    case '-':
+                        currentAngle -= angle * Math.PI / 180;
+                        break;
+                    case '[':
+                        stack.push({ x, y, angle: currentAngle, len });
+                        len *= 0.8;
+                        break;
+                    case ']': {
+                        const state = stack.pop();
+                        if (state) {
+                            x = state.x;
+                            y = state.y;
+                            currentAngle = state.angle;
+                            len = state.len;
+                        }
+                        break;
+                    }
+                }
+            }
+            return { minX, maxX, minY, maxY };
+        }
+
+        // Shrink (never enlarge) and nudge the start so the whole figure stays on screen
+        function fitToView(box, x, y, w, h) {
+            const margin = 20;
+            const availW = Math.max(1, w - margin * 2);
+            const availH = Math.max(1, h - margin * 2);
+            const k = Math.min(1,
+                availW / Math.max(box.maxX - box.minX, 1e-9),
+                availH / Math.max(box.maxY - box.minY, 1e-9));
+            if (x + box.maxX * k > w - margin) x = w - margin - box.maxX * k;
+            if (x + box.minX * k < margin) x = margin - box.minX * k;
+            if (y + box.maxY * k > h - margin) y = h - margin - box.maxY * k;
+            if (y + box.minY * k < margin) y = margin - box.minY * k;
+            return { k, x, y };
+        }
+
         function draw(sentence, preset) {
             const stack = [];
             let x = width / 2;
@@ -195,6 +254,11 @@
                 y = height / 2;
                 len = length * 0.7;
             }
+
+            const fit = fitToView(measure(sentence, preset, len), x, y, width, height);
+            x = fit.x;
+            y = fit.y;
+            len *= fit.k;
 
             ctx.lineWidth = currentPreset.includes('tree') || currentPreset === 'bush' || currentPreset === 'fern' ? 1 : 2;
             ctx.lineCap = 'round';
@@ -260,16 +324,20 @@
             document.getElementById('angle').value = angle;
             document.getElementById('angleLabel').textContent = angle;
 
-            // Adjust iterations for presets to avoid freezing
+            applyIterationCap();
+
+            generate();
+        });
+
+        // Adjust iterations for presets to avoid freezing
+        function applyIterationCap() {
             const maxIterMap = { tree1: 7, tree2: 7, bush: 6, fern: 7, sierpinski: 8, dragon: 14 };
             const maxIter = maxIterMap[currentPreset] || 8;
             document.getElementById('iterations').max = maxIter;
             iterations = Math.min(iterations, maxIter);
             document.getElementById('iterations').value = iterations;
             document.getElementById('iterLabel').textContent = iterations;
-
-            generate();
-        });
+        }
 
         document.getElementById('iterations').addEventListener('input', e => {
             iterations = parseInt(e.target.value);
@@ -293,9 +361,8 @@
             window._genTimeout = setTimeout(generate, 100);
         });
 
-        document.getElementById('generate').addEventListener('click', generate);
-
         window.addEventListener('resize', resize);
+        applyIterationCap();
         resize();
     </script>
 </body>

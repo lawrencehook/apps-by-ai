@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorting Algorithms - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow-x: hidden; font-family: system-ui, sans-serif; }
-        .container { display: flex; flex-wrap: wrap; padding: 10px; min-height: 100vh; }
+        .container { display: flex; flex-wrap: wrap; padding: 10px 10px 10px 290px; min-height: 100vh; }
         .sorter {
             flex: 1 1 calc(33.333% - 20px); margin: 10px; min-width: 300px;
             background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px;
@@ -19,7 +20,12 @@
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.9);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
-            min-width: 200px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            width: 260px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 10px; }
+            .controls { position: static; width: auto; max-height: none; margin: 20px 20px 0; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -45,11 +51,11 @@
         <h1>Sorting Algorithms</h1>
         <p>Watch different algorithms race. Compare their strategies and performance.</p>
         <div class="control-group">
-            <label>Array Size: <span id="sizeLabel">50</span></label>
+            <label for="size">Array Size: <span id="sizeLabel">50</span></label>
             <input type="range" id="size" min="20" max="200" value="50">
         </div>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">10</span>ms</label>
+            <label for="speed">Speed: <span id="speedLabel">10</span>ms</label>
             <input type="range" id="speed" min="1" max="100" value="10">
         </div>
         <button id="start">Start Race</button>
@@ -159,6 +165,7 @@
             async run() {
                 await this.algorithm.fn(this);
                 this.done = true;
+                this.updateStats();
                 this.current = -1;
                 this.comparing = -1;
                 this.draw();
@@ -233,9 +240,10 @@
                 let j = i - 1;
                 sorter.current = i;
 
-                while (j >= 0 && arr[j] > key) {
+                while (j >= 0) {
                     sorter.comparing = j;
                     sorter.comparisons++;
+                    if (arr[j] <= key) break;
                     arr[j + 1] = arr[j];
                     sorter.swaps++;
                     j--;

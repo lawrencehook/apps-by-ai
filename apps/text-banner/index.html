@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Banner - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -140,7 +141,7 @@
 
     <div class="controls" id="controls">
         <div class="input-group">
-            <label>Banner Text</label>
+            <label for="textInput">Banner Text</label>
             <input type="text" id="textInput" placeholder="Enter your text..." value="Hello World">
         </div>
 
@@ -155,7 +156,7 @@
         </div>
 
         <div>
-            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;">Theme</label>
+            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;" for="themeSelect">Theme</label>
             <select id="themeSelect">
                 <option value="ocean">Ocean</option>
                 <option value="sunset">Sunset</option>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fire Effect - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,11 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -33,7 +39,7 @@
         <h1>Fire Effect</h1>
         <p>Classic demoscene fire algorithm from the 90s. Retro pixel art aesthetic.</p>
         <div class="control-group">
-            <label>Palette</label>
+            <label for="palette">Palette</label>
             <select id="palette">
                 <option value="fire">Classic Fire</option>
                 <option value="blue">Blue Flame</option>
@@ -43,11 +49,11 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Intensity: <span id="intensityLabel">100</span>%</label>
+            <label for="intensity">Intensity: <span id="intensityLabel">100</span>%</label>
             <input type="range" id="intensity" min="20" max="100" value="100">
         </div>
         <div class="control-group">
-            <label>Cooling: <span id="coolingLabel">1.0</span></label>
+            <label for="cooling">Cooling: <span id="coolingLabel">1.0</span></label>
             <input type="range" id="cooling" min="0" max="3" step="0.1" value="1">
         </div>
     </div>
@@ -58,7 +64,7 @@
         const ctx = canvas.getContext('2d');
 
         let width, height;
-        let fire = [];
+        let fire = new Uint8Array(0);
         let palette = [];
         let paletteName = 'fire';
         let intensity = 100;
@@ -143,6 +149,7 @@
         }
 
         function resize() {
+            const old = fire, oldWidth = width, oldHeight = height;
             width = Math.floor(window.innerWidth / SCALE);
             height = Math.floor(window.innerHeight / SCALE);
             canvas.width = width;
@@ -150,7 +157,16 @@
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
 
-            fire = new Uint8Array(width * height);
+            // Keep the flames: copy the old buffer across, aligned to the bottom row
+            const next = new Uint8Array(width * height);
+            if (oldWidth && oldHeight) {
+                const copyWidth = Math.min(width, oldWidth);
+                for (let row = 1; row <= Math.min(height, oldHeight); row++) {
+                    const from = (oldHeight - row) * oldWidth;
+                    next.set(old.subarray(from, from + copyWidth), (height - row) * width);
+                }
+            }
+            fire = next;
         }
 
         function update() {

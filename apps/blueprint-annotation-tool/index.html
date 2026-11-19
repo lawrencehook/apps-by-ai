@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blueprint Annotation Tool - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -134,9 +135,11 @@
             overflow: hidden;
             position: relative;
         }
+        .canvas-scroll { overflow: auto; }
         #canvas {
             display: block;
             cursor: crosshair;
+            touch-action: none;
         }
 
         .sidebar {
@@ -295,17 +298,17 @@
                 </div>
 
                 <div class="toolbar-group">
-                    <label>Color:</label>
+                    <label for="colorPicker">Color:</label>
                     <input type="color" id="colorPicker" value="#ff6b6b">
                 </div>
 
                 <div class="toolbar-group">
-                    <label>Width:</label>
+                    <label for="lineWidth">Width:</label>
                     <input type="number" id="lineWidth" value="2" min="1" max="10">
                 </div>
 
                 <div class="toolbar-group">
-                    <label>Scale:</label>
+                    <label for="scaleValue">Scale:</label>
                     <input type="number" id="scaleValue" value="1" min="0.01" step="0.01" style="width: 60px;">
                     <select id="scaleUnit">
                         <option value="m">m</option>
@@ -326,7 +329,7 @@
 
             <div class="editor-container">
                 <div class="canvas-wrapper">
-                    <canvas id="canvas"></canvas>
+                    <div class="canvas-scroll"><canvas id="canvas"></canvas></div>
                     <div class="zoom-controls">
                         <button class="zoom-btn" id="zoomOut">−</button>
                         <span class="zoom-level" id="zoomLevel">100%</span>
@@ -374,6 +377,13 @@
         let panX = 0, panY = 0;
         let isPanning = false;
         let lastPanX = 0, lastPanY = 0;
+        // Annotation sizes (text, caps, handles) are multiplied by this so they stay
+        // readable on large scans; it depends only on the image, so exports are stable.
+        let annScale = 1;
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
 
         // DOM Elements
         const canvas = document.getElementById('canvas');
@@ -416,9 +426,11 @@
             reader.onload = e => {
                 loadedImage = new Image();
                 loadedImage.onload = () => {
-                    initCanvas();
+                    // Show the editor first: the wrapper has no width while hidden
                     dropZone.classList.add('hidden');
                     editorPanel.classList.remove('hidden');
+                    annScale = Math.max(1, loadedImage.width / 800, loadedImage.height / 600);
+                    initCanvas();
                 };
                 loadedImage.src = e.target.result;
             };
@@ -478,11 +490,11 @@
             ctx.save();
             ctx.strokeStyle = ann.color;
             ctx.fillStyle = ann.color;
-            ctx.lineWidth = ann.lineWidth;
+            ctx.lineWidth = ann.lineWidth * annScale;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
-            const selectionPadding = 5;
+            const selectionPadding = 5 * annScale;
 
             switch (ann.type) {
                 case 'measure':
@@ -508,8 +520,8 @@
             // Draw selection handles
             if (isSelected) {
                 ctx.strokeStyle = '#4ecdc4';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2 * annScale;
+                ctx.setLineDash([5 * annScale, 5 * annScale]);
 
                 const bounds = getAnnotationBounds(ann);
                 ctx.strokeRect(bounds.x - selectionPadding, bounds.y - selectionPadding,
@@ -533,7 +545,7 @@
             ctx.stroke();
 
             // End caps
-            const capSize = 10;
+            const capSize = 10 * annScale;
             const perpAngle = angle + Math.PI / 2;
 
             ctx.beginPath();
@@ -560,31 +572,31 @@
             if (textAngle < -Math.PI / 2) textAngle += Math.PI;
             ctx.rotate(textAngle);
 
-            ctx.font = 'bold 14px system-ui';
+            ctx.font = `bold ${14 * annScale}px system-ui`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
 
             const textWidth = ctx.measureText(text).width;
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(-textWidth/2 - 4, -20, textWidth + 8, 18);
+            ctx.fillRect(-textWidth/2 - 4 * annScale, -20 * annScale, textWidth + 8 * annScale, 18 * annScale);
 
             ctx.fillStyle = ann.color;
-            ctx.fillText(text, 0, -5);
+            ctx.fillText(text, 0, -5 * annScale);
             ctx.restore();
         }
 
         function drawLabel(ann) {
-            ctx.font = 'bold 16px system-ui';
+            ctx.font = `bold ${16 * annScale}px system-ui`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
 
             const text = ann.text || 'Label';
             const metrics = ctx.measureText(text);
-            const padding = 6;
+            const padding = 6 * annScale;
 
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(ann.x - padding, ann.y - padding,
-                        metrics.width + padding * 2, 20 + padding * 2);
+                        metrics.width + padding * 2, 20 * annScale + padding * 2);
 
             ctx.fillStyle = ann.color;
             ctx.fillText(text, ann.x, ann.y);
@@ -594,7 +606,7 @@
             const dx = ann.x2 - ann.x1;
             const dy = ann.y2 - ann.y1;
             const angle = Math.atan2(dy, dx);
-            const headLength = 15;
+            const headLength = 15 * annScale;
 
             // Line
             ctx.beginPath();
@@ -624,9 +636,9 @@
                         height: Math.abs(ann.y2 - ann.y1)
                     };
                 case 'label':
-                    ctx.font = 'bold 16px system-ui';
+                    ctx.font = `bold ${16 * annScale}px system-ui`;
                     const metrics = ctx.measureText(ann.text || 'Label');
-                    return { x: ann.x, y: ann.y, width: metrics.width + 12, height: 32 };
+                    return { x: ann.x, y: ann.y, width: metrics.width + 12 * annScale, height: 32 * annScale };
                 case 'rectangle':
                 case 'circle':
                     return {
@@ -686,7 +698,7 @@
             };
         }
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             const coords = getCanvasCoords(e);
             lastMouseX = coords.x;
             lastMouseY = coords.y;
@@ -695,11 +707,12 @@
 
             if (currentTool === 'select') {
                 // Check if clicking on an annotation
+                const hitPad = 10 * annScale;
                 let found = -1;
                 for (let i = annotations.length - 1; i >= 0; i--) {
                     const bounds = getAnnotationBounds(annotations[i]);
-                    if (coords.x >= bounds.x - 10 && coords.x <= bounds.x + bounds.width + 10 &&
-                        coords.y >= bounds.y - 10 && coords.y <= bounds.y + bounds.height + 10) {
+                    if (coords.x >= bounds.x - hitPad && coords.x <= bounds.x + bounds.width + hitPad &&
+                        coords.y >= bounds.y - hitPad && coords.y <= bounds.y + bounds.height + hitPad) {
                         found = i;
                         break;
                     }
@@ -708,6 +721,7 @@
                 if (found >= 0) {
                     selectedAnnotation = found;
                     isDragging = true;
+                    canvas.setPointerCapture(e.pointerId);
                     const bounds = getAnnotationBounds(annotations[found]);
                     dragOffsetX = coords.x - bounds.x;
                     dragOffsetY = coords.y - bounds.y;
@@ -727,10 +741,11 @@
                 }
             } else {
                 isDrawing = true;
+                canvas.setPointerCapture(e.pointerId);
             }
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             const coords = getCanvasCoords(e);
             lastMouseX = coords.x;
             lastMouseY = coords.y;
@@ -758,13 +773,13 @@
             }
         });
 
-        canvas.addEventListener('mouseup', e => {
+        canvas.addEventListener('pointerup', e => {
             if (isDrawing && currentTool !== 'select' && currentTool !== 'label') {
                 const ann = createTempAnnotation();
                 if (ann) {
                     // Minimum size check
                     const bounds = getAnnotationBounds(ann);
-                    if (bounds.width > 5 || bounds.height > 5) {
+                    if (bounds.width > 5 * annScale || bounds.height > 5 * annScale) {
                         annotations.push(ann);
                         updateAnnotationList();
                     }
@@ -776,11 +791,11 @@
             render();
         });
 
-        canvas.addEventListener('mouseleave', () => {
-            if (isDrawing) {
-                isDrawing = false;
-                render();
-            }
+        // The pointer is captured, so drags continue outside the canvas and end on pointerup
+        canvas.addEventListener('pointercancel', () => {
+            isDrawing = false;
+            isDragging = false;
+            render();
         });
 
         // Keyboard shortcuts
@@ -836,7 +851,7 @@
                 return `
                     <div class="annotation-item ${selectedAnnotation === idx ? 'selected' : ''}" data-idx="${idx}">
                         <span class="annotation-icon">${icons[ann.type]}</span>
-                        <span class="annotation-text">${text}</span>
+                        <span class="annotation-text">${escapeHtml(text)}</span>
                         <button class="annotation-delete" data-idx="${idx}">×</button>
                     </div>
                 `;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signature Studio - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -121,6 +122,11 @@
         #signatureCanvas {
             cursor: crosshair;
             touch-action: none;
+        }
+
+        #signatureCanvas, #typedCanvas {
+            max-width: 100%;
+            height: auto;
         }
 
         .controls-panel {
@@ -326,6 +332,7 @@
             padding: 5px;
             background: rgba(255, 255, 255, 0.9);
             z-index: 10;
+            touch-action: none;
         }
 
         .signature-overlay img {
@@ -343,18 +350,7 @@
             bottom: -6px;
             right: -6px;
             cursor: se-resize;
-        }
-
-        .signature-overlay .rotate-handle {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #764ba2;
-            border-radius: 50%;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            cursor: grab;
+            touch-action: none;
         }
 
         .signature-overlay .delete-handle {
@@ -609,7 +605,7 @@
                     <h3 class="section-title">Drawing Options</h3>
 
                     <div class="control-group">
-                        <label>Stroke Color</label>
+                        <label for="strokeColor">Stroke Color</label>
                         <input type="color" id="strokeColor" value="#000000">
                         <div class="color-presets">
                             <div class="color-preset active" style="background: #000000" data-color="#000000"></div>
@@ -622,12 +618,12 @@
                     </div>
 
                     <div class="control-group">
-                        <label>Stroke Width: <span id="strokeWidthValue">3</span>px</label>
+                        <label for="strokeWidth">Stroke Width: <span id="strokeWidthValue">3</span>px</label>
                         <input type="range" id="strokeWidth" min="1" max="10" value="3">
                     </div>
 
                     <div class="control-group">
-                        <label>Smoothing: <span id="smoothingValue">0.5</span></label>
+                        <label for="smoothing">Smoothing: <span id="smoothingValue">0.5</span></label>
                         <input type="range" id="smoothing" min="0" max="1" step="0.1" value="0.5">
                     </div>
 
@@ -640,7 +636,7 @@
 
                     <div class="export-options">
                         <div class="export-option">
-                            <label>Size:</label>
+                            <label for="exportSize">Size:</label>
                             <select id="exportSize">
                                 <option value="1">Original</option>
                                 <option value="2" selected>2x</option>
@@ -675,7 +671,7 @@
                 <div class="controls-panel">
                     <h3 class="section-title">Type Your Name</h3>
 
-                    <input type="text" class="typed-signature-input" id="signatureName" placeholder="Your Name">
+                    <input type="text" class="typed-signature-input" id="signatureName" placeholder="Your Name" aria-label="Your name">
 
                     <div class="control-group">
                         <label>Choose Font Style</label>
@@ -696,7 +692,7 @@
                     </div>
 
                     <div class="control-group">
-                        <label>Text Color</label>
+                        <label for="typedColor">Text Color</label>
                         <input type="color" id="typedColor" value="#000000">
                         <div class="color-presets" id="typedColorPresets">
                             <div class="color-preset active" style="background: #000000" data-color="#000000"></div>
@@ -706,7 +702,7 @@
                     </div>
 
                     <div class="control-group">
-                        <label>Font Size: <span id="fontSizeValue">48</span>px</label>
+                        <label for="fontSize">Font Size: <span id="fontSizeValue">48</span>px</label>
                         <input type="range" id="fontSize" min="24" max="96" value="48">
                     </div>
 
@@ -752,12 +748,13 @@
                     <div class="action-buttons" style="margin-top: 20px;">
                         <button class="btn btn-secondary" id="addSignatureBtn" disabled>Add Selected Signature</button>
                         <button class="btn btn-danger" id="clearDocSignatures">Clear All Signatures</button>
+                        <button class="btn btn-secondary" id="replaceDocBtn" disabled>Load Different Document</button>
                     </div>
 
                     <h3 class="section-title" style="margin-top: 30px;">Export Document</h3>
 
                     <div class="control-group">
-                        <label>Format</label>
+                        <label for="docExportFormat">Format</label>
                         <select id="docExportFormat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
                             <option value="png">PNG Image</option>
                             <option value="jpeg">JPEG Image</option>
@@ -808,6 +805,8 @@
                 type: null,
                 pdfDoc: null,
                 currentPage: 1,
+                // The page actually on the canvas; currentPage runs ahead while one renders
+                shownPage: 1,
                 totalPages: 1,
                 image: null,
                 placedSignatures: []
@@ -870,6 +869,7 @@
             signatureSelector: document.getElementById('signatureSelector'),
             addSignatureBtn: document.getElementById('addSignatureBtn'),
             clearDocSignatures: document.getElementById('clearDocSignatures'),
+            replaceDocBtn: document.getElementById('replaceDocBtn'),
             docExportFormat: document.getElementById('docExportFormat'),
             exportDocBtn: document.getElementById('exportDocBtn'),
 
@@ -925,14 +925,6 @@
             const scaleX = elements.signatureCanvas.width / rect.width;
             const scaleY = elements.signatureCanvas.height / rect.height;
 
-            if (e.touches) {
-                return {
-                    x: (e.touches[0].clientX - rect.left) * scaleX,
-                    y: (e.touches[0].clientY - rect.top) * scaleY,
-                    pressure: e.touches[0].force || 0.5
-                };
-            }
-
             return {
                 x: (e.clientX - rect.left) * scaleX,
                 y: (e.clientY - rect.top) * scaleY,
@@ -962,7 +954,8 @@
             e.preventDefault();
 
             const pos = getPointerPos(e);
-            const smoothing = parseFloat(elements.smoothing.value);
+            // At a full 1.0 the pen would never leave its starting point
+            const smoothing = Math.min(parseFloat(elements.smoothing.value), 0.95);
 
             // Apply smoothing
             const x = state.drawing.lastX + (pos.x - state.drawing.lastX) * (1 - smoothing);
@@ -1032,14 +1025,11 @@
         }
 
         // Event listeners for drawing
-        elements.signatureCanvas.addEventListener('mousedown', startDrawing);
-        elements.signatureCanvas.addEventListener('mousemove', draw);
-        elements.signatureCanvas.addEventListener('mouseup', stopDrawing);
-        elements.signatureCanvas.addEventListener('mouseleave', stopDrawing);
-
-        elements.signatureCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-        elements.signatureCanvas.addEventListener('touchmove', draw, { passive: false });
-        elements.signatureCanvas.addEventListener('touchend', stopDrawing);
+        elements.signatureCanvas.addEventListener('pointerdown', startDrawing);
+        elements.signatureCanvas.addEventListener('pointermove', draw);
+        elements.signatureCanvas.addEventListener('pointerup', stopDrawing);
+        elements.signatureCanvas.addEventListener('pointerleave', stopDrawing);
+        elements.signatureCanvas.addEventListener('pointercancel', stopDrawing);
 
         elements.undoBtn.addEventListener('click', undo);
         elements.redoBtn.addEventListener('click', redo);
@@ -1118,6 +1108,13 @@
             });
         });
 
+        // The canvas shows a "Your Name" placeholder until something is typed
+        function hasTypedName() {
+            if (elements.signatureName.value.trim()) return true;
+            showToast('Please type your name first');
+            return false;
+        }
+
         // ============ Save Signature ============
         function getSignatureDataURL(canvas, transparent = true) {
             // Get the bounds of the actual signature
@@ -1184,7 +1181,9 @@
         }
 
         elements.saveSignatureBtn.addEventListener('click', () => saveSignature(elements.signatureCanvas));
-        elements.saveTypedBtn.addEventListener('click', () => saveSignature(elements.typedCanvas));
+        elements.saveTypedBtn.addEventListener('click', () => {
+            if (hasTypedName()) saveSignature(elements.typedCanvas);
+        });
 
         // ============ Export Signature ============
         function exportSignature(canvas) {
@@ -1223,22 +1222,24 @@
         }
 
         elements.exportPngBtn.addEventListener('click', () => exportSignature(elements.signatureCanvas));
-        elements.exportTypedBtn.addEventListener('click', () => exportSignature(elements.typedCanvas));
+        elements.exportTypedBtn.addEventListener('click', () => {
+            if (hasTypedName()) exportSignature(elements.typedCanvas);
+        });
 
         // ============ Document Handling ============
+        let loadToken = 0;
+        let renderToken = 0;
+
         function handleFileUpload(file) {
             if (!file) return;
 
-            const isPDF = file.type === 'application/pdf';
+            const isPDF = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
             const isImage = file.type.startsWith('image/');
 
             if (!isPDF && !isImage) {
                 showToast('Please upload a PDF or image file');
                 return;
             }
-
-            state.document.placedSignatures = [];
-            clearSignatureOverlays();
 
             if (isPDF) {
                 loadPDF(file);
@@ -1247,12 +1248,37 @@
             }
         }
 
+        // Called once a new file has opened, so a failed load keeps the old document
+        function resetDocument() {
+            clearSignatureOverlays();
+            renderToken++;
+            if (state.document.pdfDoc) state.document.pdfDoc.destroy();
+            state.document.pdfDoc = null;
+            state.document.image = null;
+            state.document.currentPage = 1;
+            state.document.shownPage = 1;
+            state.document.totalPages = 1;
+        }
+
         async function loadPDF(file) {
-            const arrayBuffer = await file.arrayBuffer();
-            state.document.pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const token = ++loadToken;
+            let pdfDoc;
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+            } catch (err) {
+                if (token === loadToken) showToast('Could not open this PDF');
+                return;
+            }
+            if (token !== loadToken) {
+                pdfDoc.destroy();
+                return;
+            }
+
+            resetDocument();
+            state.document.pdfDoc = pdfDoc;
             state.document.type = 'pdf';
             state.document.totalPages = state.document.pdfDoc.numPages;
-            state.document.currentPage = 1;
             state.document.loaded = true;
 
             elements.totalPagesSpan.textContent = state.document.totalPages;
@@ -1261,32 +1287,65 @@
             renderPDFPage(1);
         }
 
-        async function renderPDFPage(pageNum) {
+        async function renderPageToCanvas(pageNum) {
             const page = await state.document.pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.5 });
 
-            elements.documentCanvas.width = viewport.width;
-            elements.documentCanvas.height = viewport.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
 
             await page.render({
-                canvasContext: documentCtx,
+                canvasContext: canvas.getContext('2d'),
                 viewport: viewport
             }).promise;
+
+            return canvas;
+        }
+
+        // Renders off screen and swaps the result in, so quick page changes never
+        // run two renders on the visible canvas
+        async function renderPDFPage(pageNum) {
+            const token = ++renderToken;
+            let pageCanvas;
+            try {
+                pageCanvas = await renderPageToCanvas(pageNum);
+            } catch (err) {
+                if (token === renderToken) showToast('Could not render page ' + pageNum);
+                return;
+            }
+            if (token !== renderToken) return;
+
+            rememberOverlayPositions();
+
+            elements.documentCanvas.width = pageCanvas.width;
+            elements.documentCanvas.height = pageCanvas.height;
+            documentCtx.drawImage(pageCanvas, 0, 0);
+            state.document.shownPage = pageNum;
 
             elements.uploadZone.style.display = 'none';
             elements.documentCanvas.style.display = 'block';
             elements.exportDocBtn.disabled = false;
+            elements.replaceDocBtn.disabled = false;
             elements.currentPageSpan.textContent = pageNum;
 
-            // Redraw placed signatures
-            redrawSignaturesOnDocument();
+            showOverlaysForPage();
         }
 
         function loadImage(file) {
+            const token = ++loadToken;
             const reader = new FileReader();
+            reader.onerror = () => {
+                if (token === loadToken) showToast('Could not read this file');
+            };
             reader.onload = (e) => {
                 const img = new Image();
+                img.onerror = () => {
+                    if (token === loadToken) showToast('Could not open this image');
+                };
                 img.onload = () => {
+                    if (token !== loadToken) return;
+                    resetDocument();
                     state.document.image = img;
                     state.document.type = 'image';
                     state.document.loaded = true;
@@ -1299,6 +1358,7 @@
                     elements.documentCanvas.style.display = 'block';
                     elements.pageNav.style.display = 'none';
                     elements.exportDocBtn.disabled = false;
+                    elements.replaceDocBtn.disabled = false;
                 };
                 img.src = e.target.result;
             };
@@ -1307,7 +1367,12 @@
 
         // File upload handlers
         elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
-        elements.fileInput.addEventListener('change', (e) => handleFileUpload(e.target.files[0]));
+        elements.replaceDocBtn.addEventListener('click', () => elements.fileInput.click());
+        elements.fileInput.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0]);
+            // Lets the same file be chosen again
+            e.target.value = '';
+        });
 
         elements.uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -1327,6 +1392,7 @@
         // Page navigation
         elements.prevPage.addEventListener('click', () => {
             if (state.document.currentPage > 1) {
+                rememberOverlayPositions();
                 state.document.currentPage--;
                 renderPDFPage(state.document.currentPage);
             }
@@ -1334,6 +1400,7 @@
 
         elements.nextPage.addEventListener('click', () => {
             if (state.document.currentPage < state.document.totalPages) {
+                rememberOverlayPositions();
                 state.document.currentPage++;
                 renderPDFPage(state.document.currentPage);
             }
@@ -1346,6 +1413,8 @@
                 elements.addSignatureBtn.disabled = true;
                 return;
             }
+
+            elements.addSignatureBtn.disabled = !state.signatures[state.selectedSignatureIndex];
 
             elements.signatureSelector.innerHTML = state.signatures.map((sig, i) => `
                 <div class="saved-signature ${state.selectedSignatureIndex === i ? 'selected' : ''}" data-index="${i}" style="${state.selectedSignatureIndex === i ? 'border: 2px solid #667eea;' : ''}">
@@ -1380,6 +1449,12 @@
                     e.stopPropagation();
                     const index = parseInt(btn.dataset.index);
                     state.signatures.splice(index, 1);
+                    // Keep the Document tab's selection pointing at the same signature
+                    if (state.selectedSignatureIndex === index) {
+                        state.selectedSignatureIndex = -1;
+                    } else if (state.selectedSignatureIndex > index) {
+                        state.selectedSignatureIndex--;
+                    }
                     localStorage.setItem('signatures', JSON.stringify(state.signatures));
                     updateSavedSignaturesList();
                     updateSignatureSelector();
@@ -1391,6 +1466,7 @@
         elements.clearAllSaved.addEventListener('click', () => {
             if (confirm('Are you sure you want to delete all saved signatures?')) {
                 state.signatures = [];
+                state.selectedSignatureIndex = -1;
                 localStorage.setItem('signatures', JSON.stringify(state.signatures));
                 updateSavedSignaturesList();
                 updateSignatureSelector();
@@ -1405,7 +1481,7 @@
                 return;
             }
 
-            if (state.selectedSignatureIndex < 0) {
+            if (!state.signatures[state.selectedSignatureIndex]) {
                 showToast('Please select a signature first');
                 return;
             }
@@ -1416,10 +1492,10 @@
         function addSignatureOverlay(dataURL) {
             const overlay = document.createElement('div');
             overlay.className = 'signature-overlay';
+            overlay.dataset.page = state.document.shownPage;
             overlay.innerHTML = `
                 <img src="${dataURL}" alt="Signature">
                 <div class="resize-handle"></div>
-                <div class="rotate-handle"></div>
                 <div class="delete-handle">×</div>
             `;
 
@@ -1434,6 +1510,7 @@
 
             overlay.querySelector('.delete-handle').addEventListener('click', () => {
                 overlay.remove();
+                state.document.placedSignatures = state.document.placedSignatures.filter(o => o !== overlay);
             });
 
             state.document.placedSignatures.push(overlay);
@@ -1443,43 +1520,34 @@
             let isDragging = false;
             let startX, startY, initialX, initialY;
 
-            function onPointerDown(e) {
+            overlay.addEventListener('pointerdown', (e) => {
                 if (e.target.classList.contains('resize-handle') ||
-                    e.target.classList.contains('delete-handle') ||
-                    e.target.classList.contains('rotate-handle')) return;
+                    e.target.classList.contains('delete-handle')) return;
 
                 isDragging = true;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                startX = clientX;
-                startY = clientY;
+                overlay.setPointerCapture(e.pointerId);
+                startX = e.clientX;
+                startY = e.clientY;
                 initialX = overlay.offsetLeft;
                 initialY = overlay.offsetTop;
-                if (e.touches) e.preventDefault();
-            }
+                e.preventDefault();
+            });
 
-            function onPointerMove(e) {
+            overlay.addEventListener('pointermove', (e) => {
                 if (!isDragging) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                const dx = clientX - startX;
-                const dy = clientY - startY;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
 
                 overlay.style.left = `${initialX + dx}px`;
                 overlay.style.top = `${initialY + dy}px`;
-            }
+            });
 
-            function onPointerUp() {
+            const onPointerUp = () => {
                 isDragging = false;
-            }
-
-            overlay.addEventListener('mousedown', onPointerDown);
-            overlay.addEventListener('touchstart', onPointerDown, { passive: false });
-            document.addEventListener('mousemove', onPointerMove);
-            document.addEventListener('touchmove', onPointerMove, { passive: false });
-            document.addEventListener('mouseup', onPointerUp);
-            document.addEventListener('touchend', onPointerUp);
+            };
+            overlay.addEventListener('pointerup', onPointerUp);
+            overlay.addEventListener('pointercancel', onPointerUp);
         }
 
         function makeOverlayResizable(overlay) {
@@ -1487,14 +1555,16 @@
             let isResizing = false;
             let startX, startWidth;
 
-            handle.addEventListener('mousedown', (e) => {
+            handle.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 isResizing = true;
+                handle.setPointerCapture(e.pointerId);
                 startX = e.clientX;
                 startWidth = overlay.offsetWidth;
             });
 
-            document.addEventListener('mousemove', (e) => {
+            handle.addEventListener('pointermove', (e) => {
                 if (!isResizing) return;
 
                 const dx = e.clientX - startX;
@@ -1502,9 +1572,11 @@
                 overlay.style.width = `${newWidth}px`;
             });
 
-            document.addEventListener('mouseup', () => {
+            const onPointerUp = () => {
                 isResizing = false;
-            });
+            };
+            handle.addEventListener('pointerup', onPointerUp);
+            handle.addEventListener('pointercancel', onPointerUp);
         }
 
         function clearSignatureOverlays() {
@@ -1514,58 +1586,100 @@
 
         elements.clearDocSignatures.addEventListener('click', clearSignatureOverlays);
 
-        function redrawSignaturesOnDocument() {
-            // This would redraw after page change - simplified for this implementation
+        // Each overlay belongs to the page it was added on. Its position is kept as
+        // fractions of the page, measured while that page is on screen, so it can be
+        // drawn onto pages that are not currently displayed.
+        function rememberOverlayPositions() {
+            const canvasRect = elements.documentCanvas.getBoundingClientRect();
+            if (!canvasRect.width || !canvasRect.height) return;
+
+            for (const overlay of state.document.placedSignatures) {
+                if (Number(overlay.dataset.page) !== state.document.shownPage) continue;
+                const rect = overlay.querySelector('img').getBoundingClientRect();
+                overlay.pagePos = {
+                    x: (rect.left - canvasRect.left) / canvasRect.width,
+                    y: (rect.top - canvasRect.top) / canvasRect.height,
+                    w: rect.width / canvasRect.width,
+                    h: rect.height / canvasRect.height
+                };
+            }
+        }
+
+        function showOverlaysForPage() {
+            for (const overlay of state.document.placedSignatures) {
+                overlay.style.display = Number(overlay.dataset.page) === state.document.shownPage ? '' : 'none';
+            }
         }
 
         // ============ Export Document ============
+        async function buildSignedPage(pageNum) {
+            const source = pageNum === state.document.shownPage
+                ? elements.documentCanvas
+                : await renderPageToCanvas(pageNum);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = source.width;
+            canvas.height = source.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(source, 0, 0);
+
+            for (const overlay of state.document.placedSignatures) {
+                const pos = overlay.pagePos;
+                if (Number(overlay.dataset.page) !== pageNum || !pos) continue;
+                ctx.drawImage(overlay.querySelector('img'),
+                    pos.x * canvas.width, pos.y * canvas.height,
+                    pos.w * canvas.width, pos.h * canvas.height);
+            }
+
+            return canvas;
+        }
+
         elements.exportDocBtn.addEventListener('click', async () => {
             if (!state.document.loaded) return;
 
             const format = elements.docExportFormat.value;
+            const shownPage = state.document.shownPage;
+            const pageCount = state.document.type === 'pdf' ? state.document.totalPages : 1;
 
-            // Create final canvas with signatures
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = elements.documentCanvas.width;
-            finalCanvas.height = elements.documentCanvas.height;
-            const finalCtx = finalCanvas.getContext('2d');
+            rememberOverlayPositions();
+            elements.exportDocBtn.disabled = true;
 
-            // Draw document
-            finalCtx.drawImage(elements.documentCanvas, 0, 0);
+            try {
+                if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    let pdf = null;
 
-            // Draw each signature overlay
-            const canvasRect = elements.documentCanvas.getBoundingClientRect();
+                    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+                        const pageCanvas = await buildSignedPage(pageNum);
+                        const orientation = pageCanvas.width > pageCanvas.height ? 'landscape' : 'portrait';
+                        const pageFormat = [pageCanvas.width, pageCanvas.height];
 
-            for (const overlay of state.document.placedSignatures) {
-                const img = overlay.querySelector('img');
-                const overlayRect = overlay.getBoundingClientRect();
+                        if (!pdf) {
+                            pdf = new jsPDF({ orientation, unit: 'px', format: pageFormat });
+                        } else {
+                            pdf.addPage(pageFormat, orientation);
+                        }
+                        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageCanvas.width, pageCanvas.height);
+                    }
 
-                const x = (overlayRect.left - canvasRect.left) * (elements.documentCanvas.width / canvasRect.width);
-                const y = (overlayRect.top - canvasRect.top) * (elements.documentCanvas.height / canvasRect.height);
-                const width = overlayRect.width * (elements.documentCanvas.width / canvasRect.width);
-                const height = overlayRect.height * (elements.documentCanvas.height / canvasRect.height);
-
-                finalCtx.drawImage(img, x, y, width, height);
+                    pdf.save(`signed-document-${Date.now()}.pdf`);
+                    showToast('Document exported!');
+                } else {
+                    // An image file holds one page
+                    const finalCanvas = await buildSignedPage(shownPage);
+                    const link = document.createElement('a');
+                    link.download = `signed-document-${Date.now()}.${format}`;
+                    link.href = finalCanvas.toDataURL(`image/${format}`);
+                    link.click();
+                    showToast(pageCount > 1
+                        ? `Page ${shownPage} exported. Choose PDF to export all pages.`
+                        : 'Document exported!');
+                }
+            } catch (err) {
+                showToast('Export failed');
+            } finally {
+                elements.exportDocBtn.disabled = false;
             }
-
-            if (format === 'pdf') {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: finalCanvas.width > finalCanvas.height ? 'landscape' : 'portrait',
-                    unit: 'px',
-                    format: [finalCanvas.width, finalCanvas.height]
-                });
-
-                pdf.addImage(finalCanvas.toDataURL('image/png'), 'PNG', 0, 0, finalCanvas.width, finalCanvas.height);
-                pdf.save(`signed-document-${Date.now()}.pdf`);
-            } else {
-                const link = document.createElement('a');
-                link.download = `signed-document-${Date.now()}.${format}`;
-                link.href = finalCanvas.toDataURL(`image/${format}`);
-                link.click();
-            }
-
-            showToast('Document exported!');
         });
 
         // ============ Toast ============
@@ -1583,6 +1697,10 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Leave the browser's own undo alone in text fields and on the other tabs
+            const t = e.target;
+            if (state.currentTab !== 'draw' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+                (t.tagName === 'INPUT' && !['range', 'checkbox', 'color'].includes(t.type))) return;
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z') {
                     e.preventDefault();

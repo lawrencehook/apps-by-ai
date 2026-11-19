@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apollonian Gasket - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -40,6 +41,7 @@
         .back-link:hover { color: #fff; }
         .controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 16px;
             align-items: center;
             padding: 10px 14px;
@@ -105,12 +107,12 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>Depth</label>
+                <label for="depth">Depth</label>
                 <input type="range" id="depth" min="3" max="9" value="7">
                 <span class="value" id="depthVal">7</span>
             </div>
             <div class="control-group">
-                <label>Style</label>
+                <label for="style">Style</label>
                 <select id="style">
                     <option value="filled">Filled</option>
                     <option value="outline">Outline</option>
@@ -118,7 +120,7 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Colors</label>
+                <label for="colorScheme">Colors</label>
                 <select id="colorScheme">
                     <option value="rainbow">Rainbow</option>
                     <option value="cool">Cool</option>
@@ -126,7 +128,6 @@
                     <option value="mono">Monochrome</option>
                 </select>
             </div>
-            <button class="btn-primary" id="regenerate">Regenerate</button>
         </div>
 
         <div class="canvas-container">
@@ -154,85 +155,33 @@
             generate();
         }
 
-        // Descartes Circle Theorem: given 3 mutually tangent circles with curvatures k1, k2, k3,
-        // the fourth circle has curvature k4 = k1 + k2 + k3 ± 2*sqrt(k1*k2 + k2*k3 + k3*k1)
-        function descartes(k1, k2, k3) {
-            const sum = k1 + k2 + k3;
-            const prod = Math.sqrt(Math.abs(k1 * k2 + k2 * k3 + k3 * k1));
-            return [sum + 2 * prod, sum - 2 * prod];
-        }
-
-        // Complex Descartes theorem for centers
-        function descartesCenter(c1, c2, c3, k1, k2, k3, k4) {
-            const z1 = { re: c1.x * k1, im: c1.y * k1 };
-            const z2 = { re: c2.x * k2, im: c2.y * k2 };
-            const z3 = { re: c3.x * k3, im: c3.y * k3 };
-
-            const sumZ = { re: z1.re + z2.re + z3.re, im: z1.im + z2.im + z3.im };
-
-            // sqrt(z1*z2 + z2*z3 + z3*z1)
-            const prod12 = { re: z1.re * z2.re - z1.im * z2.im, im: z1.re * z2.im + z1.im * z2.re };
-            const prod23 = { re: z2.re * z3.re - z2.im * z3.im, im: z2.re * z3.im + z2.im * z3.re };
-            const prod31 = { re: z3.re * z1.re - z3.im * z1.im, im: z3.re * z1.im + z3.im * z1.re };
-            const sumProd = { re: prod12.re + prod23.re + prod31.re, im: prod12.im + prod23.im + prod31.im };
-
-            const mag = Math.sqrt(sumProd.re * sumProd.re + sumProd.im * sumProd.im);
-            const angle = Math.atan2(sumProd.im, sumProd.re) / 2;
-            const sqrtProd = { re: Math.sqrt(mag) * Math.cos(angle), im: Math.sqrt(mag) * Math.sin(angle) };
-
-            const center1 = {
-                x: (sumZ.re + 2 * sqrtProd.re) / k4,
-                y: (sumZ.im + 2 * sqrtProd.im) / k4
-            };
-            const center2 = {
-                x: (sumZ.re - 2 * sqrtProd.re) / k4,
-                y: (sumZ.im - 2 * sqrtProd.im) / k4
-            };
-
-            return [center1, center2];
-        }
-
-        function circleExists(newCircle) {
-            for (const c of circles) {
-                const dx = c.x - newCircle.x;
-                const dy = c.y - newCircle.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 1 && Math.abs(c.r - newCircle.r) < 1) return true;
-            }
-            return false;
-        }
-
-        function apollonian(c1, c2, c3, depth, maxDepth) {
+        // c1, c2, c3 and c4 are mutually tangent (radius and curvature are signed: negative for the
+        // enclosing circle). The other circle tangent to c1, c2, c3 follows from Descartes' theorem:
+        //   k = 2(k1 + k2 + k3) - k4,   k*z = 2(k1*z1 + k2*z2 + k3*z3) - k4*z4
+        function apollonian(c1, c2, c3, c4, depth, maxDepth) {
             if (depth > maxDepth) return;
 
             const k1 = 1 / c1.r;
             const k2 = 1 / c2.r;
             const k3 = 1 / c3.r;
+            const k4 = 1 / c4.r;
 
-            const [k4a, k4b] = descartes(k1, k2, k3);
+            const k = 2 * (k1 + k2 + k3) - k4;
+            if (k <= 0) return;
+            const r = 1 / k;
+            if (r < 1) return;
 
-            for (const k4 of [k4a, k4b]) {
-                if (Math.abs(k4) < 0.001) continue;
-                const r4 = Math.abs(1 / k4);
-                if (r4 < 1) continue;
+            const newCircle = {
+                x: (2 * (k1 * c1.x + k2 * c2.x + k3 * c3.x) - k4 * c4.x) / k,
+                y: (2 * (k1 * c1.y + k2 * c2.y + k3 * c3.y) - k4 * c4.y) / k,
+                r,
+                depth
+            };
+            circles.push(newCircle);
 
-                const centers = descartesCenter(c1, c2, c3, k1, k2, k3, k4);
-
-                for (const center of centers) {
-                    const newCircle = { x: center.x, y: center.y, r: r4, depth };
-
-                    if (!circleExists(newCircle) &&
-                        newCircle.x > -width && newCircle.x < width * 2 &&
-                        newCircle.y > -height && newCircle.y < height * 2) {
-
-                        circles.push(newCircle);
-
-                        apollonian(c1, c2, newCircle, depth + 1, maxDepth);
-                        apollonian(c2, c3, newCircle, depth + 1, maxDepth);
-                        apollonian(c1, c3, newCircle, depth + 1, maxDepth);
-                    }
-                }
-            }
+            apollonian(c1, c2, newCircle, c3, depth + 1, maxDepth);
+            apollonian(c2, c3, newCircle, c1, depth + 1, maxDepth);
+            apollonian(c1, c3, newCircle, c2, depth + 1, maxDepth);
         }
 
         function generate() {
@@ -257,10 +206,10 @@
 
             circles.push(outer, c1, c2, c3);
 
-            apollonian(outer, c1, c2, 1, maxDepth);
-            apollonian(outer, c2, c3, 1, maxDepth);
-            apollonian(outer, c1, c3, 1, maxDepth);
-            apollonian(c1, c2, c3, 1, maxDepth);
+            apollonian(outer, c1, c2, c3, 1, maxDepth);
+            apollonian(outer, c2, c3, c1, 1, maxDepth);
+            apollonian(outer, c1, c3, c2, 1, maxDepth);
+            apollonian(c1, c2, c3, outer, 1, maxDepth);
 
             document.getElementById('circleCount').textContent = circles.length;
             draw();
@@ -319,7 +268,6 @@
         depthSlider.addEventListener('input', generate);
         styleSelect.addEventListener('change', draw);
         colorSelect.addEventListener('change', draw);
-        document.getElementById('regenerate').addEventListener('click', generate);
 
         window.addEventListener('resize', resize);
         resize();

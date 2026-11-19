@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delaunay Triangulation - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -13,6 +14,11 @@
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
             z-index: 10;
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -70,7 +76,8 @@
             }
 
             // Create super triangle
-            const margin = Math.max(width, height) * 10;
+            // Must be far enough that no hull triangle's circumcircle reaches a super vertex
+            const margin = Math.max(width, height) * 100000;
             const superTriangle = [
                 { x: -margin, y: -margin },
                 { x: width / 2, y: height + margin * 2 },

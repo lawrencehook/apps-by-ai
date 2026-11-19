@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Number Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -184,8 +185,11 @@
         });
 
         function generate() {
-            const min = parseInt(document.getElementById('minVal').value) || 0;
-            const max = parseInt(document.getElementById('maxVal').value) || 100;
+            // Only an empty or unparseable field falls back to the default; 0 is a valid bound
+            const minRaw = parseInt(document.getElementById('minVal').value);
+            const maxRaw = parseInt(document.getElementById('maxVal').value);
+            const min = Number.isNaN(minRaw) ? 0 : minRaw;
+            const max = Number.isNaN(maxRaw) ? 100 : maxRaw;
             const count = Math.min(100, Math.max(1, parseInt(document.getElementById('count').value) || 1));
             const allowDuplicates = document.getElementById('allowDuplicates').checked;
 
@@ -206,11 +210,12 @@
                     numbers.push(Math.floor(Math.random() * range) + min);
                 }
             } else {
-                const pool = Array.from({ length: range }, (_, i) => i + min);
-                for (let i = 0; i < count; i++) {
-                    const idx = Math.floor(Math.random() * pool.length);
-                    numbers.push(pool.splice(idx, 1)[0]);
+                // count is at most 100, so redraw on collision instead of allocating the whole range
+                const picked = new Set();
+                while (picked.size < count) {
+                    picked.add(Math.floor(Math.random() * range) + min);
                 }
+                numbers = Array.from(picked);
             }
 
             const resultText = numbers.join(', ');

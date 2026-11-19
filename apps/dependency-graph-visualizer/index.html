@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dependency Graph Visualizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -193,6 +194,7 @@
             display: block;
             width: 100%;
             height: 100%;
+            touch-action: none;
         }
 
         .controls-floating {
@@ -355,6 +357,7 @@
                 </div>
                 <textarea id="inputText" placeholder="Paste your package.json or requirements.txt content here..."></textarea>
                 <button id="visualizeBtn">Visualize Dependencies</button>
+                <p class="sample-data" id="parseError" style="color: #ff8a8a;" hidden></p>
                 <p class="sample-data">Or try with <a id="loadSample">sample data</a></p>
             </div>
 
@@ -387,10 +390,6 @@
                     <div class="legend-item">
                         <div class="legend-color" style="background: #fed6e3;"></div>
                         <span>Dev deps</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #d299c2;"></div>
-                        <span>Transitive</span>
                     </div>
                 </div>
             </div>
@@ -437,6 +436,10 @@
             transitive: '#d299c2',
             edge: 'rgba(255, 255, 255, 0.15)'
         };
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
 
         function resize() {
             const container = canvas.parentElement;
@@ -509,39 +512,18 @@
                     });
                 }
 
-                // Simulate some transitive dependencies (for visual effect)
-                const directDeps = Array.from(nodeMap.values()).filter(n => n.type === 'direct');
-                directDeps.forEach(dep => {
-                    // Add 1-3 fake transitive deps per direct dep
-                    const numTransitive = Math.floor(Math.random() * 3) + 1;
-                    for (let i = 0; i < numTransitive; i++) {
-                        const transName = `${dep.name}-sub-${i}`;
-                        nodeMap.set(transName, {
-                            id: transName,
-                            name: transName.split('-sub-')[0] + '-util',
-                            version: '1.0.0',
-                            type: 'transitive',
-                            x: dep.x + (Math.random() - 0.5) * 200,
-                            y: dep.y + (Math.random() - 0.5) * 200,
-                            vx: 0,
-                            vy: 0,
-                            connections: 0
-                        });
-                        edgeList.push({ source: dep.id, target: transName, type: 'transitive' });
-                        nodeMap.get(dep.id).connections++;
-                        nodeMap.get(transName).connections++;
-                    }
-                });
-
                 return { nodes: Array.from(nodeMap.values()), edges: edgeList };
             } catch (e) {
                 console.error('Parse error:', e);
-                return { nodes: [], edges: [] };
+                return { nodes: [], edges: [], error: e.message };
             }
         }
 
         function parseRequirementsTxt(text) {
-            const lines = text.trim().split('\n').filter(l => l.trim() && !l.startsWith('#'));
+            // Drop comments, environment markers and option lines (-r base.txt, --index-url ...)
+            const lines = text.split('\n')
+                .map(l => l.replace(/(^|\s)#.*$/, '').split(';')[0].trim())
+                .filter(l => l && !l.startsWith('-'));
             const nodeMap = new Map();
             const edgeList = [];
 
@@ -558,7 +540,8 @@
             });
 
             lines.forEach(line => {
-                const match = line.match(/^([a-zA-Z0-9_-]+)([=<>!~]+)?(.+)?$/);
+                // name, optional [extras], then nothing, a version specifier or "@ url"
+                const match = line.match(/^([a-zA-Z0-9][a-zA-Z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(?:([=<>!~]+)\s*(.+)|@.*)?$/);
                 if (match) {
                     const [, name, , version] = match;
                     if (!nodeMap.has(name)) {
@@ -792,7 +775,7 @@
 
             depList.innerHTML = sortedNodes.map(node => `
                 <div class="dep-item">
-                    <span class="dep-name">${node.name}</span>
+                    <span class="dep-name">${escapeHtml(node.name)}</span>
                     <span class="dep-connections">${node.connections} conn</span>
                 </div>
             `).join('');
@@ -806,6 +789,10 @@
 
             const parsed = currentFileType === 'package.json' ?
                 parsePackageJson(text) : parseRequirementsTxt(text);
+
+            const parseError = document.getElementById('parseError');
+            parseError.hidden = !parsed.error;
+            parseError.textContent = parsed.error ? `Could not parse ${currentFileType}: ${parsed.error}` : '';
 
             nodes = parsed.nodes;
             edges = parsed.edges;
@@ -861,6 +848,9 @@ black==23.1.0`;
             const x = (e.clientX - rect.left - panX) / zoom;
             const y = (e.clientY - rect.top - panY) / zoom;
 
+            // Pan by the change in position: movementX/Y is not reliable for touch pointers
+            const moveX = e.clientX - rect.left - lastMouseX;
+            const moveY = e.clientY - rect.top - lastMouseY;
             lastMouseX = e.clientX - rect.left;
             lastMouseY = e.clientY - rect.top;
 
@@ -873,8 +863,8 @@ black==23.1.0`;
             }
 
             if (isDragging && !dragNode) {
-                panX += e.movementX;
-                panY += e.movementY;
+                panX += moveX;
+                panY += moveY;
                 return;
             }
 
@@ -895,8 +885,8 @@ black==23.1.0`;
                 tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
                 tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
                 tooltip.innerHTML = `
-                    <div class="tooltip-title">${hoveredNode.name}</div>
-                    <div class="tooltip-version">v${hoveredNode.version}</div>
+                    <div class="tooltip-title">${escapeHtml(hoveredNode.name)}</div>
+                    <div class="tooltip-version">v${escapeHtml(hoveredNode.version)}</div>
                     <div class="tooltip-deps">${hoveredNode.connections} connection${hoveredNode.connections !== 1 ? 's' : ''}</div>
                 `;
                 canvas.style.cursor = 'pointer';
@@ -910,6 +900,8 @@ black==23.1.0`;
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left - panX) / zoom;
             const y = (e.clientY - rect.top - panY) / zoom;
+            lastMouseX = e.clientX - rect.left;
+            lastMouseY = e.clientY - rect.top;
 
             // Check if clicking on a node
             for (const node of nodes) {
@@ -976,10 +968,11 @@ black==23.1.0`;
             panY = 0;
         });
 
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('mousedown', handleMouseDown);
-        canvas.addEventListener('mouseup', handleMouseUp);
-        canvas.addEventListener('mouseleave', () => {
+        canvas.addEventListener('pointermove', handleMouseMove);
+        canvas.addEventListener('pointerdown', handleMouseDown);
+        canvas.addEventListener('pointerup', handleMouseUp);
+        canvas.addEventListener('pointercancel', handleMouseUp);
+        canvas.addEventListener('pointerleave', () => {
             isDragging = false;
             dragNode = null;
             hoveredNode = null;

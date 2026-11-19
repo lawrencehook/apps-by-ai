@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dijkstra's Algorithm - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,11 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -43,11 +49,11 @@
         <h1>Dijkstra's Algorithm</h1>
         <p>Shortest path algorithm. Click to set start (green) and end (red) nodes.</p>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">50</span>ms</label>
+            <label for="speed">Speed: <span id="speedLabel">50</span>ms</label>
             <input type="range" id="speed" min="10" max="500" value="50">
         </div>
         <div class="control-group">
-            <label>Nodes: <span id="nodesLabel">40</span></label>
+            <label for="nodes">Nodes: <span id="nodesLabel">40</span></label>
             <input type="range" id="nodes" min="20" max="100" value="40">
         </div>
         <button id="run">Find Path</button>
@@ -76,6 +82,7 @@
         let endNode = null;
         let running = false;
         let cancelRequested = false;
+        let runId = 0;
         let path = [];
         let visited = new Set();
         let inQueue = new Set();
@@ -93,12 +100,22 @@
         }
 
         function resize() {
+            const oldWidth = width, oldHeight = height;
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            generateGraph();
+            if (!nodes.length || !oldWidth || !oldHeight) { generateGraph(); return; }
+            // Keep the graph (and any run in progress): move nodes with the window, weights stay as generated
+            for (const node of nodes) {
+                node.x *= width / oldWidth;
+                node.y *= height / oldHeight;
+            }
+            draw();
         }
 
         function generateGraph() {
+            runId++; // stops any run still awaiting its next step
+            running = false;
+            cancelRequested = false;
             nodes = [];
             edges = [];
             path = [];
@@ -132,28 +149,31 @@
                 }
             }
 
-            // Ensure graph is connected
-            for (let i = 0; i < nodes.length; i++) {
-                if (nodes[i].neighbors.length === 0) {
-                    // Find nearest node
-                    let nearest = null;
-                    let minDist = Infinity;
-                    for (let j = 0; j < nodes.length; j++) {
-                        if (i === j) continue;
-                        const dx = nodes[i].x - nodes[j].x;
-                        const dy = nodes[i].y - nodes[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            nearest = nodes[j];
-                        }
-                    }
-                    if (nearest) {
-                        nodes[i].neighbors.push({ node: nearest, weight: minDist });
-                        nearest.neighbors.push({ node: nodes[i], weight: minDist });
-                        edges.push({ a: nodes[i], b: nearest, weight: minDist });
+            // Ensure graph is connected: join the nearest outside node to node 0's component until all are reached
+            const reached = new Set();
+            const spread = start => {
+                const stack = [start];
+                reached.add(start);
+                while (stack.length) {
+                    for (const { node } of stack.pop().neighbors) {
+                        if (!reached.has(node)) { reached.add(node); stack.push(node); }
                     }
                 }
+            };
+            if (nodes.length) spread(nodes[0]);
+            while (reached.size < nodes.length) {
+                let from = null, to = null, minDist = Infinity;
+                for (const a of reached) {
+                    for (const b of nodes) {
+                        if (reached.has(b)) continue;
+                        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+                        if (dist < minDist) { minDist = dist; from = a; to = b; }
+                    }
+                }
+                from.neighbors.push({ node: to, weight: minDist });
+                to.neighbors.push({ node: from, weight: minDist });
+                edges.push({ a: from, b: to, weight: minDist });
+                spread(to);
             }
 
             document.getElementById('status').textContent = 'Click two nodes to set start and end';
@@ -253,6 +273,7 @@
             }
             running = true;
             cancelRequested = false;
+            const id = ++runId;
 
             // Reset
             for (const node of nodes) {
@@ -285,6 +306,7 @@
 
                 draw();
                 await new Promise(r => setTimeout(r, speed));
+                if (id !== runId) return;
 
                 if (currentNode === endNode) {
                     // Reconstruct path
@@ -359,17 +381,12 @@
         document.getElementById('nodes').addEventListener('input', e => {
             numNodes = parseInt(e.target.value);
             document.getElementById('nodesLabel').textContent = numNodes;
-            if (!running) generateGraph();
+            generateGraph();
         });
 
         document.getElementById('run').addEventListener('click', dijkstra);
         document.getElementById('reset').addEventListener('click', () => {
-            if (running) {
-                cancelRequested = true;
-                setTimeout(generateGraph, 100);
-            } else {
-                generateGraph();
-            }
+            generateGraph();
         });
 
         window.addEventListener('resize', resize);

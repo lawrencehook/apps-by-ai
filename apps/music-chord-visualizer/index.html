@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Chord Visualizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -334,7 +335,7 @@
                 </div>
 
                 <div class="volume-control">
-                    <label>Volume: <span id="volumeLabel">70</span>%</label>
+                    <label for="volume">Volume: <span id="volumeLabel">70</span>%</label>
                     <input type="range" id="volume" min="0" max="100" value="70">
                 </div>
             </div>
@@ -345,7 +346,7 @@
                 </div>
 
                 <div class="guitar-container">
-                    <div class="guitar-label">Guitar (Standard Tuning: E A D G B E)</div>
+                    <div class="guitar-label">Guitar (Standard Tuning: E A D G B E) - lowest chord tone on each string, frets 0-5 (not a fingering)</div>
                     <div class="fretboard" id="fretboard"></div>
                 </div>
 
@@ -490,7 +491,7 @@
 
             const whiteNotes = [0, 2, 4, 5, 7, 9, 11]; // C, D, E, F, G, A, B
             const blackNotes = [1, 3, 6, 8, 10]; // C#, D#, F#, G#, A#
-            const blackPositions = [0.65, 1.65, 3.65, 4.65, 5.65]; // Position relative to white keys
+            const blackPositions = [0, 1, 3, 4, 5]; // Index of the white key to the left
 
             // Create white keys for 2 octaves
             for (let octave = 0; octave < 2; octave++) {
@@ -502,7 +503,7 @@
 
                     const label = document.createElement('span');
                     label.className = 'note-label';
-                    label.textContent = NOTE_NAMES[note] + (4 + octave);
+                    label.textContent = NOTE_NAMES[note] + (3 + octave); // MIDI 48 is C3
                     key.appendChild(label);
 
                     key.addEventListener('click', () => {
@@ -524,7 +525,7 @@
                     key.dataset.midi = 48 + note + octave * 12;
 
                     const pos = blackPositions[i] + octave * 7;
-                    key.style.left = (pos * 50 + 35) + 'px';
+                    key.style.left = (pos * 50 + 35) + 'px'; // centred on the boundary: (pos + 1) * 50 - 15
 
                     key.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -601,11 +602,11 @@
                 key.classList.toggle('active', chordNotes.includes(note));
             });
 
-            // Update guitar - find best fingering
+            // Update guitar
             const fretDots = document.querySelectorAll('.fret-dot');
             fretDots.forEach(dot => dot.classList.remove('active'));
 
-            // Simple chord fingering: find notes within first 5 frets
+            // Lowest chord tone on each string within the first 5 frets
             for (let s = 0; s < 6; s++) {
                 const openNote = GUITAR_TUNING[s] % 12;
                 for (let f = 0; f <= 5; f++) {

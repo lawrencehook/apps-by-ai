@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lorem Ipsum Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -138,7 +139,7 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>Amount</label>
+                <label for="amount">Amount</label>
                 <div class="control-row">
                     <input type="number" id="amount" value="5" min="1" max="100">
                     <select id="unit">
@@ -283,13 +284,14 @@
         document.getElementById('copyBtn').addEventListener('click', () => {
             const text = document.getElementById('outputText').innerText;
             if (!text) return;
-            navigator.clipboard.writeText(text).then(() => {
+            const showCopied = () => {
                 document.getElementById('copyBtn').textContent = 'Copied!';
                 setTimeout(() => {
                     document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
                 }, 1500);
-            }).catch(() => {
-                // Fallback for non-HTTPS or denied permission
+            };
+            // Fallback for non-HTTPS or denied permission
+            const fallbackCopy = () => {
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
                 textarea.style.position = 'fixed';
@@ -298,11 +300,13 @@
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                document.getElementById('copyBtn').textContent = 'Copied!';
-                setTimeout(() => {
-                    document.getElementById('copyBtn').textContent = 'Copy to Clipboard';
-                }, 1500);
-            });
+                showCopied();
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showCopied).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
         });
 
         // Generate on load

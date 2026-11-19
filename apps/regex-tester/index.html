@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Regex Tester - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -292,7 +293,47 @@ URL: https://www.example.com/path?query=value</textarea>
             });
         });
 
+        const MAX_MATCHES = 2000;
+
+        function findMatches(regex, text) {
+            const matches = [];
+            let match;
+
+            if (regex.global) {
+                while (matches.length < MAX_MATCHES && (match = regex.exec(text)) !== null) {
+                    matches.push({
+                        value: match[0],
+                        index: match.index,
+                        groups: match.slice(1)
+                    });
+                    if (match[0] === '') {
+                        // In unicode mode lastIndex must step over a whole code point,
+                        // otherwise exec() backs up to the same surrogate pair forever
+                        const cp = regex.unicode || regex.unicodeSets ? text.codePointAt(regex.lastIndex) : 0;
+                        regex.lastIndex += cp > 0xFFFF ? 2 : 1;
+                    }
+                }
+            } else {
+                match = regex.exec(text);
+                if (match) {
+                    matches.push({
+                        value: match[0],
+                        index: match.index,
+                        groups: match.slice(1)
+                    });
+                }
+            }
+            return matches;
+        }
+
+        let runTimer = null;
+        function scheduleRegex() {
+            clearTimeout(runTimer);
+            runTimer = setTimeout(runRegex, 150);
+        }
+
         function runRegex() {
+            clearTimeout(runTimer);
             const pattern = regexInput.value;
             const flags = flagsInput.value;
             const text = testTextarea.value;
@@ -311,29 +352,8 @@ URL: https://www.example.com/path?query=value</textarea>
                 regexWrapper.classList.remove('error');
                 errorText.style.display = 'none';
 
-                // Find all matches
-                const matches = [];
-                let match;
-
-                if (flags.includes('g')) {
-                    while ((match = regex.exec(text)) !== null) {
-                        matches.push({
-                            value: match[0],
-                            index: match.index,
-                            groups: match.slice(1)
-                        });
-                        if (match.index === regex.lastIndex) regex.lastIndex++;
-                    }
-                } else {
-                    match = regex.exec(text);
-                    if (match) {
-                        matches.push({
-                            value: match[0],
-                            index: match.index,
-                            groups: match.slice(1)
-                        });
-                    }
-                }
+                const matches = findMatches(regex, text);
+                const capped = matches.length >= MAX_MATCHES;
 
                 // Highlight matches in overlay
                 let highlighted = '';
@@ -349,7 +369,7 @@ URL: https://www.example.com/path?query=value</textarea>
                 testHighlight.innerHTML = highlighted;
 
                 // Update match count
-                matchCount.textContent = `${matches.length} match${matches.length !== 1 ? 'es' : ''}`;
+                matchCount.textContent = `${matches.length}${capped ? '+' : ''} match${matches.length !== 1 ? 'es' : ''}`;
 
                 // Update results
                 if (matches.length === 0) {
@@ -390,14 +410,14 @@ URL: https://www.example.com/path?query=value</textarea>
             return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        regexInput.addEventListener('input', runRegex);
+        regexInput.addEventListener('input', scheduleRegex);
         flagsInput.addEventListener('input', () => {
             updateFlags();
-            runRegex();
+            scheduleRegex();
         });
 
         testTextarea.addEventListener('input', () => {
-            runRegex();
+            scheduleRegex();
         });
 
         // Sync scroll between textarea and highlight overlay

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Age Calculator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -205,11 +206,34 @@
 
         birthdateInput.addEventListener('change', () => { calculate(); updateURL(); });
 
+        // The birth day-of-month in a given month, clamped to that month's length
+        // (Jan 31 -> Feb 28; Feb 29 -> Feb 28 in a non-leap year)
+        function anniversary(birthdate, year, month) {
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            return new Date(year, month, Math.min(birthdate.getDate(), lastDay));
+        }
+
+        // Whole years/months completed by `today`, plus the days since the last monthly anniversary
+        function ageParts(birthdate, today) {
+            let total = (today.getFullYear() - birthdate.getFullYear()) * 12 + (today.getMonth() - birthdate.getMonth());
+            const at = n => {
+                const m = birthdate.getMonth() + n;
+                return anniversary(birthdate, birthdate.getFullYear() + Math.floor(m / 12), m % 12);
+            };
+            if (at(total) > today) total--;
+            return {
+                years: Math.floor(total / 12),
+                months: total % 12,
+                days: Math.round((today - at(total)) / (1000 * 60 * 60 * 24))
+            };
+        }
+
         function calculate() {
             // Parse as local date to avoid timezone offset issues
             const parts = birthdateInput.value.split('-');
-            if (parts.length !== 3) return;
-            const birthdate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            const birthdate = parts.length === 3
+                ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+                : new Date(NaN);
             const now = new Date();
 
             if (isNaN(birthdate) || birthdate > now) {
@@ -222,24 +246,12 @@
             document.getElementById('birthdayCard').style.display = 'block';
 
             // Calculate exact age
-            let years = now.getFullYear() - birthdate.getFullYear();
-            let months = now.getMonth() - birthdate.getMonth();
-            let days = now.getDate() - birthdate.getDate();
-
-            if (days < 0) {
-                months--;
-                const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-                days += prevMonth.getDate();
-            }
-
-            if (months < 0) {
-                years--;
-                months += 12;
-            }
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const { years, months, days } = ageParts(birthdate, today);
 
             // Total time calculations
             const diffMs = now - birthdate;
-            const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const totalDays = Math.round((today - birthdate) / (1000 * 60 * 60 * 24));
             const totalWeeks = Math.floor(totalDays / 7);
             const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
 
@@ -247,7 +259,7 @@
             document.getElementById('ageYears').textContent = years;
             document.getElementById('ageMonths').textContent = months;
             document.getElementById('ageDays').textContent = days;
-            document.getElementById('ageHours').textContent = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            document.getElementById('ageHours').textContent = now.getHours();
 
             document.getElementById('totalDays').textContent = totalDays.toLocaleString();
             document.getElementById('totalWeeks').textContent = totalWeeks.toLocaleString();
@@ -255,19 +267,19 @@
             document.getElementById('dayOfWeek').textContent = daysOfWeek[birthdate.getDay()];
 
             // Birthday calculation
-            const nextBirthday = new Date(now.getFullYear(), birthdate.getMonth(), birthdate.getDate());
-            if (nextBirthday < now) {
-                nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+            let nextBirthday = anniversary(birthdate, now.getFullYear(), birthdate.getMonth());
+            if (nextBirthday < today) {
+                nextBirthday = anniversary(birthdate, now.getFullYear() + 1, birthdate.getMonth());
             }
 
-            const isBirthdayToday = now.getMonth() === birthdate.getMonth() && now.getDate() === birthdate.getDate();
+            const isBirthdayToday = nextBirthday.getTime() === today.getTime();
 
             if (isBirthdayToday) {
                 document.getElementById('birthdayEmoji').textContent = '🎉';
                 document.getElementById('birthdayMessage').textContent = 'Happy Birthday!';
                 document.getElementById('birthdayCountdown').textContent = `You're turning ${years} today!`;
             } else {
-                const daysUntil = Math.ceil((nextBirthday - now) / (1000 * 60 * 60 * 24));
+                const daysUntil = Math.round((nextBirthday - today) / (1000 * 60 * 60 * 24));
                 document.getElementById('birthdayEmoji').textContent = '🎂';
                 document.getElementById('birthdayMessage').textContent = `Next birthday: ${nextBirthday.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
                 document.getElementById('birthdayCountdown').textContent = `${daysUntil} day${daysUntil !== 1 ? 's' : ''} away (turning ${years + 1})`;

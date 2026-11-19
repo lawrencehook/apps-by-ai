@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Rotate & Flip - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -207,7 +208,27 @@
         });
         fileInput.addEventListener('change', e => {
             if (e.target.files[0]) handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
         });
+
+        // Canvas only encodes PNG, JPEG and WebP; other inputs (GIF, BMP, SVG) are saved as PNG
+        function outputType(type) {
+            return ['image/png', 'image/jpeg', 'image/webp'].includes(type) ? type : 'image/png';
+        }
+
+        function downloadCanvas(canvas, type, quality, baseName, done) {
+            canvas.toBlob(blob => {
+                if (!blob) { done(null); return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // blob.type is what the browser really encoded (PNG if it lacks the requested encoder)
+                a.download = `${baseName}.${(blob.type || 'image/png').split('/')[1]}`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                done(blob);
+            }, type, quality);
+        }
 
         function handleFile(file) {
             if (!file.type.startsWith('image/')) {
@@ -222,9 +243,19 @@
             flipV = false;
 
             const reader = new FileReader();
+            reader.onerror = () => {
+                status.textContent = 'Error reading file. Please try again.';
+                status.className = 'status show';
+            };
             reader.onload = e => {
                 const img = new Image();
+                img.onerror = () => {
+                    status.textContent = 'Could not load image. The file may be corrupt.';
+                    status.className = 'status show';
+                    currentImage = null;
+                };
                 img.onload = () => {
+                    status.classList.remove('show');
                     currentImage.img = img;
                     currentImage.width = img.width;
                     currentImage.height = img.height;
@@ -289,13 +320,22 @@
             updatePreview();
         });
 
+        // flipH/flipV are applied to the image before the rotation. The buttons flip what
+        // is on screen, and after a quarter turn the screen's horizontal axis is the
+        // image's vertical one, so the other flag is the one to toggle.
+        function flipOnScreen(horizontal) {
+            const quarterTurn = rotation === 90 || rotation === 270;
+            if (horizontal !== quarterTurn) flipH = !flipH;
+            else flipV = !flipV;
+        }
+
         document.getElementById('flipHBtn').addEventListener('click', () => {
-            flipH = !flipH;
+            flipOnScreen(true);
             updatePreview();
         });
 
         document.getElementById('flipVBtn').addEventListener('click', () => {
-            flipV = !flipV;
+            flipOnScreen(false);
             updatePreview();
         });
 
@@ -307,11 +347,9 @@
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
-            const format = currentImage.type;
+            if (!currentImage || !currentImage.img) return;
+            const format = outputType(currentImage.type);
             const quality = format === 'image/jpeg' ? 0.92 : undefined;
-            const dataUrl = previewCanvas.toDataURL(format, quality);
-
-            const ext = format.split('/')[1];
             const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
 
             let suffix = '';
@@ -320,13 +358,10 @@
             if (flipV) suffix += '_flipV';
             if (!suffix) suffix = '_copy';
 
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${baseName}${suffix}.${ext}`;
-            a.click();
-
-            status.textContent = 'Image downloaded!';
-            status.className = 'status show';
+            downloadCanvas(previewCanvas, format, quality, `${baseName}${suffix}`, blob => {
+                status.textContent = blob ? 'Image downloaded!' : 'Could not encode the image.';
+                status.className = 'status show';
+            });
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fourier Drawing Machine - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -68,11 +69,11 @@
         <h1>Fourier Drawing</h1>
         <p>Draw a closed shape, then watch rotating circles (epicycles) recreate it using the Fourier transform.</p>
         <div class="control-group">
-            <label>Epicycles: <span id="circlesLabel">50</span></label>
+            <label for="circles">Epicycles: <span id="circlesLabel">50</span></label>
             <input type="range" id="circles" min="5" max="150" value="50">
         </div>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">1.0</span>x</label>
+            <label for="speed">Speed: <span id="speedLabel">1.0</span>x</label>
             <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1">
         </div>
         <button id="clear">Clear & Draw Again</button>
@@ -125,7 +126,8 @@
                 X.push({
                     re,
                     im,
-                    freq: k,
+                    // bins above N/2 are negative frequencies; needed for t between samples
+                    freq: k > N / 2 ? k - N : k,
                     amp: Math.sqrt(re * re + im * im),
                     phase: Math.atan2(im, re)
                 });

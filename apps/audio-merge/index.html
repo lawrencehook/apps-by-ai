@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Merge - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -200,7 +201,7 @@
             </div>
 
             <div class="gap-setting">
-                <label>Gap between files:</label>
+                <label for="gapInput">Gap between files:</label>
                 <input type="number" id="gapInput" value="0" min="0" max="10" step="0.1">
                 <span>seconds</span>
             </div>
@@ -249,9 +250,9 @@
         async function handleFiles(files) {
             initAudioContext();
 
+            // Decoding decides what is audio: the MIME type is often empty or wrong
+            const failed = [];
             for (const file of files) {
-                if (!file.type.startsWith('audio/')) continue;
-
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     const buffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -263,10 +264,15 @@
                         duration: buffer.duration
                     });
                 } catch (err) {
-                    console.error('Error loading:', file.name, err);
-                    status.textContent = `Error loading "${file.name}": ${err.message}`;
-                    status.classList.add('show');
+                    failed.push(file.name);
                 }
+            }
+
+            if (failed.length > 0) {
+                status.textContent = `Could not load as audio: ${failed.join(', ')}`;
+                status.classList.add('show');
+            } else if (files.length > 0) {
+                status.classList.remove('show');
             }
 
             if (audioFiles.length > 0) {
@@ -299,7 +305,7 @@
                     <canvas class="file-waveform" data-index="${index}"></canvas>
                     <div class="file-details">
                         <div class="file-name">${escapedName}</div>
-                        <div class="file-meta">${formatTime(item.duration)} • ${item.buffer.sampleRate} Hz</div>
+                        <div class="file-meta">${formatTime(item.duration)} • ${item.buffer.sampleRate} Hz (decoded)</div>
                     </div>
                     <button class="remove-btn" data-index="${index}">Remove</button>
                 `;
@@ -402,8 +408,14 @@
             draggedIndex = null;
         }
 
-        function updateTotalDuration() {
+        // Gap in seconds, held to the input's 0-10 range
+        function getGap() {
             const gap = parseFloat(document.getElementById('gapInput').value) || 0;
+            return Math.max(0, Math.min(10, gap));
+        }
+
+        function updateTotalDuration() {
+            const gap = getGap();
             let total = audioFiles.reduce((sum, item) => sum + item.duration, 0);
             if (audioFiles.length > 1) {
                 total += gap * (audioFiles.length - 1);
@@ -412,6 +424,9 @@
         }
 
         document.getElementById('gapInput').addEventListener('input', updateTotalDuration);
+        document.getElementById('gapInput').addEventListener('change', e => {
+            e.target.value = getGap();
+        });
 
         document.getElementById('addMoreBtn').addEventListener('click', () => {
             fileInput.click();
@@ -420,60 +435,35 @@
         document.getElementById('mergeBtn').addEventListener('click', () => {
             if (audioFiles.length === 0) return;
 
-            const gap = parseFloat(document.getElementById('gapInput').value) || 0;
+            const gap = getGap();
 
-            // Use the highest sample rate and max channels
-            const sampleRate = Math.max(...audioFiles.map(f => f.buffer.sampleRate));
+            // decodeAudioData resamples every file to the context's rate, so the rates always match
+            const sampleRate = audioFiles[0].buffer.sampleRate;
             const numChannels = Math.max(...audioFiles.map(f => f.buffer.numberOfChannels));
+            const gapLength = Math.floor(gap * sampleRate);
 
-            // Calculate total length
-            let totalLength = 0;
-            audioFiles.forEach((item, i) => {
-                const ratio = sampleRate / item.buffer.sampleRate;
-                totalLength += Math.floor(item.buffer.length * ratio);
-                if (i < audioFiles.length - 1) {
-                    totalLength += Math.floor(gap * sampleRate);
-                }
-            });
+            const totalLength = audioFiles.reduce((sum, item) => sum + item.buffer.length, 0) +
+                gapLength * (audioFiles.length - 1);
 
-            const mergedBuffer = audioContext.createBuffer(numChannels, totalLength, sampleRate);
+            let mergedBuffer, wavBlob;
+            try {
+                mergedBuffer = audioContext.createBuffer(numChannels, totalLength, sampleRate);
 
-            let offset = 0;
-            audioFiles.forEach((item, fileIndex) => {
-                const ratio = sampleRate / item.buffer.sampleRate;
-
-                for (let ch = 0; ch < numChannels; ch++) {
-                    const sourceChannel = item.buffer.numberOfChannels > ch ? ch : 0;
-                    const sourceData = item.buffer.getChannelData(sourceChannel);
-                    const destData = mergedBuffer.getChannelData(ch);
-
-                    // Simple resampling if needed
-                    if (ratio === 1) {
-                        for (let i = 0; i < sourceData.length; i++) {
-                            destData[offset + i] = sourceData[i];
-                        }
-                    } else {
-                        const resampledLength = Math.floor(sourceData.length * ratio);
-                        for (let i = 0; i < resampledLength; i++) {
-                            const srcIndex = i / ratio;
-                            const idx = Math.floor(srcIndex);
-                            const frac = srcIndex - idx;
-                            const sample = sourceData[idx] * (1 - frac) + (sourceData[idx + 1] || 0) * frac;
-                            destData[offset + i] = sample;
-                        }
+                let offset = 0;
+                audioFiles.forEach(item => {
+                    for (let ch = 0; ch < numChannels; ch++) {
+                        const sourceChannel = item.buffer.numberOfChannels > ch ? ch : 0;
+                        mergedBuffer.getChannelData(ch).set(item.buffer.getChannelData(sourceChannel), offset);
                     }
-                }
+                    offset += item.buffer.length + gapLength;
+                });
 
-                const resampledLength = Math.floor(item.buffer.length * ratio);
-                offset += resampledLength;
-
-                // Add gap
-                if (fileIndex < audioFiles.length - 1) {
-                    offset += Math.floor(gap * sampleRate);
-                }
-            });
-
-            const wavBlob = audioBufferToWav(mergedBuffer);
+                wavBlob = audioBufferToWav(mergedBuffer);
+            } catch (err) {
+                status.textContent = 'Could not merge: ' + err.message;
+                status.classList.add('show');
+                return;
+            }
             const url = URL.createObjectURL(wavBlob);
 
             const a = document.createElement('a');

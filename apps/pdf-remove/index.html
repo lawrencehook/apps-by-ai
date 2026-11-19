@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Remove Pages - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <style>
@@ -229,7 +230,7 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }
@@ -288,7 +289,7 @@
                 });
 
                 // Render preview
-                renderPagePreview(i, canvas);
+                renderPagePreview(i, canvas).catch(() => {}); // rejects if the document is destroyed mid-render
             }
 
             updateSelectHint();
@@ -382,7 +383,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_modified.pdf');
                 a.click();
 
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showStatus(`Successfully removed ${selectedPages.size} page${selectedPages.size !== 1 ? 's' : ''}`);
             } catch (err) {
                 showStatus('Error removing pages: ' + err.message, true);
@@ -391,6 +392,7 @@
 
         document.getElementById('resetBtn').addEventListener('click', () => {
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
             selectedPages.clear();
             fileInput.value = '';

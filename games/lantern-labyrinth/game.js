@@ -1,4 +1,4 @@
-/* First-person dungeon prototype. Local assets; no minimap or automatic route hints. */
+/* First-person dungeon prototype. Local assets; a fog-of-war minimap, no automatic route hints. */
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);
@@ -14,7 +14,7 @@
         { id: 'inn', name: 'Inn', x: 3, z: 11, doorX: 5.5, color: 0x9d804e },
         { id: 'waygate', name: 'Waygate', x: 7, z: 2, doorX: 7, color: 0x577d8f }
     ];
-    let savedSignature = "", exploredCell = "", minimapClock = 0, nextRevealAt = 0;
+    let savedSignature = "", failedSignature = null, saveRetryAt = 0, lastRender = -Infinity, exploredCell = "", minimapClock = 0, nextRevealAt = 0;
     const floors = new Map();
     let maze, phase = 'ready', yaw = 0, pitch = 0, walked = 0, frameId = 0, lastTime = 0, disposed = false;
     let stick = { x: 0, y: 0 }, joystickPointer = null, orbitPointer = null, orbitX = 0, orbitY = 0;
@@ -66,7 +66,7 @@
         return texture;
     }
     function init() {
-        if (!window.THREE || !window.MazeWorld || !window.DungeonCombat) return fail('Game files could not load. Reload to try again.');
+        if (!window.THREE || !window.MazeWorld || !window.TownWorld || !window.DungeonCombat || !window.DungeonProgress || !window.EnemyAudio) return fail('Game files could not load. Reload to try again.');
         try {
             renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true, powerPreference: 'high-performance' });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
@@ -227,9 +227,8 @@
         world = new THREE.Group(); scene.add(world);
         position.x = maze.start[0] * CELL; position.z = maze.start[1] * CELL;
         const rng = MazeWorld.random(seed + '-surface');
-        const fenceCells = new Set((maze.fences || []).map(c => c.join(',')));
         const groups = [[], [], []];
-        for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (maze.grid[z][x] && !fenceCells.has(`${x},${z}`)) {
+        for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (maze.grid[z][x]) {
             if (depth === 0 && maze.buildings.some(b => b.cells.some(c => c[0] === x && c[1] === z))) continue;
             // Related courses in each small area, with distinct stone shapes and weathering.
             const region = MazeWorld.random(`${seed}-stone-${Math.floor(x / 4)}-${Math.floor(z / 4)}`);
@@ -267,14 +266,6 @@
             doorObjects.push({ door, hinge, leaf });
             if (!door.open) walls.push(leaf);
             hinge.rotation.y = door.open ? -Math.PI / 2 : 0;
-        }
-        for (const [x, z] of maze.fences || []) {
-            const fence = new THREE.Group(); world.add(fence); fence.position.set(x * CELL, 0, z * CELL);
-            for (let i = 0; i < 9; i++) mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.8, 6), metal, fence, -1.6 + i * 0.4, 1.9, 0);
-            for (const y of [0.3, 3.4]) mesh(new THREE.BoxGeometry(CELL, 0.1, 0.12), metal, fence, 0, y, 0);
-            // A collision/picking panel gives bars a consistent solid-barrier rule for arrows.
-            const panel = mesh(new THREE.BoxGeometry(CELL, WALL_HEIGHT, 0.12), new THREE.MeshBasicMaterial({ visible: false }), fence, 0, WALL_HEIGHT / 2, 0);
-            walls.push(panel);
         }
         for (const room of maze.rooms || []) {
             if (room.kind === 'cavern') continue;
@@ -696,11 +687,11 @@
     function persistProgress() {
         if (!combat) return;
         const signature = `${combat.multishotLevel},${combat.highestDepth},${combat.vitalityLevel},${combat.bowLevel},${combat.speedLevel},${combat.coins},${combat.bowStyle},${combat.bowUnlocks.join()}`;
-        if (signature === savedSignature) return;
-        try {
-            if (DungeonProgress.write(localStorage, combat)) savedSignature = signature;
-            else $('saveStatus').textContent = 'Saving is unavailable in this browser.';
-        } catch (_) { $('saveStatus').textContent = 'Saving is unavailable in this browser.'; }
+        if (signature === savedSignature || (signature === failedSignature && performance.now() < saveRetryAt)) return;
+        let saved = false;
+        try { saved = DungeonProgress.write(localStorage, combat); } catch (_) {}
+        if (saved) { savedSignature = signature; failedSignature = null; }
+        else { failedSignature = signature; saveRetryAt = performance.now() + 5000; $('saveStatus').textContent = 'Saving is unavailable in this browser.'; }
     }
     function updateHud() {
         if (!combat) return;
@@ -769,7 +760,7 @@
         if (!window.confirm('Reset all saved coins and upgrades, and start a new dungeon?')) return;
         combat.bowStyle = 'balanced'; combat.bowUnlocks = ['balanced']; combat.multishotLevel = 0; combat.vitalityLevel = 0; combat.highestDepth = 1;
         combat.coins = 0; combat.bowLevel = 0; combat.speedLevel = 0; combat.health = 100;
-        floors.clear(); depth = 0; deepest = 1; savedSignature = ''; createMaze(SIZE, randomSeed()); persistProgress();
+        floors.clear(); depth = 0; deepest = 1; savedSignature = ''; failedSignature = null; createMaze(SIZE, randomSeed()); persistProgress();
         $('menuTitle').textContent = 'Dungeon'; $('menuCopy').textContent = 'Progress reset. Start in town.'; $('menuCopy').classList.remove('hidden');
     }
     function openShop(service = 'bowyer') {
@@ -806,9 +797,10 @@
     }
     function die() {
         phase = 'dead'; clearInput(); releaseMouse(); quietSound(); setCombatHud(false);
+        combat.coins = Math.floor(combat.coins * 0.75); persistProgress();
         $('menu').classList.remove('hidden'); $('menuTitle').textContent = 'You fell.';
-        $('menuCopy').textContent = 'Return to town. Lose a quarter of your coins; keep your upgrades.'; $('menuCopy').classList.remove('hidden');
-        $('play').textContent = 'Return to town'; $('newMaze').classList.add('hidden');
+        $('menuCopy').textContent = 'You lost a quarter of your coins and keep your upgrades. Return to town.'; $('menuCopy').classList.remove('hidden');
+        $('play').textContent = 'Return to town';
         $('pause').classList.add('hidden'); $('spray').classList.add('hidden'); $('touchControls').classList.add('hidden'); $('play').focus();
     }
     function createPaint() {
@@ -923,7 +915,7 @@
         $('world').focus({ preventScroll: true }); lastTime = performance.now(); resumeSound(); captureMouse();
     }
     function start() {
-        if (phase === 'dead') { combat.coins = Math.floor(combat.coins * 0.75); combat.health = combat.maxHealth; floors.clear(); depth = 0; createMaze(SIZE, randomSeed()); }
+        if (phase === 'dead') { combat.health = combat.maxHealth; floors.clear(); depth = 0; createMaze(SIZE, randomSeed()); }
         setPlaying();
     }
     function pause() {
@@ -932,7 +924,7 @@
         phase = 'paused'; clearInput(); quietSound(); releaseMouse(); setCombatHud(false);
         $('menu').classList.remove('hidden'); $('pause').classList.add('hidden'); $('spray').classList.add('hidden'); $('touchControls').classList.add('hidden');
         $('menuTitle').textContent = 'Paused'; $('menuCopy').classList.add('hidden');
-        $('play').textContent = 'Resume'; $('newMaze').classList.add('hidden'); $('play').focus();
+        $('play').textContent = 'Resume'; $('play').focus();
     }
     function newMaze() {
         depth = 0; createMaze(SIZE, randomSeed()); setPlaying();
@@ -1100,10 +1092,11 @@
         $('crosshair').classList.toggle('hit', hitTime > 0); $('hurtFrame').style.opacity = String(hurtTime * 1.5);
         if (paintFeedback > 0) { paintFeedback -= dt; if (paintFeedback <= 0) resetPaintButton(); }
         if (gatewayMaterial) gatewayMaterial.uniforms.time.value = reducedMotion ? 0 : performance.now() / 1000;
-        renderer.render(scene, camera); frameId = requestAnimationFrame(frame);
+        if (phase === 'playing' || now - lastRender >= 250) { renderer.render(scene, camera); lastRender = now; }
+        frameId = requestAnimationFrame(frame);
     }
     function resize() {
-        if (!renderer) return; renderer.setSize(window.innerWidth, window.innerHeight, false);
+        if (!renderer) return; renderer.setSize(window.innerWidth, window.innerHeight, false); lastRender = -Infinity;
         camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
     }
     function bindControls() {
@@ -1123,7 +1116,7 @@
         $('sound').addEventListener('change', () => { if (!$('sound').checked) quietSound(); else if (phase === 'playing') resumeSound(); });
         $('spray').addEventListener('click', () => { spray(); if (phase === 'playing') $('world').focus({ preventScroll: true }); });
         $('jump').addEventListener('click', () => { jump(); if (phase === 'playing') $('world').focus({ preventScroll: true }); });
-        $('play').addEventListener('click', start); $('newMaze').addEventListener('click', newMaze); $('pause').addEventListener('click', pause);
+        $('play').addEventListener('click', start); $('pause').addEventListener('click', pause);
         const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyQ', 'KeyE'];
         document.addEventListener('keydown', e => {
             if (phase === 'map' && ['KeyM', 'Escape'].includes(e.code) && !e.repeat) { e.preventDefault(); setPlaying(); return; }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Room Planner - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/three-0.128.0/three.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -185,6 +186,8 @@
             height: 100%;
         }
 
+        #canvas-container canvas { touch-action: none; }
+
         .view-controls {
             position: absolute;
             bottom: 20px;
@@ -312,6 +315,19 @@
             cursor: pointer;
             background: transparent;
         }
+
+        @media (max-width: 700px) {
+            .main-container { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+            .view-container { min-height: 0; }
+            #canvas-container { position: absolute; top: 0; left: 0; }
+            .instructions { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -325,26 +341,26 @@
             <div class="section-title">Room Dimensions</div>
             <div class="room-settings">
                 <div class="input-group">
-                    <label class="input-label">Size (feet)</label>
+                    <label class="input-label" for="roomWidth">Size (feet)</label>
                     <div class="input-row">
                         <input type="number" id="roomWidth" value="20" min="5" max="50">
                         <span>×</span>
-                        <input type="number" id="roomDepth" value="15" min="5" max="50">
+                        <input type="number" id="roomDepth" value="15" min="5" max="50" aria-label="Room depth (feet)">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label class="input-label">Ceiling Height</label>
+                    <label class="input-label" for="roomHeight">Ceiling Height</label>
                     <div class="input-row">
                         <input type="number" id="roomHeight" value="10" min="7" max="20">
                         <span>ft</span>
                     </div>
                 </div>
                 <div class="color-picker-row">
-                    <label>Wall Color:</label>
+                    <label for="wallColor">Wall Color:</label>
                     <input type="color" id="wallColor" value="#e8e4df">
                 </div>
                 <div class="color-picker-row">
-                    <label>Floor Color:</label>
+                    <label for="floorColor">Floor Color:</label>
                     <input type="color" id="floorColor" value="#8b7355">
                 </div>
             </div>
@@ -507,76 +523,12 @@
             scene.add(gridHelper);
 
             // Event listeners
-            renderer.domElement.addEventListener('mousedown', onMouseDown);
-            renderer.domElement.addEventListener('mousemove', onMouseMove);
-            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('pointerdown', onMouseDown);
+            renderer.domElement.addEventListener('pointermove', onMouseMove);
+            renderer.domElement.addEventListener('pointerup', onMouseUp);
+            renderer.domElement.addEventListener('pointercancel', onMouseUp);
             renderer.domElement.addEventListener('wheel', onMouseWheel, { passive: false });
             renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
-
-            // Touch support
-            let lastTouchX = 0, lastTouchY = 0;
-            renderer.domElement.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
-
-                // Simulate mousedown for object selection
-                const rect = renderer.domElement.getBoundingClientRect();
-                mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(furniture, true);
-                if (intersects.length > 0) {
-                    let obj = intersects[0].object;
-                    while (obj.parent && !furniture.includes(obj)) obj = obj.parent;
-                    if (furniture.includes(obj)) {
-                        selectObject(obj);
-                        isDragging = true;
-                        raycaster.ray.intersectPlane(plane, planeIntersect);
-                        offset.copy(planeIntersect).sub(obj.position);
-                    }
-                } else {
-                    // Single touch rotates view if nothing selected
-                    isRotating = true;
-                }
-            }, { passive: false });
-
-            renderer.domElement.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-
-                if (isDragging && selectedObject) {
-                    const rect = renderer.domElement.getBoundingClientRect();
-                    mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
-                    mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
-                    raycaster.setFromCamera(mouse, camera);
-                    raycaster.ray.intersectPlane(plane, planeIntersect);
-                    const def = selectedObject.userData.def;
-                    let newX = planeIntersect.x - offset.x;
-                    let newZ = planeIntersect.z - offset.z;
-                    newX = Math.max(-roomWidth/2 + def.w/2, Math.min(roomWidth/2 - def.w/2, newX));
-                    newZ = Math.max(-roomDepth/2 + def.d/2, Math.min(roomDepth/2 - def.d/2, newZ));
-                    selectedObject.position.x = newX;
-                    selectedObject.position.z = newZ;
-                } else if (isRotating) {
-                    const deltaX = (touch.clientX - lastTouchX) * 0.01;
-                    const deltaY = (touch.clientY - lastTouchY) * 0.01;
-                    const spherical = new THREE.Spherical();
-                    spherical.setFromVector3(camera.position);
-                    spherical.theta -= deltaX;
-                    spherical.phi = Math.max(0.1, Math.min(Math.PI/2 - 0.1, spherical.phi + deltaY));
-                    camera.position.setFromSpherical(spherical);
-                    camera.lookAt(0, 0, 0);
-                }
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
-            }, { passive: false });
-
-            renderer.domElement.addEventListener('touchend', () => {
-                isDragging = false;
-                isRotating = false;
-            });
 
             window.addEventListener('resize', onWindowResize);
 
@@ -598,9 +550,18 @@
                 if (floor.material) floor.material.dispose();
             }
 
-            roomWidth = parseFloat(document.getElementById('roomWidth').value) || 20;
-            roomDepth = parseFloat(document.getElementById('roomDepth').value) || 15;
-            roomHeight = parseFloat(document.getElementById('roomHeight').value) || 10;
+            const readDim = (id, fallback) => {
+                const el = document.getElementById(id);
+                let v = parseFloat(el.value);
+                if (!isFinite(v)) v = fallback;
+                v = Math.max(parseFloat(el.min), Math.min(parseFloat(el.max), v));
+                el.value = v;
+                return v;
+            };
+            roomWidth = readDim('roomWidth', 20);
+            roomDepth = readDim('roomDepth', 15);
+            roomHeight = readDim('roomHeight', 10);
+            furniture.forEach(f => clampToRoom(f, f.position.x, f.position.z));
 
             const wallColor = document.getElementById('wallColor').value;
             const floorColor = document.getElementById('floorColor').value;
@@ -862,8 +823,9 @@
             // Deselect previous
             if (selectedObject) {
                 selectedObject.traverse(child => {
-                    if (child.isMesh && child.material) {
-                        child.material.emissive = new THREE.Color(0x000000);
+                    if (child.isMesh && child.material && child.material.userData.baseEmissive) {
+                        child.material.emissive.copy(child.material.userData.baseEmissive);
+                        child.material.emissiveIntensity = child.material.userData.baseEmissiveIntensity;
                     }
                 });
             }
@@ -873,6 +835,11 @@
             if (obj) {
                 obj.traverse(child => {
                     if (child.isMesh && child.material) {
+                        // Remember the material's own glow (lamp shade, TV screen) once; materials can be shared
+                        if (!child.material.userData.baseEmissive) {
+                            child.material.userData.baseEmissive = child.material.emissive.clone();
+                            child.material.userData.baseEmissiveIntensity = child.material.emissiveIntensity;
+                        }
                         child.material.emissive = new THREE.Color(0x4ecdc4);
                         child.material.emissiveIntensity = 0.2;
                     }
@@ -893,7 +860,25 @@
             }
         }
 
+        // Keep the item's rotated footprint inside the room
+        function clampToRoom(obj, x, z) {
+            const def = obj.userData.def;
+            const c = Math.abs(Math.cos(obj.rotation.y));
+            const s = Math.abs(Math.sin(obj.rotation.y));
+            const limX = Math.max(0, roomWidth / 2 - (def.w * c + def.d * s) / 2);
+            const limZ = Math.max(0, roomDepth / 2 - (def.w * s + def.d * c) / 2);
+            obj.position.x = Math.max(-limX, Math.min(limX, x));
+            obj.position.z = Math.max(-limZ, Math.min(limZ, z));
+        }
+
+        let lastPointerX = 0, lastPointerY = 0;
+
         function onMouseDown(event) {
+            if (!event.isPrimary) return;
+            renderer.domElement.setPointerCapture(event.pointerId);
+            lastPointerX = event.clientX;
+            lastPointerY = event.clientY;
+
             if (event.button === 2) {
                 isRotating = true;
                 return;
@@ -919,15 +904,21 @@
                     raycaster.ray.intersectPlane(plane, planeIntersect);
                     offset.copy(planeIntersect).sub(obj.position);
                 }
-            } else {
+            } else if (event.pointerType === 'mouse') {
                 selectObject(null);
+            } else {
+                // Single touch on empty space rotates the view
+                isRotating = true;
             }
         }
 
         function onMouseMove(event) {
+            if (!event.isPrimary) return;
             if (isRotating) {
-                const deltaX = event.movementX * 0.01;
-                const deltaY = event.movementY * 0.01;
+                const deltaX = (event.clientX - lastPointerX) * 0.01;
+                const deltaY = (event.clientY - lastPointerY) * 0.01;
+                lastPointerX = event.clientX;
+                lastPointerY = event.clientY;
 
                 const spherical = new THREE.Spherical();
                 spherical.setFromVector3(camera.position);
@@ -946,19 +937,8 @@
                 raycaster.setFromCamera(mouse, camera);
                 raycaster.ray.intersectPlane(plane, planeIntersect);
 
-                const def = selectedObject.userData.def;
-                const halfW = def.w / 2;
-                const halfD = def.d / 2;
-
-                let newX = planeIntersect.x - offset.x;
-                let newZ = planeIntersect.z - offset.z;
-
                 // Constrain to room bounds
-                newX = Math.max(-roomWidth / 2 + halfW, Math.min(roomWidth / 2 - halfW, newX));
-                newZ = Math.max(-roomDepth / 2 + halfD, Math.min(roomDepth / 2 - halfD, newZ));
-
-                selectedObject.position.x = newX;
-                selectedObject.position.z = newZ;
+                clampToRoom(selectedObject, planeIntersect.x - offset.x, planeIntersect.z - offset.z);
             }
         }
 
@@ -1030,11 +1010,17 @@
         });
 
         document.getElementById('rotateLeft').addEventListener('click', () => {
-            if (selectedObject) selectedObject.rotation.y += Math.PI / 4;
+            if (selectedObject) {
+                selectedObject.rotation.y += Math.PI / 4;
+                clampToRoom(selectedObject, selectedObject.position.x, selectedObject.position.z);
+            }
         });
 
         document.getElementById('rotateRight').addEventListener('click', () => {
-            if (selectedObject) selectedObject.rotation.y -= Math.PI / 4;
+            if (selectedObject) {
+                selectedObject.rotation.y -= Math.PI / 4;
+                clampToRoom(selectedObject, selectedObject.position.x, selectedObject.position.z);
+            }
         });
 
         document.getElementById('deleteSelected').addEventListener('click', deleteSelected);

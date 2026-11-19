@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boids Flocking - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -46,19 +47,19 @@
         <h1>Boids Flocking</h1>
         <p>Simulated birds follow three simple rules: separation, alignment, and cohesion. Complex flocking emerges.</p>
         <div class="control-group">
-            <label>Boids: <span id="countLabel">200</span></label>
+            <label for="count">Boids: <span id="countLabel">200</span></label>
             <input type="range" id="count" min="50" max="500" value="200">
         </div>
         <div class="control-group">
-            <label>Separation: <span id="sepLabel">1.5</span></label>
+            <label for="separation">Separation: <span id="sepLabel">1.5</span></label>
             <input type="range" id="separation" min="0" max="3" step="0.1" value="1.5">
         </div>
         <div class="control-group">
-            <label>Alignment: <span id="aliLabel">1.0</span></label>
+            <label for="alignment">Alignment: <span id="aliLabel">1.0</span></label>
             <input type="range" id="alignment" min="0" max="3" step="0.1" value="1.0">
         </div>
         <div class="control-group">
-            <label>Cohesion: <span id="cohLabel">1.0</span></label>
+            <label for="cohesion">Cohesion: <span id="cohLabel">1.0</span></label>
             <input type="range" id="cohesion" min="0" max="3" step="0.1" value="1.0">
         </div>
     </div>

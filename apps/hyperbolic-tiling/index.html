@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hyperbolic Tiling - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -107,7 +108,7 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>Tiling {p,q}</label>
+                <label for="tiling">Tiling {p,q}</label>
                 <select id="tiling">
                     <option value="5,4">{5,4} Pentagons</option>
                     <option value="4,5">{4,5} Squares</option>
@@ -119,12 +120,12 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Depth</label>
+                <label for="depth">Depth</label>
                 <input type="range" id="depth" min="3" max="8" value="5">
                 <span class="value" id="depthVal">5</span>
             </div>
             <div class="control-group">
-                <label>Color</label>
+                <label for="colorScheme">Color</label>
                 <select id="colorScheme">
                     <option value="alternating">Alternating</option>
                     <option value="rainbow">Rainbow</option>
@@ -166,63 +167,41 @@
             generate();
         }
 
-        // Complex number operations in Poincaré disk
-        function complexMult(a, b) {
-            return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re };
-        }
-
-        function complexDiv(a, b) {
-            const denom = b.re * b.re + b.im * b.im;
-            return { re: (a.re * b.re + a.im * b.im) / denom, im: (a.im * b.re - a.re * b.im) / denom };
-        }
-
-        function complexConj(a) {
-            return { re: a.re, im: -a.im };
-        }
-
-        function complexAdd(a, b) {
-            return { re: a.re + b.re, im: a.im + b.im };
-        }
-
-        function complexSub(a, b) {
-            return { re: a.re - b.re, im: a.im - b.im };
-        }
-
         function complexAbs(a) {
             return Math.sqrt(a.re * a.re + a.im * a.im);
         }
 
-        // Möbius transformation in Poincaré disk
-        function mobiusTransform(z, center, angle) {
-            // Rotate
-            const cosA = Math.cos(angle);
-            const sinA = Math.sin(angle);
-            const rotated = { re: z.re * cosA - z.im * sinA, im: z.re * sinA + z.im * cosA };
-
-            // Translate via Möbius
-            const conjugate = complexConj(center);
-            const num = complexSub(rotated, center);
-            const denom = complexSub({ re: 1, im: 0 }, complexMult(conjugate, rotated));
-            return complexDiv(num, denom);
+        // Geodesic through a and b: the circle orthogonal to the unit circle
+        // (centre c with c.a = (1 + |a|^2) / 2, radius^2 = |c|^2 - 1).
+        // Returns null when a, b and the origin are collinear (the geodesic is a diameter).
+        function geodesic(a, b) {
+            const det = a.re * b.im - a.im * b.re;
+            if (Math.abs(det) < 1e-12) return null;
+            const ka = (1 + a.re * a.re + a.im * a.im) / 2;
+            const kb = (1 + b.re * b.re + b.im * b.im) / 2;
+            const re = (ka * b.im - kb * a.im) / det;
+            const im = (a.re * kb - b.re * ka) / det;
+            return { re, im, r2: re * re + im * im - 1 };
         }
 
-        function inverseMobius(z, center, angle) {
-            const conjugate = complexConj(center);
-            const num = complexAdd(z, center);
-            const denom = complexAdd({ re: 1, im: 0 }, complexMult(conjugate, z));
-            const translated = complexDiv(num, denom);
-
-            const cosA = Math.cos(-angle);
-            const sinA = Math.sin(-angle);
-            return { re: translated.re * cosA - translated.im * sinA, im: translated.re * sinA + translated.im * cosA };
+        // Hyperbolic reflection in the geodesic through a and b: inversion in its circle
+        function reflect(z, a, b, g) {
+            if (!g) {
+                const angle = Math.atan2(b.im - a.im, b.re - a.re);
+                const cos2 = Math.cos(2 * angle);
+                const sin2 = Math.sin(2 * angle);
+                return { re: z.re * cos2 + z.im * sin2, im: z.re * sin2 - z.im * cos2 };
+            }
+            const dx = z.re - g.re;
+            const dy = z.im - g.im;
+            const k = g.r2 / (dx * dx + dy * dy);
+            return { re: g.re + dx * k, im: g.im + dy * k };
         }
 
         function generate() {
             const [p, q] = tilingSelect.value.split(',').map(Number);
             const maxDepth = parseInt(depthSlider.value);
             document.getElementById('depthVal').textContent = maxDepth;
-
-            polygons = [];
 
             // Calculate the distance from center to vertex of central polygon
             const angleP = Math.PI / p;
@@ -245,58 +224,40 @@
                 });
             }
 
-            const visited = new Set();
+            // Each polygon is identified by its centre (the image of the origin)
+            const centerKey = c => `${Math.round(c.re * 1e5)},${Math.round(c.im * 1e5)}`;
+            const origin = { re: 0, im: 0 };
+            const visited = new Set([centerKey(origin)]);
 
-            function polygonKey(vertices) {
-                const sorted = vertices.map(v =>
-                    `${(v.re * 1000).toFixed(0)},${(v.im * 1000).toFixed(0)}`
-                ).sort().join('|');
-                return sorted;
-            }
+            // Breadth-first, so depth is the number of edges crossed from the centre
+            polygons = [{ vertices: centralVertices, center: origin, depth: 0, colorIdx: 0 }];
 
-            function addPolygon(vertices, depth, colorIdx) {
-                const key = polygonKey(vertices);
-                if (visited.has(key)) return;
-                visited.add(key);
+            for (let head = 0; head < polygons.length; head++) {
+                const { vertices, center, depth, colorIdx } = polygons[head];
+                if (depth >= maxDepth) continue;
 
-                // Check if polygon is mostly in disk
-                const center = vertices.reduce((acc, v) => ({
-                    re: acc.re + v.re / vertices.length,
-                    im: acc.im + v.im / vertices.length
-                }), { re: 0, im: 0 });
+                for (let i = 0; i < p; i++) {
+                    const v1 = vertices[i];
+                    const v2 = vertices[(i + 1) % p];
+                    const g = geodesic(v1, v2);
 
-                if (complexAbs(center) > 0.99) return;
+                    const newCenter = reflect(center, v1, v2, g);
+                    // Tiles this close to the rim are smaller than a pixel
+                    if (complexAbs(newCenter) > 0.998) continue;
 
-                polygons.push({ vertices, depth, colorIdx });
+                    const key = centerKey(newCenter);
+                    if (visited.has(key)) continue;
+                    visited.add(key);
 
-                if (depth < maxDepth) {
-                    // Reflect across each edge to get neighbors
-                    for (let i = 0; i < p; i++) {
-                        const v1 = vertices[i];
-                        const v2 = vertices[(i + 1) % p];
-
-                        // Calculate reflection
-                        const midpoint = { re: (v1.re + v2.re) / 2, im: (v1.im + v2.im) / 2 };
-                        const edgeAngle = Math.atan2(v2.im - v1.im, v2.re - v1.re);
-
-                        const newVertices = vertices.map(v => {
-                            // Reflect point across the geodesic (edge)
-                            const dx = v.re - midpoint.re;
-                            const dy = v.im - midpoint.im;
-                            const cos2 = Math.cos(2 * edgeAngle);
-                            const sin2 = Math.sin(2 * edgeAngle);
-                            return {
-                                re: midpoint.re + dx * cos2 + dy * sin2,
-                                im: midpoint.im + dx * sin2 - dy * cos2
-                            };
-                        });
-
-                        addPolygon(newVertices, depth + 1, (colorIdx + 1) % 2);
-                    }
+                    polygons.push({
+                        vertices: vertices.map(v => reflect(v, v1, v2, g)),
+                        center: newCenter,
+                        depth: depth + 1,
+                        colorIdx: (colorIdx + 1) % 2
+                    });
                 }
             }
 
-            addPolygon(centralVertices, 0, 0);
             draw();
         }
 
@@ -317,6 +278,19 @@
                     const l = Math.max(10, 50 - depth * 6);
                     return colorIdx === 0 ? `hsl(175, 60%, ${l}%)` : `hsl(175, 30%, ${Math.max(5, l - 10)}%)`;
             }
+        }
+
+        // Edge from a to b as an arc of its geodesic circle (always the minor arc).
+        // Returns null when the arc is flat enough to draw as a straight line.
+        function edgeArc(a, b) {
+            const g = geodesic(a, b);
+            if (!g || g.r2 > 1e8) return null;
+            const start = Math.atan2(a.im - g.im, a.re - g.re);
+            const end = Math.atan2(b.im - g.im, b.re - g.re);
+            let delta = end - start;
+            if (delta > Math.PI) delta -= 2 * Math.PI;
+            if (delta < -Math.PI) delta += 2 * Math.PI;
+            return { re: g.re, im: g.im, r: Math.sqrt(g.r2), start, end, anticlockwise: delta < 0 };
         }
 
         function draw() {
@@ -341,11 +315,15 @@
                 const { vertices } = polygon;
 
                 ctx.beginPath();
+                ctx.moveTo(cx + vertices[0].re * radius, cy + vertices[0].im * radius);
                 vertices.forEach((v, i) => {
-                    const x = cx + v.re * radius;
-                    const y = cy + v.im * radius;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                    const next = vertices[(i + 1) % vertices.length];
+                    const arc = edgeArc(v, next);
+                    if (arc) {
+                        ctx.arc(cx + arc.re * radius, cy + arc.im * radius, arc.r * radius, arc.start, arc.end, arc.anticlockwise);
+                    } else {
+                        ctx.lineTo(cx + next.re * radius, cy + next.im * radius);
+                    }
                 });
                 ctx.closePath();
 

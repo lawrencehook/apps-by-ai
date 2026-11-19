@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Screenshot - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -241,9 +242,10 @@
         .code-content pre {
             margin: 0;
             white-space: pre;
+            display: flex;
         }
         .line-numbers {
-            display: inline-block;
+            flex: none;
             text-align: right;
             padding-right: 16px;
             margin-right: 16px;
@@ -318,14 +320,14 @@
                     <h3>Background</h3>
                     <div class="bg-grid" id="bgGrid"></div>
                     <div class="control-group" style="margin-top: 16px;">
-                        <label>Custom Gradient</label>
+                        <label for="bgColor1">Custom Gradient</label>
                         <div class="color-picker-row">
                             <input type="color" id="bgColor1" value="#667eea">
-                            <input type="color" id="bgColor2" value="#764ba2">
-                            <select id="bgAngle" style="flex: 1;">
+                            <input type="color" id="bgColor2" value="#764ba2" aria-label="Gradient end colour">
+                            <select id="bgAngle" style="flex: 1;" aria-label="Gradient angle">
                                 <option value="135">↘ 135°</option>
-                                <option value="90">↓ 90°</option>
-                                <option value="180">→ 180°</option>
+                                <option value="90">→ 90°</option>
+                                <option value="180">↓ 180°</option>
                                 <option value="45">↗ 45°</option>
                                 <option value="0">↑ 0°</option>
                             </select>
@@ -337,25 +339,25 @@
                 <div class="card">
                     <h3>Window</h3>
                     <div class="control-group">
-                        <label>Title</label>
+                        <label for="windowTitle">Title</label>
                         <input type="text" id="windowTitle" placeholder="untitled.js">
                     </div>
                     <div class="control-group">
-                        <label>Padding</label>
+                        <label for="padding">Padding</label>
                         <div class="range-row">
                             <input type="range" id="padding" min="20" max="100" value="60">
                             <span class="range-value" id="paddingValue">60px</span>
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>Border Radius</label>
+                        <label for="borderRadius">Border Radius</label>
                         <div class="range-row">
                             <input type="range" id="borderRadius" min="0" max="24" value="12">
                             <span class="range-value" id="borderRadiusValue">12px</span>
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>Shadow</label>
+                        <label for="shadowSize">Shadow</label>
                         <div class="range-row">
                             <input type="range" id="shadowSize" min="0" max="100" value="50">
                             <span class="range-value" id="shadowValue">50</span>
@@ -363,14 +365,14 @@
                     </div>
                     <div class="checkbox-row">
                         <input type="checkbox" id="showLineNumbers" checked>
-                        <span class="checkbox-label">Show line numbers</span>
+                        <label class="checkbox-label" for="showLineNumbers">Show line numbers</label>
                     </div>
                 </div>
 
                 <!-- Language -->
                 <div class="card">
                     <h3>Language</h3>
-                    <select id="language">
+                    <select id="language" aria-label="Language">
                         <option value="javascript">JavaScript</option>
                         <option value="typescript">TypeScript</option>
                         <option value="python">Python</option>
@@ -397,7 +399,7 @@
                 <div class="card">
                     <h3>Export</h3>
                     <div class="control-group">
-                        <label>Scale</label>
+                        <label for="exportScale">Scale</label>
                         <select id="exportScale">
                             <option value="1">1x</option>
                             <option value="2" selected>2x</option>
@@ -610,12 +612,7 @@ greet("World");</textarea>
         }
 
         // Simple syntax highlighting using token-based approach to avoid nested span corruption
-        function highlight(code, lang) {
-            // Escape HTML
-            code = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-            const theme = themes[currentTheme];
-
+        function tokenize(code, lang) {
             // Keywords by language
             const keywords = {
                 javascript: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'extends', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'throw', 'new', 'this', 'true', 'false', 'null', 'undefined', 'typeof', 'instanceof'],
@@ -634,20 +631,22 @@ greet("World");</textarea>
             // Use # comments only for Python, Shell, Ruby, YAML
             const hashCommentLangs = ['python', 'shell', 'ruby', 'yaml'];
             const useHashComments = hashCommentLangs.includes(lang);
+            const useSlashComments = ['javascript', 'typescript', 'rust', 'go', 'java', 'cpp', 'php', 'swift', 'kotlin'].includes(lang);
+            const useBlockComments = useSlashComments || lang === 'css' || lang === 'sql';
 
             // Tokenize to prevent nested highlighting
             const tokens = [];
             let i = 0;
             while (i < code.length) {
                 // Block comments
-                if (code.substr(i, 2) === '/*') {
+                if (useBlockComments && code.substr(i, 2) === '/*') {
                     const end = code.indexOf('*/', i + 2);
                     const commentEnd = end === -1 ? code.length : end + 2;
                     tokens.push({ type: 'comment', text: code.substring(i, commentEnd) });
                     i = commentEnd;
                 }
                 // Line comments (//)
-                else if (code.substr(i, 2) === '//') {
+                else if (useSlashComments && code.substr(i, 2) === '//') {
                     const end = code.indexOf('\n', i);
                     const commentEnd = end === -1 ? code.length : end;
                     tokens.push({ type: 'comment', text: code.substring(i, commentEnd) });
@@ -706,17 +705,25 @@ greet("World");</textarea>
                 }
             }
 
-            // Render tokens
-            return tokens.map(t => {
-                const colorMap = {
-                    comment: theme.comment,
-                    string: theme.string,
-                    number: theme.number,
-                    keyword: theme.keyword,
-                    function: theme.function
-                };
-                const color = colorMap[t.type];
-                return color ? `<span style="color:${color}">${t.text}</span>` : t.text;
+            return tokens;
+        }
+
+        function tokenColor(theme, type) {
+            return {
+                comment: theme.comment,
+                string: theme.string,
+                number: theme.number,
+                keyword: theme.keyword,
+                function: theme.function
+            }[type];
+        }
+
+        function highlight(code, lang) {
+            const theme = themes[currentTheme];
+            return tokenize(code, lang).map(t => {
+                const text = t.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const color = tokenColor(theme, t.type);
+                return color ? `<span style="color:${color}">${text}</span>` : text;
             }).join('');
         }
 
@@ -754,7 +761,8 @@ greet("World");</textarea>
                 html = `<span class="line-numbers">${lineNumbers}</span>`;
             }
 
-            html += highlight(code, lang);
+            // One wrapper so the code is a single flex item beside the line numbers
+            html += `<span>${highlight(code, lang)}</span>`;
             codeDisplay.innerHTML = html;
         }
 
@@ -772,20 +780,22 @@ greet("World");</textarea>
             canvas.height = rect.height * scale;
             ctx.scale(scale, scale);
 
-            // Draw background gradient
-            const bgStyle = getComputedStyle(wrapper).background;
-            const gradientMatch = bgStyle.match(/linear-gradient\((\d+)deg,\s*([^,]+),\s*([^)]+)\)/);
+            // Draw background gradient from state (computed style serialises colours as rgb())
+            const gradientMatch = currentBg.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-f]+)\s+0%,\s*(#[0-9a-f]+)\s+100%\)/i);
 
             if (gradientMatch) {
+                // CSS angles: 0deg points up, clockwise; the gradient line spans |W sin| + |H cos|
                 const angle = parseInt(gradientMatch[1]) * Math.PI / 180;
-                const x1 = rect.width / 2 - Math.cos(angle) * rect.width;
-                const y1 = rect.height / 2 - Math.sin(angle) * rect.height;
-                const x2 = rect.width / 2 + Math.cos(angle) * rect.width;
-                const y2 = rect.height / 2 + Math.sin(angle) * rect.height;
+                const dx = Math.sin(angle), dy = -Math.cos(angle);
+                const half = (Math.abs(rect.width * dx) + Math.abs(rect.height * dy)) / 2;
+                const x1 = rect.width / 2 - dx * half;
+                const y1 = rect.height / 2 - dy * half;
+                const x2 = rect.width / 2 + dx * half;
+                const y2 = rect.height / 2 + dy * half;
 
                 const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-                gradient.addColorStop(0, gradientMatch[2].trim().split(' ')[0]);
-                gradient.addColorStop(1, gradientMatch[3].trim().split(' ')[0]);
+                gradient.addColorStop(0, gradientMatch[2]);
+                gradient.addColorStop(1, gradientMatch[3]);
                 ctx.fillStyle = gradient;
             } else {
                 ctx.fillStyle = '#667eea';
@@ -800,10 +810,11 @@ greet("World");</textarea>
             const offsetX = (rect.width - windowRect.width) / 2;
             const offsetY = (rect.height - windowRect.height) / 2;
 
-            // Shadow
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 40;
-            ctx.shadowOffsetY = 20;
+            // Shadow (canvas shadows ignore the scale transform)
+            const shadowSize = parseInt(document.getElementById('shadowSize').value);
+            ctx.shadowColor = shadowSize > 0 ? 'rgba(0, 0, 0, 0.5)' : 'transparent';
+            ctx.shadowBlur = shadowSize * scale;
+            ctx.shadowOffsetY = shadowSize / 2 * scale;
 
             // Window background
             roundRect(ctx, offsetX, offsetY, windowRect.width, windowRect.height, borderRadius);
@@ -852,17 +863,26 @@ greet("World");</textarea>
             ctx.font = '14px "SF Mono", "Fira Code", Monaco, Consolas, monospace';
             ctx.textAlign = 'left';
 
-            lines.forEach((line, i) => {
-                const y = codeY + i * lineHeight;
+            if (showLineNumbers) {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                lines.forEach((line, i) => {
+                    ctx.fillText(String(i + 1).padStart(2, ' '), codeX, codeY + i * lineHeight);
+                });
+            }
 
-                if (showLineNumbers) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.fillText(String(i + 1).padStart(2, ' '), codeX, y);
-                }
-
-                // Simple render (no syntax highlighting in canvas)
-                ctx.fillStyle = theme.text;
-                ctx.fillText(line, codeX + (showLineNumbers ? 50 : 0), y);
+            const textX = codeX + (showLineNumbers ? 50 : 0);
+            let x = textX;
+            let y = codeY;
+            tokenize(code, document.getElementById('language').value).forEach(t => {
+                ctx.fillStyle = tokenColor(theme, t.type) || theme.text;
+                t.text.split('\n').forEach((part, i) => {
+                    if (i > 0) {
+                        x = textX;
+                        y += lineHeight;
+                    }
+                    ctx.fillText(part, x, y);
+                    x += ctx.measureText(part).width;
+                });
             });
 
             // Export

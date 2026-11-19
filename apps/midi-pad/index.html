@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIDI Pad - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -199,6 +200,7 @@
             position: relative;
             overflow: hidden;
             user-select: none;
+            touch-action: none;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -857,7 +859,7 @@
                 </button>
 
                 <div class="bars-control">
-                    <label>Bars:</label>
+                    <label for="barsSelect">Bars:</label>
                     <select id="barsSelect">
                         <option value="1">1</option>
                         <option value="2">2</option>
@@ -867,7 +869,7 @@
                 </div>
 
                 <div class="quantize-control">
-                    <label>Quantize:</label>
+                    <label for="quantizeSelect">Quantize:</label>
                     <select id="quantizeSelect">
                         <option value="4">1/4</option>
                         <option value="8">1/8</option>
@@ -877,7 +879,7 @@
                 </div>
 
                 <div class="bpm-control">
-                    <label>BPM:</label>
+                    <label for="bpmInput">BPM:</label>
                     <input type="number" id="bpmInput" value="120" min="60" max="200">
                 </div>
             </div>
@@ -898,19 +900,19 @@
             <div class="panel-title">Master Effects</div>
             <div class="effects-grid">
                 <div class="effect-control">
-                    <label>Reverb</label>
+                    <label for="reverbMix">Reverb</label>
                     <input type="range" id="reverbMix" min="0" max="100" value="20">
                 </div>
                 <div class="effect-control">
-                    <label>Delay</label>
+                    <label for="delayMix">Delay</label>
                     <input type="range" id="delayMix" min="0" max="100" value="0">
                 </div>
                 <div class="effect-control">
-                    <label>Drive</label>
+                    <label for="driveMix">Drive</label>
                     <input type="range" id="driveMix" min="0" max="100" value="0">
                 </div>
                 <div class="effect-control">
-                    <label>Master</label>
+                    <label for="masterVolume">Master</label>
                     <input type="range" id="masterVolume" min="0" max="100" value="80">
                 </div>
             </div>
@@ -940,6 +942,9 @@
         let recordedNotes = [];
         let playbackTimeout = null;
         let stepInterval = null;
+        let lastStepTime = 0;      // performance.now() of the last sequencer tick
+        let hasTicked = false;     // false until the first tick of a playback run
+        const suppressOnce = new Set(); // notes recorded onto the upcoming step: don't re-trigger them
         let currentStep = 0;
         let bpm = 120;
         let bars = 4;
@@ -988,7 +993,8 @@
 
         // Get chord MIDI notes
         function getChordMidi(root, chordType, octave = 4) {
-            const baseMidi = 12 * octave + root;
+            // MIDI convention used by the Synth bank: C4 = 60
+            const baseMidi = 12 * (octave + 1) + root;
             return CHORD_TYPES[chordType].map(interval => baseMidi + interval);
         }
 
@@ -1153,7 +1159,11 @@
 
         // Initialize Audio Context
         function initAudio() {
-            if (audioCtx) return;
+            if (audioCtx) {
+                // Contexts created outside a user gesture (MIDI input, touchstart) start suspended
+                if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+                return;
+            }
 
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -1210,6 +1220,14 @@
             // Store refs for effect control
             window.reverbMixNode = reverbMixNode;
             window.dryNode = dryNode;
+
+            // Pick up sliders that were moved before the context existed
+            reverbMixNode.gain.value = document.getElementById('reverbMix').value / 100;
+            delayMix.gain.value = document.getElementById('delayMix').value / 100;
+            driveNode.curve = makeDistortionCurve(Number(document.getElementById('driveMix').value));
+            masterGain.gain.value = document.getElementById('masterVolume').value / 100;
+
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
         }
 
         // Create reverb impulse response
@@ -1991,18 +2009,27 @@
         }
 
         // Create noise source
-        function createNoiseSource() {
-            const bufferSize = audioCtx.sampleRate * 2;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
+        let noiseBuffer = null;
 
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
+        function createNoiseSource() {
+            if (!noiseBuffer) {
+                const bufferSize = audioCtx.sampleRate * 2;
+                noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
             }
 
             const source = audioCtx.createBufferSource();
-            source.buffer = buffer;
+            source.buffer = noiseBuffer;
             source.loop = true;
+
+            // The buffer is shared, so start each voice at a random point in it;
+            // otherwise layered voices (clap) would be identical delayed copies.
+            const start = source.start.bind(source);
+            source.start = (when = 0) => start(when, Math.random() * noiseBuffer.duration);
 
             return source;
         }
@@ -2015,7 +2042,8 @@
             if (!settings || settings.type !== 'arpeggio') return;
 
             const { root, chordType, octave, pattern, speed, wave } = settings;
-            const volume = settings.volume || 0.8;
+            const volume = settings.volume ?? 0.8;
+            if (volume * velocity <= 0) return; // exponential ramps can't start from 0
 
             // Get chord notes
             let midiNotes = getChordMidi(root, chordType, octave);
@@ -2068,7 +2096,8 @@
             if (!settings || settings.type !== 'arpeggio') return;
 
             const { root, chordType, octave, wave } = settings;
-            const volume = settings.volume || 0.8;
+            const volume = settings.volume ?? 0.8;
+            if (volume * velocity <= 0) return; // exponential ramps can't start from 0
 
             const midiNotes = getChordMidi(root, chordType, octave);
             const now = audioCtx.currentTime;
@@ -2121,20 +2150,11 @@
                 pad.appendChild(keyLabel);
                 pad.appendChild(soundLabel);
 
-                // Mouse events
-                pad.addEventListener('mousedown', (e) => handlePadTrigger(i, e));
-                pad.addEventListener('mouseup', () => handlePadRelease(i));
-                pad.addEventListener('mouseleave', () => handlePadRelease(i));
-
-                // Touch events
-                pad.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    handlePadTrigger(i, e);
-                });
-                pad.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    handlePadRelease(i);
-                });
+                // Pointer events cover mouse, touch and pen (and leave the click below intact)
+                pad.addEventListener('pointerdown', (e) => handlePadTrigger(i, e));
+                pad.addEventListener('pointerup', () => handlePadRelease(i));
+                pad.addEventListener('pointerleave', () => handlePadRelease(i));
+                pad.addEventListener('pointercancel', () => handlePadRelease(i));
 
                 // Click for selection
                 pad.addEventListener('click', () => selectPad(i));
@@ -2154,15 +2174,8 @@
             const rect = pad.getBoundingClientRect();
             const size = Math.max(rect.width, rect.height);
 
-            let x, y;
-            if (event.type === 'touchstart') {
-                const touch = event.touches[0];
-                x = touch.clientX - rect.left;
-                y = touch.clientY - rect.top;
-            } else {
-                x = event.clientX - rect.left;
-                y = event.clientY - rect.top;
-            }
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
 
             ripple.style.width = ripple.style.height = size + 'px';
             ripple.style.left = (x - size / 2) + 'px';
@@ -2211,42 +2224,48 @@
                 return;
             }
 
+            // Slider ranges widen to include this pad's preset (e.g. 8000 Hz hi-hats, 3 s risers)
+            const preset = soundBanks[currentBank].sounds[selectedPad];
+            const pitchMin = Math.min(20, preset.freq);
+            const pitchMax = Math.max(2000, preset.freq);
+            const decayMax = Math.max(200, Math.round(preset.decay * 100));
+
             content.innerHTML = `
                 <div class="config-grid">
                     <div class="config-row">
-                        <label>Sound</label>
-                        <input type="text" id="soundName" value="${settings.name}" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 8px;">
+                        <label for="soundName">Sound</label>
+                        <input type="text" id="soundName" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 8px;">
                     </div>
                     <div class="config-row">
-                        <label>Volume</label>
+                        <label for="padVolume">Volume</label>
                         <div class="slider-container">
                             <input type="range" id="padVolume" min="0" max="100" value="${settings.volume * 100}">
                             <span class="value">${Math.round(settings.volume * 100)}%</span>
                         </div>
                     </div>
                     <div class="config-row">
-                        <label>Pan</label>
+                        <label for="padPan">Pan</label>
                         <div class="slider-container">
                             <input type="range" id="padPan" min="-100" max="100" value="${settings.pan * 100}">
                             <span class="value">${settings.pan > 0 ? 'R' : settings.pan < 0 ? 'L' : 'C'}${Math.abs(Math.round(settings.pan * 100))}</span>
                         </div>
                     </div>
                     <div class="config-row">
-                        <label>Pitch</label>
+                        <label for="padPitch">Pitch</label>
                         <div class="slider-container">
-                            <input type="range" id="padPitch" min="20" max="2000" value="${settings.freq}">
+                            <input type="range" id="padPitch" min="${pitchMin}" max="${pitchMax}" value="${settings.freq}">
                             <span class="value">${Math.round(settings.freq)}Hz</span>
                         </div>
                     </div>
                     <div class="config-row">
-                        <label>Decay</label>
+                        <label for="padDecay">Decay</label>
                         <div class="slider-container">
-                            <input type="range" id="padDecay" min="1" max="200" value="${settings.decay * 100}">
+                            <input type="range" id="padDecay" min="1" max="${decayMax}" value="${settings.decay * 100}">
                             <span class="value">${(settings.decay).toFixed(2)}s</span>
                         </div>
                     </div>
                     <div class="config-row">
-                        <label>Filter</label>
+                        <label for="padFilter">Filter</label>
                         <div class="slider-container">
                             <input type="range" id="padFilter" min="100" max="20000" value="${settings.filterCutoff}">
                             <span class="value">${Math.round(settings.filterCutoff)}Hz</span>
@@ -2254,6 +2273,8 @@
                     </div>
                 </div>
             `;
+
+            document.getElementById('soundName').value = settings.name;
 
             // Add event listeners
             document.getElementById('soundName').addEventListener('change', (e) => {
@@ -2321,11 +2342,11 @@
                 <div class="arpeggio-config">
                     <div class="chord-selector">
                         <div class="arpeggio-setting">
-                            <label>Root Note</label>
+                            <label for="arpRoot">Root Note</label>
                             <select id="arpRoot">${rootOptions}</select>
                         </div>
                         <div class="arpeggio-setting">
-                            <label>Chord Type</label>
+                            <label for="arpChordType">Chord Type</label>
                             <select id="arpChordType">${chordOptions}</select>
                         </div>
                     </div>
@@ -2337,7 +2358,7 @@
 
                     <div class="arpeggio-settings">
                         <div class="arpeggio-setting">
-                            <label>Octave</label>
+                            <label for="arpOctave">Octave</label>
                             <select id="arpOctave">
                                 <option value="2" ${settings.octave === 2 ? 'selected' : ''}>2</option>
                                 <option value="3" ${settings.octave === 3 ? 'selected' : ''}>3</option>
@@ -2346,24 +2367,24 @@
                             </select>
                         </div>
                         <div class="arpeggio-setting">
-                            <label>Pattern</label>
+                            <label for="arpPattern">Pattern</label>
                             <select id="arpPattern">${patternOptions}</select>
                         </div>
                         <div class="arpeggio-setting">
-                            <label>Speed (ms)</label>
+                            <label for="arpSpeed">Speed (ms)</label>
                             <input type="number" id="arpSpeed" value="${settings.speed}" min="30" max="500">
                         </div>
                         <div class="arpeggio-setting">
-                            <label>Waveform</label>
+                            <label for="arpWave">Waveform</label>
                             <select id="arpWave">${waveOptions}</select>
                         </div>
                     </div>
 
                     <div class="config-row" style="margin-top: 12px;">
-                        <label>Volume</label>
+                        <label for="arpVolume">Volume</label>
                         <div class="slider-container">
-                            <input type="range" id="arpVolume" min="0" max="100" value="${(settings.volume || 0.8) * 100}">
-                            <span class="value">${Math.round((settings.volume || 0.8) * 100)}%</span>
+                            <input type="range" id="arpVolume" min="0" max="100" value="${(settings.volume ?? 0.8) * 100}">
+                            <span class="value">${Math.round((settings.volume ?? 0.8) * 100)}%</span>
                         </div>
                     </div>
 
@@ -2527,10 +2548,19 @@
             });
         }
 
-        function recordNote(padIndex) {
+        // Which step a hit belongs to. currentStep is the step the NEXT tick will play.
+        // Returns the nearest step and whether it is that upcoming one.
+        function nearestStep(nextStep, totalSteps, elapsedMs, stepMs, ticked) {
+            const upcoming = !ticked || elapsedMs >= stepMs / 2;
+            const step = upcoming ? nextStep % totalSteps : (nextStep - 1 + totalSteps) % totalSteps;
+            return { step, upcoming };
+        }
+
+        function recordNote(padIndex, velocity = 1) {
             const stepsPerBar = quantize;
             const totalSteps = bars * stepsPerBar;
-            const step = currentStep % totalSteps;
+            const stepDuration = (60 / bpm) / (stepsPerBar / 4) * 1000;
+            const { step, upcoming } = nearestStep(currentStep, totalSteps, performance.now() - lastStepTime, stepDuration, hasTicked);
 
             // Remove existing note at this step for this pad
             const existingIndex = recordedNotes.findIndex(n => n.pad === padIndex && n.step === step);
@@ -2538,7 +2568,10 @@
                 recordedNotes.splice(existingIndex, 1);
             }
 
-            recordedNotes.push({ pad: padIndex, step: step, velocity: 1 });
+            const note = { pad: padIndex, step: step, velocity: velocity };
+            recordedNotes.push(note);
+            // The hit was already heard; don't play it again when its step comes up in a moment
+            if (upcoming) suppressOnce.add(note);
             updatePatternDisplay();
         }
 
@@ -2553,8 +2586,13 @@
             const stepDuration = (60 / bpm) / (stepsPerBar / 4) * 1000;
 
             currentStep = 0;
+            hasTicked = false;
+            lastStepTime = performance.now();
 
             stepInterval = setInterval(() => {
+                hasTicked = true;
+                lastStepTime = performance.now();
+
                 // Clear previous step highlight
                 document.querySelectorAll('.pattern-step.playing').forEach(s => s.classList.remove('playing'));
 
@@ -2567,6 +2605,7 @@
                 recordedNotes
                     .filter(note => note.step === currentStep % totalSteps)
                     .forEach(note => {
+                        if (suppressOnce.delete(note)) return;
                         playSound(note.pad, note.velocity);
 
                         // Flash the pad
@@ -2595,6 +2634,57 @@
 
             document.querySelectorAll('.pattern-step.playing').forEach(s => s.classList.remove('playing'));
             currentStep = 0;
+            suppressOnce.clear();
+        }
+
+        // startPlayback() captures bars/quantize/bpm, so restart it when they change
+        function restartPlayback() {
+            if (!isPlaying) return;
+            const wasRecording = isRecording;
+            stopPlayback();
+            startPlayback();
+            if (wasRecording) {
+                isRecording = true;
+                document.getElementById('recBtn').classList.add('active');
+            }
+        }
+
+        // Move notes onto the new grid when the steps-per-bar setting changes
+        function rescaleNotes(notes, oldQuantize, newQuantize, barCount) {
+            const oldTotal = barCount * oldQuantize;
+            const newTotal = barCount * newQuantize;
+            const seen = new Set();
+            return notes.map(note => {
+                let step = Math.round(note.step * newQuantize / oldQuantize);
+                if (note.step < oldTotal) step %= newTotal; // rounding up off the end wraps to the loop start
+                return { ...note, step };
+            }).filter(note => {
+                const key = note.pad + ':' + note.step;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        // Keep only well-formed fields from an imported pattern
+        function sanitizePattern(data) {
+            const clean = {};
+            if (!data || typeof data !== 'object') return clean;
+            if (Number.isFinite(data.bpm)) clean.bpm = Math.max(60, Math.min(200, Math.round(data.bpm)));
+            if ([1, 2, 4, 8].includes(data.bars)) clean.bars = data.bars;
+            if ([4, 8, 16, 32].includes(data.quantize)) clean.quantize = data.quantize;
+            if (typeof data.bank === 'string' && Object.prototype.hasOwnProperty.call(soundBanks, data.bank)) clean.bank = data.bank;
+            if (Array.isArray(data.notes)) {
+                clean.notes = data.notes
+                    .filter(n => n && Number.isInteger(n.pad) && n.pad >= 0 && n.pad < 16 &&
+                                 Number.isInteger(n.step) && n.step >= 0 && n.step < 8 * 32)
+                    .map(n => ({
+                        pad: n.pad,
+                        step: n.step,
+                        velocity: Number.isFinite(n.velocity) ? Math.max(0, Math.min(1, n.velocity)) : 1
+                    }));
+            }
+            return clean;
         }
 
         function toggleRecording() {
@@ -2633,7 +2723,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const data = JSON.parse(e.target.result);
+                    const data = sanitizePattern(JSON.parse(e.target.result));
 
                     if (data.bpm) {
                         bpm = data.bpm;
@@ -2655,6 +2745,7 @@
                     }
 
                     createPatternGrid();
+                    restartPlayback();
                 } catch (err) {
                     console.error('Failed to import pattern:', err);
                 }
@@ -2768,10 +2859,11 @@
                 });
 
                 midiAccess.onstatechange = (e) => {
-                    if (e.port.type === 'input' && e.port.state === 'connected') {
+                    if (e.port.type !== 'input') return;
+                    if (e.port.state === 'connected') {
                         e.port.onmidimessage = handleMIDIMessage;
-                        updateMIDIStatus(true);
                     }
+                    updateMIDIStatus([...midiAccess.inputs.values()].some(input => input.state === 'connected'));
                 };
 
                 if (midiAccess.inputs.size > 0) {
@@ -2801,7 +2893,7 @@
                     playSound(padIndex, normalizedVelocity);
 
                     if (isRecording) {
-                        recordNote(padIndex);
+                        recordNote(padIndex, normalizedVelocity);
                     }
                 }
             }
@@ -2836,6 +2928,11 @@
             // Keyboard input
             document.addEventListener('keydown', (e) => {
                 if (e.repeat) return;
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                // Let pad keys be typed into the name/BPM/speed fields and selects
+                // (range sliders and buttons don't take text, so pads still fire from them)
+                const t = e.target;
+                if (t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && t.type !== 'range')) return;
 
                 const key = e.key.toLowerCase();
                 if (keyMap.hasOwnProperty(key)) {
@@ -2882,12 +2979,16 @@
             document.getElementById('barsSelect').addEventListener('change', (e) => {
                 bars = parseInt(e.target.value);
                 createPatternGrid();
+                restartPlayback();
             });
 
             // Quantize
             document.getElementById('quantizeSelect').addEventListener('change', (e) => {
-                quantize = parseInt(e.target.value);
+                const newQuantize = parseInt(e.target.value);
+                recordedNotes = rescaleNotes(recordedNotes, quantize, newQuantize, bars);
+                quantize = newQuantize;
                 createPatternGrid();
+                restartPlayback();
             });
 
             // Export/Import
@@ -2899,6 +3000,7 @@
                 if (e.target.files[0]) {
                     importPattern(e.target.files[0]);
                 }
+                e.target.value = ''; // allow re-importing the same file
             });
 
             // Master effects
@@ -2916,7 +3018,7 @@
 
             document.getElementById('driveMix').addEventListener('input', (e) => {
                 if (driveNode) {
-                    driveNode.curve = makeDistortionCurve(e.target.value);
+                    driveNode.curve = makeDistortionCurve(Number(e.target.value));
                 }
             });
 

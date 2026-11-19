@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Generate static, individually linkable reference pages. Run: python3 notes/build.py"""
+import hashlib
 import html
 import json
 from pathlib import Path
@@ -8,6 +9,22 @@ from formulas import FORMULAS
 ROOT = Path(__file__).resolve().parent
 LOOKUP = {f"{t['field']}/{t['slug']}": t for t in TOPICS}
 e = html.escape
+MARK = '<meta name="generator" content="notes/build.py">'
+VERSION = {}
+
+def asset(base, name):
+    return f'{base}{name}?v={VERSION[name]}'
+
+def prune(base, keep):
+    """Remove pages this script generated earlier for topics that no longer exist."""
+    for page in sorted(base.rglob('index.html')):
+        if page.relative_to(base) in keep: continue
+        with page.open(encoding='utf-8', errors='replace') as f:
+            if MARK not in f.read(400): continue
+        page.unlink()
+        folder = page.parent
+        while folder != base and not any(folder.iterdir()):
+            folder.rmdir(); folder = folder.parent
 
 def link(key, base):
     return f'<a href="{base}{key}/index.html">{e(LOOKUP[key]["title"])}</a>'
@@ -27,10 +44,10 @@ def tree(base, current):
 
 def shell(title, body, base='', current='', description='A personal reference for mathematics, computer science, and theory of computation.'):
     return f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8">{MARK}<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(title)} · Notes</title><meta name="description" content="{e(description, quote=True)}">
-<link rel="icon" href="{base}../favicons/favicon.ico"><link rel="stylesheet" href="{base}style.css?v=4">
-<script src="{base}search-index.js?v=3" defer></script><script src="{base}app.js?v=2" defer></script></head>
+<link rel="icon" href="{base}../favicons/favicon.ico"><link rel="stylesheet" href="{asset(base,"style.css")}">
+<script src="{asset(base,"search-index.js")}" defer></script><script src="{asset(base,"app.js")}" defer></script></head>
 <body data-base="{base}"><a class="skip" href="#main">Skip to content</a>
 <header class="masthead"><a class="brand" href="{base}index.html"><span aria-hidden="true">ℳ</span> Notes</a><nav aria-label="Site sections"><a href="{base}../index.html">Apps</a><a href="{base}../games/index.html">Games</a><a aria-current="page" href="{base}index.html">Notes</a><a href="{base}../music/index.html">Music</a></nav><button id="tree-toggle" aria-expanded="false" aria-controls="sidebar">Topics</button></header>
 <div class="layout"><aside id="sidebar"><a class="all-topics" href="{base}index.html">All topics <span>↗</span></a><form role="search" id="search-form"><label for="topic-search">Find a concept</label><div class="search-box"><input id="topic-search" type="search" placeholder="e.g. eigenvalues" autocomplete="off"><kbd>/</kbd></div><p id="search-status" class="search-status" role="status"></p></form><nav aria-label="Topic tree" class="tree">{tree(base,current)}</nav><p class="sidebar-note">Undergraduate → early graduate<br>{len(TOPICS)} sheets · {sum(len(t["exercises"]) for t in TOPICS)} exercises</p></aside>
@@ -100,21 +117,25 @@ def build():
     for t in TOPICS:
         for k in t['prerequisites'] + t['related']: assert k in LOOKUP, f'Missing topic {k}'
         assert all(t[k] for k in ('definitions','theorems','applications','exercises'))
-        folder = ROOT / t['field'] / t['slug']; folder.mkdir(parents=True, exist_ok=True)
-        (folder/'index.html').write_text(shell(t['title'],topic_body(t,'../../'),'../../',t['field']+'/'+t['slug'],t['summary']))
-    for field in FIELDS:
-        (ROOT/field/'index.html').write_text(shell(FIELDS[field][0],index_body(field,'../'),'../',field))
-    (ROOT/'index.html').write_text(shell('Index',index_body()))
     data = [dict(title=t['title'],field=FIELDS[t['field']][0],url=f"{t['field']}/{t['slug']}/index.html",summary=t['summary'],passages=[name+': '+text for section in ('definitions','theorems','applications') for name,text in t[section]],text=' '.join([t['formula']]+[v for k in ('definitions','theorems','applications','exercises') for entry in t[k] for v in entry]+t['pitfalls'])) for t in TOPICS]
-    (ROOT/'search-index.js').write_text('window.MATH_INDEX = '+json.dumps(data,ensure_ascii=False)+';\n')
+    (ROOT/'search-index.js').write_text('window.MATH_INDEX = '+json.dumps(data,ensure_ascii=False)+';\n', encoding='utf-8')
+    for name in ('style.css', 'search-index.js', 'app.js'):
+        VERSION[name] = hashlib.sha256((ROOT/name).read_bytes()).hexdigest()[:8]
+    pages = [Path('index.html')] + [Path(f, 'index.html') for f in FIELDS] + [Path(t['field'], t['slug'], 'index.html') for t in TOPICS]
+    for t in TOPICS:
+        folder = ROOT / t['field'] / t['slug']; folder.mkdir(parents=True, exist_ok=True)
+        (folder/'index.html').write_text(shell(t['title'],topic_body(t,'../../'),'../../',t['field']+'/'+t['slug'],t['summary']), encoding='utf-8')
+    for field in FIELDS:
+        (ROOT/field/'index.html').write_text(shell(FIELDS[field][0],index_body(field,'../'),'../',field), encoding='utf-8')
+    (ROOT/'index.html').write_text(shell('Index',index_body()), encoding='utf-8')
     # Preserve previously shared math URLs, including exercise anchors.
-    for page in ROOT.rglob('index.html'):
-        relative = page.relative_to(ROOT)
+    for relative in pages:
         old = ROOT.parent / 'math' / relative
         old.parent.mkdir(parents=True, exist_ok=True)
         prefix = '../' * len(relative.parts)
         target = prefix + 'notes/' + relative.as_posix()
-        old.write_text('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Moved to Notes</title><link rel="canonical" href="'+target+'"><script>location.replace('+json.dumps(target)+'+location.search+location.hash);</script></head><body><p>This page is now in <a href="'+target+'">Notes</a>.</p></body></html>')
+        old.write_text('<!doctype html><html lang="en"><head><meta charset="utf-8">'+MARK+'<meta name="viewport" content="width=device-width,initial-scale=1"><title>Moved to Notes</title><link rel="canonical" href="'+target+'"><script>location.replace('+json.dumps(target)+'+location.search+location.hash);</script></head><body><p>This page is now in <a href="'+target+'">Notes</a>.</p></body></html>', encoding='utf-8')
+    prune(ROOT, set(pages)); prune(ROOT.parent / 'math', set(pages))
     print(f'Built {len(TOPICS)} sheets, {len(FIELDS)} branches, and the index.')
 
 if __name__ == '__main__': build()

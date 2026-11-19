@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palette Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -168,7 +169,7 @@
 
         <div class="controls">
             <div class="base-color">
-                <label>Base Color</label>
+                <label for="baseColor">Base Color</label>
                 <input type="color" class="color-input" id="baseColor" value="#4ecdc4">
             </div>
             <select class="mode-select" id="harmonyMode">
@@ -252,7 +253,9 @@
             return 0.299 * r + 0.587 * g + 0.114 * b;
         }
 
-        function generatePalette() {
+        // vary: keep the harmony's hues but shift saturation/lightness of the derived colours,
+        // so "Generate New" produces a different palette in the non-random modes too
+        function generatePalette(vary) {
             const base = document.getElementById('baseColor').value;
             const mode = document.getElementById('harmonyMode').value;
             const hsl = hexToHsl(base);
@@ -329,6 +332,16 @@
                     break;
             }
 
+            if (vary === true && mode !== 'random') {
+                newPalette = newPalette.map(color => {
+                    if (color === base) return color;
+                    const c = hexToHsl(color);
+                    return hslToHex(c.h,
+                        Math.max(10, Math.min(100, c.s + (Math.random() * 30 - 15))),
+                        Math.max(10, Math.min(90, c.l + (Math.random() * 24 - 12))));
+                });
+            }
+
             // Preserve locked colors
             palette = newPalette.map((color, i) => locked[i] && palette[i] ? palette[i] : color);
             renderPalette();
@@ -388,51 +401,56 @@
                 btn.addEventListener('click', () => {
                     safeCopy(decodeURIComponent(btn.dataset.value)).then(() => {
                         btn.textContent = 'Copied!';
-                        setTimeout(() => btn.textContent = 'Copy', 1500);
-                    });
+                    }, () => {
+                        btn.textContent = 'Copy failed';
+                    }).then(() => setTimeout(() => btn.textContent = 'Copy', 1500));
                 });
             });
         }
 
         document.getElementById('baseColor').addEventListener('input', generatePalette);
         document.getElementById('harmonyMode').addEventListener('change', generatePalette);
-        document.getElementById('generateBtn').addEventListener('click', generatePalette);
+        document.getElementById('generateBtn').addEventListener('click', () => generatePalette(true));
 
         document.getElementById('randomizeBtn').addEventListener('click', () => {
             document.getElementById('baseColor').value = hslToHex(Math.random() * 360, 50 + Math.random() * 40, 45 + Math.random() * 20);
             generatePalette();
         });
 
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(textarea);
+            if (!ok) throw new Error('copy failed');
+        }
+
         function safeCopy(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                return navigator.clipboard.writeText(text);
-            }
-            return new Promise((resolve, reject) => {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                try { document.execCommand('copy'); resolve(); }
-                catch (e) { reject(e); }
-                document.body.removeChild(textarea);
-            });
+            return new Promise(resolve => {
+                if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('no clipboard API');
+                resolve(navigator.clipboard.writeText(text));
+            }).catch(() => fallbackCopy(text));
         }
 
         document.getElementById('copyAllBtn').addEventListener('click', () => {
+            const btn = document.getElementById('copyAllBtn');
             safeCopy(palette.join(', ')).then(() => {
-                const btn = document.getElementById('copyAllBtn');
                 btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy All', 1500);
-            });
+            }, () => {
+                btn.textContent = 'Copy failed';
+            }).then(() => setTimeout(() => btn.textContent = '📋 Copy All', 1500));
         });
 
         // Spacebar to regenerate
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(e.target.tagName)) {
                 e.preventDefault();
-                generatePalette();
+                generatePalette(true);
             }
         });
 

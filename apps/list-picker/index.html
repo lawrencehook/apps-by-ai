@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random List Picker - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -138,7 +139,7 @@
 
         <div class="card">
             <div class="form-group">
-                <label>Enter items (one per line)</label>
+                <label for="itemList">Enter items (one per line)</label>
                 <textarea id="itemList" placeholder="Apple
 Banana
 Cherry
@@ -149,7 +150,7 @@ Elderberry"></textarea>
 
             <div class="options">
                 <div class="count-group">
-                    <label>Pick</label>
+                    <label for="pickCount">Pick</label>
                     <input type="number" id="pickCount" value="1" min="1">
                     <label>item(s)</label>
                 </div>
@@ -170,7 +171,10 @@ Elderberry"></textarea>
         // URL parameter handling
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
-            if (params.has('items')) {
+            if (params.has('list')) {
+                textarea.value = params.get('list');
+            } else if (params.has('items')) {
+                // Legacy comma-separated links
                 textarea.value = params.get('items').replace(/,/g, '\n');
             }
             if (params.has('count')) document.getElementById('pickCount').value = params.get('count');
@@ -181,7 +185,7 @@ Elderberry"></textarea>
             const params = new URLSearchParams();
             const items = getItems();
             if (items.length > 0) {
-                params.set('items', items.join(','));
+                params.set('list', items.join('\n')); // newline-separated so items may contain commas
             }
             params.set('count', document.getElementById('pickCount').value);
             params.set('remove', document.getElementById('removePicked').checked ? '1' : '0');

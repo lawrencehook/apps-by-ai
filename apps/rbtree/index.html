@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red-Black Tree - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -180,17 +182,24 @@
                     node.y = y - 50;
                 }
 
-                const childSpread = spread * 0.6;
+                // Halving keeps a subtree's inner edge short of its parent's x
+                // (offsets sum to less than the spread); 0.6 let subtrees cross.
+                const childSpread = spread * 0.5;
                 setPositions(node.left, x - spread, y + levelHeight, childSpread);
                 setPositions(node.right, x + spread, y + levelHeight, childSpread);
             }
 
-            const initialSpread = Math.min(200, (width - 100) / 4);
+            // Deepest siblings sit 2 * spread / 2^(height - 2) apart; widen for deep trees
+            // so they clear a node diameter (48px), as far as the window allows.
+            const initialSpread = Math.min((width - 100) / 4, Math.max(200, 24 * Math.pow(2, treeHeight - 2)));
             setPositions(root, width / 2, startY, initialSpread);
         }
 
+        let animationFrame = null;
+
         function animateToPositions() {
             animating = true;
+            cancelAnimationFrame(animationFrame); // one loop at a time
 
             function animate() {
                 let stillMoving = false;
@@ -218,7 +227,7 @@
                 draw();
 
                 if (stillMoving) {
-                    requestAnimationFrame(animate);
+                    animationFrame = requestAnimationFrame(animate);
                 } else {
                     animating = false;
                     highlightNode = null;
@@ -245,7 +254,8 @@
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             updatePositions();
-            draw();
+            if (root) animateToPositions();
+            else draw();
         }
 
         function draw() {

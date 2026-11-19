@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BFS vs DFS - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -21,6 +22,7 @@
             background: rgba(0,0,0,0.9); padding: 15px 25px; border-radius: 8px;
             color: #fff; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
             display: flex; gap: 15px; align-items: center; z-index: 100;
+            flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 20px);
         }
         button {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -46,11 +48,11 @@
         <button id="start">Start</button>
         <button id="reset">Reset</button>
         <div class="control-group">
-            <label>Speed:</label>
+            <label for="speed">Speed:</label>
             <input type="range" id="speed" min="10" max="200" value="50" style="width:100px">
         </div>
         <div class="control-group">
-            <label>Grid:</label>
+            <label for="gridSize">Grid:</label>
             <input type="range" id="gridSize" min="10" max="40" value="20" style="width:100px">
         </div>
     </div>
@@ -78,6 +80,7 @@
         let gridSize = 20;
         let speed = 50;
         let running = false;
+        let runId = 0;
         let bfsGrid, dfsGrid;
         let startX, startY;
 
@@ -94,7 +97,7 @@
             bfsCanvas.height = bfsRect.height - 80;
             dfsCanvas.width = dfsRect.width - 40;
             dfsCanvas.height = dfsRect.height - 80;
-            if (!running) init();
+            if (!bfsGrid) init();
             else draw();
         }
 
@@ -203,6 +206,7 @@
         async function runSearch() {
             if (running) return;
             running = true;
+            const id = ++runId;
             document.getElementById('start').textContent = 'Running...';
 
             // Reset grids but keep walls
@@ -242,13 +246,20 @@
 
                     // Mark as visited after showing current
                     setTimeout(() => {
+                        if (id !== runId) return;
                         if (bfsGrid[current.y][current.x] === CURRENT) {
                             bfsGrid[current.y][current.x] = VISITED;
                         }
                     }, speed / 2);
                 }
 
-                // DFS step
+                // DFS step: cells are visited when popped and may be pushed more than
+                // once, so drop entries already visited through a deeper path.
+                while (dfsStack.length > 0) {
+                    const top = dfsStack[dfsStack.length - 1];
+                    if (dfsGrid[top.y][top.x] === QUEUED) break;
+                    dfsStack.pop();
+                }
                 if (dfsStack.length > 0) {
                     const current = dfsStack.pop();
 
@@ -264,7 +275,8 @@
                         }
 
                         for (const neighbor of neighbors) {
-                            if (dfsGrid[neighbor.y][neighbor.x] === EMPTY) {
+                            const state = dfsGrid[neighbor.y][neighbor.x];
+                            if (state === EMPTY || state === QUEUED) {
                                 dfsGrid[neighbor.y][neighbor.x] = QUEUED;
                                 dfsStack.push(neighbor);
                             }
@@ -272,6 +284,7 @@
                     }
 
                     setTimeout(() => {
+                        if (id !== runId) return;
                         if (dfsGrid[current.y][current.x] === CURRENT) {
                             dfsGrid[current.y][current.x] = VISITED;
                         }
@@ -281,6 +294,7 @@
                 updateStats(bfsVisited, bfsQueue.length, dfsVisited, dfsStack.length);
                 draw();
                 await new Promise(r => setTimeout(r, speed));
+                if (id !== runId) return;
             }
 
             running = false;
@@ -288,11 +302,16 @@
             draw();
         }
 
-        document.getElementById('start').addEventListener('click', runSearch);
-        document.getElementById('reset').addEventListener('click', () => {
+        function stopRun() {
+            runId++;
             running = false;
             document.getElementById('start').textContent = 'Start';
-            setTimeout(init, 150);
+        }
+
+        document.getElementById('start').addEventListener('click', runSearch);
+        document.getElementById('reset').addEventListener('click', () => {
+            stopRun();
+            init();
         });
 
         document.getElementById('speed').addEventListener('input', e => {
@@ -300,8 +319,9 @@
         });
 
         document.getElementById('gridSize').addEventListener('input', e => {
+            stopRun();
             gridSize = parseInt(e.target.value);
-            if (!running) init();
+            init();
         });
 
         window.addEventListener('resize', resize);

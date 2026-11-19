@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gravity Simulator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -39,11 +40,11 @@
         <h1>Gravity Simulator</h1>
         <p>N-body gravitational simulation. Click and drag to launch bodies with velocity.</p>
         <div class="control-group">
-            <label>Gravity: <span id="gravLabel">1.0</span></label>
+            <label for="gravity">Gravity: <span id="gravLabel">1.0</span></label>
             <input type="range" id="gravity" min="0.1" max="5" step="0.1" value="1">
         </div>
         <div class="control-group">
-            <label>Trail Length: <span id="trailLabel">100</span></label>
+            <label for="trail">Trail Length: <span id="trailLabel">100</span></label>
             <input type="range" id="trail" min="10" max="500" value="100">
         </div>
         <button id="addPlanet">Add Planet</button>
@@ -132,6 +133,13 @@
                     if (dist < bodies[i].radius + bodies[j].radius) {
                         // Collision - merge bodies
                         const totalMass = bodies[i].mass + bodies[j].mass;
+                        // Merged body sits at the centre of mass and looks like the heavier one
+                        if (bodies[j].mass > bodies[i].mass) {
+                            bodies[i].color = bodies[j].color;
+                            bodies[i].trail = bodies[j].trail;
+                        }
+                        bodies[i].x = (bodies[i].x * bodies[i].mass + bodies[j].x * bodies[j].mass) / totalMass;
+                        bodies[i].y = (bodies[i].y * bodies[i].mass + bodies[j].y * bodies[j].mass) / totalMass;
                         bodies[i].vx = (bodies[i].vx * bodies[i].mass + bodies[j].vx * bodies[j].mass) / totalMass;
                         bodies[i].vy = (bodies[i].vy * bodies[i].mass + bodies[j].vy * bodies[j].mass) / totalMass;
                         bodies[i].mass = totalMass;
@@ -205,11 +213,15 @@
             }
         }
 
-        function render() {
+        let lastFrame = null;
+
+        function render(now = performance.now()) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, width, height);
 
-            const dt = 0.5;
+            // 0.5 per 60Hz frame, scaled by real elapsed time (capped after a stall)
+            const dt = lastFrame === null ? 0.5 : 0.5 * Math.min((now - lastFrame) / (1000 / 60), 3);
+            lastFrame = now;
             applyGravity(dt);
 
             for (const body of bodies) {
@@ -256,6 +268,11 @@
                 dragStart = null;
                 dragEnd = null;
             }
+        });
+
+        canvas.addEventListener('pointercancel', () => {
+            dragStart = null;
+            dragEnd = null;
         });
 
         document.getElementById('gravity').addEventListener('input', e => {

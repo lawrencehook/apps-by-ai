@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Time-Lapse Creator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -324,12 +325,12 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Timing</div>
                     <div class="setting-row">
-                        <label>Frame Duration</label>
+                        <label for="frameDuration">Frame Duration</label>
                         <input type="range" id="frameDuration" min="0.2" max="3" step="0.1" value="1">
                         <span class="value" id="frameDurationVal">1.0s</span>
                     </div>
                     <div class="setting-row">
-                        <label>Transition</label>
+                        <label for="transitionDuration">Transition</label>
                         <input type="range" id="transitionDuration" min="0" max="1" step="0.1" value="0.3">
                         <span class="value" id="transitionDurationVal">0.3s</span>
                     </div>
@@ -338,7 +339,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Transition Effect</div>
                     <div class="setting-row">
-                        <label>Type</label>
+                        <label for="transitionType">Type</label>
                         <select id="transitionType">
                             <option value="crossfade">Crossfade</option>
                             <option value="slide">Slide</option>
@@ -351,7 +352,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Output</div>
                     <div class="setting-row">
-                        <label>Resolution</label>
+                        <label for="resolution">Resolution</label>
                         <select id="resolution">
                             <option value="1920x1080">1080p (1920×1080)</option>
                             <option value="1280x720">720p (1280×720)</option>
@@ -360,7 +361,7 @@
                         </select>
                     </div>
                     <div class="setting-row">
-                        <label>FPS</label>
+                        <label for="fps">FPS</label>
                         <select id="fps">
                             <option value="24">24 fps</option>
                             <option value="30" selected>30 fps</option>
@@ -372,7 +373,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-title">Actions</div>
                     <button id="addMoreBtn" class="secondary" style="margin-bottom: 8px;">+ Add More Photos</button>
-                    <button id="exportBtn">Export Video (WebM)</button>
+                    <button id="exportBtn">Export Video</button>
                     <div class="progress-bar hidden" id="progressBar">
                         <div class="progress-bar-fill" id="progressFill"></div>
                     </div>
@@ -410,6 +411,7 @@
         let currentFrame = 0;
         let animationId = null;
         let lastFrameTime = 0;
+        let isExporting = false;
 
         // DOM Elements
         const dropZone = document.getElementById('dropZone');
@@ -448,33 +450,48 @@
             dropZone.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });
-        fileInput.addEventListener('change', e => handleFiles(e.target.files));
+        fileInput.addEventListener('change', e => {
+            handleFiles(e.target.files);
+            fileInput.value = ''; // so the same files can be chosen again
+        });
 
         addThumbnail.addEventListener('click', () => fileInput.click());
         document.getElementById('addMoreBtn').addEventListener('click', () => fileInput.click());
 
         function handleFiles(files) {
+            if (isExporting) return;
             const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
             if (imageFiles.length === 0) return;
 
-            let loaded = 0;
-            imageFiles.forEach(file => {
+            // Decodes finish in any order; keep selection order and skip files that fail
+            const results = new Array(imageFiles.length).fill(null);
+            let settled = 0;
+            const settle = () => {
+                settled++;
+                if (settled < imageFiles.length) return;
+                const ok = results.filter(Boolean);
+                photos.push(...ok);
+                if (photos.length > 0) initEditor();
+                if (ok.length < imageFiles.length) {
+                    alert(`${imageFiles.length - ok.length} of ${imageFiles.length} files could not be read as images and were skipped.`);
+                }
+            };
+            imageFiles.forEach((file, i) => {
                 const reader = new FileReader();
                 reader.onload = e => {
                     const img = new Image();
                     img.onload = () => {
-                        photos.push({
+                        results[i] = {
                             img,
                             dataUrl: e.target.result,
                             name: file.name
-                        });
-                        loaded++;
-                        if (loaded === imageFiles.length) {
-                            initEditor();
-                        }
+                        };
+                        settle();
                     };
+                    img.onerror = settle;
                     img.src = e.target.result;
                 };
+                reader.onerror = settle;
                 reader.readAsDataURL(file);
             });
         }
@@ -527,7 +544,7 @@
                         currentFrame = idx;
                         renderFrame(currentFrame);
                         updateFrameCounter();
-                        renderThumbnails();
+                        updateActiveThumbnail();
                     }
                 });
 
@@ -564,7 +581,8 @@
                     e.preventDefault();
                     const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
                     const toIdx = idx;
-                    if (fromIdx !== toIdx) {
+                    // A file dragged from the desktop carries no index
+                    if (Number.isInteger(fromIdx) && fromIdx >= 0 && fromIdx < photos.length && fromIdx !== toIdx) {
                         const [moved] = photos.splice(fromIdx, 1);
                         photos.splice(toIdx, 0, moved);
                         renderThumbnails();
@@ -584,7 +602,16 @@
             thumbnailStrip.appendChild(addBtn);
         }
 
-        function renderFrame(frameIndex) {
+        // Highlight the current thumbnail without rebuilding the strip
+        function updateActiveThumbnail() {
+            const thumbs = thumbnailStrip.querySelectorAll('.thumbnail');
+            thumbs.forEach((t, i) => {
+                t.classList.toggle('active', i === Math.floor(currentFrame));
+            });
+        }
+
+        // wrap = false holds the last photo instead of transitioning back to the first
+        function renderFrame(frameIndex, wrap = true) {
             if (photos.length === 0) return;
 
             const transTime = parseFloat(transitionDuration.value);
@@ -601,7 +628,8 @@
 
             // Are we in transition zone?
             const transitionStart = frameTime / totalFrameTime;
-            const inTransition = frameProgress >= transitionStart && transTime > 0;
+            const inTransition = frameProgress >= transitionStart && transTime > 0 &&
+                (wrap || currentPhotoIdx < photos.length - 1);
 
             ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
@@ -717,11 +745,7 @@
             renderFrame(currentFrame);
             updateFrameCounter();
 
-            // Update active thumbnail highlight without full DOM rebuild
-            const thumbs = thumbnailStrip.querySelectorAll('.thumbnail');
-            thumbs.forEach((t, i) => {
-                t.classList.toggle('active', i === Math.floor(currentFrame));
-            });
+            updateActiveThumbnail();
 
             animationId = requestAnimationFrame(animate);
         }
@@ -756,11 +780,13 @@
 
         function scrubTo(e) {
             const rect = timeline.getBoundingClientRect();
+            if (isExporting || photos.length === 0) return;
             const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            currentFrame = x * photos.length;
+            // Stay inside the last photo: photos.length itself wraps to photo 1
+            currentFrame = Math.min(x * photos.length, photos.length - 0.0001);
             renderFrame(currentFrame);
             updateFrameCounter();
-            renderThumbnails();
+            updateActiveThumbnail();
         }
 
         // Export
@@ -772,17 +798,28 @@
                 return;
             }
 
+            if (!previewCanvas.captureStream || typeof MediaRecorder === 'undefined') {
+                alert('Video export is not supported in this browser');
+                return;
+            }
+
             const progressBar = document.getElementById('progressBar');
             const progressFill = document.getElementById('progressFill');
             const statusText = document.getElementById('statusText');
-            const exportBtn = document.getElementById('exportBtn');
-
-            progressBar.classList.remove('hidden');
-            statusText.classList.remove('hidden');
-            exportBtn.disabled = true;
 
             // Stop playback if running
             if (isPlaying) togglePlayback();
+
+            // Lock the editor: every control feeds the frames being recorded
+            const setExporting = on => {
+                isExporting = on;
+                editorPanel.querySelectorAll('input, select, button').forEach(el => { el.disabled = on; });
+                editorPanel.style.pointerEvents = on ? 'none' : '';
+            };
+
+            progressBar.classList.remove('hidden');
+            statusText.classList.remove('hidden');
+            setExporting(true);
 
             const outputFps = parseInt(fps.value);
             const frameTime = parseFloat(frameDuration.value);
@@ -791,8 +828,19 @@
             const totalDuration = photos.length * totalFrameTime;
             const totalFrames = Math.ceil(totalDuration * outputFps);
 
+            const finish = () => {
+                progressBar.classList.add('hidden');
+                statusText.classList.add('hidden');
+                setExporting(false);
+                statusText.textContent = 'Processing...';
+                currentFrame = 0;
+                renderFrame(currentFrame);
+                updateFrameCounter();
+                updateActiveThumbnail();
+            };
+
             // Create video using MediaRecorder
-            const stream = previewCanvas.captureStream(outputFps);
+            let stream, mediaRecorder;
             let recorderOptions = { videoBitsPerSecond: 5000000 };
             if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
                 recorderOptions.mimeType = 'video/webm;codecs=vp9';
@@ -801,7 +849,14 @@
             } else if (MediaRecorder.isTypeSupported('video/webm')) {
                 recorderOptions.mimeType = 'video/webm';
             }
-            const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+            try {
+                stream = previewCanvas.captureStream(outputFps);
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+            } catch (err) {
+                finish();
+                alert('Video export is not supported in this browser');
+                return;
+            }
 
             const chunks = [];
             mediaRecorder.ondataavailable = e => {
@@ -809,44 +864,43 @@
             };
 
             mediaRecorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
+                // Safari records MP4, so name the file after what was actually recorded
+                const type = (mediaRecorder.mimeType || 'video/webm').split(';')[0];
+                const blob = new Blob(chunks, { type });
                 const url = URL.createObjectURL(blob);
 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'timelapse.webm';
+                a.download = 'timelapse.' + (type.includes('mp4') ? 'mp4' : 'webm');
                 a.click();
 
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-                progressBar.classList.add('hidden');
-                statusText.classList.add('hidden');
-                exportBtn.disabled = false;
-                statusText.textContent = 'Processing...';
+                finish();
             };
 
             mediaRecorder.start();
 
-            // Render frames
-            let frameIdx = 0;
+            // Render frames. MediaRecorder records in real time, so the picture is
+            // chosen from the clock; counting timer callbacks makes the video run long.
+            const startTime = performance.now();
             const frameInterval = 1000 / outputFps;
 
             function renderNextFrame() {
-                if (frameIdx >= totalFrames) {
+                const time = (performance.now() - startTime) / 1000;
+                if (time >= totalDuration) {
                     mediaRecorder.stop();
                     return;
                 }
 
-                const time = frameIdx / outputFps;
                 currentFrame = time / totalFrameTime;
 
-                renderFrame(currentFrame);
+                renderFrame(currentFrame, false);
 
+                const frameIdx = Math.min(totalFrames - 1, Math.floor(time * outputFps));
                 const progress = (frameIdx / totalFrames) * 100;
                 progressFill.style.width = progress + '%';
                 statusText.textContent = `Rendering frame ${frameIdx + 1} / ${totalFrames}`;
-
-                frameIdx++;
 
                 // Use setTimeout to allow MediaRecorder to capture frames
                 setTimeout(renderNextFrame, frameInterval);
@@ -870,7 +924,8 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', e => {
-            if (e.target.matches('input, select')) return;
+            if (e.target.matches('input, select, textarea, button')) return;
+            if (isExporting || e.ctrlKey || e.metaKey || e.altKey) return;
 
             if (e.key === ' ') {
                 e.preventDefault();
@@ -880,13 +935,13 @@
                 currentFrame = Math.max(0, Math.floor(currentFrame) - 1);
                 renderFrame(currentFrame);
                 updateFrameCounter();
-                renderThumbnails();
+                updateActiveThumbnail();
             }
             if (e.key === 'ArrowRight' && photos.length > 0) {
                 currentFrame = Math.min(photos.length - 1, Math.floor(currentFrame) + 1);
                 renderFrame(currentFrame);
                 updateFrameCounter();
-                renderThumbnails();
+                updateActiveThumbnail();
             }
         });
     </script>

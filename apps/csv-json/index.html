@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV ↔ JSON Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -166,7 +167,7 @@
                 <label for="headerRow">First row is header</label>
             </div>
             <div class="option">
-                <label>Delimiter:</label>
+                <label for="delimiter">Delimiter:</label>
                 <select id="delimiter">
                     <option value=",">Comma (,)</option>
                     <option value=";">Semicolon (;)</option>
@@ -175,7 +176,7 @@
                 </select>
             </div>
             <div class="option">
-                <label>JSON indent:</label>
+                <label for="indent">JSON indent:</label>
                 <select id="indent">
                     <option value="2">2 spaces</option>
                     <option value="4">4 spaces</option>
@@ -283,6 +284,16 @@
             return lines.filter(line => line.some(field => field.trim() !== ''));
         }
 
+        // Only plain decimal numbers that survive a round trip: keeps "02134", "0x1A" and big integers as strings
+        function coerceNumber(value) {
+            const t = value.trim();
+            if (!/^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/.test(t)) return value;
+            const n = Number(t);
+            if (!isFinite(n)) return value;
+            if (/^-?\d+$/.test(t) && !Number.isSafeInteger(n)) return value;
+            return n;
+        }
+
         function csvToJson(csv) {
             const delimiter = getDelimiter();
             const hasHeader = document.getElementById('headerRow').checked;
@@ -299,24 +310,17 @@
                     headers.forEach((header, i) => {
                         let value = row[i] || '';
                         // Try to parse numbers
-                        if (value !== '' && !isNaN(value) && !isNaN(parseFloat(value))) {
-                            value = parseFloat(value);
-                        } else if (value.toLowerCase() === 'true') {
-                            value = true;
-                        } else if (value.toLowerCase() === 'false') {
-                            value = false;
+                        value = coerceNumber(value);
+                        if (typeof value === 'string') {
+                            if (value.toLowerCase() === 'true') value = true;
+                            else if (value.toLowerCase() === 'false') value = false;
                         }
                         obj[header.trim()] = value;
                     });
                     return obj;
                 });
             } else {
-                result = lines.map(row => row.map(cell => {
-                    if (cell !== '' && !isNaN(cell) && !isNaN(parseFloat(cell))) {
-                        return parseFloat(cell);
-                    }
-                    return cell;
-                }));
+                result = lines.map(row => row.map(coerceNumber));
             }
 
             return JSON.stringify(result, null, indent === 0 ? undefined : indent);
@@ -332,8 +336,8 @@
 
             const escapeField = (field) => {
                 if (field === null || field === undefined) return '';
-                const str = String(field);
-                if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
+                const str = typeof field === 'object' ? JSON.stringify(field) : String(field);
+                if (str.includes(delimiter) || str.includes('"') || str.includes('\n') || str.includes('\r')) {
                     return '"' + str.replace(/"/g, '""') + '"';
                 }
                 return str;
@@ -341,11 +345,12 @@
 
             let csv = '';
 
-            if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
-                const headers = [...new Set(data.flatMap(obj => Object.keys(obj)))];
+            const isRecord = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+            if (isRecord(data.find(v => v !== null && v !== undefined))) {
+                const headers = [...new Set(data.flatMap(obj => isRecord(obj) ? Object.keys(obj) : []))];
                 csv = headers.map(escapeField).join(delimiter) + '\n';
                 csv += data.map(obj =>
-                    headers.map(header => escapeField(obj[header])).join(delimiter)
+                    headers.map(header => escapeField(isRecord(obj) ? obj[header] : undefined)).join(delimiter)
                 ).join('\n');
             } else {
                 csv = data.map(row =>
@@ -357,8 +362,9 @@
         }
 
         function convert() {
-            const inputText = input.value.trim();
-            if (!inputText) {
+            // Not trimmed: a leading tab is an empty first TSV column
+            const inputText = input.value;
+            if (!inputText.trim()) {
                 output.value = '';
                 messageEl.innerHTML = '';
                 return;
@@ -390,6 +396,7 @@
 
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (btn.dataset.mode === mode) return;
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
@@ -438,13 +445,23 @@ Alice Brown,36,Houston,true`;
         document.getElementById('copyBtn').addEventListener('click', () => {
             if (!output.value) return;
             const btn = document.getElementById('copyBtn');
-            navigator.clipboard.writeText(output.value).then(() => {
-                btn.textContent = 'Copied!';
+            const done = ok => {
+                btn.textContent = ok ? 'Copied!' : 'Failed';
                 setTimeout(() => btn.textContent = 'Copy', 1500);
-            }).catch(() => {
-                btn.textContent = 'Failed';
-                setTimeout(() => btn.textContent = 'Copy', 1500);
-            });
+            };
+            const fallbackCopy = () => {
+                let ok = false;
+                try {
+                    output.select();
+                    ok = document.execCommand('copy');
+                } catch (e) {}
+                done(ok);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(output.value).then(() => done(true)).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {

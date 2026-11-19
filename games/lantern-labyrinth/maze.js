@@ -97,7 +97,7 @@
     function dungeon(size, seed) {
         if (!Number.isInteger(size) || size < 19 || size > 51 || size % 2 === 0) throw new Error('Dungeon size must be odd, from 19 to 51.');
         const rng = random(seed + '-architecture'), grid = Array.from({ length: size }, () => Array(size).fill(1));
-        const rooms = [], doors = [], fences = [], stride = Math.floor((size - 2) / 3);
+        const rooms = [], doors = [], stride = Math.floor((size - 2) / 3);
         const carve = (x, z) => { if (x > 0 && z > 0 && x < size - 1 && z < size - 1) grid[z][x] = 0; };
         for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
             const jitter = () => stride >= 8 ? Math.floor(rng() * 3) - 1 : 0;
@@ -161,7 +161,7 @@
         const start = [rooms[0].cx, rooms[0].cz], distances = paths(grid, start).distance;
         const far = rooms.reduce((best, room) => distances.get([room.cx, room.cz].join(',')) > distances.get([best.cx, best.cz].join(',')) ? room : best);
         grid.blocked = new Set(doors.map(door => `${door.x},${door.z}`));
-        return { size, seed, grid, rooms, doors, fences, start, exit: [far.cx, far.cz], outward: [0, -1] };
+        return { size, seed, grid, rooms, doors, start, exit: [far.cx, far.cz], outward: [0, -1] };
     }
     function town() {
         const size = 15, grid = Array.from({ length: size }, (_, z) => Array.from({ length: size }, (_, x) => x === 0 || z === 0 || x === size - 1 || z === size - 1 ? 1 : 0));

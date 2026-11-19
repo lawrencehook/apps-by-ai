@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Fade - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -229,12 +230,12 @@
                         <label for="fadeInEnabled">Enable fade in</label>
                     </div>
                     <div class="control-row">
-                        <label>Duration</label>
+                        <label for="fadeInDuration">Duration</label>
                         <input type="range" id="fadeInDuration" min="0" max="10" step="0.1" value="2">
                         <span class="value" id="fadeInValue">2.0s</span>
                     </div>
                     <div class="control-row">
-                        <label>Curve</label>
+                        <label for="fadeInCurve">Curve</label>
                         <select id="fadeInCurve">
                             <option value="linear">Linear</option>
                             <option value="exponential" selected>Exponential</option>
@@ -251,12 +252,12 @@
                         <label for="fadeOutEnabled">Enable fade out</label>
                     </div>
                     <div class="control-row">
-                        <label>Duration</label>
+                        <label for="fadeOutDuration">Duration</label>
                         <input type="range" id="fadeOutDuration" min="0" max="10" step="0.1" value="2">
                         <span class="value" id="fadeOutValue">2.0s</span>
                     </div>
                     <div class="control-row">
-                        <label>Curve</label>
+                        <label for="fadeOutCurve">Curve</label>
                         <select id="fadeOutCurve">
                             <option value="linear">Linear</option>
                             <option value="exponential" selected>Exponential</option>
@@ -322,18 +323,25 @@
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
 
                 // Set max fade duration to half the audio length
                 const maxFade = Math.min(10, audioBuffer.duration / 2);
-                document.getElementById('fadeInDuration').max = maxFade;
-                document.getElementById('fadeOutDuration').max = maxFade;
+                const fadeInSlider = document.getElementById('fadeInDuration');
+                const fadeOutSlider = document.getElementById('fadeOutDuration');
+                fadeInSlider.max = maxFade;
+                fadeOutSlider.max = maxFade;
+                // Lowering max clamps the slider value, so refresh the labels
+                document.getElementById('fadeInValue').textContent = parseFloat(fadeInSlider.value).toFixed(1) + 's';
+                document.getElementById('fadeOutValue').textContent = parseFloat(fadeOutSlider.value).toFixed(1) + 's';
+
+                // Show the panel first: the canvas has no size while hidden
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+                status.classList.remove('show', 'error');
 
                 drawWaveform();
                 updateOverlays();
-
-                dropZone.classList.add('hidden');
-                editorPanel.classList.remove('hidden');
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show', 'error');
@@ -548,6 +556,7 @@
             msg += '!';
 
             status.textContent = msg;
+            status.classList.remove('error');
             status.classList.add('show');
         });
 

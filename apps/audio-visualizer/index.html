@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Visualizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -122,7 +123,7 @@
         </div>
 
         <div class="control-group">
-            <label>Color Scheme</label>
+            <label for="colorScheme">Color Scheme</label>
             <select id="colorScheme">
                 <option value="rainbow">Rainbow</option>
                 <option value="neon">Neon Glow</option>
@@ -148,17 +149,17 @@
         </div>
 
         <div class="control-group">
-            <label>Sensitivity: <span id="sensitivityLabel">1.0</span></label>
+            <label for="sensitivity">Sensitivity: <span id="sensitivityLabel">1.0</span></label>
             <input type="range" id="sensitivity" min="0.5" max="3" step="0.1" value="1">
         </div>
 
         <div class="control-group">
-            <label>Smoothing: <span id="smoothingLabel">0.8</span></label>
+            <label for="smoothing">Smoothing: <span id="smoothingLabel">0.8</span></label>
             <input type="range" id="smoothing" min="0" max="0.95" step="0.05" value="0.8">
         </div>
 
         <div class="control-group">
-            <label>Bar Count: <span id="barCountLabel">64</span></label>
+            <label for="barCount">Bar Count: <span id="barCountLabel">64</span></label>
             <input type="range" id="barCount" min="16" max="256" step="8" value="64">
         </div>
 
@@ -183,6 +184,7 @@
         let animationId = null;
         let mediaElementSource = null;
         let currentStream = null;
+        let currentFileUrl = null;
 
         // Settings
         let vizMode = 'bars';
@@ -224,23 +226,25 @@
             try {
                 initAudio();
 
-                // Stop any existing audio file playback
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                // Permission granted: only now stop the audio file and any previous stream.
+                // Drop the file's handlers first so its pause event can't overwrite the mic status.
+                audioPlayer.onplay = audioPlayer.onpause = audioPlayer.onended = null;
                 audioPlayer.pause();
                 audioPlayer.src = '';
                 audioControls.style.display = 'none';
+                if (currentFileUrl) {
+                    URL.revokeObjectURL(currentFileUrl);
+                    currentFileUrl = null;
+                }
 
-                // Stop previous microphone stream if any
                 if (currentStream) {
                     currentStream.getTracks().forEach(t => t.stop());
                 }
-
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 currentStream = stream;
 
                 if (source) source.disconnect();
-                if (mediaElementSource) {
-                    mediaElementSource.disconnect();
-                }
 
                 source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
@@ -272,12 +276,16 @@
             const url = URL.createObjectURL(file);
             audioPlayer.src = url;
             audioControls.style.display = 'block';
+            if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
+            currentFileUrl = url;
 
-            // Only create MediaElementSource once per element
+            // Only create MediaElementSource once per element. The file feeds the speakers
+            // directly; the analyser is a side tap and never reaches the destination, so the
+            // microphone (which also feeds the analyser) is not played back.
             if (!mediaElementSource) {
                 mediaElementSource = audioContext.createMediaElementSource(audioPlayer);
                 mediaElementSource.connect(analyser);
-                analyser.connect(audioContext.destination);
+                mediaElementSource.connect(audioContext.destination);
             }
 
             audioPlayer.onplay = () => {
@@ -508,11 +516,11 @@
         }
 
         function drawSpectrum() {
-            const step = Math.floor(dataArray.length / width);
             const imageData = ctx.createImageData(width, height);
 
             for (let x = 0; x < width; x++) {
-                const value = (dataArray[x * step] || 0) * sensitivity;
+                // Proportional mapping: an integer step is 0 once the window is wider than the bin count
+                const value = (dataArray[Math.floor(x * dataArray.length / width)] || 0) * sensitivity;
                 const barHeight = (value / 255) * height;
 
                 for (let y = 0; y < height; y++) {

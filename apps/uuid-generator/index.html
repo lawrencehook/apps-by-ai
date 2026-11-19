@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UUID Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -151,14 +152,14 @@
 
         <div class="card">
             <div class="form-group">
-                <label>UUID Version</label>
+                <label for="version">UUID Version</label>
                 <select id="version">
                     <option value="4">Version 4 (Random)</option>
                     <option value="1">Version 1 (Timestamp)</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Generate Multiple</label>
+                <label for="count">Generate Multiple</label>
                 <input type="number" id="count" value="1" min="1" max="100">
             </div>
             <div class="checkbox-group">
@@ -184,8 +185,9 @@
         // URL parameter handling
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
-            if (params.has('v')) document.getElementById('version').value = params.get('v');
-            if (params.has('count')) document.getElementById('count').value = params.get('count');
+            if (['4', '1'].includes(params.get('v'))) document.getElementById('version').value = params.get('v');
+            const count = parseInt(params.get('count'), 10);
+            if (Number.isFinite(count)) document.getElementById('count').value = Math.min(100, Math.max(1, count));
             if (params.has('upper')) document.getElementById('uppercase').checked = params.get('upper') === '1';
             if (params.has('nodash')) document.getElementById('noDashes').checked = params.get('nodash') === '1';
         }
@@ -253,14 +255,17 @@
             });
         }
 
+        let v1Counter = 0;
+
         function generateUUIDv1() {
-            // Simplified v1-like UUID (timestamp-based, not strictly RFC 4122 but structurally valid)
-            const now = Date.now();
-            const timeHex = now.toString(16).padStart(16, '0');
+            // RFC 4122 v1 timestamp: 60-bit count of 100ns intervals since 1582-10-15.
+            // The counter fills the sub-millisecond digits so a batch gets distinct times.
+            const GREGORIAN_OFFSET_MS = 12219292800000n;
+            const ticks = (BigInt(Date.now()) + GREGORIAN_OFFSET_MS) * 10000n + BigInt(v1Counter++ % 10000);
+            const timeHex = ticks.toString(16).padStart(15, '0');
             const timeLow = timeHex.slice(-8);
             const timeMid = timeHex.slice(-12, -8);
-            const timeHi = timeHex.slice(-16, -12);
-            const timeHiAndVersion = '1' + timeHi.slice(-3);
+            const timeHiAndVersion = '1' + timeHex.slice(0, 3);
             const rnd = new Uint8Array(8);
             if (crypto && crypto.getRandomValues) {
                 crypto.getRandomValues(rnd);

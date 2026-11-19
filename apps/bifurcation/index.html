@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bifurcation Diagram - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -109,22 +110,22 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>r min</label>
+                <label for="rMin">r min</label>
                 <input type="range" id="rMin" min="0" max="3.5" step="0.01" value="2.5">
                 <span class="value" id="rMinVal">2.50</span>
             </div>
             <div class="control-group">
-                <label>r max</label>
+                <label for="rMax">r max</label>
                 <input type="range" id="rMax" min="2.5" max="4" step="0.01" value="4">
                 <span class="value" id="rMaxVal">4.00</span>
             </div>
             <div class="control-group">
-                <label>Iterations</label>
+                <label for="iterations">Iterations</label>
                 <input type="range" id="iterations" min="100" max="1000" step="50" value="500">
                 <span class="value" id="iterVal">500</span>
             </div>
             <div class="control-group">
-                <label>Color</label>
+                <label for="colorScheme">Color</label>
                 <select id="colorScheme">
                     <option value="density">Density</option>
                     <option value="cyan">Cyan</option>
@@ -156,6 +157,9 @@
         let density = [];
         let isDragging = false;
         let dragStart = null;
+        // View bounds live here; the sliders have step 0.01 and would round a deep zoom back out
+        let rMin = parseFloat(rMinSlider.value);
+        let rMax = parseFloat(rMaxSlider.value);
 
         function resize() {
             const container = document.querySelector('.canvas-container');
@@ -173,8 +177,6 @@
         }
 
         function render() {
-            let rMin = parseFloat(rMinSlider.value);
-            let rMax = parseFloat(rMaxSlider.value);
             const iterations = parseInt(iterSlider.value);
             const skip = 200; // Skip initial transient
 
@@ -290,8 +292,6 @@
             const px = e.clientX - rect.left;
             const py = e.clientY - rect.top;
 
-            const rMin = parseFloat(rMinSlider.value);
-            const rMax = parseFloat(rMaxSlider.value);
             const r = rMin + (px / width) * (rMax - rMin);
             const x = 1 - (py / height);
 
@@ -299,13 +299,13 @@
             document.getElementById('xValue').textContent = x.toFixed(4);
 
             if (isDragging && dragStart) {
-                // Draw selection rectangle
+                // Draw the selected r-range (zoom is horizontal only)
                 draw();
                 ctx.strokeStyle = 'rgba(78, 205, 196, 0.8)';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(
-                    dragStart.x, dragStart.y,
-                    px - dragStart.x, py - dragStart.y
+                    dragStart.x, 0,
+                    px - dragStart.x, height
                 );
             }
         });
@@ -326,9 +326,6 @@
                 const endX = e.clientX - rect.left;
                 const endY = e.clientY - rect.top;
 
-                const rMin = parseFloat(rMinSlider.value);
-                const rMax = parseFloat(rMaxSlider.value);
-
                 const newRMin = rMin + (Math.min(dragStart.x, endX) / width) * (rMax - rMin);
                 const newRMax = rMin + (Math.max(dragStart.x, endX) / width) * (rMax - rMin);
 
@@ -339,6 +336,8 @@
                     rMinSlider.max = 4;
                     rMaxSlider.min = 0;
                     rMaxSlider.max = 4;
+                    rMin = clampedMin;
+                    rMax = clampedMax;
                     rMinSlider.value = clampedMin;
                     rMaxSlider.value = clampedMax;
                     render();
@@ -349,13 +348,15 @@
         });
 
         document.getElementById('reset').addEventListener('click', () => {
+            rMin = 2.5;
+            rMax = 4;
             rMinSlider.value = 2.5;
             rMaxSlider.value = 4;
             render();
         });
 
-        rMinSlider.addEventListener('input', debouncedRender);
-        rMaxSlider.addEventListener('input', debouncedRender);
+        rMinSlider.addEventListener('input', () => { rMin = parseFloat(rMinSlider.value); debouncedRender(); });
+        rMaxSlider.addEventListener('input', () => { rMax = parseFloat(rMaxSlider.value); debouncedRender(); });
         iterSlider.addEventListener('input', debouncedRender);
         colorSelect.addEventListener('change', draw);
 

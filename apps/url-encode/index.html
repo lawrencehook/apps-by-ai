@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL Encode/Decode - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -203,12 +204,12 @@ Example: Hello World! Special chars: @#$%&*"></textarea>
             <h3>Common URL Encodings</h3>
             <div class="chars-table">
                 <div class="char-item"><span class="char-original">Space</span><span class="char-encoded">%20</span></div>
-                <div class="char-item"><span class="char-original">!</span><span class="char-encoded">%21</span></div>
+                <div class="char-item"><span class="char-original">"</span><span class="char-encoded">%22</span></div>
                 <div class="char-item"><span class="char-original">#</span><span class="char-encoded">%23</span></div>
                 <div class="char-item"><span class="char-original">$</span><span class="char-encoded">%24</span></div>
                 <div class="char-item"><span class="char-original">%</span><span class="char-encoded">%25</span></div>
                 <div class="char-item"><span class="char-original">&</span><span class="char-encoded">%26</span></div>
-                <div class="char-item"><span class="char-original">'</span><span class="char-encoded">%27</span></div>
+                <div class="char-item"><span class="char-original">,</span><span class="char-encoded">%2C</span></div>
                 <div class="char-item"><span class="char-original">+</span><span class="char-encoded">%2B</span></div>
                 <div class="char-item"><span class="char-original">/</span><span class="char-encoded">%2F</span></div>
                 <div class="char-item"><span class="char-original">:</span><span class="char-encoded">%3A</span></div>
@@ -270,6 +271,7 @@ Example: Hello World! Special chars: @#$%&*"></textarea>
         }
 
         function updateMode(newMode) {
+            if (newMode === mode) return;
             // Swap input and output when switching modes
             const previousOutput = outputText.value;
             if (previousOutput) {
@@ -305,12 +307,35 @@ Example: Hello World! Special chars: @#$%&*"></textarea>
 
         document.getElementById('copyBtn').addEventListener('click', () => {
             if (!outputText.value) return;
-            navigator.clipboard.writeText(outputText.value);
-            document.getElementById('copyBtn').textContent = 'Copied!';
-            setTimeout(() => {
-                document.getElementById('copyBtn').textContent = 'Copy';
-            }, 1500);
+            const btn = document.getElementById('copyBtn');
+            copyToClipboard(outputText.value).then(() => {
+                btn.textContent = 'Copied!';
+            }, () => {
+                btn.textContent = 'Copy failed';
+            }).then(() => setTimeout(() => {
+                btn.textContent = 'Copy';
+            }, 1500));
         });
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
     </script>
 </body>
 </html>

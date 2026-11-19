@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Countdown to Date - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -489,7 +490,7 @@
 
         <!-- Settings Below -->
         <div class="settings-card" id="settingsCard">
-            <div class="settings-header" id="settingsToggle">
+            <div class="settings-header" id="settingsToggle" role="button" tabindex="0" aria-expanded="false">
                 <span>Settings</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -498,16 +499,16 @@
             <div class="settings-content">
                 <div class="settings-inner">
                     <div class="form-group">
-                        <label>Event Name</label>
+                        <label for="eventName">Event Name</label>
                         <input type="text" id="eventName" placeholder="My Event" value="Event">
                     </div>
                     <div class="input-row">
                         <div class="form-group">
-                            <label>Target Date</label>
+                            <label for="targetDate">Target Date</label>
                             <input type="date" id="targetDate">
                         </div>
                         <div class="form-group">
-                            <label>Target Time</label>
+                            <label for="targetTime">Target Time</label>
                             <input type="time" id="targetTime" value="00:00">
                         </div>
                     </div>
@@ -537,22 +538,29 @@
             });
         }
 
+        function getSavedTheme() {
+            try {
+                return localStorage.getItem('countdown-theme') || 'system';
+            } catch (e) {
+                return 'system';
+            }
+        }
+
         function initTheme() {
-            const saved = localStorage.getItem('countdown-theme') || 'system';
-            applyTheme(saved);
+            applyTheme(getSavedTheme());
         }
 
         document.querySelectorAll('.theme-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const theme = btn.dataset.theme;
-                localStorage.setItem('countdown-theme', theme);
+                try { localStorage.setItem('countdown-theme', theme); } catch (e) {}
                 applyTheme(theme);
             });
         });
 
         // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const saved = localStorage.getItem('countdown-theme') || 'system';
+            const saved = getSavedTheme();
             if (saved === 'system') applyTheme('system');
         });
 
@@ -562,7 +570,13 @@
         const settingsCard = document.getElementById('settingsCard');
         const settingsToggle = document.getElementById('settingsToggle');
         settingsToggle.addEventListener('click', () => {
-            settingsCard.classList.toggle('open');
+            settingsToggle.setAttribute('aria-expanded', settingsCard.classList.toggle('open'));
+        });
+        settingsToggle.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                settingsToggle.click();
+            }
         });
 
         const eventNameInput = document.getElementById('eventName');
@@ -589,10 +603,14 @@
             history.replaceState(null, '', '?' + params.toString());
         }
 
+        function localDateStr(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
         // Set default to 7 days from now
         const defaultDate = new Date();
         defaultDate.setDate(defaultDate.getDate() + 7);
-        targetDateInput.value = defaultDate.toISOString().split('T')[0];
+        targetDateInput.value = localDateStr(defaultDate);
 
         loadFromURL();
 
@@ -603,7 +621,7 @@
             const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
 
             const diffTime = target - today;
-            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const totalDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
             if (totalDays <= 0) {
                 calendarContainer.classList.add('hidden');
@@ -679,7 +697,7 @@
 
             // Show overflow if target is beyond rendered weeks
             if (currentDate <= target) {
-                const remainingDays = Math.ceil((target - currentDate) / (1000 * 60 * 60 * 24)) + 1;
+                const remainingDays = Math.round((target - currentDate) / (1000 * 60 * 60 * 24)) + 1;
                 const overflow = document.createElement('div');
                 overflow.className = 'calendar-overflow';
                 overflow.textContent = `+ ${remainingDays} more day${remainingDays !== 1 ? 's' : ''}`;
@@ -703,13 +721,14 @@
                     case 'week':
                         const week = new Date(now);
                         week.setDate(week.getDate() + 7);
-                        targetDateInput.value = week.toISOString().split('T')[0];
+                        targetDateInput.value = localDateStr(week);
                         eventNameInput.value = '1 Week from Now';
                         break;
                     case 'month':
-                        const month = new Date(now);
-                        month.setMonth(month.getMonth() + 1);
-                        targetDateInput.value = month.toISOString().split('T')[0];
+                        // Clamp to the last day of next month (Jan 31 -> Feb 28, not Mar 3)
+                        const lastDay = new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate();
+                        const month = new Date(now.getFullYear(), now.getMonth() + 1, Math.min(now.getDate(), lastDay));
+                        targetDateInput.value = localDateStr(month);
                         eventNameInput.value = '1 Month from Now';
                         break;
                     case 'christmas':
@@ -731,11 +750,19 @@
         targetTimeInput.addEventListener('change', () => { update(); updateURL(); });
 
         let lastSeconds = -1;
-        let alarmFired = false;
+        let armedTarget = null; // target time seen in the future while the page was open
         let lastCalendarDate = '';
 
         function playAlarm() {
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            let ac;
+            try {
+                ac = new AC();
+            } catch (e) {
+                return;
+            }
+            setTimeout(() => ac.close(), 2000);
             const notes = [659, 784, 880, 1047]; // E5 G5 A5 C6
             notes.forEach((freq, i) => {
                 const osc = ac.createOscillator();
@@ -776,8 +803,8 @@
 
             if (diff <= 0) {
                 // Event has passed
-                if (!alarmFired) {
-                    alarmFired = true;
+                if (armedTarget === target.getTime()) {
+                    armedTarget = null;
                     playAlarm();
                 }
                 document.getElementById('countdownActive').classList.add('hidden');
@@ -798,7 +825,7 @@
             } else {
                 document.getElementById('countdownActive').classList.remove('hidden');
                 document.getElementById('pastEvent').classList.add('hidden');
-                alarmFired = false;
+                armedTarget = target.getTime();
 
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));

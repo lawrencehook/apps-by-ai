@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Font Specimen Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -19,6 +20,7 @@
         }
         h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
         .subtitle { color: #666; margin-bottom: 32px; }
+        .font-notice { color: #e0a84a; font-size: 0.85rem; margin: -20px 0 24px; }
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
@@ -254,7 +256,7 @@
         }
         @media print {
             body { background: #fff; }
-            .back-link, .controls, .actions { display: none !important; }
+            .back-link, .controls, .actions, .font-notice { display: none !important; }
             .container { padding: 0; max-width: 100%; }
             .specimen-container { border-radius: 0; }
             #specimen { padding: 40px; }
@@ -266,10 +268,11 @@
     <div class="container">
         <h1>Font Specimen Generator</h1>
         <p class="subtitle">Create professional font specimen sheets for typography comparison and presentations.</p>
+        <p class="font-notice" id="fontNotice" hidden>Google Fonts could not be loaded (are you offline?). Web fonts in the list are showing a fallback system font.</p>
 
         <div class="controls">
             <div class="control-group">
-                <label class="control-label">Select Font</label>
+                <label class="control-label" for="fontSelect">Select Font</label>
                 <select class="control-input" id="fontSelect">
                     <option value="Inter">Inter</option>
                     <option value="Roboto">Roboto</option>
@@ -297,7 +300,7 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label">Sample Text</label>
+                <label class="control-label" for="sampleText">Sample Text</label>
                 <input type="text" class="control-input" id="sampleText" value="The quick brown fox jumps over the lazy dog" placeholder="Enter custom text">
             </div>
             <div class="control-group">
@@ -396,6 +399,7 @@
             const link = document.createElement('link');
             link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}:wght@100;200;300;400;500;600;700;800;900&display=swap`;
             link.rel = 'stylesheet';
+            link.onerror = () => { document.getElementById('fontNotice').hidden = false; };
             document.head.appendChild(link);
         }
 
@@ -500,6 +504,16 @@
                         document.fonts.add(loadedFace);
                         currentFont = customFontName;
                         uploadedName.textContent = file.name;
+                        // Show the upload in the dropdown, so re-picking a listed font fires change
+                        let option = document.getElementById('customFontOption');
+                        if (!option) {
+                            option = document.createElement('option');
+                            option.id = 'customFontOption';
+                            fontSelect.appendChild(option);
+                        }
+                        option.value = customFontName;
+                        option.textContent = `${customFontName} (uploaded)`;
+                        option.selected = true;
                         updateSpecimen();
                     }).catch((error) => {
                         console.error('Font loading failed:', error);
@@ -507,6 +521,7 @@
                     });
                 };
                 reader.readAsArrayBuffer(file);
+                fontFile.value = ''; // so choosing the same file again fires change
             }
         });
 

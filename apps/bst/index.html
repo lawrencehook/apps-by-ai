@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Binary Search Tree - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -50,7 +51,7 @@
         <p>Fundamental data structure. Insert, search, delete, and traverse.</p>
 
         <div class="control-group">
-            <label>Value</label>
+            <label for="value">Value</label>
             <input type="number" id="value" placeholder="Enter a number">
         </div>
 
@@ -66,7 +67,7 @@
         </div>
 
         <div class="control-group">
-            <label>Traversal</label>
+            <label for="traversal">Traversal</label>
             <select id="traversal">
                 <option value="inorder">In-Order</option>
                 <option value="preorder">Pre-Order</option>
@@ -91,6 +92,7 @@
         let visitedNodes = new Set();
         let pathNodes = [];
         let animating = false;
+        let runId = 0;
 
         class Node {
             constructor(value) {
@@ -108,7 +110,16 @@
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             updatePositions();
+            snapToTargets(root);
             draw();
+        }
+
+        function snapToTargets(node) {
+            if (!node) return;
+            node.x = node.targetX;
+            node.y = node.targetY;
+            snapToTargets(node.left);
+            snapToTargets(node.right);
         }
 
         let duplicateDetected = false;
@@ -182,6 +193,7 @@
         async function animateSearch(value) {
             if (animating) return;
             animating = true;
+            const id = ++runId;
 
             pathNodes = [];
             visitedNodes.clear();
@@ -194,6 +206,7 @@
                 visitedNodes.add(pathNodes[i]);
                 draw();
                 await sleep(300);
+                if (id !== runId) return;
             }
 
             if (result) {
@@ -211,6 +224,7 @@
         async function animateInsert(value) {
             if (animating) return;
             animating = true;
+            const id = ++runId;
 
             pathNodes = [];
             visitedNodes.clear();
@@ -218,11 +232,14 @@
             duplicateDetected = false;
 
             root = insert(root, value);
+            // Place the new node now so its edge isn't drawn to (0,0) during the path animation
+            updatePositions();
 
             for (let i = 0; i < pathNodes.length; i++) {
                 visitedNodes.add(pathNodes[i]);
                 draw();
                 await sleep(200);
+                if (id !== runId) return;
             }
 
             if (duplicateDetected) {
@@ -230,6 +247,7 @@
                 draw();
                 animating = false;
                 setTimeout(() => {
+                    if (id !== runId) return;
                     highlightNode = null;
                     visitedNodes.clear();
                     updateStatus();
@@ -260,28 +278,35 @@
             const levelHeight = Math.min(70, (height - 150) / Math.max(1, treeHeight));
             const startY = 80;
 
-            function setPositions(node, x, y, spread) {
+            // One column per node in in-order rank, so subtrees can never cross
+            const count = countNodes(root);
+            const gap = Math.min(50, (width - 100) / count);
+            let x = width / 2 - gap * (count - 1) / 2;
+
+            function setPositions(node, y) {
                 if (!node) return;
+
+                setPositions(node.left, y + levelHeight);
 
                 node.targetX = x;
                 node.targetY = y;
+                x += gap;
 
                 if (node.x === 0 && node.y === 0) {
-                    node.x = x;
+                    node.x = node.targetX;
                     node.y = y - 50;
                 }
 
-                const childSpread = spread * 0.55;
-                setPositions(node.left, x - spread, y + levelHeight, childSpread);
-                setPositions(node.right, x + spread, y + levelHeight, childSpread);
+                setPositions(node.right, y + levelHeight);
             }
 
-            const initialSpread = Math.min(250, (width - 100) / 4);
-            setPositions(root, width / 2, startY, initialSpread);
+            setPositions(root, startY);
         }
 
         function animateToPositions() {
+            const id = runId;
             function animate() {
+                if (id !== runId) return;
                 let stillMoving = false;
 
                 function updateNode(node) {
@@ -311,6 +336,7 @@
                 } else {
                     animating = false;
                     setTimeout(() => {
+                        if (id !== runId) return;
                         highlightNode = null;
                         visitedNodes.clear();
                         draw();
@@ -324,45 +350,51 @@
         async function traverse(type) {
             if (animating || !root) return;
             animating = true;
+            const id = ++runId;
 
             const output = [];
             visitedNodes.clear();
             highlightNode = null;
 
             async function inOrder(node) {
-                if (!node) return;
+                if (!node || id !== runId) return;
                 await inOrder(node.left);
+                if (id !== runId) return;
                 highlightNode = node;
                 visitedNodes.add(node);
                 output.push(node.value);
                 document.getElementById('output').textContent = output.join(' → ');
                 draw();
                 await sleep(300);
+                if (id !== runId) return;
                 await inOrder(node.right);
             }
 
             async function preOrder(node) {
-                if (!node) return;
+                if (!node || id !== runId) return;
                 highlightNode = node;
                 visitedNodes.add(node);
                 output.push(node.value);
                 document.getElementById('output').textContent = output.join(' → ');
                 draw();
                 await sleep(300);
+                if (id !== runId) return;
                 await preOrder(node.left);
                 await preOrder(node.right);
             }
 
             async function postOrder(node) {
-                if (!node) return;
+                if (!node || id !== runId) return;
                 await postOrder(node.left);
                 await postOrder(node.right);
+                if (id !== runId) return;
                 highlightNode = node;
                 visitedNodes.add(node);
                 output.push(node.value);
                 document.getElementById('output').textContent = output.join(' → ');
                 draw();
                 await sleep(300);
+                if (id !== runId) return;
             }
 
             async function levelOrder() {
@@ -375,6 +407,7 @@
                     document.getElementById('output').textContent = output.join(' → ');
                     draw();
                     await sleep(300);
+                    if (id !== runId) return;
 
                     if (node.left) queue.push(node.left);
                     if (node.right) queue.push(node.right);
@@ -389,6 +422,7 @@
                 case 'postorder': await postOrder(root); break;
                 case 'levelorder': await levelOrder(); break;
             }
+            if (id !== runId) return;
 
             highlightNode = null;
             draw();
@@ -507,6 +541,7 @@
                 root = deleteNode(root, value);
                 updatePositions();
                 animating = true;
+                runId++;
                 animateToPositions();
                 updateStatus();
                 document.getElementById('value').value = '';
@@ -529,6 +564,8 @@
         });
 
         document.getElementById('clear').addEventListener('click', () => {
+            runId++;
+            animating = false;
             root = null;
             highlightNode = null;
             visitedNodes.clear();

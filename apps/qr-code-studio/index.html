@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Studio - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -151,6 +152,7 @@
         button:hover {
             background: rgba(100, 150, 255, 0.3);
         }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         button.secondary {
             background: rgba(255,255,255,0.05);
             border-color: rgba(255,255,255,0.1);
@@ -259,16 +261,16 @@
                 </div>
 
                 <div id="textInput" class="control-group">
-                    <label>Text or URL</label>
+                    <label for="content">Text or URL</label>
                     <textarea id="content" placeholder="Enter text, URL, or any data...">https://example.com</textarea>
                 </div>
 
                 <div id="wifiInput" class="control-group" style="display: none;">
-                    <label>Network Name (SSID)</label>
+                    <label for="wifiSsid">Network Name (SSID)</label>
                     <input type="text" id="wifiSsid" placeholder="MyNetwork">
-                    <label style="margin-top: 12px;">Password</label>
+                    <label for="wifiPassword" style="margin-top: 12px;">Password</label>
                     <input type="text" id="wifiPassword" placeholder="Password">
-                    <label style="margin-top: 12px;">Security</label>
+                    <label for="wifiSecurity" style="margin-top: 12px;">Security</label>
                     <select id="wifiSecurity" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
                         <option value="WPA">WPA/WPA2</option>
                         <option value="WEP">WEP</option>
@@ -277,11 +279,11 @@
                 </div>
 
                 <div id="vcardInput" class="control-group" style="display: none;">
-                    <label>Full Name</label>
+                    <label for="vcardName">Full Name</label>
                     <input type="text" id="vcardName" placeholder="John Doe">
-                    <label style="margin-top: 12px;">Phone</label>
+                    <label for="vcardPhone" style="margin-top: 12px;">Phone</label>
                     <input type="text" id="vcardPhone" placeholder="+1 234 567 8900">
-                    <label style="margin-top: 12px;">Email</label>
+                    <label for="vcardEmail" style="margin-top: 12px;">Email</label>
                     <input type="text" id="vcardEmail" placeholder="john@example.com">
                 </div>
 
@@ -317,12 +319,12 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Size: <span id="sizeLabel">300</span>px</label>
+                    <label for="size">Size: <span id="sizeLabel">300</span>px</label>
                     <input type="range" id="size" min="150" max="500" value="300">
                 </div>
 
                 <div class="control-group">
-                    <label>Error Correction</label>
+                    <label for="errorCorrection">Error Correction</label>
                     <select id="errorCorrection" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
                         <option value="L">Low (7%)</option>
                         <option value="M" selected>Medium (15%)</option>
@@ -378,6 +380,9 @@
     </div>
 
     <script>
+        // The library's default encoder keeps only the low byte of each char code
+        qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
         // QR Code Generator - wrapper around qrcode-generator library
         class QRCode {
             constructor(data, errorLevel = 'M') {
@@ -424,43 +429,70 @@
             custom: { fg: '#000000', bg: '#ffffff' }
         };
 
+        // The WIFI: format reserves \ ; , : " and escapes them with a backslash
+        function escapeWifi(value) {
+            return value.replace(/([\\;,:"])/g, '\\$1');
+        }
+
+        // Returns '' when there is nothing to encode
         function getContent() {
             if (currentType === 'text') {
-                return document.getElementById('content').value || 'https://example.com';
+                return document.getElementById('content').value;
             } else if (currentType === 'wifi') {
                 const ssid = document.getElementById('wifiSsid').value;
                 const password = document.getElementById('wifiPassword').value;
                 const security = document.getElementById('wifiSecurity').value;
-                return `WIFI:T:${security};S:${ssid};P:${password};;`;
+                if (!ssid) return '';
+                return `WIFI:T:${security};S:${escapeWifi(ssid)};P:${escapeWifi(password)};;`;
             } else if (currentType === 'vcard') {
                 const name = document.getElementById('vcardName').value;
                 const phone = document.getElementById('vcardPhone').value;
                 const email = document.getElementById('vcardEmail').value;
+                if (!name && !phone && !email) return '';
                 return `BEGIN:VCARD\nVERSION:3.0\nN:${name}\nFN:${name}\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`;
             }
-            return 'https://example.com';
+            return '';
+        }
+
+        // Without a valid code the canvas only holds a message, so exporting is disabled
+        function showNoQR(message, color) {
+            const size = canvas.width;
+            currentQR = null;
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = color;
+            ctx.font = '14px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText(message, size / 2, size / 2);
+            setExportEnabled(false);
+        }
+
+        function setExportEnabled(enabled) {
+            ['downloadPng', 'downloadSvg', 'copyToClipboard'].forEach(id => {
+                document.getElementById(id).disabled = !enabled;
+            });
         }
 
         function generateQR() {
             const content = getContent();
-            if (!content || content.trim() === '') return;
             const size = parseInt(document.getElementById('size').value);
             const errorLevel = document.getElementById('errorCorrection').value;
 
             canvas.width = size;
             canvas.height = size;
 
+            if (!content || content.trim() === '') {
+                showNoQR('Enter content to generate a QR code', '#888');
+                return;
+            }
+
             try {
                 currentQR = new QRCode(content, errorLevel);
             } catch (e) {
-                ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(0, 0, size, size);
-                ctx.fillStyle = '#ff6b6b';
-                ctx.font = '14px system-ui';
-                ctx.textAlign = 'center';
-                ctx.fillText('Content too long or invalid', size / 2, size / 2);
+                showNoQR('Content too long or invalid', '#ff6b6b');
                 return;
             }
+            setExportEnabled(true);
 
             const colors = currentPreset === 'custom' ? {
                 fg: document.getElementById('fgColor').value,
@@ -471,10 +503,9 @@
         }
 
         function drawQR(qr, colors, size) {
-            const moduleSize = size / qr.moduleCount;
-            const margin = moduleSize * 2;
-            const qrSize = size - margin * 2;
-            const actualModuleSize = qrSize / qr.moduleCount;
+            // Quiet zone of 4 modules on every side, as the QR spec requires
+            const actualModuleSize = size / (qr.moduleCount + 8);
+            const margin = actualModuleSize * 4;
 
             // Background
             ctx.fillStyle = colors.bg;
@@ -516,6 +547,7 @@
                 tab.classList.add('active');
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+                if (tab.dataset.tab !== 'scan' && videoStream) stopScan.click();
             });
         });
 
@@ -575,25 +607,43 @@
 
         logoInput.addEventListener('change', e => {
             if (e.target.files[0]) handleLogoFile(e.target.files[0]);
+            logoInput.value = ''; // so the same file can be chosen again
         });
 
+        // The logo patch hides centre modules; only High correction reliably absorbs that
+        function setLogoErrorCorrection(hasLogo) {
+            const select = document.getElementById('errorCorrection');
+            if (hasLogo) select.value = 'H';
+            select.disabled = hasLogo;
+            select.title = hasLogo ? 'A logo needs High error correction' : '';
+        }
+
         function handleLogoFile(file) {
+            const hint = logoUpload.querySelector('div');
             const reader = new FileReader();
             reader.onload = e => {
-                logoImage = new Image();
-                logoImage.onload = () => {
+                // Only replace the current logo once the new one has decoded
+                const img = new Image();
+                img.onload = () => {
+                    logoImage = img;
+                    setLogoErrorCorrection(true);
+                    hint.textContent = 'Click or drag to upload logo';
                     logoPreview.src = e.target.result;
                     logoPreview.style.display = 'block';
                     removeLogo.style.display = 'block';
                     generateQR();
                 };
-                logoImage.src = e.target.result;
+                img.onerror = () => {
+                    hint.textContent = 'Could not read that image. Try another file.';
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
         removeLogo.addEventListener('click', () => {
             logoImage = null;
+            setLogoErrorCorrection(false);
             logoPreview.style.display = 'none';
             removeLogo.style.display = 'none';
             logoInput.value = '';
@@ -616,12 +666,10 @@
                 bg: document.getElementById('bgColor').value
             } : presetColors[currentPreset];
 
-            const moduleSize = size / currentQR.moduleCount;
-            const margin = moduleSize * 2;
-            const qrSize = size - margin * 2;
-            const actualModuleSize = qrSize / currentQR.moduleCount;
+            const actualModuleSize = size / (currentQR.moduleCount + 8);
+            const margin = actualModuleSize * 4;
 
-            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`;
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}">`;
             svg += `<rect width="${size}" height="${size}" fill="${colors.bg}"/>`;
 
             for (let row = 0; row < currentQR.moduleCount; row++) {
@@ -630,6 +678,13 @@
                         svg += `<rect x="${margin + col * actualModuleSize}" y="${margin + row * actualModuleSize}" width="${actualModuleSize + 0.5}" height="${actualModuleSize + 0.5}" fill="${colors.fg}"/>`;
                     }
                 }
+            }
+            if (logoImage) {
+                const logoSize = size * 0.2;
+                const logoX = (size - logoSize) / 2;
+                const logoY = (size - logoSize) / 2;
+                svg += `<rect x="${logoX - 5}" y="${logoY - 5}" width="${logoSize + 10}" height="${logoSize + 10}" fill="${colors.bg}"/>`;
+                svg += `<image x="${logoX}" y="${logoY}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="none" xlink:href="${logoImage.src}"/>`;
             }
             svg += '</svg>';
 
@@ -714,6 +769,7 @@
         document.getElementById('scanImageInput').addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
+            e.target.value = ''; // so the same file can be chosen again
 
             const img = new Image();
             const objectUrl = URL.createObjectURL(file);
@@ -732,6 +788,12 @@
                     scanResult.textContent = 'No QR code found in image.';
                     scanResult.className = 'error';
                 }
+                scanResult.style.display = 'block';
+                URL.revokeObjectURL(objectUrl);
+            };
+            img.onerror = () => {
+                scanResult.textContent = 'Could not read that image.';
+                scanResult.className = 'error';
                 scanResult.style.display = 'block';
                 URL.revokeObjectURL(objectUrl);
             };

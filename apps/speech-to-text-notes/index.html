@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speech to Text Notes - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -507,7 +508,10 @@ You can also type or edit the notes manually."></textarea>
         let audioContext = null;
         let analyser = null;
         let microphone = null;
+        let micStream = null;
         let animationId = null;
+        // Where the interim phrase currently sits in the textarea
+        let interimPos = -1;
 
         // DOM Elements
         const recordBtn = document.getElementById('recordBtn');
@@ -556,6 +560,7 @@ You can also type or edit the notes manually."></textarea>
         async function initAudio() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micStream = stream;
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 microphone = audioContext.createMediaStreamSource(stream);
@@ -566,6 +571,27 @@ You can also type or edit the notes manually."></textarea>
                 console.error('Audio init error:', err);
                 return false;
             }
+        }
+
+        // Release the microphone so the browser's recording indicator goes away
+        function releaseAudio() {
+            if (micStream) micStream.getTracks().forEach(track => track.stop());
+            if (audioContext) audioContext.close().catch(() => {});
+            micStream = null;
+            microphone = null;
+            analyser = null;
+            audioContext = null;
+        }
+
+        // The textarea shows the final text plus the interim phrase; when the user types,
+        // take the interim phrase back out so the next result doesn't add it a second time
+        function withoutInterim(value) {
+            const tail = interimTranscript ? ' ' + interimTranscript : '';
+            if (!tail) return value;
+            const pos = value.substr(interimPos, tail.length) === tail ? interimPos : value.lastIndexOf(tail);
+            interimPos = pos;
+            if (pos < 0) return value;
+            return value.slice(0, pos) + value.slice(pos + tail.length);
         }
 
         // Initialize speech recognition
@@ -588,22 +614,29 @@ You can also type or edit the notes manually."></textarea>
                 statusText.textContent = 'Listening...';
                 recordBtn.classList.add('recording');
                 recordBtn.querySelector('span').textContent = 'Stop Recording';
+                // onstart fires again on every auto-restart; keep a single loop
+                cancelAnimationFrame(animationId);
                 updateVisualizer();
             };
 
             recognition.onend = () => {
                 if (isRecording) {
                     // Restart if still supposed to be recording
-                    recognition.start();
-                } else {
-                    statusDot.classList.remove('listening');
-                    statusText.classList.remove('active');
-                    statusText.textContent = 'Ready';
-                    recordBtn.classList.remove('recording');
-                    recordBtn.querySelector('span').textContent = 'Start Recording';
-                    cancelAnimationFrame(animationId);
-                    resetVisualizerBars();
+                    try {
+                        recognition.start();
+                        return;
+                    } catch (err) {
+                        isRecording = false;
+                    }
                 }
+                statusDot.classList.remove('listening');
+                statusText.classList.remove('active');
+                statusText.textContent = 'Ready';
+                recordBtn.classList.remove('recording');
+                recordBtn.querySelector('span').textContent = 'Start Recording';
+                cancelAnimationFrame(animationId);
+                resetVisualizerBars();
+                releaseAudio();
             };
 
             recognition.onresult = (event) => {
@@ -635,6 +668,7 @@ You can also type or edit the notes manually."></textarea>
                 }
 
                 // Update textarea
+                interimPos = finalTranscript.length;
                 notesArea.value = finalTranscript + (interimTranscript ? ' ' + interimTranscript : '');
                 updateWordCount();
                 autoSave();
@@ -646,10 +680,12 @@ You can also type or edit the notes manually."></textarea>
                 if (event.error === 'not-allowed') {
                     showError('Microphone access denied. Please allow microphone permission and reload the page.');
                     stopRecording();
-                } else if (event.error === 'no-speech') {
+                } else if (event.error === 'no-speech' || event.error === 'aborted') {
                     // This is normal, don't show error
                 } else {
+                    // Anything else would fail again on every restart
                     showError('Recognition error: ' + event.error);
+                    stopRecording();
                 }
             };
 
@@ -744,6 +780,8 @@ You can also type or edit the notes manually."></textarea>
             const saved = localStorage.getItem('stt_current_session');
             if (saved) {
                 const session = JSON.parse(saved);
+                // Another tab of the same note keeps its id, so history gets one entry
+                if (session.id) sessionStorage.setItem('stt_session_id', session.id);
                 notesArea.value = session.text || '';
                 finalTranscript = session.text || '';
                 updateWordCount();
@@ -840,9 +878,17 @@ You can also type or edit the notes manually."></textarea>
             const sessions = JSON.parse(localStorage.getItem('stt_sessions') || '[]');
             const session = sessions.find(s => s.id === id);
             if (session) {
+                const current = notesArea.value.trim();
+                if (current && current !== session.text.trim() &&
+                    !confirm('Replace the current notes with this session?')) {
+                    return;
+                }
+                sessionStorage.setItem('stt_session_id', session.id);
                 notesArea.value = session.text;
                 finalTranscript = session.text;
+                interimTranscript = '';
                 updateWordCount();
+                autoSave();
             }
         }
 
@@ -893,7 +939,9 @@ You can also type or edit the notes manually."></textarea>
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'transcription_' + new Date().toISOString().slice(0, 10) + '.txt';
+            const now = new Date();
+            const localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            a.download = 'transcription_' + localDate + '.txt';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -925,7 +973,7 @@ You can also type or edit the notes manually."></textarea>
         document.getElementById('downloadBtn').addEventListener('click', downloadAsText);
 
         notesArea.addEventListener('input', () => {
-            finalTranscript = notesArea.value;
+            finalTranscript = withoutInterim(notesArea.value);
             updateWordCount();
             autoSave();
         });

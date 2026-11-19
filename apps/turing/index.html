@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turing Machine - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; overflow-y: auto; font-family: system-ui, sans-serif; }
@@ -71,7 +72,7 @@
         <p>Universal computation model. Watch the head read, write, and move on an infinite tape.</p>
 
         <div class="control-group">
-            <label>Preset Programs</label>
+            <label for="preset">Preset Programs</label>
             <select id="preset">
                 <option value="binary_inc">Binary Increment</option>
                 <option value="palindrome">Palindrome Checker</option>
@@ -81,7 +82,7 @@
         </div>
 
         <div class="control-group">
-            <label>Initial Tape</label>
+            <label for="tape">Initial Tape</label>
             <input type="text" id="tape" placeholder="Enter initial tape...">
         </div>
 
@@ -120,6 +121,7 @@
         let state = 'q0';
         let halted = false;
         let running = false;
+        let runId = 0; // bumped whenever a run ends, so a sleeping run() loop can tell it was replaced
         let stepCount = 0;
         let transitions = {};
         let statePositions = {};
@@ -220,7 +222,7 @@
             headPos = 0;
             state = preset.startState;
             halted = false;
-            running = false;
+            endRun();
             stepCount = 0;
             transitions = preset.transitions;
             blankSymbol = preset.blank;
@@ -311,12 +313,14 @@
         async function run() {
             if (running || halted) return;
             running = true;
+            const id = ++runId;
             document.getElementById('run').style.display = 'none';
             document.getElementById('stop').style.display = '';
 
-            while (!halted && running && stepCount < MAX_STEPS) {
+            while (!halted && stepCount < MAX_STEPS) {
                 step();
                 await new Promise(r => setTimeout(r, 200));
+                if (id !== runId) return; // stopped, reset or restarted meanwhile
             }
 
             if (stepCount >= MAX_STEPS && !halted) {
@@ -325,13 +329,20 @@
                 resultEl.className = 'result running';
             }
 
+            endRun();
+        }
+
+        function endRun() {
+            runId++;
             running = false;
             document.getElementById('run').style.display = '';
             document.getElementById('stop').style.display = 'none';
         }
 
         function stopRunning() {
-            running = false;
+            if (!running) return;
+            endRun();
+            updateUI();
         }
 
         function updateUI() {

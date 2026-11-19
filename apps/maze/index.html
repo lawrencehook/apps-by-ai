@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maze Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -40,7 +42,7 @@
         <h1>Maze Generator</h1>
         <p>Watch algorithms carve perfect mazes in real-time. Each cell visited exactly once.</p>
         <div class="control-group">
-            <label>Algorithm</label>
+            <label for="algorithm">Algorithm</label>
             <select id="algorithm">
                 <option value="backtrack">Recursive Backtracker</option>
                 <option value="prim">Prim's Algorithm</option>
@@ -48,11 +50,11 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">10</span> cells/frame</label>
+            <label for="speed">Speed: <span id="speedLabel">10</span> cells/frame</label>
             <input type="range" id="speed" min="1" max="50" value="10">
         </div>
         <div class="control-group">
-            <label>Cell Size: <span id="sizeLabel">20</span>px</label>
+            <label for="size">Cell Size: <span id="sizeLabel">20</span>px</label>
             <input type="range" id="size" min="10" max="40" value="20">
         </div>
         <button id="generate">Generate New</button>
@@ -83,9 +85,14 @@
         const CURRENT = 3;
         const SOLUTION = 4;
 
+        // A window resize keeps the current maze (render() shrinks it to fit);
+        // the grid is only re-dimensioned when a new maze is requested.
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+        }
+
+        function newMaze() {
             cols = Math.floor((width - 40) / cellSize);
             rows = Math.floor((height - 40) / cellSize);
             if (cols % 2 === 0) cols--;
@@ -351,14 +358,15 @@
                 }
             }
 
-            const offsetX = (width - cols * cellSize) / 2;
-            const offsetY = (height - rows * cellSize) / 2;
+            const drawSize = Math.max(2, Math.min(cellSize, Math.floor((width - 40) / cols), Math.floor((height - 40) / rows)));
+            const offsetX = (width - cols * drawSize) / 2;
+            const offsetY = (height - rows * drawSize) / 2;
 
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
                     const cell = cells[y][x];
-                    const px = offsetX + x * cellSize;
-                    const py = offsetY + y * cellSize;
+                    const px = offsetX + x * drawSize;
+                    const py = offsetY + y * drawSize;
 
                     if (cell === WALL) {
                         ctx.fillStyle = '#1a1a2e';
@@ -370,7 +378,7 @@
                         ctx.fillStyle = '#ff6b6b';
                     }
 
-                    ctx.fillRect(px, py, cellSize - 1, cellSize - 1);
+                    ctx.fillRect(px, py, drawSize - 1, drawSize - 1);
                 }
             }
 
@@ -378,9 +386,9 @@
             if (solution.length > 0) {
                 ctx.fillStyle = '#4ecdc4';
                 for (const node of solution) {
-                    const px = offsetX + node.x * cellSize;
-                    const py = offsetY + node.y * cellSize;
-                    ctx.fillRect(px + cellSize / 4, py + cellSize / 4, cellSize / 2, cellSize / 2);
+                    const px = offsetX + node.x * drawSize;
+                    const py = offsetY + node.y * drawSize;
+                    ctx.fillRect(px + drawSize / 4, py + drawSize / 4, drawSize / 2, drawSize / 2);
                 }
             }
 
@@ -389,7 +397,7 @@
 
         document.getElementById('algorithm').addEventListener('change', e => {
             algorithm = e.target.value;
-            init();
+            newMaze();
         });
 
         document.getElementById('speed').addEventListener('input', e => {
@@ -400,14 +408,15 @@
         document.getElementById('size').addEventListener('input', e => {
             cellSize = parseInt(e.target.value);
             document.getElementById('sizeLabel').textContent = cellSize;
-            resize();
+            newMaze();
         });
 
-        document.getElementById('generate').addEventListener('click', init);
+        document.getElementById('generate').addEventListener('click', newMaze);
         document.getElementById('solve').addEventListener('click', solveMaze);
 
         window.addEventListener('resize', resize);
         resize();
+        newMaze();
         render();
     </script>
 </body>

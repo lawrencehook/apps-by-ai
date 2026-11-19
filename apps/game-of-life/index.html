@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game of Life - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -19,6 +20,12 @@
             font-size: 14px;
             min-width: 220px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -76,7 +83,7 @@
         <button id="clear">Clear</button>
         <button id="random">Random</button>
         <div class="patterns">
-            <label>Insert Pattern:</label>
+            <label for="pattern">Insert Pattern:</label>
             <select id="pattern">
                 <option value="none">Click to draw</option>
                 <option value="glider">Glider</option>
@@ -101,6 +108,7 @@
         let running = true;
         let generation = 0;
         let selectedPattern = 'none';
+        let downX = -1, downY = -1;
 
         const patterns = {
             glider: [[0,1,0],[0,0,1],[1,1,1]],
@@ -253,6 +261,8 @@
                 placePattern(selectedPattern, x, y);
             } else {
                 grid[x][y] = grid[x][y] ? 0 : 1;
+                downX = x;
+                downY = y;
             }
         });
 
@@ -261,6 +271,8 @@
                 const x = Math.floor(e.clientX / cellSize);
                 const y = Math.floor(e.clientY / cellSize);
                 if (x < 0 || x >= cols || y < 0 || y >= rows) return;
+                // A tap that wobbles within its cell must not undo the toggle from pointerdown
+                if (x === downX && y === downY) return;
                 grid[x][y] = 1;
             }
         });

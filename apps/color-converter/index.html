@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -322,6 +323,10 @@
             };
         }
 
+        function pct(str) {
+            return Math.min(100, parseInt(str));
+        }
+
         // Parsing functions
         function parseColor(format, value) {
             value = value.trim();
@@ -338,23 +343,23 @@
                     }
                     case 'hsl': {
                         const match = value.match(/hsl\s*\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*\)/i);
-                        if (match) return hslToRgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+                        if (match) return hslToRgb(parseInt(match[1]) % 360, pct(match[2]), pct(match[3]));
                         const simple = value.match(/^(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?$/);
-                        if (simple) return hslToRgb(parseInt(simple[1]), parseInt(simple[2]), parseInt(simple[3]));
+                        if (simple) return hslToRgb(parseInt(simple[1]) % 360, pct(simple[2]), pct(simple[3]));
                         return null;
                     }
                     case 'hsv': {
                         const match = value.match(/hsv\s*\(\s*(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*\)/i);
-                        if (match) return hsvToRgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+                        if (match) return hsvToRgb(parseInt(match[1]) % 360, pct(match[2]), pct(match[3]));
                         const simple = value.match(/^(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?$/);
-                        if (simple) return hsvToRgb(parseInt(simple[1]), parseInt(simple[2]), parseInt(simple[3]));
+                        if (simple) return hsvToRgb(parseInt(simple[1]) % 360, pct(simple[2]), pct(simple[3]));
                         return null;
                     }
                     case 'cmyk': {
                         const match = value.match(/cmyk\s*\(\s*(\d+)%?\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*\)/i);
-                        if (match) return cmykToRgb(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]), parseInt(match[4]));
+                        if (match) return cmykToRgb(pct(match[1]), pct(match[2]), pct(match[3]), pct(match[4]));
                         const simple = value.match(/^(\d+)%?\s*,\s*(\d+)%?\s*,\s*(\d+)%?\s*,\s*(\d+)%?$/);
-                        if (simple) return cmykToRgb(parseInt(simple[1]), parseInt(simple[2]), parseInt(simple[3]), parseInt(simple[4]));
+                        if (simple) return cmykToRgb(pct(simple[1]), pct(simple[2]), pct(simple[3]), pct(simple[4]));
                         return null;
                     }
                 }

@@ -12,6 +12,8 @@ test('saved upgrades round-trip, reset, and reject corrupt or out-of-range data'
     value = '{bad'; assert.equal(Progress.read(storage).bowLevel, 0);
     value = JSON.stringify({ version: 1, bowLevel: -999, speedLevel: -1, coins: '37' });
     assert.deepEqual(Progress.read(storage), { bowLevel: 0, speedLevel: 0, coins: 0 });
+    value = JSON.stringify({ version: 1, bowLevel: 3, speedLevel: 9, coins: 100000001, multishotLevel: 5, highestDepth: 20000, vitalityLevel: Number.MAX_SAFE_INTEGER });
+    assert.deepEqual(Progress.read(storage), { multishotLevel: 2, vitalityLevel: 90071992547409, highestDepth: 10000, bowLevel: 3, speedLevel: 3, coins: 100000000 });
     Progress.write(storage, { bowLevel: 0, speedLevel: 0, coins: 0 }); assert.equal(Progress.read(storage).coins, 0);
     assert.equal(Progress.write({ setItem() { throw Error('blocked'); } }, {}), false);
 });
