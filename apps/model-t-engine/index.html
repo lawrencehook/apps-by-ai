@@ -27,10 +27,10 @@
 <p id="sectionNote"></p><p>The piston turns the crank through its connecting rod. The small crank gear drives the larger cam gear. The cam lifts the valve, opening a passage beside the piston.</p>
 <div class="cam-actions"><button id="sparkStep">Show ignition</button><button id="liftStep">Show full lift</button></div></aside></div>
 <div class="transport"><button id="play">Run cycle</button><label for="angle">Crank angle</label><input id="angle" type="range" min="0" max="720" value="76" step="1"><output id="degrees" for="angle"></output><label>Pace <select id="speed"><option value="45">Slow</option><option value="120" selected>Study</option><option value="300">Fast</option></select></label></div>
-<div class="views"><label><input id="sleeves" type="checkbox" checked> Sectioned bores</label><label><input id="valves" type="checkbox" checked> Valve train</label><label>Inspect <select id="focus"><option value="-1">All cylinders</option><option value="0">Cylinder 1</option><option value="1">Cylinder 2</option><option value="2">Cylinder 3</option><option value="3">Cylinder 4</option></select></label></div>
+<div class="views"><label title="Translucent outline of the space above each piston and its side valves"><input id="chambers" type="checkbox" checked> Chamber boundaries</label><label><input id="sleeves" type="checkbox" checked> Sectioned bores</label><label><input id="valves" type="checkbox" checked> Valve train</label><label>Inspect <select id="focus"><option value="-1">All cylinders</option><option value="0">Cylinder 1</option><option value="1">Cylinder 2</option><option value="2">Cylinder 3</option><option value="3">Cylinder 4</option></select></label></div>
 <div class="details"><section><h2>Firing cycle</h2><p>The cylinders fire in the order 1, 2, 4, 3. Pistons 1 and 4 rise together; their valves determine which cylinder compresses a fresh charge and which expels exhaust.</p><div id="chart"></div><p id="readout" class="mono"></p></section>
 <figure class="plate"><a href="ford-cut-3.jpg"><img src="ford-cut-3.jpg" alt="Ford's 1919 cylinder assembly drawing, showing the valves above the camshaft and the two timing gears at the front."></a><figcaption>Ford owner’s manual, 1919 · Cylinder assembly, cut 3.</figcaption></figure></div>
-<footer>This kinematic study follows Ford’s side-valve layout and firing order. Part profiles, cut surfaces and finishes are illustrative. The section and flow markers trace the shared chamber and ports schematically. Valve events use idealized stroke boundaries; the manual gives the actual opening and closing settings. <a href="https://www.gutenberg.org/ebooks/46206">Ford Motor Company, 1919 manual</a></footer></main>
+<footer>This kinematic study follows Ford’s side-valve layout and firing order. Part profiles, cut surfaces and finishes are illustrative. The translucent surface traces the space above the piston and across to both side valves. Its lower boundary follows the piston crown. Chamber shape and flow markers are schematic. Valve events use idealized stroke boundaries; the manual gives the actual opening and closing settings. <a href="https://www.gutenberg.org/ebooks/46206">Ford Motor Company, 1919 manual</a></footer></main>
 <script src="../../libs/three-0.128.0/three.min.js"></script>
 <script>
 'use strict';
@@ -139,6 +139,52 @@ function showValve(index,phase){
     const otherValve=(stroke===1 && !exhaust) || (stroke===2 && exhaust);
     $('sectionNote').textContent=notes[stroke]+(otherValve?' The valve shown here stays seated.':'');
 }
+// The pocket in a side-valve head opens into the bore and both valve seats.
+const chamberDeck=2.464, chamberRoof=2.658, boreRadius=.431;
+function chamberBoundary(parent){
+    const shell=group(parent);
+    const glass=new THREE.MeshPhongMaterial({color:0x78c8ed,emissive:0x143649,specular:0xe6fbff,
+        shininess:88,transparent:true,opacity:.29,depthWrite:false,side:THREE.FrontSide});
+    const rim=new THREE.LineBasicMaterial({color:0xa2dce9,transparent:true,opacity:.67,depthWrite:false});
+    const footprint=new THREE.Shape();
+    // In the horizontal drawing plane the valve pocket tapers beyond the bore.
+    footprint.moveTo(.45,0);
+    footprint.bezierCurveTo(.45,.25,.40,.55,.40,.94);
+    footprint.bezierCurveTo(.40,1.20,.23,1.25,0,1.25);
+    footprint.bezierCurveTo(-.23,1.25,-.40,1.20,-.40,.94);
+    footprint.bezierCurveTo(-.40,.55,-.45,.25,-.45,0);
+    footprint.absarc(0,0,.45,Math.PI,tau,false);
+    footprint.closePath();
+    const outline=footprint.getPoints(24);
+    const skin=new THREE.BufferGeometry(),vertices=[],indices=[];
+    for(const p of outline)vertices.push(p.x,chamberDeck,p.y,p.x,chamberRoof,p.y);
+    for(let i=0;i<outline.length-1;i++){
+        const j=i*2;indices.push(j,j+1,j+2,j+2,j+1,j+3);
+    }
+    skin.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    skin.setIndex(indices);skin.computeVertexNormals();part(shell,skin,glass,0,0,0);
+    function cap(y){
+        const face=new THREE.ShapeGeometry(footprint,24);
+        face.rotateX(Math.PI/2);
+        return part(shell,face,glass,0,y,0);
+    }
+    // Shape normals point down after the rotation. Reverse the roof to face out.
+    const roof=cap(chamberRoof);
+    roof.geometry.index.array.reverse();roof.geometry.computeVertexNormals();
+    for(const [x,z,r] of [[0,0,boreRadius],[-.215,camZ,.14],[.215,camZ,.14]]){
+        const opening=new THREE.Path();opening.absarc(x,z,r,0,tau,true);footprint.holes.push(opening);
+    }
+    cap(chamberDeck);
+    for(const h of [chamberDeck,chamberRoof]){
+        const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(outline.map(p=>new THREE.Vector3(p.x,h,p.y))),rim);
+        shell.add(line);
+    }
+    const swept=part(shell,new THREE.CylinderGeometry(boreRadius,boreRadius,1,64,1,true),glass,0,0,0);
+    const crownEdge=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(Array.from({length:64},(_,i)=>
+        new THREE.Vector3(boreRadius*Math.cos(tau*i/64),0,boreRadius*Math.sin(tau*i/64)))),rim);
+    shell.add(crownEdge);
+    return {shell,swept,crownEdge};
+}
 function makeCylinder(index){
     const x=xs[index],g=group(scene,x);
     const piston=group(g);
@@ -227,7 +273,7 @@ function makeCylinder(index){
     cyl(g,.043,.075,material.dark,.09,2.86,.12);
     const boss=box(chamber,.66,.075,.28,material.jacket,-.09,2.56,.12);
     bolt(boss,-.20,.045,0,'y');
-    return {g,piston,rod,poppets,gas,spark};
+    return {g,piston,rod,poppets,gas,spark,boundary:chamberBoundary(g)};
 }
 // Broad panels reflected in curved steel make the journal and piston surfaces legible.
 function finishTexture(machined){
@@ -404,6 +450,10 @@ function update(){
         const height=py+Math.sqrt(rodLength**2-pz**2);
         s.piston.position.y=height;
         const crown=height+.27,head=2.46;
+        s.boundary.shell.visible=$('chambers').checked && (state.focus<0 || state.focus===i);
+        s.boundary.swept.scale.y=chamberDeck-crown;
+        s.boundary.swept.position.y=(chamberDeck+crown)/2;
+        s.boundary.crownEdge.position.y=crown;
         s.spark.visible=phase<18;
         s.gas.visible=stage===0 && (state.focus<0 || state.focus===i);
         if(s.gas.visible){
@@ -471,6 +521,7 @@ function animate(time){
 }
 $('play').onclick=()=>{if(state.running){stop();return;}state.running=true;previousTime=performance.now();$('play').textContent='Pause';frame=requestAnimationFrame(animate);};
 $('angle').oninput=()=>{stop();state.angle=Number($('angle').value);update();};
+$('chambers').onchange=update;
 $('sleeves').onchange=()=>{allSleeves.forEach(x=>x.visible=$('sleeves').checked);draw();};
 $('valves').onchange=()=>{allValves.forEach(x=>x.visible=$('valves').checked);draw();};
 function focus(index){
