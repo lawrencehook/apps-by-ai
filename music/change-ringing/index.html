@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Change ringing · Music</title>
+<style>
+:root{color-scheme:dark;--bg:#101615;--panel:#18201e;--ink:#eeeadd;--quiet:#b9c1b9;--line:#39443f;--gold:#ead08e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:28px clamp(16px,5vw,60px) 48px}a{color:var(--quiet);text-underline-offset:4px}h1,h2,h3{font:normal 1em Georgia,serif;margin:0}h1{font-size:clamp(48px,8vw,88px);letter-spacing:-.055em;margin:25px 0 16px;line-height:1.05}h2{font-size:clamp(26px,4vw,38px);line-height:1.15}h3{font-size:22px}p{color:var(--quiet)}header{border-bottom:1px solid var(--line);padding-bottom:22px}header p{max-width:590px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.8fr);gap:clamp(20px,4vw,48px);margin-top:24px}button,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid #67746d;border-radius:3px;padding:7px 11px}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}label,.meta,footer{font-size:14px;color:var(--quiet)}.controls,.bells{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.controls{margin:14px 0}.primary{background:var(--gold);color:var(--bg);border-color:var(--gold);min-width:6em}.bells button{border-radius:50%;width:39px;height:39px;padding:0}.bells button[aria-pressed=true]{background:var(--gold);color:var(--bg)}.controls label{display:flex;align-items:center;gap:6px}.paper{margin:18px 0;background:#e8e3d4;color:#26342f;border-radius:3px;overflow:hidden}.caption{display:flex;justify-content:space-between;gap:12px;padding:12px 16px 3px;text-transform:uppercase;font:11px/1.4 ui-monospace,monospace;letter-spacing:.1em}svg{display:block;width:100%;height:auto}aside section{padding:0 0 18px;border-bottom:1px solid var(--line);margin:0 0 18px}aside p{font-size:14px;margin:8px 0 12px}#seek{width:100%;accent-color:var(--gold)}#feedback{min-height:1.6em;margin:8px 0}.digits{font:26px ui-monospace,monospace;letter-spacing:.16em}footer{margin-top:24px;line-height:1.8}#method{max-width:100%}.readout{display:flex;justify-content:space-between;align-items:center;margin:6px 0}label[for=method]{display:block;margin-bottom:4px}
+@media(max-width:680px){.layout{grid-template-columns:1fr;gap:10px}main{padding-top:16px}.paper{margin:10px 0}header{padding-bottom:16px}h1{margin-top:18px}}
+</style>
+<main>
+<nav><a href="../index.html">← Music catalog</a></nav>
+<header><h1>Change ringing</h1><p>Each bell sounds once per row. Read across to hear the order of strikes, or follow a bell down the page to see how it changes place.</p></header>
+<div class="layout"><section aria-label="Ringing diagram">
+<label for="method">Method</label><select id="method"><option>Plain changes on four bells</option><option>Plain Bob Minor</option></select>
+<div class="paper"><div class="caption"><span>Change</span><span>Order of striking →</span></div><svg id="diagram" viewBox="0 0 460 390" role="img" aria-label="Bell paths through successive rows"></svg></div>
+<div class="readout"><label for="seek" id="rowLabel">Change</label><output class="digits" id="digits"></output></div>
+<input id="seek" type="range" min="0" value="0" step="1" aria-labelledby="rowLabel">
+<div class="controls"><button class="primary" id="play">Play</button><button id="previous" aria-label="Previous row">←</button><button id="next" aria-label="Next row">→</button><label>Pace <select id="pace"><option value=".42">Slow</option><option value=".30" selected>Steady</option><option value=".21">Brisk</option></select></label></div>
+</section><aside>
+<section><h2 id="title"></h2><p class="meta" id="summary"></p><p id="description"></p><a id="source">Source edition</a></section>
+<section><h3>Follow a bell</h3><p>Bell 1 is the treble, the highest bell. Select a bell to hear its pitch and trace its path.</p><div class="bells" id="bells"></div></section>
+<section><h3>Ring one part</h3><p>Turn on practice, then press Play. Ring your bell as the highlight reaches its number.</p><label><input id="practice" type="checkbox"> Play the other bells only</label><div class="controls"><button id="strike" disabled>Strike bell 1</button><small>Space bar</small></div><p id="feedback" role="status"></p></section>
+</aside></div><footer>Bell tones synthesized for this study. The opening and closing rows are rounds, with the bells ordered from highest to lowest.</footer>
+</main>
+<script>
+'use strict';
+const el = id => document.getElementById(id);
+const historical = '1234 2134 2314 2341 3241 3214 3124 1324 1342 3142 3412 3421 4321 4312 4132 1432 1423 4123 4213 4231 2431 2413 2143 1243 1234'.split(' ');
+function plainBob() {
+    const rows = ['123456'];
+    const lead = ['x','16','x','16','x','16','x','16','x','16','x','12'];
+    for (let repeat = 0; repeat < 5; repeat++) {
+        for (const places of lead) {
+            const bells = [...rows.at(-1)];
+            for (let i = 0; i < bells.length; i++) {
+                if (places.includes(String(i+1))) continue;
+                [bells[i], bells[i+1]] = [bells[i+1], bells[i]];
+                i++;
+            }
+            rows.push(bells.join(''));
+        }
+    }
+    return rows;
+}
+const methods = [
+    {rows:historical, title:'Plain changes on four bells', info:'Tintinnalogia · London, 1668', description:'The first four-bell example in the book gives all 24 orders. Watch the treble travel from first place to last. At either end it stays for a second strike while two other bells exchange places.', url:'https://www.gutenberg.org/files/18567/18567-h/18567-h.htm', source:'Read Tintinnalogia'},
+    {rows:plainBob(), title:'Plain Bob Minor', info:'Six bells · Five leads · 60 changes', description:'Each lead runs through twelve changes. At the last change the first two places hold while the other pairs cross. After five leads all six bells return to rounds.', url:'https://framework.cccbr.org.uk/edition3/classification.html', source:'Place notation · Central Council'}
+];
+const pitches = [440,392,349.23,329.63,293.66,261.63];
+const svgNS = 'http://www.w3.org/2000/svg';
+let rows, row = 0, bell = 1, column = -1;
+let audio, master, running = false, timer, events = [], scheduled = 0, shown = 0;
+let pendingPlay = 0, resumeAt = null;
+const sounded = new Set();
+async function enableAudio() {
+    if (!audio) {
+        audio = new AudioContext();
+        master = audio.createGain();
+        master.gain.value = .28;
+        master.connect(audio.destination);
+    }
+    await audio.resume();
+}
+// Modal partials of a bell: hum, prime, tierce, quint, nominal and upper partials.
+function tone(number, time) {
+    const frequency = pitches[6-rows[0].length+number-1];
+    for (const [ratio, strength, decay] of [[.5,.25,1.6],[1,.46,1.35],[1.2,.21,.96],[1.5,.12,.75],[2,.44,.78],[2.75,.10,.36],[4.12,.07,.19]]) {
+        const oscillator = audio.createOscillator(), envelope = audio.createGain();
+        oscillator.frequency.value = frequency * ratio;
+        envelope.gain.setValueAtTime(.0001,time);
+        envelope.gain.exponentialRampToValueAtTime(strength,time+.007);
+        envelope.gain.exponentialRampToValueAtTime(.0001,time+decay);
+        oscillator.connect(envelope).connect(master);
+        oscillator.onended = () => { sounded.delete(oscillator); oscillator.disconnect(); envelope.disconnect(); };
+        sounded.add(oscillator);
+        oscillator.start(time);
+        oscillator.stop(time+decay+.01);
+    }
+}
+function stop() {
+    resumeAt = null;
+    pendingPlay++;
+    clearInterval(timer);
+    running = false;
+    for (const node of sounded) node.stop();
+    column = -1;
+    el('play').textContent = 'Play';
+}
+function svg(name, attrs, content) {
+    const node = document.createElementNS(svgNS,name);
+    for (const [key,value] of Object.entries(attrs)) node.setAttribute(key,value);
+    if (content !== undefined) node.textContent = content;
+    return node;
+}
+function draw() {
+    const diagram = el('diagram'), count = rows[0].length;
+    const first = Math.min(Math.max(0,row-3),rows.length-9);
+    const windowRows = rows.slice(first,first+9);
+    const x = pos => 78+pos*350/(count-1), y = i => 24+i*43;
+    const nodes = [svg('rect',{x:0,y:y(row-first)-17,width:460,height:34,fill:'#d6d2bf'})];
+    for (let n = 1; n <= count; n++) {
+        const points = windowRows.map((order,i)=>x(order.indexOf(String(n)))+','+y(i)).join(' ');
+        nodes.push(svg('polyline',{points,fill:'none',stroke:n===bell?'#92672a':'#a9aea1','stroke-width':n===bell?3:1}));
+    }
+    windowRows.forEach((order,i)=>{
+        nodes.push(svg('text',{x:15,y:y(i)+5,fill:'#536057','font-size':13},first+i || 'R'));
+        [...order].forEach((digit,j)=>{
+            const active = first+i===row && column===j;
+            nodes.push(svg('circle',{cx:x(j),cy:y(i),r:active?14:11,fill:active?'#243e35':Number(digit)===bell?'#e8c983':'#e8e3d4'}));
+            nodes.push(svg('text',{x:x(j),y:y(i)+5,'text-anchor':'middle',fill:active?'white':'#26342f','font-size':15,'font-family':'monospace'},digit));
+        });
+    });
+    diagram.replaceChildren(...nodes);
+    el('digits').textContent = rows[row];
+    el('rowLabel').textContent = 'Change '+row+' of '+(rows.length-1);
+    el('seek').value = row;
+    el('previous').disabled = row===0;
+    el('next').disabled = row===rows.length-1;
+}
+function jump(target) {
+    stop(); row = Number(target); el('feedback').textContent = ''; draw();
+}
+function tick() {
+    const now = audio.currentTime;
+    while (scheduled < events.length && events[scheduled].time <= now+.10) {
+        const event = events[scheduled++];
+        if (!el('practice').checked || event.bell !== bell) tone(event.bell,Math.max(now,event.time));
+    }
+    let changed = false;
+    while (shown < events.length && events[shown].time <= now) {
+        const event = events[shown++];
+        row = event.row; column = event.column; changed = true;
+    }
+    if (now > events.at(-1).time + Number(el('pace').value)) {
+        running = false; clearInterval(timer); column = -1; changed = true; el('play').textContent = 'Replay';
+    }
+    if (changed) draw();
+}
+async function start() {
+    if (running) {
+        const next = events[shown];
+        stop(); resumeAt = next; draw(); return;
+    }
+    const request = ++pendingPlay;
+    try { await enableAudio(); } catch { el('feedback').textContent='Audio is unavailable in this browser.'; return; }
+    if (request !== pendingPlay) return;
+    if (resumeAt) row = resumeAt.row;
+    else if (row === rows.length-1) row = 0;
+    events = []; shown = scheduled = 0;
+    const step = Number(el('pace').value);
+    let time = audio.currentTime+.12;
+    for (let i=row;i<rows.length;i++) {
+        [...rows[i]].forEach((digit,j)=>{
+            if (resumeAt && i===resumeAt.row && j<resumeAt.column) return;
+            events.push({time,row:i,column:j,bell:Number(digit)});
+            time += step;
+        });
+        if (i%2===1) time+=step; // Open handstroke lead after the backstroke row.
+    }
+    resumeAt = null;
+    running = true; el('feedback').textContent=''; el('play').textContent='Pause'; tick(); timer=setInterval(tick,20);
+}
+function setup() {
+    stop(); row=0; bell=1;
+    const method = methods[el('method').selectedIndex]; rows = method.rows;
+    el('title').textContent=method.title; el('summary').textContent=method.info;
+    el('description').textContent=method.description; el('source').href=method.url; el('source').textContent=method.source;
+    el('seek').max=rows.length-1; el('feedback').textContent='';
+    el('bells').replaceChildren();
+    for (const digit of rows[0]) {
+        const button = document.createElement('button');
+        button.textContent=digit; button.setAttribute('aria-label','Follow bell '+digit);
+        button.setAttribute('aria-pressed',Number(digit)===bell);
+        button.onclick=async ()=>{
+            jump(row); bell=Number(digit);
+            for(const b of el('bells').children) b.setAttribute('aria-pressed',b===button);
+            el('strike').textContent='Strike bell '+bell; draw();
+            try {await enableAudio(); tone(bell,audio.currentTime);} catch {el('feedback').textContent='Audio unavailable.';}
+        };
+        el('bells').append(button);
+    }
+    el('strike').textContent='Strike bell 1'; draw();
+}
+async function strike() {
+    if (!el('practice').checked) return;
+    try {await enableAudio();} catch {el('feedback').textContent='Audio unavailable.';return;}
+    const now=audio.currentTime;
+    tone(bell,now);
+    if (!running) return;
+    const step=Number(el('pace').value);
+    const target=events.find(event=>event.bell===bell && Math.abs(event.time-now)<step*.52);
+    if (!target) {el('feedback').textContent='Between strikes';return;}
+    if (target.hit) return;
+    target.hit=true;
+    const delta=Math.round((now-target.time)*1000);
+    el('feedback').textContent=Math.abs(delta)<55?'In time':Math.abs(delta)+' ms '+(delta<0?'early':'late');
+}
+el('play').onclick=start;
+el('strike').onclick=strike;
+el('practice').onchange=()=>{jump(row);el('strike').disabled=!el('practice').checked;};
+el('pace').onchange=()=>jump(row);
+el('method').onchange=setup;
+el('seek').oninput=()=>jump(el('seek').value);
+el('previous').onclick=()=>jump(Math.max(0,row-1));
+el('next').onclick=()=>jump(Math.min(rows.length-1,row+1));
+document.addEventListener('keydown',event=>{
+    if(event.code!=='Space' || !el('practice').checked || ['SELECT','INPUT'].includes(event.target.tagName)) return;
+    if (!running && event.target.closest('button,a')) return;
+    event.preventDefault(); if(!event.repeat) strike();
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden && running){stop();draw();}});
+setup();
+</script></html>
