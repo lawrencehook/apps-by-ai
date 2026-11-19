@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BFS vs DFS - AI Showcase</title>
+    <title>BFS vs DFS - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; font-family: system-ui, sans-serif; }
         .container { display: flex; height: 100vh; }
         .panel {
             flex: 1; display: flex; flex-direction: column; padding: 20px;
-            border-right: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .panel:last-child { border-right: none; }
-        .panel h2 { color: #fff; font-size: 1.2rem; margin-bottom: 10px; text-align: center; }
-        .panel .stats { color: #666; font-size: 12px; text-align: center; margin-bottom: 10px; }
+        .panel h2 { color: light-dark(#0f0f0f, #fff); font-size: 1.2rem; margin-bottom: 10px; text-align: center; }
+        .panel .stats { color: light-dark(#616161, #666); font-size: 12px; text-align: center; margin-bottom: 10px; }
         .panel canvas { flex: 1; width: 100%; }
         .controls {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.9); padding: 15px 25px; border-radius: 8px;
-            color: #fff; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfce6, rgba(0,0,0,0.9)); padding: 15px 25px; border-radius: 8px;
+            color: light-dark(#0f0f0f, #fff); font-size: 14px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             display: flex; gap: 15px; align-items: center; z-index: 100;
             flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 20px);
         }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         .control-group { display: flex; align-items: center; gap: 8px; }
-        .control-group label { color: #888; font-size: 12px; }
+        .control-group label { color: light-dark(#616161, #888); font-size: 12px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
-        .bfs { border-color: #4ecdc4; }
-        .bfs h2 { color: #4ecdc4; }
-        .dfs { border-color: #ff6b6b; }
-        .dfs h2 { color: #ff6b6b; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        .bfs { border-color: light-dark(#44aea6, #4ecdc4); }
+        .bfs h2 { color: light-dark(#378b85, #4ecdc4); }
+        .dfs { border-color: light-dark(#961313, #ff6b6b); }
+        .dfs h2 { color: light-dark(#961313, #ff6b6b); }
     </style>
 </head>
 <body>

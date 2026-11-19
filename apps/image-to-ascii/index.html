@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image to ASCII - AI Showcase</title>
+    <title>Image to ASCII - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         .main-layout {
             display: grid;
@@ -41,8 +41,8 @@
         }
 
         .controls-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             height: fit-content;
@@ -59,12 +59,12 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 16px;
         }
 
         .upload-area {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 32px;
             text-align: center;
@@ -73,12 +73,12 @@
             margin-bottom: 16px;
         }
         .upload-area:hover {
-            border-color: rgba(102, 126, 234, 0.5);
-            background: rgba(102, 126, 234, 0.05);
+            border-color: light-dark(#273c9980, rgba(102, 126, 234, 0.5));
+            background: light-dark(#273c990d, rgba(102, 126, 234, 0.05));
         }
         .upload-area.dragover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c991a, rgba(102, 126, 234, 0.1));
         }
         .upload-icon {
             font-size: 2.5rem;
@@ -86,7 +86,7 @@
             opacity: 0.6;
         }
         .upload-text {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
         }
 
@@ -112,11 +112,11 @@
             margin-bottom: 8px;
         }
         .control-label {
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.85rem;
         }
         .control-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-family: monospace;
             font-size: 0.85rem;
         }
@@ -125,14 +125,14 @@
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -140,15 +140,15 @@
         select {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9rem;
             cursor: pointer;
         }
         select option {
-            background: #1a1a2e;
+            background: light-dark(#d3d3e3, #1a1a2e);
         }
 
         .checkbox-row {
@@ -163,7 +163,7 @@
             cursor: pointer;
         }
         .checkbox-label {
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.9rem;
         }
 
@@ -179,13 +179,13 @@
         }
         .btn:last-child { margin-bottom: 0; }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
         }
         .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
         }
         .btn:hover { transform: translateY(-1px); opacity: 0.9; }
         .btn:disabled {
@@ -195,8 +195,8 @@
         }
 
         .output-panel {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             overflow: hidden;
         }
@@ -206,10 +206,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
         .output-title {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
         }
         .output-actions {
@@ -218,22 +218,22 @@
         }
         .copy-btn {
             padding: 8px 16px;
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
             border-radius: 6px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.2s;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
-        .copy-btn.copied { background: rgba(78, 205, 196, 0.5); }
+        .copy-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .copy-btn.copied { background: light-dark(#44aea680, rgba(78, 205, 196, 0.5)); }
 
         .ascii-output {
             padding: 24px;
             overflow: auto;
             max-height: 80vh;
-            background: #000;
+            background: light-dark(#fcfcfc, #000);
         }
         .ascii-art {
             font-family: 'Courier New', 'Monaco', monospace;
@@ -249,7 +249,7 @@
         .placeholder {
             text-align: center;
             padding: 80px 40px;
-            color: #444;
+            color: light-dark(#bdbdbd, #444);
         }
         .placeholder-icon {
             font-size: 4rem;
@@ -267,21 +267,21 @@
         }
         .char-set-btn {
             padding: 8px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.75rem;
             cursor: pointer;
             font-family: monospace;
             transition: all 0.2s;
         }
         .char-set-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .char-set-btn.active {
-            border-color: #4ecdc4;
-            color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
+            color: light-dark(#378b85, #4ecdc4);
         }
 
         canvas { display: none; }

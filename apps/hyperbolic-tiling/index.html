@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hyperbolic Tiling - Apps by AI</title>
+    <title>Hyperbolic Tiling - Apps by AI</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             height: 100vh;
             overflow: hidden;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             height: 100vh;
@@ -31,21 +31,21 @@
             align-items: baseline;
             gap: 12px;
         }
-        h1 { font-size: 1.3rem; color: #fff; }
-        .subtitle { color: #666; font-size: 0.8rem; }
+        h1 { font-size: 1.3rem; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); font-size: 0.8rem; }
         .back-link {
-            color: #666; text-decoration: none; font-size: 13px;
-            padding: 6px 12px; background: rgba(255,255,255,0.05);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            color: light-dark(#616161, #666); text-decoration: none; font-size: 13px;
+            padding: 6px 12px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .controls {
             display: flex;
             gap: 16px;
             align-items: center;
             padding: 10px 14px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             margin-bottom: 10px;
             flex-wrap: wrap;
@@ -55,22 +55,22 @@
             align-items: center;
             gap: 8px;
         }
-        label { color: #888; font-size: 0.75rem; }
+        label { color: light-dark(#616161, #888); font-size: 0.75rem; }
         select, button {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 0.8rem;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff); padding: 5px 12px; border-radius: 4px; font-size: 0.8rem;
             cursor: pointer;
         }
-        button:hover { background: rgba(255,255,255,0.1); }
-        input[type="range"] { width: 80px; accent-color: #4ecdc4; }
-        .value { color: #4ecdc4; font-family: monospace; font-size: 0.8rem; min-width: 25px; }
+        button:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
+        input[type="range"] { width: 80px; accent-color: light-dark(#44aea6, #4ecdc4); }
+        .value { color: light-dark(#378b85, #4ecdc4); font-family: monospace; font-size: 0.8rem; min-width: 25px; }
         .btn-primary {
-            background: rgba(78, 205, 196, 0.15);
-            border-color: rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea626, rgba(78, 205, 196, 0.15));
+            border-color: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
         }
-        input[type="checkbox"] { accent-color: #4ecdc4; }
+        input[type="checkbox"] { accent-color: light-dark(#44aea6, #4ecdc4); }
         .canvas-container {
             flex: 1;
             display: flex;
@@ -87,13 +87,13 @@
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.8);
+            background: light-dark(#fcfcfccc, rgba(0,0,0,0.8));
             padding: 8px 12px;
             border-radius: 6px;
             font-size: 0.75rem;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
-        .info span { color: #4ecdc4; }
+        .info span { color: light-dark(#378b85, #4ecdc4); }
     </style>
 </head>
 <body>

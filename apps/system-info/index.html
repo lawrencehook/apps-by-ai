@@ -3,37 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Info Dashboard - Apps by AI</title>
+    <title>System Info Dashboard - Apps by AI</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
         }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
@@ -55,31 +55,31 @@
         .card-title {
             font-size: 1rem;
             font-weight: 600;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
         .info-row {
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
         .info-row:last-child { border-bottom: none; }
-        .info-label { color: #888; font-size: 0.9rem; }
+        .info-label { color: light-dark(#616161, #888); font-size: 0.9rem; }
         .info-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-family: 'SF Mono', Monaco, monospace;
             font-size: 0.9rem;
             text-align: right;
             max-width: 60%;
             word-break: break-word;
         }
-        .info-value.warn { color: #ffa502; }
-        .info-value.error { color: #ff6b6b; }
-        .info-value.success { color: #4ecdc4; }
+        .info-value.warn { color: light-dark(#ac7715, #ffa502); }
+        .info-value.error { color: light-dark(#961313, #ff6b6b); }
+        .info-value.success { color: light-dark(#378b85, #4ecdc4); }
         .battery-bar {
             width: 100%;
             height: 8px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 4px;
             margin-top: 8px;
             overflow: hidden;
@@ -92,19 +92,19 @@
         .full-width { grid-column: 1 / -1; }
         .gpu-name {
             font-size: 1.1rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 12px;
             padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
         .unavailable {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-style: italic;
         }
         .refresh-btn {
-            background: rgba(78, 205, 196, 0.15);
-            border: 1px solid rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea626, rgba(78, 205, 196, 0.15));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 10px 20px;
             border-radius: 6px;
             cursor: pointer;
@@ -112,10 +112,10 @@
             margin-top: 24px;
         }
         .refresh-btn:hover {
-            background: rgba(78, 205, 196, 0.25);
+            background: light-dark(#44aea640, rgba(78, 205, 196, 0.25));
         }
         .note {
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.75rem;
             margin-top: 24px;
             text-align: center;

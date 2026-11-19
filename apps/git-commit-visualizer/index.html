@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Git Commit Visualizer - AI Showcase</title>
+    <title>Git Commit Visualizer - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
@@ -13,10 +13,10 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            background: linear-gradient(135deg, light-dark(#e8ebf0, #0d1117) 0%, light-dark(#dee2e7, #161b22) 100%);
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #c9d1d9;
+            color: light-dark(#323a42, #c9d1d9);
         }
 
         .container {
@@ -33,13 +33,13 @@
         h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
-            background: linear-gradient(90deg, #58a6ff, #a371f7, #3fb950);
+            background: linear-gradient(90deg, light-dark(#1458a5, #58a6ff), light-dark(#461a90, #a371f7), light-dark(#5cb669, #3fb950));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         header p {
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
             font-size: 1.1rem;
         }
 
@@ -50,15 +50,15 @@
         }
 
         .panel {
-            background: rgba(22, 27, 34, 0.8);
+            background: light-dark(#dee2e7cc, rgba(22, 27, 34, 0.8));
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid #30363d;
+            border: 1px solid light-dark(#c5c9cf, #30363d);
         }
 
         .panel h2 {
             font-size: 1rem;
-            color: #58a6ff;
+            color: light-dark(#1458a5, #58a6ff);
             margin-bottom: 16px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -67,10 +67,10 @@
         textarea {
             width: 100%;
             height: 300px;
-            background: #0d1117;
-            border: 1px solid #30363d;
+            background: light-dark(#e8ebf0, #0d1117);
+            border: 1px solid light-dark(#c5c9cf, #30363d);
             border-radius: 8px;
-            color: #c9d1d9;
+            color: light-dark(#323a42, #c9d1d9);
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12px;
             padding: 12px;
@@ -79,16 +79,16 @@
 
         textarea:focus {
             outline: none;
-            border-color: #58a6ff;
+            border-color: light-dark(#1458a5, #58a6ff);
         }
 
         button {
             width: 100%;
             padding: 12px 20px;
-            background: linear-gradient(135deg, #238636, #2ea043);
+            background: linear-gradient(135deg, light-dark(#89d397, #238636), light-dark(#72c782, #2ea043));
             border: none;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -102,12 +102,12 @@
         }
 
         button.secondary {
-            background: #21262d;
-            border: 1px solid #30363d;
+            background: light-dark(#d4d7dd, #21262d);
+            border: 1px solid light-dark(#c5c9cf, #30363d);
         }
 
         button.secondary:hover {
-            background: #30363d;
+            background: light-dark(#c5c9cf, #30363d);
             box-shadow: none;
         }
 
@@ -134,16 +134,16 @@
         }
 
         .stat-item {
-            background: #0d1117;
+            background: light-dark(#e8ebf0, #0d1117);
             padding: 12px;
             border-radius: 8px;
             text-align: center;
-            border: 1px solid #30363d;
+            border: 1px solid light-dark(#c5c9cf, #30363d);
         }
 
         .stat-label {
             font-size: 0.75rem;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -151,7 +151,7 @@
         .stat-value {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #58a6ff;
+            color: light-dark(#1458a5, #58a6ff);
             margin-top: 4px;
         }
 
@@ -172,7 +172,7 @@
         }
 
         .contributor:hover {
-            background: rgba(88, 166, 255, 0.1);
+            background: light-dark(#1458a51a, rgba(88, 166, 255, 0.1));
         }
 
         .contributor-avatar {
@@ -184,7 +184,7 @@
             justify-content: center;
             font-weight: bold;
             font-size: 14px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .contributor-info {
@@ -193,42 +193,42 @@
 
         .contributor-name {
             font-weight: 600;
-            color: #c9d1d9;
+            color: light-dark(#323a42, #c9d1d9);
             font-size: 0.9rem;
         }
 
         .contributor-commits {
             font-size: 0.75rem;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
         }
 
         .back-link {
             position: fixed;
             top: 20px;
             right: 20px;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
             text-decoration: none;
             font-size: 14px;
             padding: 10px 16px;
-            background: rgba(22, 27, 34, 0.9);
+            background: light-dark(#dee2e7e6, rgba(22, 27, 34, 0.9));
             border-radius: 8px;
-            border: 1px solid #30363d;
+            border: 1px solid light-dark(#c5c9cf, #30363d);
             transition: color 0.2s;
             z-index: 100;
         }
 
         .back-link:hover {
-            color: #c9d1d9;
+            color: light-dark(#323a42, #c9d1d9);
         }
 
         .sample-data {
             font-size: 0.8rem;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
             margin-top: 8px;
         }
 
         .sample-data a {
-            color: #58a6ff;
+            color: light-dark(#1458a5, #58a6ff);
             cursor: pointer;
             text-decoration: none;
         }
@@ -243,7 +243,7 @@
 
         .heatmap-title {
             font-size: 0.9rem;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
             margin-bottom: 8px;
         }
 
@@ -256,13 +256,13 @@
         .heatmap-cell {
             aspect-ratio: 1;
             border-radius: 2px;
-            background: #161b22;
+            background: light-dark(#dee2e7, #161b22);
         }
 
         .tooltip {
             position: absolute;
-            background: #1f2428;
-            border: 1px solid #30363d;
+            background: light-dark(#d8dcdf, #1f2428);
+            border: 1px solid light-dark(#c5c9cf, #30363d);
             border-radius: 6px;
             padding: 8px 12px;
             font-size: 12px;
@@ -277,7 +277,7 @@
             gap: 8px;
             margin-top: 12px;
             font-size: 0.75rem;
-            color: #8b949e;
+            color: light-dark(#5a6168, #8b949e);
         }
 
         .legend-scale {

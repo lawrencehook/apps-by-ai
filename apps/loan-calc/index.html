@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loan Calculator - AI Showcase</title>
+    <title>Loan Calculator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .calculator {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -35,8 +35,8 @@
             .calculator { grid-template-columns: 1fr; }
         }
         .inputs-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
@@ -46,7 +46,7 @@
         .input-group:last-child { margin-bottom: 0; }
         .input-group label {
             display: block;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
             margin-bottom: 8px;
         }
@@ -58,14 +58,14 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .input-with-symbol .symbol-right {
             position: absolute;
             right: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .input-with-symbol input {
             padding-left: 36px;
@@ -76,16 +76,16 @@
         }
         input[type="number"], input[type="range"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 14px;
             border-radius: 8px;
             font-size: 1rem;
         }
         input[type="number"]:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
         input[type="range"] {
             padding: 0;
@@ -98,7 +98,7 @@
             -webkit-appearance: none;
             width: 20px;
             height: 20px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -106,53 +106,53 @@
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-top: 4px;
         }
         .results-section {
-            background: rgba(78, 205, 196, 0.05);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 12px;
             padding: 24px;
         }
         .monthly-payment {
             text-align: center;
             padding-bottom: 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             margin-bottom: 24px;
         }
-        .monthly-label { color: #888; font-size: 0.9rem; margin-bottom: 8px; }
+        .monthly-label { color: light-dark(#616161, #888); font-size: 0.9rem; margin-bottom: 8px; }
         .monthly-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 3rem;
             font-weight: 600;
             font-family: monospace;
         }
-        .monthly-suffix { color: #666; font-size: 1rem; }
+        .monthly-suffix { color: light-dark(#616161, #666); font-size: 1rem; }
         .breakdown-row {
             display: flex;
             justify-content: space-between;
             padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
         .breakdown-row:last-child { border-bottom: none; }
-        .breakdown-label { color: #888; }
-        .breakdown-value { color: #fff; font-family: monospace; font-weight: 500; }
-        .breakdown-value.highlight { color: #4ecdc4; }
+        .breakdown-label { color: light-dark(#616161, #888); }
+        .breakdown-value { color: light-dark(#0f0f0f, #fff); font-family: monospace; font-weight: 500; }
+        .breakdown-value.highlight { color: light-dark(#378b85, #4ecdc4); }
         .chart-container {
             margin-top: 24px;
             height: 24px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 12px;
             overflow: hidden;
             display: flex;
         }
         .chart-principal {
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             transition: width 0.3s;
         }
         .chart-interest {
-            background: #ff6b6b;
+            background: light-dark(#961313, #ff6b6b);
             transition: width 0.3s;
         }
         .chart-legend {
@@ -172,8 +172,8 @@
             height: 12px;
             border-radius: 50%;
         }
-        .legend-dot.principal { background: #4ecdc4; }
-        .legend-dot.interest { background: #ff6b6b; }
+        .legend-dot.principal { background: light-dark(#44aea6, #4ecdc4); }
+        .legend-dot.interest { background: light-dark(#961313, #ff6b6b); }
     </style>
 </head>
 <body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaleidoscope - AI Showcase</title>
+    <title>Kaleidoscope - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
@@ -13,7 +13,7 @@
         }
 
         body {
-            background: #000;
+            background: light-dark(#fcfcfc, #000);
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
@@ -27,15 +27,15 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: light-dark(#fcfcfcd9, rgba(0, 0, 0, 0.85));
             padding: 20px;
             border-radius: 16px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 14px;
             max-width: 300px;
             max-height: calc(100vh - 40px);
             overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             backdrop-filter: blur(10px);
             z-index: 100;
         }
@@ -43,13 +43,13 @@
         .controls h1 {
             font-size: 1.5rem;
             margin-bottom: 8px;
-            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #00d4ff);
+            background: linear-gradient(90deg, light-dark(#e42779, #ff006e), light-dark(#682ac0, #8338ec), light-dark(#1858be, #3a86ff), light-dark(#27c4e4, #00d4ff));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .controls p {
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 20px;
             line-height: 1.4;
         }
@@ -61,27 +61,27 @@
         .control-group label {
             display: block;
             margin-bottom: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.9rem;
         }
 
         .control-group input[type="range"] {
             width: 100%;
-            accent-color: #8338ec;
+            accent-color: light-dark(#682ac0, #8338ec);
         }
 
         .control-group select {
             width: 100%;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9rem;
         }
 
         .control-group select option {
-            background: #1a1a2e;
+            background: light-dark(#d3d3e3, #1a1a2e);
         }
 
         .button-group {
@@ -94,10 +94,10 @@
             flex: 1;
             min-width: 80px;
             padding: 10px 16px;
-            background: linear-gradient(135deg, #8338ec, #3a86ff);
+            background: linear-gradient(135deg, light-dark(#682ac0, #8338ec), light-dark(#1858be, #3a86ff));
             border: none;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
@@ -109,11 +109,11 @@
         }
 
         button.secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         button.secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             box-shadow: none;
             transform: none;
         }
@@ -122,19 +122,19 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             font-size: 14px;
             padding: 10px 16px;
-            background: rgba(0, 0, 0, 0.8);
+            background: light-dark(#fcfcfccc, rgba(0, 0, 0, 0.8));
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             transition: color 0.2s;
             z-index: 100;
         }
 
         .back-link:hover {
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .color-inputs {
@@ -162,19 +162,19 @@
         .toggle-btn {
             flex: 1;
             padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .toggle-btn.active {
-            background: rgba(131, 56, 236, 0.3);
-            border-color: #8338ec;
-            color: #fff;
+            background: light-dark(#682ac04c, rgba(131, 56, 236, 0.3));
+            border-color: light-dark(#682ac0, #8338ec);
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .file-input-wrapper {
@@ -196,34 +196,34 @@
         .file-label {
             display: block;
             padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px dashed rgba(255, 255, 255, 0.2);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px dashed light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 8px;
             text-align: center;
-            color: #888;
+            color: light-dark(#616161, #888);
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .file-label:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            border-color: light-dark(#0f0f0f4c, rgba(255, 255, 255, 0.3));
         }
 
         .webcam-status {
             margin-top: 10px;
             padding: 8px;
-            background: rgba(0, 212, 255, 0.1);
+            background: light-dark(#27c4e41a, rgba(0, 212, 255, 0.1));
             border-radius: 6px;
             font-size: 0.8rem;
-            color: #00d4ff;
+            color: light-dark(#1593ac, #00d4ff);
             text-align: center;
             display: none;
         }
 
         .webcam-status.error {
-            background: rgba(255, 0, 110, 0.1);
-            color: #ff006e;
+            background: light-dark(#e427791a, rgba(255, 0, 110, 0.1));
+            color: light-dark(#ac1557, #ff006e);
         }
 
         #hiddenVideo {
@@ -233,14 +233,14 @@
         .instructions {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             font-size: 0.8rem;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .instructions p {
             margin-bottom: 4px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
     </style>
 </head>

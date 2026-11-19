@@ -3,54 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turing Machine - AI Showcase</title>
+    <title>Turing Machine - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; overflow-y: auto; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; overflow-y: auto; font-family: system-ui, sans-serif; }
         canvas { display: block; width: 100%; }
         .controls {
-            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
-            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
-            min-width: 280px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; left: 20px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            padding: 20px; border-radius: 8px; color: light-dark(#0f0f0f, #fff); font-size: 14px;
+            min-width: 280px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .controls p { color: light-dark(#616161, #666); margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 8px 14px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin-right: 6px; margin-bottom: 6px;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         .control-group { margin-bottom: 12px; }
-        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: light-dark(#616161, #888); font-size: 12px; }
         select, input[type="text"] {
-            width: 100%; padding: 6px; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+            width: 100%; padding: 6px; background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2)); color: light-dark(#0f0f0f, #fff); border-radius: 4px;
             font-family: monospace;
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
-        .status { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        .status { margin-top: 10px; padding: 10px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05)); border-radius: 4px; }
         .status-row { display: flex; justify-content: space-between; margin: 4px 0; }
-        .status-label { color: #888; font-size: 11px; }
-        .status-value { color: #4ecdc4; font-family: monospace; font-size: 13px; }
+        .status-label { color: light-dark(#616161, #888); font-size: 11px; }
+        .status-value { color: light-dark(#378b85, #4ecdc4); font-family: monospace; font-size: 13px; }
         .result { margin-top: 8px; font-weight: bold; }
-        .result.halt { color: #4ecdc4; }
-        .result.running { color: #ffe66d; }
+        .result.halt { color: light-dark(#378b85, #4ecdc4); }
+        .result.running { color: light-dark(#947e12, #ffe66d); }
         .transitions {
             max-height: 150px; overflow-y: auto; margin-top: 10px;
-            background: rgba(255,255,255,0.03); border-radius: 4px; padding: 8px;
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03)); border-radius: 4px; padding: 8px;
         }
         .transition {
             font-family: monospace; font-size: 11px; padding: 3px 6px;
-            margin: 2px 0; border-radius: 2px; color: #888;
+            margin: 2px 0; border-radius: 2px; color: light-dark(#616161, #888);
         }
-        .transition.current { background: rgba(78, 205, 196, 0.3); color: #4ecdc4; }
+        .transition.current { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); color: light-dark(#378b85, #4ecdc4); }
         @media (max-width: 600px) {
             .controls {
                 position: relative;

@@ -3,38 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Percentage Calculator - AI Showcase</title>
+    <title>Percentage Calculator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .calc-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 16px;
         }
         .calc-title {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
             margin-bottom: 16px;
         }
@@ -45,14 +45,14 @@
             flex-wrap: wrap;
         }
         .calc-text {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 1rem;
         }
         input[type="number"] {
             width: 100px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px 14px;
             border-radius: 6px;
             font-size: 1rem;
@@ -60,36 +60,36 @@
         }
         input[type="number"]:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
-        input[type="number"]::placeholder { color: #444; }
+        input[type="number"]::placeholder { color: light-dark(#bdbdbd, #444); }
         .result-box {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
             border-radius: 6px;
             padding: 12px 20px;
             min-width: 100px;
             text-align: center;
         }
         .result-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 1.3rem;
             font-weight: 600;
             font-family: monospace;
         }
         .equals {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 1.2rem;
             font-weight: bold;
         }
         .common-percentages {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
         .common-title {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
             margin-bottom: 16px;
         }
@@ -105,7 +105,7 @@
         }
         .quick-input label {
             display: block;
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.85rem;
             margin-bottom: 6px;
         }
@@ -118,19 +118,19 @@
             gap: 8px;
         }
         .percentage-item {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 6px;
             padding: 12px;
             text-align: center;
         }
         .percentage-label {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 4px;
         }
         .percentage-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 1.1rem;
             font-weight: 500;
             font-family: monospace;

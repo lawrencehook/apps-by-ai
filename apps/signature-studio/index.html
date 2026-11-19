@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signature Studio - AI Showcase</title>
+    <title>Signature Studio - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
@@ -14,9 +14,9 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            background: linear-gradient(135deg, light-dark(#efeff3, #0a0a0f) 0%, light-dark(#d3d3e3, #1a1a2e) 50%, light-dark(#e5e5ee, #0f0f1a) 100%);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             overflow-x: hidden;
         }
 
@@ -33,7 +33,7 @@
 
         header h1 {
             font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -41,7 +41,7 @@
         }
 
         header p {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 1.1em;
         }
 
@@ -55,23 +55,23 @@
 
         .tab-btn {
             padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             cursor: pointer;
             font-size: 1em;
             transition: all 0.3s ease;
         }
 
         .tab-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .tab-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
             border-color: transparent;
         }
 
@@ -130,8 +130,8 @@
         }
 
         .controls-panel {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f05, rgba(255, 255, 255, 0.02));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 12px;
             padding: 20px;
         }
@@ -143,7 +143,7 @@
         .control-group label {
             display: block;
             margin-bottom: 8px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.9em;
         }
 
@@ -151,7 +151,7 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             outline: none;
             -webkit-appearance: none;
         }
@@ -161,7 +161,7 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             cursor: pointer;
         }
 
@@ -195,7 +195,7 @@
         }
 
         .color-preset.active {
-            border-color: #fff;
+            border-color: light-dark(#0f0f0f, #fff);
         }
 
         .btn {
@@ -211,8 +211,8 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .btn-primary:hover {
@@ -221,23 +221,23 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ddd;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            color: light-dark(#2f2f2f, #ddd);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: light-dark(#0f0f0f26, rgba(255, 255, 255, 0.15));
         }
 
         .btn-danger {
-            background: rgba(234, 84, 85, 0.2);
-            color: #ea5455;
-            border: 1px solid rgba(234, 84, 85, 0.3);
+            background: light-dark(#a8292a33, rgba(234, 84, 85, 0.2));
+            color: light-dark(#9c2627, #ea5455);
+            border: 1px solid light-dark(#a8292a4c, rgba(234, 84, 85, 0.3));
         }
 
         .btn-danger:hover {
-            background: rgba(234, 84, 85, 0.3);
+            background: light-dark(#a8292a4c, rgba(234, 84, 85, 0.3));
         }
 
         .btn-group {
@@ -267,8 +267,8 @@
         }
 
         .document-preview {
-            background: rgba(255, 255, 255, 0.02);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f05, rgba(255, 255, 255, 0.02));
+            border: 2px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 12px;
             padding: 20px;
             min-height: 600px;
@@ -296,7 +296,7 @@
         }
 
         .upload-zone {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -305,8 +305,8 @@
         }
 
         .upload-zone:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c990d, rgba(102, 126, 234, 0.05));
         }
 
         .upload-zone svg {
@@ -317,20 +317,20 @@
         }
 
         .upload-zone p {
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 10px;
         }
 
         .upload-zone span {
-            color: #667eea;
+            color: light-dark(#273c99, #667eea);
         }
 
         .signature-overlay {
             position: absolute;
             cursor: move;
-            border: 2px dashed #667eea;
+            border: 2px dashed light-dark(#273c99, #667eea);
             padding: 5px;
-            background: rgba(255, 255, 255, 0.9);
+            background: light-dark(#0f0f0fe6, rgba(255, 255, 255, 0.9));
             z-index: 10;
             touch-action: none;
         }
@@ -345,7 +345,7 @@
             position: absolute;
             width: 12px;
             height: 12px;
-            background: #667eea;
+            background: light-dark(#273c99, #667eea);
             border-radius: 50%;
             bottom: -6px;
             right: -6px;
@@ -357,7 +357,7 @@
             position: absolute;
             width: 20px;
             height: 20px;
-            background: #ea5455;
+            background: light-dark(#a8292a, #ea5455);
             border-radius: 50%;
             top: -10px;
             right: -10px;
@@ -366,7 +366,7 @@
             align-items: center;
             justify-content: center;
             font-size: 12px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Typed signature */
@@ -374,10 +374,10 @@
             width: 100%;
             padding: 15px;
             font-size: 1.2em;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 15px;
         }
 
@@ -390,8 +390,8 @@
 
         .font-option {
             padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 2px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
             cursor: pointer;
             text-align: center;
@@ -399,12 +399,12 @@
         }
 
         .font-option:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .font-option.selected {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c991a, rgba(102, 126, 234, 0.1));
         }
 
         .font-option span {
@@ -420,7 +420,7 @@
         }
 
         .saved-signature {
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 8px;
             padding: 10px;
             cursor: pointer;
@@ -445,12 +445,12 @@
             right: -8px;
             width: 24px;
             height: 24px;
-            background: #ea5455;
+            background: light-dark(#a8292a, #ea5455);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 14px;
             cursor: pointer;
             opacity: 0;
@@ -473,17 +473,17 @@
             align-items: center;
             gap: 15px;
             padding: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f08, rgba(255, 255, 255, 0.03));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
         }
 
         .export-option select {
             padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             cursor: pointer;
         }
 
@@ -491,7 +491,7 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            color: #667eea;
+            color: light-dark(#273c99, #667eea);
             text-decoration: none;
             font-size: 0.95em;
             display: flex;
@@ -502,12 +502,12 @@
         }
 
         .back-link:hover {
-            color: #764ba2;
+            color: light-dark(#61457d, #764ba2);
         }
 
         .info-text {
             font-size: 0.85em;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-top: 5px;
         }
 
@@ -526,10 +526,10 @@
 
         .section-title {
             font-size: 1.1em;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         /* Toast notification */
@@ -539,8 +539,8 @@
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             padding: 15px 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             z-index: 1000;
@@ -567,7 +567,7 @@
         }
 
         .page-info {
-            color: #888;
+            color: light-dark(#616161, #888);
         }
     </style>
 </head>
@@ -755,7 +755,7 @@
 
                     <div class="control-group">
                         <label for="docExportFormat">Format</label>
-                        <select id="docExportFormat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                        <select id="docExportFormat" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: light-dark(#0f0f0f, #fff);">
                             <option value="png">PNG Image</option>
                             <option value="jpeg">JPEG Image</option>
                             <option value="pdf">PDF Document</option>

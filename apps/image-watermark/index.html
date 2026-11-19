@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Watermark - AI Showcase</title>
+    <title>Image Watermark - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -36,11 +36,11 @@
             margin-bottom: 24px;
         }
         .drop-zone:hover, .drop-zone.dragover {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.05);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
         }
-        .drop-zone-text { color: #888; font-size: 1.1rem; }
-        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        .drop-zone-text { color: light-dark(#616161, #888); font-size: 1.1rem; }
+        .drop-zone-hint { color: light-dark(#616161, #555); font-size: 0.85rem; margin-top: 8px; }
         input[type="file"] { display: none; }
         .editor-layout {
             display: grid;
@@ -51,9 +51,9 @@
             .editor-layout { grid-template-columns: 1fr; }
         }
         .sidebar {
-            background: rgba(255,255,255,0.03);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             padding: 20px;
             max-height: 75vh;
             overflow-y: auto;
@@ -61,7 +61,7 @@
         .section { margin-bottom: 20px; }
         .section-title {
             font-size: 0.85rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -69,22 +69,22 @@
         .form-group { margin-bottom: 14px; }
         .form-group label {
             display: block;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.85rem;
             margin-bottom: 6px;
         }
         input[type="text"], input[type="number"], select {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 12px;
             border-radius: 4px;
             font-size: 0.9rem;
         }
         input[type="range"] {
             width: 100%;
-            accent-color: #4ecdc4;
+            accent-color: light-dark(#44aea6, #4ecdc4);
         }
         input[type="color"] {
             width: 50px;
@@ -98,16 +98,16 @@
             justify-content: space-between;
             margin-bottom: 6px;
         }
-        .slider-value { color: #4ecdc4; font-size: 0.85rem; }
+        .slider-value { color: light-dark(#378b85, #4ecdc4); font-size: 0.85rem; }
         .position-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 6px;
         }
         .position-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 10px 8px;
             border-radius: 4px;
             cursor: pointer;
@@ -115,16 +115,16 @@
             transition: all 0.2s;
             width: auto;
         }
-        .position-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .position-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .position-btn.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 12px 24px;
             border-radius: 6px;
             cursor: pointer;
@@ -132,18 +132,18 @@
             transition: all 0.2s;
             width: 100%;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
             margin-top: 12px;
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .preview-area {
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             padding: 20px;
             display: flex;
             align-items: center;
@@ -158,9 +158,9 @@
         .status {
             margin-top: 24px;
             padding: 16px;
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             border-radius: 8px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             display: none;
             text-align: center;
         }
@@ -172,7 +172,7 @@
             align-items: center;
         }
         .color-row input[type="color"] { flex-shrink: 0; }
-        .color-row span { color: #888; font-size: 0.85rem; }
+        .color-row span { color: light-dark(#616161, #888); font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -232,7 +232,7 @@
                         <button id="selectWatermarkImage" class="secondary">Select Watermark Image</button>
                         <input type="file" id="watermarkImageInput" accept="image/*">
                     </div>
-                    <div id="watermarkImagePreview" style="margin-top: 8px; color: #888; font-size: 0.85rem;"></div>
+                    <div id="watermarkImagePreview" style="margin-top: 8px; color: light-dark(#616161, #888); font-size: 0.85rem;"></div>
                     <div class="form-group">
                         <div class="slider-header">
                             <label for="imageScale">Scale</label>

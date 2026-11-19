@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apps by AI</title>
+    <title>Apps by AI</title><script src="site-theme.js"></script>
     <link rel="icon" type="image/png" sizes="32x32" href="favicons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicons/favicon-16x16.png">
     <link rel="icon" type="image/svg+xml" sizes="any" href="favicons/apps-by-ai.svg">
@@ -22,9 +22,9 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #1a1a1a;
+            background: light-dark(#f7f8f7, #1a1a1a);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
 
         header {
@@ -44,13 +44,13 @@
         h1 {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 4px;
         }
 
         .subtitle {
             font-size: 0.9rem;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .header-search {
@@ -60,21 +60,21 @@
         .header-search .search-input {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#fff, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9rem;
             outline: none;
         }
 
         .header-search .search-input:focus {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
+            border-color: light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
+            background: light-dark(#0f0f0f14, rgba(255, 255, 255, 0.08));
         }
 
         .header-search .search-input::placeholder {
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         @media (max-width: 600px) {
@@ -104,15 +104,15 @@
         }
 
         .filter-controls label {
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: .85rem;
         }
 
         .filter-controls select, #activeTags button {
-            background: #242424;
-            border: 1px solid #444;
+            background: light-dark(#fff, #242424);
+            border: 1px solid light-dark(#bdbdbd, #444);
             border-radius: 4px;
-            color: #ddd;
+            color: light-dark(#2f2f2f, #ddd);
             padding: 5px 8px;
             font: inherit;
         }
@@ -131,7 +131,7 @@
 
         .results-count {
             text-align: center;
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.8rem;
             margin-top: 10px;
         }
@@ -146,10 +146,10 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.03);
+            background: light-dark(#fff, rgba(255, 255, 255, 0.03));
             border-radius: 6px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid light-dark(#0f0f0f14, rgba(255, 255, 255, 0.08));
             text-decoration: none;
             color: inherit;
             display: flex;
@@ -159,11 +159,11 @@
         }
 
         .card:hover {
-            background: rgba(255, 255, 255, 0.06);
+            background: light-dark(#0f0f0f0f, rgba(255, 255, 255, 0.06));
         }
 
         .card-icon {
-            background: #303030;
+            background: light-dark(#eef0ee, #303030);
             width: 48px;
             height: 48px;
             border-radius: 6px;
@@ -190,7 +190,7 @@
 
         .card-description {
             font-size: 0.8rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -201,12 +201,12 @@
         .card-category {
             display: block;
             margin-top: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: .75rem;
         }
 
         .card-link {
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.7rem;
             text-decoration: none;
             display: inline-flex;
@@ -219,8 +219,8 @@
         }
 
         .card-link:hover {
-            color: #888;
-            background: rgba(255, 255, 255, 0.05);
+            color: light-dark(#616161, #888);
+            background: light-dark(#fff, rgba(255, 255, 255, 0.05));
         }
 
         .card-link svg {
@@ -231,12 +231,12 @@
         footer {
             text-align: center;
             padding: 24px;
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.8rem;
         }
 
         footer a {
-            color: #666;
+            color: light-dark(#616161, #666);
             text-decoration: none;
         }
 
@@ -244,7 +244,7 @@
             grid-column: 1 / -1;
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
     </style>
 </head>
@@ -259,7 +259,7 @@
         </div>
     </header>
 
-    <nav aria-label="Site sections" style="max-width:1200px;margin:0 auto;padding:0 24px 20px;display:flex;gap:24px;font-size:14px;"><a href="index.html" aria-current="page" style="color:#e0e0e0;">Apps</a><a href="games/index.html" style="color:#e0e0e0;">Games</a><a href="notes/index.html" style="color:#e0e0e0;">Notes</a><a href="music/index.html" style="color:#e0e0e0;">Music</a></nav>
+    <nav aria-label="Site sections" style="max-width:1200px;margin:0 auto;padding:0 24px 20px;display:flex;align-items:center;flex-wrap:wrap;gap:clamp(8px,3vw,24px);font-size:14px;"><a href="index.html" aria-current="page" style="color:light-dark(#2c2c2c, #e0e0e0);">Apps</a><a href="games/index.html" style="color:light-dark(#2c2c2c, #e0e0e0);">Games</a><a href="notes/index.html" style="color:light-dark(#2c2c2c, #e0e0e0);">Notes</a><a href="music/index.html" style="color:light-dark(#2c2c2c, #e0e0e0);">Music</a></nav>
 
     <div class="filters">
         <div class="filter-controls">

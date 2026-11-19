@@ -3,58 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Huffman Encoding - AI Showcase</title>
+    <title>Huffman Encoding - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; font-family: system-ui, sans-serif; }
         .container { display: flex; height: 100vh; }
         .sidebar {
-            width: 320px; padding: 20px; background: rgba(0,0,0,0.5);
-            border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
+            width: 320px; padding: 20px; background: light-dark(#fcfcfc80, rgba(0,0,0,0.5));
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); overflow-y: auto;
         }
-        .sidebar h1 { color: #fff; font-size: 1.3rem; margin-bottom: 8px; }
-        .sidebar p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .sidebar h1 { color: light-dark(#0f0f0f, #fff); font-size: 1.3rem; margin-bottom: 8px; }
+        .sidebar p { color: light-dark(#616161, #666); margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
         .main { flex: 1; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
         @media (max-width: 700px) {
             .container { flex-direction: column; }
             .sidebar {
                 width: 100%; max-height: 45vh; border-right: none;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
+                border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             }
         }
         canvas { display: block; width: 100%; height: 100%; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 8px 14px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin-right: 6px; margin-bottom: 10px;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         textarea {
-            width: 100%; height: 80px; padding: 10px; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 4px;
+            width: 100%; height: 80px; padding: 10px; background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2)); color: light-dark(#0f0f0f, #fff); border-radius: 4px;
             font-family: monospace; font-size: 13px; resize: none; margin-bottom: 10px;
         }
-        .stats { color: #888; font-size: 12px; margin-bottom: 15px; }
+        .stats { color: light-dark(#616161, #888); font-size: 12px; margin-bottom: 15px; }
         .code-table { max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
         .code-row {
             display: flex; justify-content: space-between; padding: 4px 8px;
-            background: rgba(255,255,255,0.05); margin-bottom: 2px; border-radius: 2px;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05)); margin-bottom: 2px; border-radius: 2px;
         }
-        .code-char { color: #4ecdc4; font-family: monospace; }
-        .code-bits { color: #ffe66d; font-family: monospace; font-size: 11px; }
+        .code-char { color: light-dark(#378b85, #4ecdc4); font-family: monospace; }
+        .code-bits { color: light-dark(#947e12, #ffe66d); font-family: monospace; font-size: 11px; }
         .encoded {
-            background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05)); padding: 10px; border-radius: 4px;
             font-family: monospace; font-size: 11px; word-break: break-all;
-            max-height: 100px; overflow-y: auto; color: #ffe66d;
+            max-height: 100px; overflow-y: auto; color: light-dark(#947e12, #ffe66d);
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
-        label { display: block; color: #888; font-size: 12px; margin-bottom: 4px; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        label { display: block; color: light-dark(#616161, #888); font-size: 12px; margin-bottom: 4px; }
     </style>
 </head>
 <body>

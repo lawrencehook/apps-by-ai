@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Sankey Diagram - AI Showcase</title>
+    <title>Budget Sankey Diagram - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, light-dark(#ececf3, #0a0a12) 0%, light-dark(#d3d3e3, #1a1a2e) 100%);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
         .container {
             max-width: 1600px;
@@ -25,14 +25,14 @@
             margin-bottom: 20px;
         }
         h1 { font-size: 1.5rem; font-weight: 600; }
-        .subtitle { color: #888; font-size: 0.9rem; margin-top: 4px; }
+        .subtitle { color: light-dark(#616161, #888); font-size: 0.9rem; margin-top: 4px; }
         .back-link {
-            color: #888; text-decoration: none; font-size: 14px;
-            padding: 8px 14px; background: rgba(255,255,255,0.05);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            color: light-dark(#616161, #888); text-decoration: none; font-size: 14px;
+            padding: 8px 14px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             transition: all 0.2s;
         }
-        .back-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
 
         .main-grid {
             display: grid;
@@ -41,8 +41,8 @@
         }
 
         .panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
             max-height: calc(100vh - 120px);
@@ -53,7 +53,7 @@
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
@@ -61,15 +61,15 @@
         }
 
         .add-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 4px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
         }
-        .add-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .add-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
 
         .section { margin-bottom: 24px; }
         .section-header {
@@ -78,16 +78,16 @@
             align-items: center;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .section-title {
             font-size: 14px;
             font-weight: 600;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
         .section-total {
             font-size: 14px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-weight: 600;
         }
 
@@ -99,31 +99,31 @@
             align-items: center;
         }
         .item-row input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
             padding: 10px 12px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
         }
         .item-row input:focus {
             outline: none;
-            border-color: rgba(78, 205, 196, 0.5);
+            border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5));
         }
-        .item-row input::placeholder { color: #666; }
+        .item-row input::placeholder { color: light-dark(#616161, #666); }
         .item-row input[type="number"] { text-align: right; }
 
         .delete-btn {
-            background: rgba(255, 107, 107, 0.1);
-            border: 1px solid rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            border: 1px solid light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            color: light-dark(#961313, #ff6b6b);
             width: 30px;
             height: 38px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
         }
-        .delete-btn:hover { background: rgba(255, 107, 107, 0.2); }
+        .delete-btn:hover { background: light-dark(#96131333, rgba(255, 107, 107, 0.2)); }
 
         .color-indicator {
             width: 4px;
@@ -133,8 +133,8 @@
         }
 
         .summary {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 8px;
             padding: 16px;
             margin-top: 20px;
@@ -146,14 +146,14 @@
             font-size: 14px;
         }
         .summary-row:last-child { margin-bottom: 0; }
-        .summary-label { color: #888; }
+        .summary-label { color: light-dark(#616161, #888); }
         .summary-value { font-weight: 600; }
-        .summary-value.positive { color: #4ade80; }
-        .summary-value.negative { color: #ff6b6b; }
+        .summary-value.positive { color: light-dark(#2d9553, #4ade80); }
+        .summary-value.negative { color: light-dark(#961313, #ff6b6b); }
 
         /* Sankey Diagram */
         .sankey-container {
-            background: rgba(0,0,0,0.2);
+            background: light-dark(#fcfcfc33, rgba(0,0,0,0.2));
             border-radius: 12px;
             overflow: hidden;
             position: relative;
@@ -171,8 +171,8 @@
 
         .tooltip {
             position: absolute;
-            background: rgba(0,0,0,0.9);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#fcfcfce6, rgba(0,0,0,0.9));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             padding: 10px 14px;
             border-radius: 6px;
             font-size: 13px;
@@ -183,7 +183,7 @@
         }
         .tooltip.visible { opacity: 1; }
         .tooltip-title { font-weight: 600; margin-bottom: 4px; }
-        .tooltip-value { color: #4ecdc4; }
+        .tooltip-value { color: light-dark(#378b85, #4ecdc4); }
 
         /* Preset buttons */
         .presets {
@@ -193,15 +193,15 @@
             flex-wrap: wrap;
         }
         .preset-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #aaa;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#5e5e5e, #aaa);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
         }
-        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .preset-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
 
         @media (max-width: 1000px) {
             .main-grid { grid-template-columns: 1fr; }

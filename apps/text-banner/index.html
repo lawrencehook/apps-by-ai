@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Banner - AI Showcase</title>
+    <title>Text Banner - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             display: flex;
             flex-direction: column;
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 1000;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         /* Banner Display */
         .banner-container {
@@ -39,7 +39,7 @@
             text-align: center;
             word-break: break-word;
             line-height: 1.1;
-            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #093028 100%);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4) 0%, light-dark(#70b5a6, #44a08d) 50%, light-dark(#d2f1eb, #093028) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -52,8 +52,8 @@
 
         /* Controls Panel */
         .controls {
-            background: rgba(255,255,255,0.03);
-            border-top: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border-top: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             padding: 20px;
             display: flex;
             gap: 16px;
@@ -67,30 +67,30 @@
         }
         .input-group label {
             display: block;
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.75rem;
             text-transform: uppercase;
             margin-bottom: 6px;
         }
         input[type="text"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             border-radius: 6px;
             font-size: 1rem;
         }
-        input[type="text"]:focus { outline: none; border-color: #4ecdc4; }
+        input[type="text"]:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
 
         .btn-group {
             display: flex;
             gap: 8px;
         }
         .btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#616161, #888);
             padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
@@ -98,22 +98,22 @@
             transition: all 0.2s;
             white-space: nowrap;
         }
-        .btn:hover { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; border-color: rgba(78, 205, 196, 0.3); }
-        .btn.active { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; border-color: #4ecdc4; }
+        .btn:hover { background: light-dark(#44aea626, rgba(78, 205, 196, 0.15)); color: light-dark(#378b85, #4ecdc4); border-color: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .btn.active { background: light-dark(#44aea633, rgba(78, 205, 196, 0.2)); color: light-dark(#378b85, #4ecdc4); border-color: light-dark(#44aea6, #4ecdc4); }
 
         select {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 12px;
             border-radius: 6px;
             font-size: 0.85rem;
             cursor: pointer;
         }
-        select:focus { outline: none; border-color: #4ecdc4; }
+        select:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
 
         .fullscreen-hint {
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.75rem;
             margin-left: auto;
         }
@@ -124,12 +124,12 @@
         body.fullscreen .banner-container { cursor: default; }
 
         /* Color themes - must include background-clip for gradient text */
-        .theme-ocean { background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 50%, #56ab91 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .theme-sunset { background: linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #ff9ff3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .theme-neon { background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .theme-fire { background: linear-gradient(135deg, #f12711 0%, #f5af19 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .theme-ice { background: linear-gradient(135deg, #74ebd5 0%, #acb6e5 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .theme-mono { background: linear-gradient(135deg, #fff 0%, #ccc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-ocean { background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4) 0%, light-dark(#70b5a6, #44a08d) 50%, light-dark(#65a591, #56ab91) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-sunset { background: linear-gradient(135deg, light-dark(#961313, #ff6b6b) 0%, light-dark(#a67916, #feca57) 50%, light-dark(#6b0d5f, #ff9ff3) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-neon { background: linear-gradient(135deg, light-dark(#641ca8, #a855f7) 0%, light-dark(#b2286c, #ec4899) 50%, light-dark(#4acde4, #06b6d4) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-fire { background: linear-gradient(135deg, light-dark(#d94030, #f12711) 0%, light-dark(#daa024, #f5af19) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-ice { background: linear-gradient(135deg, light-dark(#258d7a, #74ebd5) 0%, light-dark(#27315d, #acb6e5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .theme-mono { background: linear-gradient(135deg, light-dark(#0f0f0f, #fff) 0%, light-dark(#3f3f3f, #ccc) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     </style>
 </head>
 <body>
@@ -146,7 +146,7 @@
         </div>
 
         <div>
-            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;">Size</label>
+            <label style="display: block; color: light-dark(#616161, #666); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;">Size</label>
             <div class="btn-group">
                 <button class="btn" data-size="small">S</button>
                 <button class="btn active" data-size="medium">M</button>
@@ -156,7 +156,7 @@
         </div>
 
         <div>
-            <label style="display: block; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;" for="themeSelect">Theme</label>
+            <label style="display: block; color: light-dark(#616161, #666); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px;" for="themeSelect">Theme</label>
             <select id="themeSelect">
                 <option value="ocean">Ocean</option>
                 <option value="sunset">Sunset</option>

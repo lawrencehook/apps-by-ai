@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Redact - AI Showcase</title>
+    <title>PDF Redact - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
@@ -11,25 +11,25 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1100px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -38,11 +38,11 @@
             margin-bottom: 24px;
         }
         .drop-zone:hover, .drop-zone.dragover {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.05);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
         }
-        .drop-zone-text { color: #888; font-size: 1.1rem; }
-        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        .drop-zone-text { color: light-dark(#616161, #888); font-size: 1.1rem; }
+        .drop-zone-hint { color: light-dark(#616161, #555); font-size: 0.85rem; margin-top: 8px; }
         input[type="file"] { display: none; }
         .toolbar {
             display: flex;
@@ -50,7 +50,7 @@
             margin-bottom: 16px;
             flex-wrap: wrap;
             align-items: center;
-            background: rgba(0,0,0,0.5);
+            background: light-dark(#fcfcfc80, rgba(0,0,0,0.5));
             padding: 12px 16px;
             border-radius: 8px;
             position: sticky;
@@ -58,9 +58,9 @@
             z-index: 50;
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 10px 18px;
             border-radius: 6px;
             cursor: pointer;
@@ -70,31 +70,31 @@
             align-items: center;
             gap: 6px;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         button.danger {
-            background: rgba(255, 107, 107, 0.2);
-            border-color: rgba(255, 107, 107, 0.4);
-            color: #ff6b6b;
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            border-color: light-dark(#96131366, rgba(255, 107, 107, 0.4));
+            color: light-dark(#961313, #ff6b6b);
         }
-        button.danger:hover { background: rgba(255, 107, 107, 0.3); }
+        button.danger:hover { background: light-dark(#9613134c, rgba(255, 107, 107, 0.3)); }
         button.primary {
-            background: rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
             font-weight: 500;
         }
         .spacer { flex: 1; }
-        .hint { color: #666; font-size: 0.85rem; }
+        .hint { color: light-dark(#616161, #666); font-size: 0.85rem; }
         .page-container {
             margin-bottom: 24px;
         }
         .page-header {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 8px;
             display: flex;
@@ -102,16 +102,16 @@
             gap: 12px;
         }
         .page-header .count {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 0.75rem;
-            background: rgba(78, 205, 196, 0.15);
+            background: light-dark(#44aea626, rgba(78, 205, 196, 0.15));
             padding: 2px 8px;
             border-radius: 10px;
         }
         .page-wrapper {
             position: relative;
             display: inline-block;
-            background: #1a1a1f;
+            background: light-dark(#e0e0e4, #1a1a1f);
             border-radius: 4px;
             overflow: hidden;
             max-width: 100%;
@@ -133,8 +133,8 @@
         }
         .redaction-box {
             position: absolute;
-            background: #000;
-            border: 2px solid #ff6b6b;
+            background: light-dark(#fcfcfc, #000);
+            border: 2px solid light-dark(#961313, #ff6b6b);
             cursor: default;
         }
         .redaction-box .delete-btn {
@@ -143,8 +143,8 @@
             right: -10px;
             width: 20px;
             height: 20px;
-            background: #ff6b6b;
-            color: #fff;
+            background: light-dark(#961313, #ff6b6b);
+            color: light-dark(#0f0f0f, #fff);
             border: none;
             border-radius: 50%;
             cursor: pointer;
@@ -160,21 +160,21 @@
         .status {
             margin-top: 24px;
             padding: 16px;
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             border-radius: 8px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             display: none;
         }
         .status.error {
-            background: rgba(255, 107, 107, 0.1);
-            color: #ff6b6b;
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            color: light-dark(#961313, #ff6b6b);
         }
         .status.show { display: block; }
         .hidden { display: none !important; }
         .warning {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            color: #ffc107;
+            background: light-dark(#e4b3221a, rgba(255, 193, 7, 0.1));
+            border: 1px solid light-dark(#e4b3224c, rgba(255, 193, 7, 0.3));
+            color: light-dark(#ac8715, #ffc107);
             padding: 12px 16px;
             border-radius: 6px;
             margin-bottom: 16px;
@@ -183,14 +183,14 @@
         .progress-bar {
             width: 100%;
             height: 4px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 2px;
             margin-bottom: 16px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             transition: width 0.3s;
         }
     </style>

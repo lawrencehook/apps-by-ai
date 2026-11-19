@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt Splitter - AI Showcase</title>
+    <title>Receipt Splitter - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         .main-grid {
             display: grid;
@@ -38,14 +38,14 @@
         }
 
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 16px;
             padding: 24px;
         }
         .card h2 {
             font-size: 1rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 20px;
@@ -64,18 +64,18 @@
             align-items: center;
             gap: 8px;
             padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
         }
         .person-chip:hover {
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .person-chip.selected {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.5);
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5));
         }
         .person-color {
             width: 12px;
@@ -88,12 +88,12 @@
         .person-remove {
             background: none;
             border: none;
-            color: #666;
+            color: light-dark(#616161, #666);
             cursor: pointer;
             font-size: 16px;
             padding: 0 2px;
         }
-        .person-remove:hover { color: #ff6b6b; }
+        .person-remove:hover { color: light-dark(#961313, #ff6b6b); }
 
         .add-person {
             display: flex;
@@ -101,22 +101,22 @@
         }
         .add-person input {
             flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 14px;
             border-radius: 8px;
             font-size: 14px;
         }
         .add-person input:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
-        .add-person input::placeholder { color: #555; }
+        .add-person input::placeholder { color: light-dark(#616161, #555); }
         .btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 10px 18px;
             border-radius: 8px;
             cursor: pointer;
@@ -124,16 +124,16 @@
             transition: all 0.2s;
         }
         .btn:hover {
-            background: rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
         }
         .btn-secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
         }
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Items Section */
@@ -151,23 +151,23 @@
             gap: 12px;
             align-items: center;
             padding: 12px;
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
         .item-row input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
             padding: 8px 12px;
             border-radius: 6px;
             font-size: 14px;
         }
         .item-row input:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
-        .item-row input::placeholder { color: #444; }
+        .item-row input::placeholder { color: light-dark(#bdbdbd, #444); }
         .item-price {
             text-align: right;
         }
@@ -186,7 +186,7 @@
             justify-content: center;
             font-size: 10px;
             font-weight: 600;
-            color: #000;
+            color: light-dark(#fcfcfc, #000);
             cursor: pointer;
             opacity: 0.3;
             transition: all 0.2s;
@@ -200,12 +200,12 @@
         .item-remove {
             background: none;
             border: none;
-            color: #555;
+            color: light-dark(#616161, #555);
             cursor: pointer;
             font-size: 18px;
             padding: 4px;
         }
-        .item-remove:hover { color: #ff6b6b; }
+        .item-remove:hover { color: light-dark(#961313, #ff6b6b); }
 
         .add-item-row {
             display: grid;
@@ -227,19 +227,19 @@
         }
         .extra-input label {
             font-size: 12px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .extra-input input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 14px;
             border-radius: 8px;
             font-size: 14px;
         }
         .extra-input input:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
 
         /* Summary Section */
@@ -252,8 +252,8 @@
             gap: 16px;
         }
         .person-summary {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 16px;
         }
@@ -274,18 +274,18 @@
         }
         .person-summary-items {
             font-size: 12px;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 8px;
         }
         .person-summary-breakdown {
             font-size: 13px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 4px;
         }
         .person-summary-total {
             font-size: 24px;
             font-weight: 700;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-family: monospace;
         }
 
@@ -293,8 +293,8 @@
         .grand-total {
             margin-top: 24px;
             padding: 20px;
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
             border-radius: 12px;
             display: flex;
             justify-content: space-between;
@@ -302,12 +302,12 @@
         }
         .grand-total-label {
             font-size: 16px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
         .grand-total-amount {
             font-size: 28px;
             font-weight: 700;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-family: monospace;
         }
 
@@ -323,7 +323,7 @@
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
         .empty-state-icon {
             font-size: 48px;
@@ -333,7 +333,7 @@
         /* Instructions */
         .instructions {
             font-size: 13px;
-            color: #555;
+            color: light-dark(#616161, #555);
             margin-bottom: 16px;
             line-height: 1.5;
         }

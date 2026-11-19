@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Font Pairing Preview - AI Showcase</title>
+    <title>Font Pairing Preview - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,24 +11,24 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
-        .font-notice { color: #e0a84a; font-size: 0.85rem; margin: -20px 0 24px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
+        .font-notice { color: light-dark(#966e2b, #e0a84a); font-size: 0.85rem; margin: -20px 0 24px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .layout {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -38,8 +38,8 @@
             .layout { grid-template-columns: 1fr; }
         }
         .controls-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
             height: fit-content;
@@ -52,7 +52,7 @@
         .control-section:last-child { margin-bottom: 0; }
         .section-title {
             font-size: 0.85rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
@@ -62,20 +62,20 @@
         }
         .font-label {
             font-size: 0.8rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 6px;
         }
         select {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9rem;
             cursor: pointer;
         }
-        select option { background: #1a1a2e; }
+        select option { background: light-dark(#d3d3e3, #1a1a2e); }
         .slider-group {
             margin-bottom: 16px;
         }
@@ -84,20 +84,20 @@
             justify-content: space-between;
             margin-bottom: 6px;
         }
-        .slider-label { color: #888; font-size: 0.85rem; }
-        .slider-value { color: #4ecdc4; font-family: monospace; font-size: 0.85rem; }
+        .slider-label { color: light-dark(#616161, #888); font-size: 0.85rem; }
+        .slider-value { color: light-dark(#378b85, #4ecdc4); font-family: monospace; font-size: 0.85rem; }
         input[type="range"] {
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -108,18 +108,18 @@
         }
         .preset-btn {
             padding: 10px 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             background: transparent;
             transition: all 0.2s;
             text-align: left;
         }
         .preset-btn:hover {
-            border-color: rgba(255,255,255,0.3);
-            color: #fff;
+            border-color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3));
+            color: light-dark(#0f0f0f, #fff);
         }
         .preset-btn .preset-heading {
             font-weight: 600;
@@ -127,11 +127,11 @@
         }
         .preset-btn .preset-body {
             font-size: 0.7rem;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .preview-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             overflow: hidden;
         }
@@ -139,42 +139,42 @@
             display: flex;
             gap: 8px;
             padding: 12px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             flex-wrap: wrap;
         }
         .theme-btn {
             padding: 6px 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 4px;
             background: transparent;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.2s;
         }
         .theme-btn:hover, .theme-btn.active {
-            border-color: rgba(78, 205, 196, 0.5);
-            color: #4ecdc4;
+            border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5));
+            color: light-dark(#378b85, #4ecdc4);
         }
         .preview-content {
             padding: 40px;
             transition: all 0.3s;
         }
         .preview-content.light {
-            background: #ffffff;
-            color: #1a1a2e;
+            background: light-dark(#0f0f0f, #ffffff);
+            color: light-dark(#d3d3e3, #1a1a2e);
         }
         .preview-content.dark {
-            background: #1a1a2e;
-            color: #e0e0e0;
+            background: light-dark(#d3d3e3, #1a1a2e);
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .preview-content.cream {
-            background: #f5f0e6;
-            color: #2c2c2c;
+            background: light-dark(#2a2315, #f5f0e6);
+            color: light-dark(#d4d4d4, #2c2c2c);
         }
         .preview-content.blue {
-            background: #0d1b2a;
-            color: #e0e0e0;
+            background: light-dark(#d7e2ee, #0d1b2a);
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .preview-heading {
             margin-bottom: 16px;
@@ -189,7 +189,7 @@
         }
         .preview-body p:last-child { margin-bottom: 0; }
         .sample-card {
-            background: rgba(128,128,128,0.1);
+            background: light-dark(#8585851a, rgba(128,128,128,0.1));
             border-radius: 8px;
             padding: 24px;
             margin-top: 24px;
@@ -207,21 +207,21 @@
         }
         .btn {
             padding: 10px 16px;
-            border: 1px solid rgba(128,128,128,0.3);
+            border: 1px solid light-dark(#8585854c, rgba(128,128,128,0.3));
             border-radius: 6px;
-            background: rgba(128,128,128,0.15);
+            background: light-dark(#85858526, rgba(128,128,128,0.15));
             color: inherit;
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn:hover { background: rgba(128,128,128,0.25); }
+        .btn:hover { background: light-dark(#85858540, rgba(128,128,128,0.25)); }
         .btn-primary {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #2ba89f;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#348e87, #2ba89f);
         }
-        .btn-primary:hover { background: rgba(78, 205, 196, 0.3); }
+        .btn-primary:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .color-input-group {
             display: flex;
             gap: 12px;
@@ -233,7 +233,7 @@
         .color-input label {
             display: block;
             font-size: 0.75rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 6px;
         }
         .color-input input[type="color"] {
@@ -250,13 +250,13 @@
             border: 2px solid rgba(255,255,255,0.2);
         }
         .css-output {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 6px;
             padding: 12px;
             font-family: monospace;
             font-size: 0.7rem;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             max-height: 100px;
             overflow-y: auto;
             white-space: pre-wrap;

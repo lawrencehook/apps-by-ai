@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Walkthrough Creator - AI Showcase</title>
+    <title>Walkthrough Creator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
@@ -14,9 +14,9 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            background: linear-gradient(135deg, light-dark(#efeff3, #0a0a0f) 0%, light-dark(#d3d3e3, #1a1a2e) 50%, light-dark(#e5e5ee, #0f0f1a) 100%);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
 
         .app-container {
@@ -35,7 +35,7 @@
             }
             .app-container .sidebar-left.mobile-open, .app-container .sidebar-right.mobile-open {
                 display: flex;
-                background: #12121c;
+                background: light-dark(#e3e3eb, #12121c);
                 position: fixed;
                 top: 0;
                 bottom: 0;
@@ -48,8 +48,8 @@
 
         /* Left Sidebar - Steps List */
         .sidebar-left {
-            background: rgba(0, 0, 0, 0.3);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#fcfcfc4c, rgba(0, 0, 0, 0.3));
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -57,12 +57,12 @@
 
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .sidebar-header h1 {
             font-size: 1.3em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -71,7 +71,7 @@
 
         .sidebar-header p {
             font-size: 0.8em;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .steps-list {
@@ -86,41 +86,41 @@
             gap: 10px;
             padding: 10px;
             margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: light-dark(#0f0f0f08, rgba(255, 255, 255, 0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255, 255, 255, 0.08));
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .step-item:hover {
-            background: rgba(255, 255, 255, 0.06);
+            background: light-dark(#0f0f0f0f, rgba(255, 255, 255, 0.06));
         }
 
         .step-item.active {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c991a, rgba(102, 126, 234, 0.1));
         }
 
         .step-item.cover-page {
-            border-left: 3px solid #764ba2;
+            border-left: 3px solid light-dark(#8e6eaf, #764ba2);
         }
 
         .step-item.dragging {
             opacity: 0.5;
-            border: 2px dashed #667eea;
+            border: 2px dashed light-dark(#273c99, #667eea);
         }
 
         .step-item .drag-handle {
             cursor: grab;
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 1.2em;
         }
 
         .step-thumb {
             width: 50px;
             height: 35px;
-            background: #333;
+            background: light-dark(#cdcdcd, #333);
             border-radius: 4px;
             overflow: hidden;
             flex-shrink: 0;
@@ -139,7 +139,7 @@
 
         .step-info .step-number {
             font-size: 0.75em;
-            color: #667eea;
+            color: light-dark(#273c99, #667eea);
             font-weight: 600;
         }
 
@@ -152,9 +152,9 @@
 
         .step-item .delete-btn {
             opacity: 0;
-            background: rgba(234, 84, 85, 0.2);
+            background: light-dark(#a8292a33, rgba(234, 84, 85, 0.2));
             border: none;
-            color: #ea5455;
+            color: light-dark(#9c2627, #ea5455);
             width: 24px;
             height: 24px;
             border-radius: 4px;
@@ -169,10 +169,10 @@
         .add-step-btn {
             margin: 10px;
             padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             border: none;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             cursor: pointer;
             font-size: 0.9em;
             transition: transform 0.2s, box-shadow 0.2s;
@@ -196,8 +196,8 @@
             align-items: center;
             gap: 5px;
             padding: 10px 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#fcfcfc4c, rgba(0, 0, 0, 0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             flex-wrap: wrap;
         }
 
@@ -205,7 +205,7 @@
             display: flex;
             gap: 3px;
             padding: 0 10px;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .toolbar-group:last-child {
@@ -216,10 +216,10 @@
             position: relative;
             width: 36px;
             height: 36px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -229,13 +229,13 @@
         }
 
         .tool-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .tool-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
             border-color: transparent;
         }
 
@@ -246,8 +246,8 @@
             left: 50%;
             transform: translateX(-50%);
             padding: 5px 10px;
-            background: #222;
-            color: #fff;
+            background: light-dark(#dddddd, #222);
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.75em;
             border-radius: 4px;
             white-space: nowrap;
@@ -259,13 +259,13 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid light-dark(#0f0f0f4c, rgba(255, 255, 255, 0.3));
             cursor: pointer;
             padding: 0;
         }
 
         .color-picker-btn:hover {
-            border-color: #fff;
+            border-color: light-dark(#0f0f0f, #fff);
         }
 
         #annotationColor {
@@ -304,8 +304,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #fff;
-            color: #666;
+            background: light-dark(#0f0f0f, #fff);
+            color: light-dark(#616161, #666);
             border-radius: 4px;
         }
 
@@ -322,8 +322,8 @@
 
         /* Right Sidebar - Properties */
         .sidebar-right {
-            background: rgba(0, 0, 0, 0.3);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#fcfcfc4c, rgba(0, 0, 0, 0.3));
+            border-left: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -341,12 +341,12 @@
 
         .panel-section h3 {
             font-size: 0.85em;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
             padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .form-group {
@@ -356,7 +356,7 @@
         .form-group label {
             display: block;
             font-size: 0.85em;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             margin-bottom: 6px;
         }
 
@@ -365,10 +365,10 @@
         .form-group select {
             width: 100%;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.9em;
             font-family: inherit;
         }
@@ -382,7 +382,7 @@
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: light-dark(#273c99, #667eea);
         }
 
         .callout-options {
@@ -393,38 +393,38 @@
 
         .callout-option {
             padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             cursor: pointer;
             font-size: 0.8em;
             transition: all 0.2s;
         }
 
         .callout-option:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .callout-option.active {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.2);
-            color: #fff;
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c9933, rgba(102, 126, 234, 0.2));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Export Panel */
         .export-section {
             padding: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .export-btn {
             width: 100%;
             padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             border: none;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             cursor: pointer;
             font-size: 0.95em;
             font-weight: 500;
@@ -438,11 +438,11 @@
         }
 
         .export-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .export-btn.secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: light-dark(#0f0f0f26, rgba(255, 255, 255, 0.15));
             box-shadow: none;
             transform: none;
         }
@@ -450,8 +450,8 @@
         /* Cover Page Editor */
         .cover-editor {
             padding: 60px;
-            background: #fff;
-            color: #333;
+            background: light-dark(#0f0f0f, #fff);
+            color: light-dark(#cdcdcd, #333);
             min-height: 500px;
             border-radius: 4px;
             width: 800px;
@@ -461,7 +461,7 @@
             font-size: 2.5em;
             font-weight: 700;
             margin-bottom: 20px;
-            color: #1a1a2e;
+            color: light-dark(#d3d3e3, #1a1a2e);
             border: none;
             background: transparent;
             width: 100%;
@@ -470,7 +470,7 @@
 
         .cover-editor .cover-subtitle {
             font-size: 1.3em;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 40px;
             border: none;
             background: transparent;
@@ -483,21 +483,21 @@
             gap: 30px;
             margin-top: 40px;
             padding-top: 20px;
-            border-top: 2px solid #eee;
+            border-top: 2px solid light-dark(#1f1f1f, #eee);
         }
 
         .cover-editor .cover-meta input {
             border: none;
             background: transparent;
             font-size: 1em;
-            color: #666;
+            color: light-dark(#616161, #666);
             outline: none;
         }
 
         .cover-logo-area {
             margin-bottom: 40px;
             padding: 30px;
-            border: 2px dashed #ddd;
+            border: 2px dashed light-dark(#2f2f2f, #ddd);
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
@@ -505,8 +505,8 @@
         }
 
         .cover-logo-area:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c990d, rgba(102, 126, 234, 0.05));
         }
 
         .cover-logo-area img {
@@ -525,17 +525,17 @@
             position: fixed;
             top: 15px;
             left: 15px;
-            color: #667eea;
+            color: light-dark(#273c99, #667eea);
             text-decoration: none;
             font-size: 0.9em;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
+            background: light-dark(#fcfcfccc, rgba(0, 0, 0, 0.8));
             padding: 8px 12px;
             border-radius: 6px;
         }
 
         .back-link:hover {
-            color: #764ba2;
+            color: light-dark(#61457d, #764ba2);
         }
 
         /* Modal */
@@ -545,7 +545,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: light-dark(#fcfcfccc, rgba(0, 0, 0, 0.8));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -561,7 +561,7 @@
         }
 
         .modal {
-            background: #1a1a2e;
+            background: light-dark(#d3d3e3, #1a1a2e);
             border-radius: 12px;
             padding: 30px;
             max-width: 500px;
@@ -572,7 +572,7 @@
 
         .modal h2 {
             margin-bottom: 20px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .modal-buttons {
@@ -591,13 +591,13 @@
         }
 
         .modal-btn.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .modal-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #aaa;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            color: light-dark(#5e5e5e, #aaa);
         }
 
         /* Toast */
@@ -607,8 +607,8 @@
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             padding: 15px 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 8px;
             z-index: 1000;
             opacity: 0;
@@ -641,8 +641,8 @@
         .file-input-label {
             display: block;
             padding: 30px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px dashed rgba(255, 255, 255, 0.2);
+            background: light-dark(#0f0f0f08, rgba(255, 255, 255, 0.03));
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
@@ -650,8 +650,8 @@
         }
 
         .file-input-label:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: light-dark(#273c99, #667eea);
+            background: light-dark(#273c990d, rgba(102, 126, 234, 0.05));
         }
 
         /* Mobile menu buttons */
@@ -663,9 +663,9 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             border: none;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1.5em;
             cursor: pointer;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
@@ -686,25 +686,25 @@
             position: absolute;
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             font-size: 14px;
-            border: 3px solid #fff;
+            border: 3px solid light-dark(#0f0f0f, #fff);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             cursor: move;
         }
 
         /* Dropdown in toolbar */
         .stroke-width-select {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             padding: 8px;
             cursor: pointer;
         }
@@ -714,7 +714,7 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             outline: none;
             -webkit-appearance: none;
         }
@@ -724,7 +724,7 @@
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             cursor: pointer;
         }
     </style>
@@ -845,7 +845,7 @@
                             <polyline points="21 15 16 10 5 21"/>
                         </svg>
                         <p>Add a screenshot to get started</p>
-                        <p style="font-size: 0.9em; color: #999;">Click "Add Step" or drag an image here</p>
+                        <p style="font-size: 0.9em; color: light-dark(#616161, #999);">Click "Add Step" or drag an image here</p>
                     </div>
                     <canvas id="mainCanvas" style="display: none;"></canvas>
                 </div>

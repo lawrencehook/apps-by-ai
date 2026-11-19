@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Screenshot - AI Showcase</title>
+    <title>Code Screenshot - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         .main-layout {
             display: grid;
@@ -43,14 +43,14 @@
             gap: 20px;
         }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
         .card h3 {
             font-size: 12px;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 16px;
@@ -64,22 +64,22 @@
         .control-group label {
             display: block;
             font-size: 13px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 8px;
         }
 
         select, input[type="text"], input[type="number"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 12px;
             border-radius: 6px;
             font-size: 14px;
         }
         select:focus, input:focus {
             outline: none;
-            border-color: rgba(100, 150, 255, 0.5);
+            border-color: light-dark(#133f9c80, rgba(100, 150, 255, 0.5));
         }
 
         .color-picker-row {
@@ -111,7 +111,7 @@
             overflow: hidden;
         }
         .theme-btn:hover { transform: scale(1.05); }
-        .theme-btn.active { border-color: #4a90ff; }
+        .theme-btn.active { border-color: light-dark(#1652b1, #4a90ff); }
         .theme-btn::after {
             content: '';
             position: absolute;
@@ -129,11 +129,11 @@
         }
         input[type="range"] {
             flex: 1;
-            accent-color: #4a90ff;
+            accent-color: light-dark(#1652b1, #4a90ff);
         }
         .range-value {
             font-size: 13px;
-            color: #888;
+            color: light-dark(#616161, #888);
             min-width: 40px;
             text-align: right;
         }
@@ -146,11 +146,11 @@
         input[type="checkbox"] {
             width: 18px;
             height: 18px;
-            accent-color: #4a90ff;
+            accent-color: light-dark(#1652b1, #4a90ff);
         }
         .checkbox-label {
             font-size: 14px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
         }
 
         .btn {
@@ -164,21 +164,21 @@
             transition: all 0.2s;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
         }
         .btn-primary:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
         }
         .btn-secondary {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
         }
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
         .btn-group {
             display: flex;
@@ -221,14 +221,14 @@
             height: 12px;
             border-radius: 50%;
         }
-        .window-dot.red { background: #ff5f56; }
-        .window-dot.yellow { background: #ffbd2e; }
-        .window-dot.green { background: #27ca3f; }
+        .window-dot.red { background: light-dark(#a71c15, #ff5f56); }
+        .window-dot.yellow { background: light-dark(#c89119, #ffbd2e); }
+        .window-dot.green { background: light-dark(#50c962, #27ca3f); }
         .window-title {
             flex: 1;
             text-align: center;
             font-size: 12px;
-            color: rgba(255,255,255,0.5);
+            color: light-dark(#0f0f0f80, rgba(255,255,255,0.5));
             font-weight: 500;
         }
         .code-content {
@@ -249,9 +249,9 @@
             text-align: right;
             padding-right: 16px;
             margin-right: 16px;
-            border-right: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             user-select: none;
-            color: rgba(255,255,255,0.3);
+            color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3));
         }
 
         /* Code Input */
@@ -262,9 +262,9 @@
         textarea {
             width: 100%;
             min-height: 150px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
             padding: 16px;
             border-radius: 8px;
             font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
@@ -274,7 +274,7 @@
         }
         textarea:focus {
             outline: none;
-            border-color: rgba(100, 150, 255, 0.5);
+            border-color: light-dark(#133f9c80, rgba(100, 150, 255, 0.5));
         }
 
         /* Background presets */
@@ -287,7 +287,7 @@
             transition: all 0.2s;
         }
         .bg-preset:hover { transform: scale(1.02); }
-        .bg-preset.active { border-color: #4a90ff; }
+        .bg-preset.active { border-color: light-dark(#1652b1, #4a90ff); }
 
         .bg-grid {
             display: grid;

@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI Pad - AI Showcase</title>
+    <title>MIDI Pad - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             overflow-x: hidden;
         }
 
@@ -33,14 +33,14 @@
         .header-left h1 {
             font-size: 1.8rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ff6b6b, #a855f7, #4ecdc4);
+            background: linear-gradient(135deg, light-dark(#961313, #ff6b6b), light-dark(#641ca8, #a855f7), light-dark(#44aea6, #4ecdc4));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .header-left .subtitle {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.9rem;
             margin-top: 4px;
         }
@@ -52,19 +52,19 @@
         }
 
         .back-link {
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             font-size: 14px;
             padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             transition: all 0.2s;
         }
 
         .back-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
+            color: light-dark(#0f0f0f, #fff);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
 
         .midi-status {
@@ -72,26 +72,26 @@
             align-items: center;
             gap: 6px;
             padding: 8px 12px;
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 6px;
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .midi-status.connected {
-            color: #4ade80;
-            background: rgba(74, 222, 128, 0.1);
+            color: light-dark(#2d9553, #4ade80);
+            background: light-dark(#35b1621a, rgba(74, 222, 128, 0.1));
         }
 
         .midi-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #666;
+            background: light-dark(#9e9e9e, #666);
         }
 
         .midi-status.connected .midi-dot {
-            background: #4ade80;
+            background: light-dark(#35b162, #4ade80);
             box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
         }
 
@@ -108,10 +108,10 @@
 
         .bank-btn {
             padding: 10px 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -119,26 +119,26 @@
         }
 
         .bank-btn:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .bank-btn.active {
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
-        .bank-btn[data-bank="808"] { border-color: rgba(255, 107, 107, 0.5); }
-        .bank-btn[data-bank="808"].active { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
-        .bank-btn[data-bank="909"] { border-color: rgba(168, 85, 247, 0.5); }
-        .bank-btn[data-bank="909"].active { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-        .bank-btn[data-bank="synth"] { border-color: rgba(78, 205, 196, 0.5); }
-        .bank-btn[data-bank="synth"].active { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
-        .bank-btn[data-bank="bass"] { border-color: rgba(59, 130, 246, 0.5); }
-        .bank-btn[data-bank="bass"].active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .bank-btn[data-bank="fx"] { border-color: rgba(250, 204, 21, 0.5); }
-        .bank-btn[data-bank="fx"].active { background: rgba(250, 204, 21, 0.2); color: #facc15; }
-        .bank-btn[data-bank="custom"] { border-color: rgba(34, 197, 94, 0.5); }
-        .bank-btn[data-bank="custom"].active { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .bank-btn[data-bank="808"] { border-color: light-dark(#96131380, rgba(255, 107, 107, 0.5)); }
+        .bank-btn[data-bank="808"].active { background: light-dark(#96131333, rgba(255, 107, 107, 0.2)); color: light-dark(#961313, #ff6b6b); }
+        .bank-btn[data-bank="909"] { border-color: light-dark(#641ca880, rgba(168, 85, 247, 0.5)); }
+        .bank-btn[data-bank="909"].active { background: light-dark(#641ca833, rgba(168, 85, 247, 0.2)); color: light-dark(#631ca6, #a855f7); }
+        .bank-btn[data-bank="synth"] { border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5)); }
+        .bank-btn[data-bank="synth"].active { background: light-dark(#44aea633, rgba(78, 205, 196, 0.2)); color: light-dark(#378b85, #4ecdc4); }
+        .bank-btn[data-bank="bass"] { border-color: light-dark(#205cbd80, rgba(59, 130, 246, 0.5)); }
+        .bank-btn[data-bank="bass"].active { background: light-dark(#205cbd33, rgba(59, 130, 246, 0.2)); color: light-dark(#1c50a6, #3b82f6); }
+        .bank-btn[data-bank="fx"] { border-color: light-dark(#ddb72080, rgba(250, 204, 21, 0.5)); }
+        .bank-btn[data-bank="fx"].active { background: light-dark(#ddb72033, rgba(250, 204, 21, 0.2)); color: light-dark(#a98c18, #facc15); }
+        .bank-btn[data-bank="custom"] { border-color: light-dark(#55ce8180, rgba(34, 197, 94, 0.5)); }
+        .bank-btn[data-bank="custom"].active { background: light-dark(#55ce8133, rgba(34, 197, 94, 0.2)); color: light-dark(#2c9653, #22c55e); }
 
         /* Main Grid Layout */
         .main-grid {
@@ -155,8 +155,8 @@
 
         /* Panel Styling */
         .panel {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f0f, rgba(255,255,255,0.06));
             border-radius: 16px;
             padding: 20px;
         }
@@ -165,7 +165,7 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 16px;
             font-weight: 600;
         }
@@ -187,8 +187,8 @@
 
         .pad {
             aspect-ratio: 1;
-            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(145deg, light-dark(#0f0f0f14, rgba(255,255,255,0.08)), light-dark(#0f0f0f05, rgba(255,255,255,0.02)));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 12px;
             cursor: pointer;
             display: flex;
@@ -205,8 +205,8 @@
         }
 
         .pad:hover {
-            background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-            border-color: rgba(255,255,255,0.2);
+            background: linear-gradient(145deg, light-dark(#0f0f0f1f, rgba(255,255,255,0.12)), light-dark(#0f0f0f0a, rgba(255,255,255,0.04)));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             transform: scale(1.02);
         }
 
@@ -215,20 +215,20 @@
         }
 
         .pad.selected {
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
             box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
         }
 
         .pad .key-label {
             font-size: 18px;
             font-weight: 700;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             opacity: 0.9;
         }
 
         .pad .sound-label {
             font-size: 10px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -236,7 +236,7 @@
         .pad .ripple {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255,255,255,0.4);
+            background: light-dark(#0f0f0f66, rgba(255,255,255,0.4));
             transform: scale(0);
             animation: ripple 0.4s ease-out;
             pointer-events: none;
@@ -250,18 +250,18 @@
         }
 
         /* Bank Colors for Pads */
-        .pad[data-color="808"] { background: linear-gradient(145deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.05)); border-color: rgba(255, 107, 107, 0.3); }
-        .pad[data-color="808"].active { background: linear-gradient(145deg, rgba(255, 107, 107, 0.5), rgba(255, 107, 107, 0.2)); box-shadow: 0 0 30px rgba(255, 107, 107, 0.5); }
-        .pad[data-color="909"] { background: linear-gradient(145deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05)); border-color: rgba(168, 85, 247, 0.3); }
-        .pad[data-color="909"].active { background: linear-gradient(145deg, rgba(168, 85, 247, 0.5), rgba(168, 85, 247, 0.2)); box-shadow: 0 0 30px rgba(168, 85, 247, 0.5); }
-        .pad[data-color="synth"] { background: linear-gradient(145deg, rgba(78, 205, 196, 0.2), rgba(78, 205, 196, 0.05)); border-color: rgba(78, 205, 196, 0.3); }
-        .pad[data-color="synth"].active { background: linear-gradient(145deg, rgba(78, 205, 196, 0.5), rgba(78, 205, 196, 0.2)); box-shadow: 0 0 30px rgba(78, 205, 196, 0.5); }
-        .pad[data-color="bass"] { background: linear-gradient(145deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05)); border-color: rgba(59, 130, 246, 0.3); }
-        .pad[data-color="bass"].active { background: linear-gradient(145deg, rgba(59, 130, 246, 0.5), rgba(59, 130, 246, 0.2)); box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
-        .pad[data-color="fx"] { background: linear-gradient(145deg, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.05)); border-color: rgba(250, 204, 21, 0.3); }
-        .pad[data-color="fx"].active { background: linear-gradient(145deg, rgba(250, 204, 21, 0.5), rgba(250, 204, 21, 0.2)); box-shadow: 0 0 30px rgba(250, 204, 21, 0.5); }
-        .pad[data-color="custom"] { background: linear-gradient(145deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05)); border-color: rgba(34, 197, 94, 0.3); }
-        .pad[data-color="custom"].active { background: linear-gradient(145deg, rgba(34, 197, 94, 0.5), rgba(34, 197, 94, 0.2)); box-shadow: 0 0 30px rgba(34, 197, 94, 0.5); }
+        .pad[data-color="808"] { background: linear-gradient(145deg, light-dark(#96131333, rgba(255, 107, 107, 0.2)), light-dark(#9613130d, rgba(255, 107, 107, 0.05))); border-color: light-dark(#9613134c, rgba(255, 107, 107, 0.3)); }
+        .pad[data-color="808"].active { background: linear-gradient(145deg, light-dark(#96131380, rgba(255, 107, 107, 0.5)), light-dark(#96131333, rgba(255, 107, 107, 0.2))); box-shadow: 0 0 30px rgba(255, 107, 107, 0.5); }
+        .pad[data-color="909"] { background: linear-gradient(145deg, light-dark(#641ca833, rgba(168, 85, 247, 0.2)), light-dark(#641ca80d, rgba(168, 85, 247, 0.05))); border-color: light-dark(#641ca84c, rgba(168, 85, 247, 0.3)); }
+        .pad[data-color="909"].active { background: linear-gradient(145deg, light-dark(#641ca880, rgba(168, 85, 247, 0.5)), light-dark(#641ca833, rgba(168, 85, 247, 0.2))); box-shadow: 0 0 30px rgba(168, 85, 247, 0.5); }
+        .pad[data-color="synth"] { background: linear-gradient(145deg, light-dark(#44aea633, rgba(78, 205, 196, 0.2)), light-dark(#44aea60d, rgba(78, 205, 196, 0.05))); border-color: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .pad[data-color="synth"].active { background: linear-gradient(145deg, light-dark(#44aea680, rgba(78, 205, 196, 0.5)), light-dark(#44aea633, rgba(78, 205, 196, 0.2))); box-shadow: 0 0 30px rgba(78, 205, 196, 0.5); }
+        .pad[data-color="bass"] { background: linear-gradient(145deg, light-dark(#205cbd33, rgba(59, 130, 246, 0.2)), light-dark(#205cbd0d, rgba(59, 130, 246, 0.05))); border-color: light-dark(#205cbd4c, rgba(59, 130, 246, 0.3)); }
+        .pad[data-color="bass"].active { background: linear-gradient(145deg, light-dark(#205cbd80, rgba(59, 130, 246, 0.5)), light-dark(#205cbd33, rgba(59, 130, 246, 0.2))); box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
+        .pad[data-color="fx"] { background: linear-gradient(145deg, light-dark(#ddb72033, rgba(250, 204, 21, 0.2)), light-dark(#ddb7200d, rgba(250, 204, 21, 0.05))); border-color: light-dark(#ddb7204c, rgba(250, 204, 21, 0.3)); }
+        .pad[data-color="fx"].active { background: linear-gradient(145deg, light-dark(#ddb72080, rgba(250, 204, 21, 0.5)), light-dark(#ddb72033, rgba(250, 204, 21, 0.2))); box-shadow: 0 0 30px rgba(250, 204, 21, 0.5); }
+        .pad[data-color="custom"] { background: linear-gradient(145deg, light-dark(#55ce8133, rgba(34, 197, 94, 0.2)), light-dark(#55ce810d, rgba(34, 197, 94, 0.05))); border-color: light-dark(#55ce814c, rgba(34, 197, 94, 0.3)); }
+        .pad[data-color="custom"].active { background: linear-gradient(145deg, light-dark(#55ce8180, rgba(34, 197, 94, 0.5)), light-dark(#55ce8133, rgba(34, 197, 94, 0.2))); box-shadow: 0 0 30px rgba(34, 197, 94, 0.5); }
 
         /* Right Panel */
         .right-panel {
@@ -283,7 +283,7 @@
         }
 
         .viz-box {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 8px;
             overflow: hidden;
         }
@@ -312,22 +312,22 @@
 
         .config-row label {
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .config-row select, .config-row input[type="number"] {
             width: 100%;
             padding: 8px 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
             outline: none;
         }
 
         .config-row select:focus, .config-row input:focus {
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
 
         .slider-container {
@@ -340,7 +340,7 @@
             flex: 1;
             -webkit-appearance: none;
             height: 6px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             outline: none;
         }
@@ -349,7 +349,7 @@
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s;
@@ -363,7 +363,7 @@
             min-width: 40px;
             text-align: right;
             font-size: 12px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-family: 'SF Mono', Monaco, monospace;
         }
 
@@ -382,7 +382,7 @@
 
         .adsr-control label {
             font-size: 10px;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-transform: uppercase;
         }
 
@@ -399,14 +399,14 @@
             -webkit-appearance: none;
             width: 14px;
             height: 14px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             border-radius: 50%;
             cursor: pointer;
         }
 
         .adsr-control input[type="range"]::-webkit-slider-runnable-track {
             width: 6px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
         }
 
@@ -415,7 +415,7 @@
             align-items: center;
             justify-content: center;
             height: 150px;
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 13px;
             text-align: center;
         }
@@ -436,9 +436,9 @@
         .transport-btn {
             padding: 10px 16px;
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(255,255,255,0.05);
-            color: #aaa;
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
@@ -448,17 +448,17 @@
         }
 
         .transport-btn:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .transport-btn.rec {
-            border-color: rgba(255, 107, 107, 0.5);
+            border-color: light-dark(#96131380, rgba(255, 107, 107, 0.5));
         }
 
         .transport-btn.rec.active {
-            background: rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
+            background: light-dark(#9613134c, rgba(255, 107, 107, 0.3));
+            color: light-dark(#961313, #ff6b6b);
             animation: pulse-rec 1s ease-in-out infinite;
         }
 
@@ -468,9 +468,9 @@
         }
 
         .transport-btn.play.active {
-            background: rgba(74, 222, 128, 0.3);
-            color: #4ade80;
-            border-color: rgba(74, 222, 128, 0.5);
+            background: light-dark(#35b1624c, rgba(74, 222, 128, 0.3));
+            color: light-dark(#2d9553, #4ade80);
+            border-color: light-dark(#35b16280, rgba(74, 222, 128, 0.5));
         }
 
         .bpm-control {
@@ -482,16 +482,16 @@
 
         .bpm-control label {
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .bpm-control input[type="number"] {
             width: 60px;
             padding: 8px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 14px;
             font-weight: 600;
             text-align: center;
@@ -499,16 +499,16 @@
 
         .bars-control select, .quantize-control select {
             padding: 8px 12px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 12px;
         }
 
         /* Pattern Display */
         .pattern-container {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 8px;
             padding: 12px;
             overflow-x: auto;
@@ -530,7 +530,7 @@
         .pattern-row-label {
             width: 40px;
             font-size: 10px;
-            color: #666;
+            color: light-dark(#616161, #666);
             flex-shrink: 0;
         }
 
@@ -543,18 +543,18 @@
         .pattern-step {
             flex: 1;
             height: 16px;
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 2px;
             cursor: pointer;
             transition: all 0.1s;
         }
 
         .pattern-step:hover {
-            background: rgba(255,255,255,0.15);
+            background: light-dark(#0f0f0f26, rgba(255,255,255,0.15));
         }
 
         .pattern-step.active {
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
         }
 
         .pattern-step.playing {
@@ -562,7 +562,7 @@
         }
 
         .pattern-beat-marker {
-            border-left: 1px solid rgba(255,255,255,0.2);
+            border-left: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
         }
 
         /* Export/Import */
@@ -574,18 +574,18 @@
 
         .export-btn {
             padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .export-btn:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Master Effects */
@@ -607,7 +607,7 @@
 
         .effect-control label {
             font-size: 11px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -615,7 +615,7 @@
         .effect-control input[type="range"] {
             -webkit-appearance: none;
             height: 6px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             outline: none;
         }
@@ -624,7 +624,7 @@
             -webkit-appearance: none;
             width: 14px;
             height: 14px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -632,7 +632,7 @@
         /* Keyboard hints */
         .keyboard-hint {
             text-align: center;
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 12px;
             margin-top: 12px;
         }
@@ -644,7 +644,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -658,7 +658,7 @@
         }
 
         .loading-text {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 18px;
         }
 
@@ -681,10 +681,10 @@
         }
 
         /* Arpeggio Bank Styles */
-        .bank-btn[data-bank="arpeggio"] { border-color: rgba(236, 72, 153, 0.5); }
-        .bank-btn[data-bank="arpeggio"].active { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-        .pad[data-color="arpeggio"] { background: linear-gradient(145deg, rgba(236, 72, 153, 0.2), rgba(236, 72, 153, 0.05)); border-color: rgba(236, 72, 153, 0.3); }
-        .pad[data-color="arpeggio"].active { background: linear-gradient(145deg, rgba(236, 72, 153, 0.5), rgba(236, 72, 153, 0.2)); box-shadow: 0 0 30px rgba(236, 72, 153, 0.5); }
+        .bank-btn[data-bank="arpeggio"] { border-color: light-dark(#b2286c80, rgba(236, 72, 153, 0.5)); }
+        .bank-btn[data-bank="arpeggio"].active { background: light-dark(#b2286c33, rgba(236, 72, 153, 0.2)); color: light-dark(#9e2460, #ec4899); }
+        .pad[data-color="arpeggio"] { background: linear-gradient(145deg, light-dark(#b2286c33, rgba(236, 72, 153, 0.2)), light-dark(#b2286c0d, rgba(236, 72, 153, 0.05))); border-color: light-dark(#b2286c4c, rgba(236, 72, 153, 0.3)); }
+        .pad[data-color="arpeggio"].active { background: linear-gradient(145deg, light-dark(#b2286c80, rgba(236, 72, 153, 0.5)), light-dark(#b2286c33, rgba(236, 72, 153, 0.2))); box-shadow: 0 0 30px rgba(236, 72, 153, 0.5); }
 
         /* Arpeggio Config */
         .arpeggio-config {
@@ -701,15 +701,15 @@
         .chord-selector select {
             width: 100%;
             padding: 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
         }
 
         .chord-preview {
-            background: rgba(0,0,0,0.2);
+            background: light-dark(#fcfcfc33, rgba(0,0,0,0.2));
             border-radius: 8px;
             padding: 12px;
             margin-top: 8px;
@@ -718,13 +718,13 @@
         .chord-preview-title {
             font-size: 16px;
             font-weight: 600;
-            color: #ec4899;
+            color: light-dark(#9e2460, #ec4899);
             margin-bottom: 4px;
         }
 
         .chord-preview-notes {
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .arpeggio-settings {
@@ -742,26 +742,26 @@
 
         .arpeggio-setting label {
             font-size: 11px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
         }
 
         .arpeggio-setting select, .arpeggio-setting input {
             padding: 8px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 12px;
         }
 
         .test-btn {
             margin-top: 12px;
             padding: 12px;
-            background: rgba(236, 72, 153, 0.2);
-            border: 1px solid rgba(236, 72, 153, 0.4);
+            background: light-dark(#b2286c33, rgba(236, 72, 153, 0.2));
+            border: 1px solid light-dark(#b2286c66, rgba(236, 72, 153, 0.4));
             border-radius: 8px;
-            color: #ec4899;
+            color: light-dark(#9e2460, #ec4899);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -769,7 +769,7 @@
         }
 
         .test-btn:hover {
-            background: rgba(236, 72, 153, 0.3);
+            background: light-dark(#b2286c4c, rgba(236, 72, 153, 0.3));
         }
     </style>
 </head>

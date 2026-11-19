@@ -3,69 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rocket Landing - AI Showcase</title>
+    <title>Rocket Landing - AI Showcase</title><script src="../../site-theme.js"></script>
 <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; font-family: system-ui, sans-serif; }
         canvas { display: block; touch-action: none; }
         .controls {
-            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
-            padding: 18px; border-radius: 8px; color: #fff; font-size: 14px;
+            position: fixed; top: 20px; left: 20px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            padding: 18px; border-radius: 8px; color: light-dark(#0f0f0f, #fff); font-size: 14px;
             width: 290px; max-height: calc(100vh - 40px); overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #999; margin-bottom: 10px; line-height: 1.4; font-size: 13px; }
-        .controls p.note { color: #c9b27c; font-size: 12px; }
+        .controls p { color: light-dark(#616161, #999); margin-bottom: 10px; line-height: 1.4; font-size: 13px; }
+        .controls p.note { color: light-dark(#806e41, #c9b27c); font-size: 12px; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 7px 10px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 7px 10px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin: 0 4px 6px 0;
         }
-        button:hover:not(:disabled) { background: rgba(255,255,255,0.2); }
+        button:hover:not(:disabled) { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         button:disabled { opacity: 0.4; cursor: default; }
-        button.primary { background: #1f7a72; border-color: #4ecdc4; font-weight: 600; }
-        button.primary:hover:not(:disabled) { background: #279187; }
+        button.primary { background: light-dark(#93d7d1, #1f7a72); border-color: light-dark(#44aea6, #4ecdc4); font-weight: 600; }
+        button.primary:hover:not(:disabled) { background: light-dark(#7fcec7, #279187); }
         .control-group { margin-bottom: 9px; }
-        .control-group label { display: block; margin-bottom: 3px; color: #999; font-size: 12px; }
+        .control-group label { display: block; margin-bottom: 3px; color: light-dark(#616161, #999); font-size: 12px; }
         .control-group input[type="range"], .control-group select { width: 100%; }
         select {
-            background: #16161d; color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#e2e2e8, #16161d); color: light-dark(#0f0f0f, #fff); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             padding: 5px; border-radius: 4px; font-size: 13px;
         }
         .row { display: flex; gap: 8px; }
         .row > * { flex: 1; min-width: 0; }
         .check { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-        .check label { color: #ccc; font-size: 13px; }
-        .section { color: #777; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 10px 0 5px; }
+        .check label { color: light-dark(#3f3f3f, #ccc); font-size: 13px; }
+        .section { color: light-dark(#616161, #777); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 10px 0 5px; }
         #status {
             font-size: 13px; line-height: 1.4; padding: 8px 10px; margin: 4px 0 10px; border-radius: 4px;
-            background: rgba(255,255,255,0.06); border-left: 3px solid #666; color: #eee;
+            background: light-dark(#0f0f0f0f, rgba(255,255,255,0.06)); border-left: 3px solid light-dark(#9e9e9e, #666); color: light-dark(#1f1f1f, #eee);
         }
-        #status[data-tone="good"] { border-left-color: #4ecdc4; }
-        #status[data-tone="warn"] { border-left-color: #ffb454; }
-        #status[data-tone="bad"] { border-left-color: #ff6b6b; }
-        #checks { list-style: none; font-size: 12px; color: #bbb; line-height: 1.6; margin-bottom: 8px; }
+        #status[data-tone="good"] { border-left-color: light-dark(#44aea6, #4ecdc4); }
+        #status[data-tone="warn"] { border-left-color: light-dark(#a96815, #ffb454); }
+        #status[data-tone="bad"] { border-left-color: light-dark(#961313, #ff6b6b); }
+        #checks { list-style: none; font-size: 12px; color: light-dark(#4f4f4f, #bbb); line-height: 1.6; margin-bottom: 8px; }
         #checks .mark { display: inline-block; width: 16px; font-weight: 700; }
-        #checks .pass .mark { color: #4ecdc4; }
-        #checks .fail .mark { color: #ff6b6b; }
+        #checks .pass .mark { color: light-dark(#378b85, #4ecdc4); }
+        #checks .fail .mark { color: light-dark(#961313, #ff6b6b); }
         .readout {
-            font-family: ui-monospace, monospace; font-size: 12px; color: #9ad; white-space: pre;
-            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; line-height: 1.55;
+            font-family: ui-monospace, monospace; font-size: 12px; color: light-dark(#303f6d, #9ad); white-space: pre;
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); padding-top: 8px; margin-top: 6px; line-height: 1.55;
         }
-        details { margin-top: 10px; font-size: 12px; color: #999; line-height: 1.45; }
-        summary { cursor: pointer; color: #bbb; }
+        details { margin-top: 10px; font-size: 12px; color: light-dark(#616161, #999); line-height: 1.45; }
+        summary { cursor: pointer; color: light-dark(#4f4f4f, #bbb); }
         details p { margin: 6px 0 0; font-size: 12px; }
-        details a { color: #7cc; }
+        details a { color: light-dark(#3f8383, #7cc); }
         .hidden { display: none !important; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
-        .error { color: #f88; padding: 40px; font-size: 16px; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        .error { color: light-dark(#7e1010, #f88); padding: 40px; font-size: 16px; }
         @media (max-width: 700px) {
             .controls { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 42vh; padding: 12px; }
             .controls p.intro { display: none; }

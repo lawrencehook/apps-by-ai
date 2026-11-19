@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Trim - AI Showcase</title>
+    <title>Audio Trim - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -36,24 +36,24 @@
             margin-bottom: 24px;
         }
         .drop-zone:hover, .drop-zone.dragover {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.05);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
         }
-        .drop-zone-text { color: #888; font-size: 1.1rem; }
-        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        .drop-zone-text { color: light-dark(#616161, #888); font-size: 1.1rem; }
+        .drop-zone-hint { color: light-dark(#616161, #555); font-size: 0.85rem; margin-top: 8px; }
         input[type="file"] { display: none; }
         .file-info {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 24px;
         }
         .file-name { font-weight: 500; margin-bottom: 4px; }
-        .file-meta { color: #666; font-size: 0.85rem; }
+        .file-meta { color: light-dark(#616161, #666); font-size: 0.85rem; }
         .waveform-container {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 24px;
@@ -61,7 +61,7 @@
         .waveform-wrapper {
             position: relative;
             height: 120px;
-            background: #1a1a1f;
+            background: light-dark(#e0e0e4, #1a1a1f);
             border-radius: 6px;
             overflow: hidden;
             cursor: pointer;
@@ -74,9 +74,9 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            background: rgba(78, 205, 196, 0.2);
-            border-left: 2px solid #4ecdc4;
-            border-right: 2px solid #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-left: 2px solid light-dark(#44aea6, #4ecdc4);
+            border-right: 2px solid light-dark(#44aea6, #4ecdc4);
             pointer-events: none;
         }
         .trim-handle {
@@ -84,7 +84,7 @@
             top: 0;
             bottom: 0;
             width: 12px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             cursor: ew-resize;
             display: flex;
             align-items: center;
@@ -96,7 +96,7 @@
             content: '';
             width: 2px;
             height: 30px;
-            background: rgba(0,0,0,0.5);
+            background: light-dark(#fcfcfc80, rgba(0,0,0,0.5));
             border-radius: 1px;
         }
         .trim-handle.start { left: 0; transform: translateX(-50%); border-radius: 3px 0 0 3px; }
@@ -106,7 +106,7 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             pointer-events: none;
             display: none;
         }
@@ -118,15 +118,15 @@
         }
         .time-input-group label {
             display: block;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 8px;
         }
         .time-input-group input {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             border-radius: 6px;
             font-size: 1rem;
@@ -134,43 +134,43 @@
         }
         .time-input-group input:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
         .duration-display {
             text-align: center;
             padding-top: 28px;
         }
-        .duration-label { color: #888; font-size: 0.85rem; }
-        .duration-value { color: #4ecdc4; font-size: 1.2rem; font-weight: 600; font-family: monospace; }
+        .duration-label { color: light-dark(#616161, #888); font-size: 0.85rem; }
+        .duration-value { color: light-dark(#378b85, #4ecdc4); font-size: 1.2rem; font-weight: 600; font-family: monospace; }
         .controls {
             display: flex;
             gap: 12px;
             margin-bottom: 24px;
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 12px 24px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.2s;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         button.primary { flex: 1; }
         .status {
             margin-top: 24px;
             padding: 16px;
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             border-radius: 8px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             display: none;
             text-align: center;
         }

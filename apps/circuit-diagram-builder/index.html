@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circuit Diagram Builder - AI Showcase</title>
+    <title>Circuit Diagram Builder - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a12;
+            background: light-dark(#ececf3, #0a0a12);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             overflow: hidden;
         }
 
@@ -24,8 +24,8 @@
 
         header {
             grid-column: 1 / -1;
-            background: rgba(255,255,255,0.03);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -33,7 +33,7 @@
         }
 
         h1 { font-size: 1.4rem; font-weight: 500; }
-        h1 span { color: #00d4ff; }
+        h1 span { color: light-dark(#1593ac, #00d4ff); }
 
         .header-actions {
             display: flex;
@@ -42,40 +42,40 @@
 
         .btn {
             padding: 8px 16px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             transition: all 0.2s;
         }
-        .btn:hover { background: rgba(255,255,255,0.15); }
+        .btn:hover { background: light-dark(#0f0f0f26, rgba(255,255,255,0.15)); }
         .btn-primary {
-            background: rgba(0, 212, 255, 0.2);
-            border-color: #00d4ff;
-            color: #00d4ff;
+            background: light-dark(#27c4e433, rgba(0, 212, 255, 0.2));
+            border-color: light-dark(#27c4e4, #00d4ff);
+            color: light-dark(#1593ac, #00d4ff);
         }
-        .btn-primary:hover { background: rgba(0, 212, 255, 0.3); }
+        .btn-primary:hover { background: light-dark(#27c4e44c, rgba(0, 212, 255, 0.3)); }
         .btn-danger {
-            background: rgba(255, 107, 107, 0.2);
-            border-color: #ff6b6b;
-            color: #ff6b6b;
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            border-color: light-dark(#961313, #ff6b6b);
+            color: light-dark(#961313, #ff6b6b);
         }
 
         .back-link {
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             padding: 8px 16px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
         }
-        .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); border-color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3)); }
 
         /* Components Panel */
         .components-panel {
-            background: rgba(255,255,255,0.02);
-            border-right: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             padding: 16px;
             overflow-y: auto;
         }
@@ -84,7 +84,7 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-bottom: 12px;
         }
 
@@ -97,8 +97,8 @@
 
         .component-item {
             aspect-ratio: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -109,8 +109,8 @@
             padding: 8px;
         }
         .component-item:hover {
-            background: rgba(0, 212, 255, 0.1);
-            border-color: rgba(0, 212, 255, 0.3);
+            background: light-dark(#27c4e41a, rgba(0, 212, 255, 0.1));
+            border-color: light-dark(#27c4e44c, rgba(0, 212, 255, 0.3));
         }
         .component-item:active { cursor: grabbing; }
         .component-item svg {
@@ -120,7 +120,7 @@
         }
         .component-item span {
             font-size: 10px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-align: center;
         }
 
@@ -157,28 +157,28 @@
         .tool-btn {
             width: 40px;
             height: 40px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: #888;
+            color: light-dark(#616161, #888);
             transition: all 0.2s;
         }
-        .tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .tool-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .tool-btn.active {
-            background: rgba(0, 212, 255, 0.2);
-            border-color: #00d4ff;
-            color: #00d4ff;
+            background: light-dark(#27c4e433, rgba(0, 212, 255, 0.2));
+            border-color: light-dark(#27c4e4, #00d4ff);
+            color: light-dark(#1593ac, #00d4ff);
         }
         .tool-btn svg { width: 20px; height: 20px; }
 
         /* Properties Panel */
         .properties-panel {
-            background: rgba(255,255,255,0.02);
-            border-left: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border-left: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             padding: 16px;
             overflow-y: auto;
         }
@@ -196,52 +196,52 @@
 
         .prop-label {
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .prop-value {
             font-size: 13px;
-            color: #00d4ff;
+            color: light-dark(#1593ac, #00d4ff);
         }
 
         .prop-input {
             width: 100px;
             padding: 6px 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 4px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
             text-align: right;
         }
-        .prop-input:focus { outline: none; border-color: #00d4ff; }
+        .prop-input:focus { outline: none; border-color: light-dark(#27c4e4, #00d4ff); }
 
         .simulation-status {
             padding: 12px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.2);
+            background: light-dark(#27c4e41a, rgba(0, 212, 255, 0.1));
+            border: 1px solid light-dark(#27c4e433, rgba(0, 212, 255, 0.2));
             border-radius: 8px;
             margin-bottom: 16px;
         }
         .simulation-status.error {
-            background: rgba(255, 107, 107, 0.1);
-            border-color: rgba(255, 107, 107, 0.3);
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            border-color: light-dark(#9613134c, rgba(255, 107, 107, 0.3));
         }
         .simulation-status .status-title {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #00d4ff;
+            color: light-dark(#1593ac, #00d4ff);
             margin-bottom: 8px;
         }
-        .simulation-status.error .status-title { color: #ff6b6b; }
+        .simulation-status.error .status-title { color: light-dark(#961313, #ff6b6b); }
         .simulation-status .status-message {
             font-size: 12px;
-            color: #ccc;
+            color: light-dark(#3f3f3f, #ccc);
         }
 
         .readings {
-            background: rgba(0,0,0,0.2);
+            background: light-dark(#fcfcfc33, rgba(0,0,0,0.2));
             border-radius: 8px;
             padding: 12px;
         }
@@ -250,15 +250,15 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
         .reading-item:last-child { border-bottom: none; }
-        .reading-label { font-size: 12px; color: #888; }
-        .reading-value { font-size: 14px; font-weight: 500; color: #4ecdc4; }
+        .reading-label { font-size: 12px; color: light-dark(#616161, #888); }
+        .reading-value { font-size: 14px; font-weight: 500; color: light-dark(#378b85, #4ecdc4); }
 
         .no-selection {
             text-align: center;
-            color: #555;
+            color: light-dark(#616161, #555);
             padding: 40px 20px;
             font-size: 13px;
         }
@@ -266,8 +266,8 @@
         /* Tooltip */
         .tooltip {
             position: fixed;
-            background: rgba(0,0,0,0.9);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#fcfcfce6, rgba(0,0,0,0.9));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 6px;
             padding: 8px 12px;
             font-size: 12px;
@@ -285,7 +285,7 @@
             }
             .components-panel {
                 border-right: none;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
+                border-bottom: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
                 overflow-x: auto;
                 overflow-y: hidden;
                 max-height: 120px;
@@ -295,7 +295,7 @@
             }
             .properties-panel {
                 border-left: none;
-                border-top: 1px solid rgba(255,255,255,0.1);
+                border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
                 max-height: 200px;
                 overflow-y: auto;
             }

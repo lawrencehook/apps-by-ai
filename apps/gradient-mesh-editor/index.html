@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gradient Mesh Editor - AI Showcase</title>
+    <title>Gradient Mesh Editor - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .editor-layout {
             display: grid;
             grid-template-columns: 1fr 280px;
@@ -49,8 +49,8 @@
             display: block;
         }
         .controls-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
@@ -60,7 +60,7 @@
         .control-section:last-child { margin-bottom: 0; }
         .section-title {
             font-size: 0.85rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
@@ -88,7 +88,7 @@
         }
         .color-label {
             font-size: 0.7rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-align: center;
             margin-top: 4px;
         }
@@ -100,20 +100,20 @@
             justify-content: space-between;
             margin-bottom: 6px;
         }
-        .slider-label { color: #888; font-size: 0.85rem; }
-        .slider-value { color: #4ecdc4; font-family: monospace; font-size: 0.85rem; }
+        .slider-label { color: light-dark(#616161, #888); font-size: 0.85rem; }
+        .slider-value { color: light-dark(#378b85, #4ecdc4); font-family: monospace; font-size: 0.85rem; }
         input[type="range"] {
             width: 100%;
             height: 6px;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -126,21 +126,21 @@
             flex: 1;
             min-width: 80px;
             padding: 10px 16px;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .btn:hover { background: rgba(255,255,255,0.1); }
+        .btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
         .btn-primary {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
         }
-        .btn-primary:hover { background: rgba(78, 205, 196, 0.3); }
+        .btn-primary:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .preset-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -148,29 +148,29 @@
         }
         .preset-btn {
             padding: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.75rem;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             background: transparent;
             transition: all 0.2s;
         }
         .preset-btn:hover {
-            border-color: rgba(255,255,255,0.3);
-            color: #fff;
+            border-color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3));
+            color: light-dark(#0f0f0f, #fff);
         }
         .output-section {
             margin-top: 24px;
         }
         .output-code {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 6px;
             padding: 12px;
             font-family: monospace;
             font-size: 0.75rem;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             word-break: break-all;
             max-height: 120px;
             overflow-y: auto;
@@ -184,7 +184,7 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            border: 2px solid #fff;
+            border: 2px solid light-dark(#0f0f0f, #fff);
             transform: translate(-50%, -50%);
             cursor: move;
             touch-action: none;
@@ -200,7 +200,7 @@
         }
         .instructions {
             font-size: 0.8rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-top: 12px;
             line-height: 1.5;
         }

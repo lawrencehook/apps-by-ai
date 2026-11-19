@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Countdown to Date - AI Showcase</title>
+    <title>Countdown to Date - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -78,34 +78,6 @@
             transition: all 0.2s;
         }
         .back-link:hover { color: var(--text-primary); border-color: var(--border-hover); }
-
-        /* Theme Toggle */
-        .theme-toggle {
-            display: flex; gap: 4px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 4px;
-        }
-        .theme-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            padding: 6px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .theme-btn:hover { color: var(--text-primary); }
-        .theme-btn.active {
-            background: var(--accent-subtle);
-            color: var(--accent);
-        }
-        .theme-btn svg { width: 16px; height: 16px; }
 
         /* Countdown Display - Hero Section */
         .countdown-card {
@@ -404,30 +376,13 @@
             .milestone-value { font-size: 0.95rem; }
             .top-bar { padding: 10px 12px; }
             .back-link { padding: 6px 10px; font-size: 13px; }
-            .theme-btn { padding: 5px 8px; }
             .container { padding-top: 60px; }
         }
     </style>
 </head>
 <body>
     <div class="top-bar">
-        <div class="theme-toggle">
-            <button class="theme-btn" data-theme="system" title="System preference">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-                </svg>
-            </button>
-            <button class="theme-btn" data-theme="light" title="Light mode">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                </svg>
-            </button>
-            <button class="theme-btn" data-theme="dark" title="Dark mode">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-            </button>
-        </div>
+        <div data-site-theme-slot></div>
         <a href="../../index.html" class="back-link">← Back</a>
     </div>
 
@@ -524,48 +479,6 @@
     </div>
 
     <script>
-        // Theme handling (stored in localStorage, not URL)
-        function getSystemTheme() {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-
-        function applyTheme(theme) {
-            const actualTheme = theme === 'system' ? getSystemTheme() : theme;
-            document.documentElement.setAttribute('data-theme', actualTheme);
-
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === theme);
-            });
-        }
-
-        function getSavedTheme() {
-            try {
-                return localStorage.getItem('countdown-theme') || 'system';
-            } catch (e) {
-                return 'system';
-            }
-        }
-
-        function initTheme() {
-            applyTheme(getSavedTheme());
-        }
-
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const theme = btn.dataset.theme;
-                try { localStorage.setItem('countdown-theme', theme); } catch (e) {}
-                applyTheme(theme);
-            });
-        });
-
-        // Listen for system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const saved = getSavedTheme();
-            if (saved === 'system') applyTheme('system');
-        });
-
-        initTheme();
-
         // Settings toggle
         const settingsCard = document.getElementById('settingsCard');
         const settingsToggle = document.getElementById('settingsToggle');

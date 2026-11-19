@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>L-System Trees - AI Showcase</title>
+    <title>L-System Trees - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: linear-gradient(to bottom, #1a1a2e 0%, #0d1117 100%); min-height: 100vh; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: linear-gradient(to bottom, light-dark(#d3d3e3, #1a1a2e) 0%, light-dark(#e8ebf0, #0d1117) 100%); min-height: 100vh; overflow: hidden; font-family: system-ui, sans-serif; }
         canvas { display: block; }
         .controls {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: light-dark(#fcfcfcd9, rgba(0, 0, 0, 0.85));
             padding: 20px;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 14px;
             min-width: 240px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             max-height: calc(100vh - 40px);
             overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .controls p { color: light-dark(#616161, #666); margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
         button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
+            color: light-dark(#0f0f0f, #fff);
             padding: 8px 14px;
             border-radius: 4px;
             cursor: pointer;
@@ -36,16 +36,16 @@
             margin-right: 6px;
             margin-bottom: 6px;
         }
-        button:hover { background: rgba(255, 255, 255, 0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2)); }
         .control-group { margin-bottom: 12px; }
-        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: light-dark(#616161, #888); font-size: 12px; }
         .control-group input[type="range"] { width: 100%; }
         select {
             width: 100%;
             padding: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 4px;
             font-size: 13px;
         }
@@ -53,15 +53,15 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-decoration: none;
             font-size: 14px;
             padding: 8px 14px;
-            background: rgba(0, 0, 0, 0.85);
+            background: light-dark(#fcfcfcd9, rgba(0, 0, 0, 0.85));
             border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
     </style>
 </head>
 <body>

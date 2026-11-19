@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Flow - AI Showcase</title>
+    <title>Pomodoro Flow - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             overflow-x: hidden;
             overflow-y: auto;
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         /* Animated background */
         .bg-animation {
@@ -39,19 +39,19 @@
         }
         .bg-orb.orb1 {
             width: 600px; height: 600px;
-            background: radial-gradient(circle, #ff6b6b 0%, transparent 70%);
+            background: radial-gradient(circle, light-dark(#961313, #ff6b6b) 0%, transparent 70%);
             top: -200px; left: -200px;
             animation-delay: 0s;
         }
         .bg-orb.orb2 {
             width: 500px; height: 500px;
-            background: radial-gradient(circle, #4ecdc4 0%, transparent 70%);
+            background: radial-gradient(circle, light-dark(#44aea6, #4ecdc4) 0%, transparent 70%);
             bottom: -150px; right: -150px;
             animation-delay: -7s;
         }
         .bg-orb.orb3 {
             width: 400px; height: 400px;
-            background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+            background: radial-gradient(circle, light-dark(#641ca8, #a855f7) 0%, transparent 70%);
             top: calc(50% - 200px); left: calc(50% - 200px);
             animation-delay: -14s;
         }
@@ -63,14 +63,14 @@
         }
 
         /* Work mode colors */
-        .work-mode .bg-orb.orb1 { background: radial-gradient(circle, #ff6b6b 0%, transparent 70%); }
-        .work-mode .bg-orb.orb2 { background: radial-gradient(circle, #ff8c42 0%, transparent 70%); }
-        .work-mode .bg-orb.orb3 { background: radial-gradient(circle, #ffb347 0%, transparent 70%); }
+        .work-mode .bg-orb.orb1 { background: radial-gradient(circle, light-dark(#961313, #ff6b6b) 0%, transparent 70%); }
+        .work-mode .bg-orb.orb2 { background: radial-gradient(circle, light-dark(#b85617, #ff8c42) 0%, transparent 70%); }
+        .work-mode .bg-orb.orb3 { background: radial-gradient(circle, light-dark(#b47316, #ffb347) 0%, transparent 70%); }
 
         /* Break mode colors */
-        .break-mode .bg-orb.orb1 { background: radial-gradient(circle, #4ecdc4 0%, transparent 70%); }
-        .break-mode .bg-orb.orb2 { background: radial-gradient(circle, #45b7aa 0%, transparent 70%); }
-        .break-mode .bg-orb.orb3 { background: radial-gradient(circle, #96e6a1 0%, transparent 70%); }
+        .break-mode .bg-orb.orb1 { background: radial-gradient(circle, light-dark(#44aea6, #4ecdc4) 0%, transparent 70%); }
+        .break-mode .bg-orb.orb2 { background: radial-gradient(circle, light-dark(#5db2a8, #45b7aa) 0%, transparent 70%); }
+        .break-mode .bg-orb.orb3 { background: radial-gradient(circle, light-dark(#277031, #96e6a1) 0%, transparent 70%); }
 
         .container {
             position: relative;
@@ -92,12 +92,12 @@
             font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 3px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 16px;
             transition: color 0.5s;
         }
-        .work-mode .mode-label { color: #ff6b6b; }
-        .break-mode .mode-label { color: #4ecdc4; }
+        .work-mode .mode-label { color: light-dark(#961313, #ff6b6b); }
+        .break-mode .mode-label { color: light-dark(#378b85, #4ecdc4); }
 
         .timer-ring {
             position: relative;
@@ -136,7 +136,7 @@
             font-size: 4rem;
             font-weight: 200;
             font-family: 'SF Mono', Monaco, monospace;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .session-dots {
@@ -150,17 +150,17 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             transition: all 0.3s;
         }
 
         .session-dot.completed {
-            background: #ff6b6b;
+            background: light-dark(#961313, #ff6b6b);
             box-shadow: 0 0 10px rgba(255,107,107,0.5);
         }
 
         .session-dot.current {
-            background: rgba(255,107,107,0.5);
+            background: light-dark(#96131380, rgba(255,107,107,0.5));
             animation: pulse 2s ease-in-out infinite;
         }
 
@@ -186,34 +186,34 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#961313, #ff6b6b), light-dark(#a32525, #ee5a5a));
+            color: light-dark(#0f0f0f, #fff);
         }
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(255,107,107,0.4);
         }
         .break-mode .btn-primary {
-            background: linear-gradient(135deg, #4ecdc4, #3dbdb5);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4), light-dark(#59b8b2, #3dbdb5));
         }
         .break-mode .btn-primary:hover {
             box-shadow: 0 8px 25px rgba(78,205,196,0.4);
         }
 
         .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: #888;
-            border: 1px solid rgba(255,255,255,0.15);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
         }
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .settings-panel {
-            background: rgba(0,0,0,0.6);
+            background: light-dark(#fcfcfc99, rgba(0,0,0,0.6));
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 16px;
             padding: 24px;
             width: 100%;
@@ -222,7 +222,7 @@
 
         .settings-title {
             font-size: 0.9rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 20px;
@@ -236,7 +236,7 @@
         }
 
         .setting-label {
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
         }
 
         .setting-value {
@@ -249,22 +249,22 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            color: light-dark(#0f0f0f, #fff);
             cursor: pointer;
             font-size: 1.2rem;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .setting-value button:hover { background: rgba(255,255,255,0.15); }
+        .setting-value button:hover { background: light-dark(#0f0f0f26, rgba(255,255,255,0.15)); }
 
         .setting-value span {
             min-width: 50px;
             text-align: center;
             font-size: 1.1rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .stats-row {
@@ -272,7 +272,7 @@
             justify-content: space-around;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
 
         .stat {
@@ -282,13 +282,13 @@
         .stat-value {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #ff6b6b;
+            color: light-dark(#961313, #ff6b6b);
         }
-        .break-mode .stat-value { color: #4ecdc4; }
+        .break-mode .stat-value { color: light-dark(#378b85, #4ecdc4); }
 
         .stat-label {
             font-size: 0.75rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-transform: uppercase;
             margin-top: 4px;
         }
@@ -298,11 +298,11 @@
             position: fixed;
             bottom: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc99, rgba(0,0,0,0.6));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
             padding: 8px 12px;
-            color: #666;
+            color: light-dark(#616161, #666);
             cursor: pointer;
             font-size: 0.9rem;
             display: flex;
@@ -310,8 +310,8 @@
             gap: 6px;
             z-index: 100;
         }
-        .sound-toggle:hover { color: #fff; }
-        .sound-toggle.active { color: #4ecdc4; }
+        .sound-toggle:hover { color: light-dark(#0f0f0f, #fff); }
+        .sound-toggle.active { color: light-dark(#378b85, #4ecdc4); }
 
         @media (max-width: 500px) {
             .timer-ring { width: 250px; height: 250px; }

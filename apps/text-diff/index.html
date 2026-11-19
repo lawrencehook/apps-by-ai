@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Diff - AI Showcase</title>
+    <title>Text Diff - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .editors {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -36,38 +36,38 @@
             .editors { grid-template-columns: 1fr; }
         }
         .editor-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             overflow: hidden;
         }
         .editor-header {
             padding: 12px 16px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .editor-title { color: #888; font-size: 0.9rem; }
-        .editor-title.original { color: #ff6b6b; }
-        .editor-title.modified { color: #4ecdc4; }
+        .editor-title { color: light-dark(#616161, #888); font-size: 0.9rem; }
+        .editor-title.original { color: light-dark(#961313, #ff6b6b); }
+        .editor-title.modified { color: light-dark(#378b85, #4ecdc4); }
         .clear-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #666;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #666);
             padding: 4px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
         }
-        .clear-btn:hover { color: #fff; }
+        .clear-btn:hover { color: light-dark(#0f0f0f, #fff); }
         textarea {
             width: 100%;
             min-height: 200px;
             background: transparent;
             border: none;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             padding: 16px;
             font-size: 0.95rem;
             line-height: 1.6;
@@ -75,11 +75,11 @@
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
         }
         textarea:focus { outline: none; }
-        textarea::placeholder { color: #444; }
+        textarea::placeholder { color: light-dark(#bdbdbd, #444); }
         .compare-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 14px 28px;
             border-radius: 6px;
             cursor: pointer;
@@ -87,32 +87,32 @@
             width: 100%;
             margin-bottom: 24px;
         }
-        .compare-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .compare-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .stats-bar {
             display: flex;
             gap: 24px;
             padding: 16px 20px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             margin-bottom: 16px;
         }
-        .stat { color: #888; font-size: 0.9rem; }
+        .stat { color: light-dark(#616161, #888); font-size: 0.9rem; }
         .stat span { font-weight: 600; margin-left: 4px; }
-        .stat.added span { color: #4ecdc4; }
-        .stat.removed span { color: #ff6b6b; }
-        .stat.unchanged span { color: #888; }
+        .stat.added span { color: light-dark(#378b85, #4ecdc4); }
+        .stat.removed span { color: light-dark(#961313, #ff6b6b); }
+        .stat.unchanged span { color: light-dark(#616161, #888); }
         .diff-output {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             overflow: hidden;
         }
         .diff-header {
             padding: 12px 16px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            color: #888;
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
         }
         .diff-content {
@@ -131,26 +131,26 @@
             border-radius: 3px;
         }
         .diff-line.added {
-            background: rgba(78, 205, 196, 0.15);
-            color: #4ecdc4;
+            background: light-dark(#44aea626, rgba(78, 205, 196, 0.15));
+            color: light-dark(#378b85, #4ecdc4);
         }
         .diff-line.removed {
-            background: rgba(255, 107, 107, 0.15);
-            color: #ff6b6b;
+            background: light-dark(#96131326, rgba(255, 107, 107, 0.15));
+            color: light-dark(#961313, #ff6b6b);
             text-decoration: line-through;
         }
         .diff-line.unchanged {
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .inline-diff .added-word {
-            background: rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 1px 3px;
             border-radius: 2px;
         }
         .inline-diff .removed-word {
-            background: rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
+            background: light-dark(#9613134c, rgba(255, 107, 107, 0.3));
+            color: light-dark(#961313, #ff6b6b);
             text-decoration: line-through;
             padding: 1px 3px;
             border-radius: 2px;
@@ -160,18 +160,18 @@
             gap: 8px;
         }
         .mode-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #666;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #666);
             padding: 4px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
         }
         .mode-btn.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
         }
     </style>
 </head>
@@ -215,7 +215,7 @@
                 </div>
             </div>
             <div class="diff-content" id="diffOutput">
-                <span style="color: #444;">Enter text in both fields and click "Compare Texts"</span>
+                <span style="color: light-dark(#bdbdbd, #444);">Enter text in both fields and click "Compare Texts"</span>
             </div>
         </div>
     </div>

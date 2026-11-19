@@ -3,60 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Formatter - AI Showcase</title>
+    <title>JSON Formatter - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .toolbar {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 16px;
             padding: 12px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
         }
         .toolbar-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.2s;
         }
-        .toolbar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .toolbar-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .toolbar-btn.primary {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
         }
-        .toolbar-btn.primary:hover { background: rgba(78, 205, 196, 0.3); }
+        .toolbar-btn.primary:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .indent-select {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 0.85rem;
@@ -68,9 +68,9 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
-        .status-badge.valid { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
-        .status-badge.invalid { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
-        .status-badge.empty { background: rgba(255,255,255,0.05); color: #666; }
+        .status-badge.valid { background: light-dark(#44aea633, rgba(78, 205, 196, 0.2)); color: light-dark(#378b85, #4ecdc4); }
+        .status-badge.invalid { background: light-dark(#96131333, rgba(255, 107, 107, 0.2)); color: light-dark(#961313, #ff6b6b); }
+        .status-badge.empty { background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05)); color: light-dark(#616161, #666); }
         .editors {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -80,39 +80,39 @@
             .editors { grid-template-columns: 1fr; }
         }
         .editor-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
-        .editor-panel.error { border-color: rgba(255, 107, 107, 0.5); }
+        .editor-panel.error { border-color: light-dark(#96131380, rgba(255, 107, 107, 0.5)); }
         .editor-header {
             padding: 10px 16px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .editor-title { color: #888; font-size: 0.85rem; }
+        .editor-title { color: light-dark(#616161, #888); font-size: 0.85rem; }
         .copy-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 4px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .copy-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         textarea {
             flex: 1;
             min-height: 500px;
             background: transparent;
             border: none;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             padding: 16px;
             font-size: 0.9rem;
             line-height: 1.5;
@@ -120,20 +120,20 @@
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
         }
         textarea:focus { outline: none; }
-        textarea::placeholder { color: #444; }
+        textarea::placeholder { color: light-dark(#bdbdbd, #444); }
         .error-message {
             padding: 12px 16px;
-            background: rgba(255, 107, 107, 0.1);
-            border-top: 1px solid rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            border-top: 1px solid light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            color: light-dark(#961313, #ff6b6b);
             font-size: 0.85rem;
             font-family: monospace;
         }
-        .json-string { color: #98c379; }
-        .json-number { color: #d19a66; }
-        .json-boolean { color: #56b6c2; }
-        .json-null { color: #c678dd; }
-        .json-key { color: #e06c75; }
+        .json-string { color: light-dark(#5c7e44, #98c379); }
+        .json-number { color: light-dark(#8a6038, #d19a66); }
+        .json-boolean { color: light-dark(#3d7d84, #56b6c2); }
+        .json-null { color: light-dark(#76328a, #c678dd); }
+        .json-key { color: light-dark(#923037, #e06c75); }
     </style>
 </head>
 <body>

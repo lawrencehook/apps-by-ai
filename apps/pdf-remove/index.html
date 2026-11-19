@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Remove Pages - AI Showcase</title>
+    <title>PDF Remove Pages - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
@@ -11,25 +11,25 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -38,11 +38,11 @@
             margin-bottom: 24px;
         }
         .drop-zone:hover, .drop-zone.dragover {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.05);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
         }
-        .drop-zone-text { color: #888; font-size: 1.1rem; }
-        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        .drop-zone-text { color: light-dark(#616161, #888); font-size: 1.1rem; }
+        .drop-zone-hint { color: light-dark(#616161, #555); font-size: 0.85rem; margin-top: 8px; }
         input[type="file"] { display: none; }
         .toolbar {
             display: flex;
@@ -52,9 +52,9 @@
             align-items: center;
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 10px 18px;
             border-radius: 6px;
             cursor: pointer;
@@ -64,20 +64,20 @@
             align-items: center;
             gap: 6px;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         button.danger {
-            background: rgba(255, 107, 107, 0.2);
-            border-color: rgba(255, 107, 107, 0.4);
-            color: #ff6b6b;
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            border-color: light-dark(#96131366, rgba(255, 107, 107, 0.4));
+            color: light-dark(#961313, #ff6b6b);
         }
-        button.danger:hover { background: rgba(255, 107, 107, 0.3); }
+        button.danger:hover { background: light-dark(#9613134c, rgba(255, 107, 107, 0.3)); }
         .spacer { flex: 1; }
         .page-grid {
             display: grid;
@@ -86,17 +86,17 @@
             margin-bottom: 24px;
         }
         .page-card {
-            background: rgba(255,255,255,0.03);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
         }
-        .page-card:hover { border-color: rgba(255,255,255,0.2); }
+        .page-card:hover { border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         .page-card.selected {
-            border-color: #ff6b6b;
+            border-color: light-dark(#961313, #ff6b6b);
             box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3);
             opacity: 0.6;
         }
@@ -107,8 +107,8 @@
             right: 8px;
             width: 24px;
             height: 24px;
-            background: #ff6b6b;
-            color: #fff;
+            background: light-dark(#961313, #ff6b6b);
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -118,7 +118,7 @@
         }
         .page-preview {
             aspect-ratio: 8.5/11;
-            background: #1a1a1f;
+            background: light-dark(#e0e0e4, #1a1a1f);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -133,27 +133,27 @@
             padding: 8px 10px;
             text-align: center;
         }
-        .page-number { font-size: 0.85rem; color: #888; }
+        .page-number { font-size: 0.85rem; color: light-dark(#616161, #888); }
         .status {
             margin-top: 24px;
             padding: 16px;
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             border-radius: 8px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             display: none;
         }
         .status.error {
-            background: rgba(255, 107, 107, 0.1);
-            color: #ff6b6b;
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            color: light-dark(#961313, #ff6b6b);
         }
         .status.show { display: block; }
         .hidden { display: none !important; }
         .select-hint {
-            color: #555;
+            color: light-dark(#616161, #555);
             font-size: 0.85rem;
         }
         .select-hint.warning {
-            color: #ff6b6b;
+            color: light-dark(#961313, #ff6b6b);
         }
     </style>
 </head>

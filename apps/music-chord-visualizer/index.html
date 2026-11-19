@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Chord Visualizer - AI Showcase</title>
+    <title>Music Chord Visualizer - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, light-dark(#ececf3, #0a0a12) 0%, light-dark(#d3d3e3, #1a1a2e) 100%);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             overflow-x: hidden;
         }
         .container {
@@ -26,14 +26,14 @@
             margin-bottom: 20px;
         }
         h1 { font-size: 1.5rem; font-weight: 600; }
-        .subtitle { color: #888; font-size: 0.9rem; margin-top: 4px; }
+        .subtitle { color: light-dark(#616161, #888); font-size: 0.9rem; margin-top: 4px; }
         .back-link {
-            color: #888; text-decoration: none; font-size: 14px;
-            padding: 8px 14px; background: rgba(255,255,255,0.05);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            color: light-dark(#616161, #888); text-decoration: none; font-size: 14px;
+            padding: 8px 14px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             transition: all 0.2s;
         }
-        .back-link:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
 
         .main-grid {
             display: grid;
@@ -42,8 +42,8 @@
         }
 
         .panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
@@ -52,7 +52,7 @@
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 16px;
         }
 
@@ -64,9 +64,9 @@
         }
 
         .chord-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px 8px;
             border-radius: 8px;
             cursor: pointer;
@@ -74,11 +74,11 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        .chord-btn:hover { background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.3); }
-        .chord-btn.active { background: rgba(100, 200, 255, 0.25); border-color: rgba(100, 200, 255, 0.5); }
+        .chord-btn:hover { background: light-dark(#136b9c26, rgba(100, 200, 255, 0.15)); border-color: light-dark(#136b9c4c, rgba(100, 200, 255, 0.3)); }
+        .chord-btn.active { background: light-dark(#136b9c40, rgba(100, 200, 255, 0.25)); border-color: light-dark(#136b9c80, rgba(100, 200, 255, 0.5)); }
 
         .chord-type-section { margin-bottom: 16px; }
-        .chord-type-label { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .chord-type-label { font-size: 12px; color: light-dark(#616161, #666); margin-bottom: 8px; }
 
         .visualizer-grid {
             display: grid;
@@ -88,7 +88,7 @@
 
         /* Piano Keyboard */
         .piano-container {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 12px;
             padding: 20px;
             overflow-x: auto;
@@ -102,8 +102,8 @@
         .white-key {
             width: 50px;
             height: 160px;
-            background: linear-gradient(to bottom, #fff 0%, #e8e8e8 100%);
-            border: 1px solid #999;
+            background: linear-gradient(to bottom, light-dark(#0f0f0f, #fff) 0%, light-dark(#252525, #e8e8e8) 100%);
+            border: 1px solid light-dark(#6e6e6e, #999);
             border-radius: 0 0 6px 6px;
             cursor: pointer;
             position: relative;
@@ -115,42 +115,42 @@
             align-items: center;
             padding-bottom: 10px;
         }
-        .white-key:hover { background: linear-gradient(to bottom, #f0f0f0 0%, #ddd 100%); }
+        .white-key:hover { background: linear-gradient(to bottom, light-dark(#1d1d1d, #f0f0f0) 0%, light-dark(#2f2f2f, #ddd) 100%); }
         .white-key.active {
-            background: linear-gradient(to bottom, #4ecdc4 0%, #26a69a 100%);
+            background: linear-gradient(to bottom, light-dark(#44aea6, #4ecdc4) 0%, light-dark(#6ecdc4, #26a69a) 100%);
             transform: translateY(2px);
         }
         .white-key .note-label {
             font-size: 11px;
-            color: #666;
+            color: light-dark(#616161, #666);
             font-weight: 500;
         }
-        .white-key.active .note-label { color: #fff; }
+        .white-key.active .note-label { color: light-dark(#0f0f0f, #fff); }
 
         .black-key {
             width: 30px;
             height: 100px;
-            background: linear-gradient(to bottom, #333 0%, #000 100%);
+            background: linear-gradient(to bottom, light-dark(#cdcdcd, #333) 0%, light-dark(#fcfcfc, #000) 100%);
             border-radius: 0 0 4px 4px;
             position: absolute;
             z-index: 2;
             cursor: pointer;
             transition: all 0.1s;
         }
-        .black-key:hover { background: linear-gradient(to bottom, #444 0%, #111 100%); }
+        .black-key:hover { background: linear-gradient(to bottom, light-dark(#bdbdbd, #444) 0%, light-dark(#ededed, #111) 100%); }
         .black-key.active {
-            background: linear-gradient(to bottom, #26a69a 0%, #00897b 100%);
+            background: linear-gradient(to bottom, light-dark(#6ecdc4, #26a69a) 0%, light-dark(#80efe4, #00897b) 100%);
             height: 95px;
         }
 
         /* Guitar Fretboard */
         .guitar-container {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 12px;
             padding: 20px;
             overflow-x: auto;
         }
-        .guitar-label { font-size: 12px; color: #888; margin-bottom: 12px; }
+        .guitar-label { font-size: 12px; color: light-dark(#616161, #888); margin-bottom: 12px; }
         .fretboard {
             display: flex;
             flex-direction: column;
@@ -165,34 +165,34 @@
         .string-label {
             width: 30px;
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-align: center;
         }
         .frets {
             display: flex;
             flex: 1;
-            background: linear-gradient(to right, #8b4513 0%, #654321 100%);
+            background: linear-gradient(to right, light-dark(#e0ab86, #8b4513) 0%, light-dark(#d4b89b, #654321) 100%);
             border-radius: 3px;
             position: relative;
         }
         .fret {
             flex: 1;
             height: 100%;
-            border-right: 3px solid #c0c0c0;
+            border-right: 3px solid light-dark(#4a4a4a, #c0c0c0);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
         }
-        .fret:first-child { border-left: 6px solid #f5f5dc; }
+        .fret:first-child { border-left: 6px solid light-dark(#343415, #f5f5dc); }
         .fret-dot {
             width: 20px;
             height: 20px;
-            background: rgba(78, 205, 196, 0.9);
+            background: light-dark(#44aea6e6, rgba(78, 205, 196, 0.9));
             border-radius: 50%;
             display: none;
             font-size: 10px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             align-items: center;
             justify-content: center;
             font-weight: 600;
@@ -203,28 +203,28 @@
             position: absolute;
             bottom: -20px;
             font-size: 10px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         /* Waveform Display */
         .waveform-container {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 12px;
             padding: 20px;
             display: flex;
             flex-direction: column;
         }
-        .waveform-label { font-size: 12px; color: #888; margin-bottom: 12px; }
+        .waveform-label { font-size: 12px; color: light-dark(#616161, #888); margin-bottom: 12px; }
         #waveformCanvas {
             width: 100%;
             height: 200px;
             border-radius: 8px;
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
         }
 
         /* Chord Info */
         .chord-info {
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             border-radius: 8px;
             padding: 16px;
             margin-top: 16px;
@@ -232,17 +232,17 @@
         .chord-name {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             margin-bottom: 8px;
         }
         .chord-notes {
             font-size: 14px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             margin-bottom: 8px;
         }
         .chord-intervals {
             font-size: 12px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         /* Controls */
@@ -253,9 +253,9 @@
         }
         .control-btn {
             flex: 1;
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 12px;
             border-radius: 8px;
             cursor: pointer;
@@ -263,7 +263,7 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        .control-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .control-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .volume-control {
@@ -271,7 +271,7 @@
         }
         .volume-control label {
             font-size: 12px;
-            color: #888;
+            color: light-dark(#616161, #888);
             display: block;
             margin-bottom: 8px;
         }
@@ -279,7 +279,7 @@
             width: 100%;
             -webkit-appearance: none;
             height: 6px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             outline: none;
         }
@@ -287,7 +287,7 @@
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: #4ecdc4;
+            background: light-dark(#44aea6, #4ecdc4);
             border-radius: 50%;
             cursor: pointer;
         }

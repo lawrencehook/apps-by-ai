@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arpeggios - AI Showcase</title>
+    <title>Arpeggios - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(135deg, #0a0a12 0%, #1a1025 100%);
+            background: linear-gradient(135deg, light-dark(#ececf3, #0a0a12) 0%, light-dark(#e3dbec, #1a1025) 100%);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             overflow-x: hidden;
         }
 
@@ -33,38 +33,38 @@
         .header-left h1 {
             font-size: 1.1rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4);
+            background: linear-gradient(135deg, light-dark(#b2286c, #ec4899), light-dark(#451da2, #8b5cf6), light-dark(#4acde4, #06b6d4));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         .header-left .subtitle {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.7rem;
             margin-top: 1px;
         }
 
         .back-link {
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             font-size: 10px;
             padding: 4px 10px;
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             transition: all 0.2s;
         }
 
         .back-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
+            color: light-dark(#0f0f0f, #fff);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
 
         /* Global Config Panel */
         .config-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 10px;
             padding: 10px 14px;
             margin-bottom: 6px;
@@ -87,17 +87,17 @@
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-weight: 500;
         }
 
         .config-group select,
         .config-group input[type="number"] {
             padding: 6px 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.15);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
             min-width: 100px;
             outline: none;
@@ -106,14 +106,14 @@
 
         .config-group select:focus,
         .config-group input:focus {
-            border-color: #ec4899;
+            border-color: light-dark(#b2286c, #ec4899);
         }
 
         .config-group input[type="range"] {
             width: 90px;
             -webkit-appearance: none;
             height: 5px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             outline: none;
         }
@@ -122,7 +122,7 @@
             -webkit-appearance: none;
             width: 16px;
             height: 16px;
-            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            background: linear-gradient(135deg, light-dark(#b2286c, #ec4899), light-dark(#451da2, #8b5cf6));
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(236, 72, 153, 0.4);
@@ -130,7 +130,7 @@
 
         .slider-value {
             font-size: 11px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             margin-top: 2px;
             font-family: 'SF Mono', Monaco, monospace;
         }
@@ -138,7 +138,7 @@
         .config-divider {
             width: 1px;
             height: 35px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             margin: 0 4px;
         }
 
@@ -152,7 +152,7 @@
         .viz-box {
             width: 140px;
             height: 50px;
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 6px;
             overflow: hidden;
         }
@@ -164,8 +164,8 @@
 
         /* Grid Container */
         .grid-section {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f0f, rgba(255,255,255,0.06));
             border-radius: 8px;
             padding: 6px;
             overflow-x: auto;
@@ -182,23 +182,23 @@
             font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #666;
+            color: light-dark(#616161, #666);
             font-weight: 600;
         }
 
         .grid-hint {
             font-size: 10px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
 
         .caps-indicator {
             display: none;
             padding: 4px 10px;
-            background: rgba(236, 72, 153, 0.2);
-            border: 1px solid rgba(236, 72, 153, 0.4);
+            background: light-dark(#b2286c33, rgba(236, 72, 153, 0.2));
+            border: 1px solid light-dark(#b2286c66, rgba(236, 72, 153, 0.4));
             border-radius: 5px;
             font-size: 10px;
-            color: #ec4899;
+            color: light-dark(#9e2460, #ec4899);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -230,18 +230,18 @@
             text-align: center;
             font-size: 9px;
             font-weight: 600;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             padding: 1px;
         }
 
         .column-header.sharp {
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .header-key {
             display: block;
             font-size: 7px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             opacity: 0.6;
         }
 
@@ -251,7 +251,7 @@
             align-items: center;
             font-size: 9px;
             font-weight: 500;
-            color: #888;
+            color: light-dark(#616161, #888);
             padding-right: 4px;
         }
 
@@ -259,8 +259,8 @@
         .chord-cell {
             min-height: 38px;
             height: 38px;
-            background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(145deg, light-dark(#0f0f0f0f, rgba(255,255,255,0.06)), light-dark(#0f0f0f05, rgba(255,255,255,0.02)));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 4px;
             cursor: pointer;
             display: flex;
@@ -268,7 +268,7 @@
             align-items: center;
             justify-content: center;
             font-size: 10px;
-            color: #666;
+            color: light-dark(#616161, #666);
             transition: all 0.15s;
             position: relative;
             overflow: hidden;
@@ -280,8 +280,8 @@
 
         .chord-cell .key-binding {
             font-size: 8px;
-            color: #888;
-            background: rgba(0,0,0,0.3);
+            color: light-dark(#616161, #888);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             padding: 1px 4px;
             border-radius: 2px;
             margin-top: 2px;
@@ -293,22 +293,22 @@
         }
 
         .chord-cell:hover {
-            background: linear-gradient(145deg, rgba(236, 72, 153, 0.15), rgba(139, 92, 246, 0.1));
-            border-color: rgba(236, 72, 153, 0.3);
+            background: linear-gradient(145deg, light-dark(#b2286c26, rgba(236, 72, 153, 0.15)), light-dark(#451da21a, rgba(139, 92, 246, 0.1)));
+            border-color: light-dark(#b2286c4c, rgba(236, 72, 153, 0.3));
             transform: scale(1.05);
             z-index: 10;
         }
 
         .chord-cell.active {
-            background: linear-gradient(145deg, rgba(236, 72, 153, 0.4), rgba(139, 92, 246, 0.3));
-            border-color: rgba(236, 72, 153, 0.6);
+            background: linear-gradient(145deg, light-dark(#b2286c66, rgba(236, 72, 153, 0.4)), light-dark(#451da24c, rgba(139, 92, 246, 0.3)));
+            border-color: light-dark(#b2286c99, rgba(236, 72, 153, 0.6));
             transform: scale(0.95);
             box-shadow: 0 0 25px rgba(236, 72, 153, 0.5);
         }
 
         .chord-cell .chord-name {
             font-weight: 600;
-            color: #ccc;
+            color: light-dark(#3f3f3f, #ccc);
             text-align: center;
             line-height: 1.2;
         }
@@ -316,7 +316,7 @@
         .chord-cell .ripple {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255,255,255,0.4);
+            background: light-dark(#0f0f0f66, rgba(255,255,255,0.4));
             transform: scale(0);
             animation: ripple 0.5s ease-out;
             pointer-events: none;
@@ -330,25 +330,25 @@
         }
 
         /* Row color coding */
-        .grid-row[data-type="Major"] .chord-cell { --row-color: #ec4899; }
-        .grid-row[data-type="Minor"] .chord-cell { --row-color: #8b5cf6; }
-        .grid-row[data-type="Dim"] .chord-cell { --row-color: #6366f1; }
-        .grid-row[data-type="Aug"] .chord-cell { --row-color: #14b8a6; }
-        .grid-row[data-type="Maj7"] .chord-cell { --row-color: #f43f5e; }
-        .grid-row[data-type="Min7"] .chord-cell { --row-color: #a855f7; }
-        .grid-row[data-type="Dom7"] .chord-cell { --row-color: #3b82f6; }
-        .grid-row[data-type="Sus2"] .chord-cell { --row-color: #22c55e; }
-        .grid-row[data-type="Sus4"] .chord-cell { --row-color: #10b981; }
-        .grid-row[data-type="Add9"] .chord-cell { --row-color: #f59e0b; }
-        .grid-row[data-type="6"] .chord-cell { --row-color: #ef4444; }
-        .grid-row[data-type="m6"] .chord-cell { --row-color: #d946ef; }
+        .grid-row[data-type="Major"] .chord-cell { --row-color: light-dark(#b2286c, #ec4899); }
+        .grid-row[data-type="Minor"] .chord-cell { --row-color: light-dark(#451da2, #8b5cf6); }
+        .grid-row[data-type="Dim"] .chord-cell { --row-color: light-dark(#21239c, #6366f1); }
+        .grid-row[data-type="Aug"] .chord-cell { --row-color: light-dark(#61dbcd, #14b8a6); }
+        .grid-row[data-type="Maj7"] .chord-cell { --row-color: light-dark(#ba213c, #f43f5e); }
+        .grid-row[data-type="Min7"] .chord-cell { --row-color: light-dark(#641ca8, #a855f7); }
+        .grid-row[data-type="Dom7"] .chord-cell { --row-color: light-dark(#205cbd, #3b82f6); }
+        .grid-row[data-type="Sus2"] .chord-cell { --row-color: light-dark(#55ce81, #22c55e); }
+        .grid-row[data-type="Sus4"] .chord-cell { --row-color: light-dark(#60deb4, #10b981); }
+        .grid-row[data-type="Add9"] .chord-cell { --row-color: light-dark(#dd9c2e, #f59e0b); }
+        .grid-row[data-type="6"] .chord-cell { --row-color: light-dark(#b62626, #ef4444); }
+        .grid-row[data-type="m6"] .chord-cell { --row-color: light-dark(#a225b4, #d946ef); }
 
         .chord-cell:hover {
-            border-color: var(--row-color, rgba(236, 72, 153, 0.3));
+            border-color: var(--row-color, light-dark(#b2286c4c, rgba(236, 72, 153, 0.3)));
         }
 
         .chord-cell.active {
-            border-color: var(--row-color, rgba(236, 72, 153, 0.6));
+            border-color: var(--row-color, light-dark(#b2286c99, rgba(236, 72, 153, 0.6)));
             box-shadow: 0 0 25px color-mix(in srgb, var(--row-color, #ec4899) 50%, transparent);
         }
 
@@ -356,7 +356,7 @@
         .now-playing {
             margin-top: 4px;
             padding: 4px 10px;
-            background: rgba(0,0,0,0.2);
+            background: light-dark(#fcfcfc33, rgba(0,0,0,0.2));
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -367,13 +367,13 @@
             font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .now-playing-chord {
             font-size: 14px;
             font-weight: 700;
-            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            background: linear-gradient(135deg, light-dark(#b2286c, #ec4899), light-dark(#451da2, #8b5cf6));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -381,7 +381,7 @@
 
         .now-playing-notes {
             font-size: 10px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-family: 'SF Mono', Monaco, monospace;
         }
 
@@ -394,11 +394,11 @@
 
         .key-hint {
             padding: 2px 6px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             font-size: 8px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         /* Favorites Bar */
@@ -408,7 +408,7 @@
             gap: 4px;
             margin-top: 4px;
             padding: 4px 8px;
-            background: rgba(0,0,0,0.2);
+            background: light-dark(#fcfcfc33, rgba(0,0,0,0.2));
             border-radius: 6px;
         }
 
@@ -416,21 +416,21 @@
             font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-right: 2px;
         }
 
         .favorite-slot {
             width: 44px;
             height: 22px;
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.15);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px dashed light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             border-radius: 3px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 8px;
-            color: #555;
+            color: light-dark(#616161, #555);
             cursor: pointer;
             transition: all 0.15s;
             position: relative;
@@ -438,14 +438,14 @@
 
         .favorite-slot.filled {
             border-style: solid;
-            border-color: rgba(236, 72, 153, 0.4);
-            background: rgba(236, 72, 153, 0.1);
-            color: #ccc;
+            border-color: light-dark(#b2286c66, rgba(236, 72, 153, 0.4));
+            background: light-dark(#b2286c1a, rgba(236, 72, 153, 0.1));
+            color: light-dark(#3f3f3f, #ccc);
         }
 
         .favorite-slot:hover {
-            border-color: rgba(236, 72, 153, 0.5);
-            background: rgba(236, 72, 153, 0.15);
+            border-color: light-dark(#b2286c80, rgba(236, 72, 153, 0.5));
+            background: light-dark(#b2286c26, rgba(236, 72, 153, 0.15));
         }
 
         .favorite-slot .slot-key {
@@ -453,7 +453,7 @@
             top: 0px;
             left: 2px;
             font-size: 6px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .favorite-slot .slot-chord {
@@ -469,18 +469,18 @@
 
         .favorites-actions button {
             padding: 2px 6px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 8px;
             cursor: pointer;
             transition: all 0.15s;
         }
 
         .favorites-actions button:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Key Signature & Theory Panel */
@@ -501,15 +501,15 @@
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .theory-group select {
             padding: 5px 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.15);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             border-radius: 5px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 12px;
             outline: none;
         }
@@ -522,10 +522,10 @@
 
         .prog-btn {
             padding: 6px 12px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.12);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1f, rgba(255,255,255,0.12));
             border-radius: 5px;
-            color: #999;
+            color: light-dark(#616161, #999);
             font-size: 11px;
             cursor: pointer;
             transition: all 0.15s;
@@ -533,43 +533,43 @@
         }
 
         .prog-btn:hover {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: rgba(139, 92, 246, 0.4);
-            color: #fff;
+            background: light-dark(#451da233, rgba(139, 92, 246, 0.2));
+            border-color: light-dark(#451da266, rgba(139, 92, 246, 0.4));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .prog-btn.active {
-            background: rgba(139, 92, 246, 0.3);
-            border-color: rgba(139, 92, 246, 0.5);
-            color: #fff;
+            background: light-dark(#451da24c, rgba(139, 92, 246, 0.3));
+            border-color: light-dark(#451da280, rgba(139, 92, 246, 0.5));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         /* Diatonic highlighting */
         .chord-cell.diatonic {
-            background: linear-gradient(145deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
-            border-color: rgba(34, 197, 94, 0.3);
+            background: linear-gradient(145deg, light-dark(#55ce8126, rgba(34, 197, 94, 0.15)), light-dark(#55ce810d, rgba(34, 197, 94, 0.05)));
+            border-color: light-dark(#55ce814c, rgba(34, 197, 94, 0.3));
         }
 
         .chord-cell.diatonic .chord-name {
-            color: #4ade80;
+            color: light-dark(#2d9553, #4ade80);
         }
 
         .chord-cell.tonic {
-            background: linear-gradient(145deg, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.1));
-            border-color: rgba(250, 204, 21, 0.4);
+            background: linear-gradient(145deg, light-dark(#ddb72033, rgba(250, 204, 21, 0.2)), light-dark(#ddb7201a, rgba(250, 204, 21, 0.1)));
+            border-color: light-dark(#ddb72066, rgba(250, 204, 21, 0.4));
         }
 
         .chord-cell.tonic .chord-name {
-            color: #fde047;
+            color: light-dark(#ab9317, #fde047);
         }
 
         .chord-cell.dominant {
-            background: linear-gradient(145deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
-            border-color: rgba(59, 130, 246, 0.3);
+            background: linear-gradient(145deg, light-dark(#205cbd26, rgba(59, 130, 246, 0.15)), light-dark(#205cbd0d, rgba(59, 130, 246, 0.05)));
+            border-color: light-dark(#205cbd4c, rgba(59, 130, 246, 0.3));
         }
 
         .chord-cell.dominant .chord-name {
-            color: #60a5fa;
+            color: light-dark(#18559f, #60a5fa);
         }
 
         .chord-cell.favorite {
@@ -582,7 +582,7 @@
             top: 1px;
             right: 2px;
             font-size: 7px;
-            color: #ec4899;
+            color: light-dark(#9e2460, #ec4899);
         }
 
         /* Loading */
@@ -592,7 +592,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #0a0a12;
+            background: light-dark(#ececf3, #0a0a12);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -607,7 +607,7 @@
 
         .loading-text {
             font-size: 18px;
-            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            background: linear-gradient(135deg, light-dark(#b2286c, #ec4899), light-dark(#451da2, #8b5cf6));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;

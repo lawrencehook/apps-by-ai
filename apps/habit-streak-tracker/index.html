@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Streak Tracker - AI Showcase</title>
+    <title>Habit Streak Tracker - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 20px;
@@ -41,19 +41,19 @@
         }
         .add-habit input {
             flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px 16px;
             border-radius: 8px;
             font-size: 1rem;
         }
-        .add-habit input:focus { outline: none; border-color: #4ecdc4; }
-        .add-habit input::placeholder { color: #555; }
+        .add-habit input:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
+        .add-habit input::placeholder { color: light-dark(#616161, #555); }
         .btn {
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4), light-dark(#70b5a6, #44a08d));
             border: none;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
@@ -67,8 +67,8 @@
         }
         .habits-list { display: flex; flex-direction: column; gap: 20px; }
         .habit-card {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
+            border: 1px solid light-dark(#0f0f0f0f, rgba(255,255,255,0.06));
             border-radius: 12px;
             padding: 20px;
         }
@@ -80,7 +80,7 @@
         }
         .habit-name {
             font-size: 1.2rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-weight: 500;
         }
         .habit-actions {
@@ -88,17 +88,17 @@
             gap: 8px;
         }
         .habit-actions button {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.2s;
         }
-        .habit-actions button:hover { background: rgba(255,255,255,0.1); color: #fff; }
-        .habit-actions .delete:hover { background: rgba(255,82,82,0.2); color: #ff5252; border-color: rgba(255,82,82,0.3); }
+        .habit-actions button:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
+        .habit-actions .delete:hover { background: light-dark(#aa151533, rgba(255,82,82,0.2)); color: light-dark(#aa1515, #ff5252); border-color: light-dark(#aa15154c, rgba(255,82,82,0.3)); }
         .habit-stats {
             display: flex;
             gap: 24px;
@@ -111,12 +111,12 @@
         .stat-value {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
         }
-        .stat-value.fire { color: #ff6b35; }
+        .stat-value.fire { color: light-dark(#ac3e15, #ff6b35); }
         .stat-label {
             font-size: 0.75rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -137,7 +137,7 @@
             width: 14px;
             height: 14px;
             border-radius: 3px;
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             cursor: pointer;
             transition: all 0.15s;
             position: relative;
@@ -146,16 +146,16 @@
             transform: scale(1.3);
             z-index: 10;
         }
-        .heatmap-day.level-1 { background: rgba(78, 205, 196, 0.3); }
-        .heatmap-day.level-2 { background: rgba(78, 205, 196, 0.5); }
-        .heatmap-day.level-3 { background: rgba(78, 205, 196, 0.7); }
-        .heatmap-day.level-4 { background: rgba(78, 205, 196, 1); }
+        .heatmap-day.level-1 { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .heatmap-day.level-2 { background: light-dark(#44aea680, rgba(78, 205, 196, 0.5)); }
+        .heatmap-day.level-3 { background: light-dark(#44aea6b2, rgba(78, 205, 196, 0.7)); }
+        .heatmap-day.level-4 { background: light-dark(#44aea6ff, rgba(78, 205, 196, 1)); }
         .heatmap-day.today {
-            outline: 2px solid #fff;
+            outline: 2px solid light-dark(#0f0f0f, #fff);
             outline-offset: 1px;
         }
         .heatmap-day.future {
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             cursor: default;
         }
         .heatmap-labels {
@@ -164,7 +164,7 @@
             gap: 3px;
             margin-right: 8px;
             font-size: 9px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
         .heatmap-labels span {
             height: 14px;
@@ -179,7 +179,7 @@
             margin-left: 28px;
             margin-bottom: 4px;
             font-size: 10px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
         .month-label {
             text-align: left;
@@ -190,7 +190,7 @@
             gap: 4px;
             margin-top: 12px;
             font-size: 11px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
         .legend-box {
             width: 12px;
@@ -199,12 +199,12 @@
         }
         .tooltip {
             position: fixed;
-            background: #1a1a2e;
-            border: 1px solid rgba(255,255,255,0.15);
+            background: light-dark(#d3d3e3, #1a1a2e);
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             padding: 8px 12px;
             border-radius: 6px;
             font-size: 12px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             pointer-events: none;
             z-index: 1000;
             display: none;
@@ -212,7 +212,7 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #555;
+            color: light-dark(#616161, #555);
         }
         .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
         .empty-state p { font-size: 1.1rem; }
@@ -220,12 +220,12 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,215,0,0.2));
-            border: 1px solid rgba(255,215,0,0.3);
+            background: linear-gradient(135deg, light-dark(#c2461833, rgba(255,107,53,0.2)), light-dark(#e4c72733, rgba(255,215,0,0.2)));
+            border: 1px solid light-dark(#e4c7274c, rgba(255,215,0,0.3));
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
-            color: #ffd700;
+            color: light-dark(#ac9515, #ffd700);
             margin-left: 12px;
         }
         @media (max-width: 600px) {

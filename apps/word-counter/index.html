@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Counter - AI Showcase</title>
+    <title>Word Counter - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -33,8 +33,8 @@
             margin-bottom: 24px;
         }
         .stat-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 16px;
             text-align: center;
@@ -42,17 +42,17 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 600;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-family: monospace;
         }
         .stat-label {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.85rem;
             margin-top: 4px;
         }
         .editor-container {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 24px;
@@ -61,25 +61,25 @@
             display: flex;
             gap: 8px;
             padding: 12px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
         .toolbar-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .toolbar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .toolbar-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         textarea {
             width: 100%;
             min-height: 300px;
             background: transparent;
             border: none;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             padding: 20px;
             font-size: 1rem;
             line-height: 1.6;
@@ -87,15 +87,15 @@
             font-family: inherit;
         }
         textarea:focus { outline: none; }
-        textarea::placeholder { color: #444; }
+        textarea::placeholder { color: light-dark(#bdbdbd, #444); }
         .details-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 20px;
         }
         .details-section h3 {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
             margin-bottom: 16px;
         }
@@ -108,10 +108,10 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
-        .detail-label { color: #666; }
-        .detail-value { color: #4ecdc4; font-family: monospace; }
+        .detail-label { color: light-dark(#616161, #666); }
+        .detail-value { color: light-dark(#378b85, #4ecdc4); font-family: monospace; }
     </style>
 </head>
 <body>

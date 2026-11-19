@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spin the Wheel - AI Showcase</title>
+    <title>Spin the Wheel - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .main-layout {
             display: grid;
             grid-template-columns: 1fr 300px;
@@ -62,14 +62,14 @@
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
-            border-top: 30px solid #fff;
+            border-top: 30px solid light-dark(#0f0f0f, #fff);
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
             z-index: 10;
         }
         .spin-btn {
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4), light-dark(#70b5a6, #44a08d));
             border: none;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             padding: 16px 48px;
             border-radius: 12px;
             cursor: pointer;
@@ -90,14 +90,14 @@
             margin-top: 24px;
             text-align: center;
         }
-        .result-label { color: #888; font-size: 0.9rem; margin-bottom: 8px; }
+        .result-label { color: light-dark(#616161, #888); font-size: 0.9rem; margin-bottom: 8px; }
         .result-value {
             font-size: 2rem;
             font-weight: 600;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             padding: 16px 24px;
-            background: rgba(78, 205, 196, 0.1);
-            border: 2px solid rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 2px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
             border-radius: 12px;
             min-height: 70px;
             display: flex;
@@ -105,52 +105,52 @@
             justify-content: center;
         }
         .sidebar {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
         .sidebar-title {
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1rem;
             margin-bottom: 16px;
         }
         textarea {
             width: 100%;
             height: 200px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             border-radius: 8px;
             font-size: 0.9rem;
             resize: vertical;
             margin-bottom: 12px;
         }
-        textarea:focus { outline: none; border-color: #4ecdc4; }
-        textarea::placeholder { color: #555; }
+        textarea:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
+        textarea::placeholder { color: light-dark(#616161, #555); }
         .sidebar-btn {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 10px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
             margin-bottom: 8px;
         }
-        .sidebar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .sidebar-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .presets {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
-        .preset-title { color: #666; font-size: 0.8rem; margin-bottom: 8px; }
+        .preset-title { color: light-dark(#616161, #666); font-size: 0.8rem; margin-bottom: 8px; }
         .preset-btn {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -158,41 +158,41 @@
             margin-right: 6px;
             margin-bottom: 6px;
         }
-        .preset-btn:hover { background: rgba(78, 205, 196, 0.2); }
+        .preset-btn:hover { background: light-dark(#44aea633, rgba(78, 205, 196, 0.2)); }
         .history {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
-        .history-title { color: #666; font-size: 0.8rem; margin-bottom: 8px; }
+        .history-title { color: light-dark(#616161, #666); font-size: 0.8rem; margin-bottom: 8px; }
         .history-list {
             max-height: 150px;
             overflow-y: auto;
         }
         .history-item {
             padding: 6px 10px;
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             border-radius: 4px;
             margin-bottom: 4px;
             font-size: 0.85rem;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
         }
         .share-link {
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
         .share-btn {
             width: 100%;
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 8px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .share-btn:hover { background: rgba(78, 205, 196, 0.2); }
+        .share-btn:hover { background: light-dark(#44aea633, rgba(78, 205, 196, 0.2)); }
     </style>
 </head>
 <body>

@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sort Lines - AI Showcase</title>
+    <title>Sort Lines - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .sort-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -33,8 +33,8 @@
             margin-bottom: 24px;
         }
         .sort-btn {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 6px;
             padding: 12px 16px;
             cursor: pointer;
@@ -42,24 +42,24 @@
             transition: all 0.2s;
         }
         .sort-btn:hover {
-            background: rgba(78, 205, 196, 0.1);
-            border-color: rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border-color: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
         }
         .sort-btn.active {
-            background: rgba(78, 205, 196, 0.15);
-            border-color: rgba(78, 205, 196, 0.5);
+            background: light-dark(#44aea626, rgba(78, 205, 196, 0.15));
+            border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5));
         }
-        .sort-btn .name { color: #fff; font-weight: 500; font-size: 0.9rem; }
-        .sort-btn .desc { color: #666; font-size: 0.75rem; margin-top: 2px; }
-        .sort-btn.active .name { color: #4ecdc4; }
+        .sort-btn .name { color: light-dark(#0f0f0f, #fff); font-weight: 500; font-size: 0.9rem; }
+        .sort-btn .desc { color: light-dark(#616161, #666); font-size: 0.75rem; margin-top: 2px; }
+        .sort-btn.active .name { color: light-dark(#378b85, #4ecdc4); }
         .options-row {
             display: flex;
             flex-wrap: wrap;
             gap: 16px;
             margin-bottom: 24px;
             padding: 12px 16px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
         }
         .option {
@@ -67,8 +67,8 @@
             align-items: center;
             gap: 8px;
         }
-        .option input { accent-color: #4ecdc4; }
-        .option label { color: #888; font-size: 0.85rem; }
+        .option input { accent-color: light-dark(#44aea6, #4ecdc4); }
+        .option label { color: light-dark(#616161, #888); font-size: 0.85rem; }
         .editors {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -78,37 +78,37 @@
             .editors { grid-template-columns: 1fr; }
         }
         .editor-panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             overflow: hidden;
         }
         .editor-header {
             padding: 12px 16px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border-bottom: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .editor-title { color: #888; font-size: 0.9rem; }
-        .line-count { color: #4ecdc4; font-size: 0.85rem; font-family: monospace; }
+        .editor-title { color: light-dark(#616161, #888); font-size: 0.9rem; }
+        .line-count { color: light-dark(#378b85, #4ecdc4); font-size: 0.85rem; font-family: monospace; }
         .copy-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 6px 14px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .copy-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         textarea {
             width: 100%;
             min-height: 400px;
             background: transparent;
             border: none;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             padding: 16px;
             font-size: 0.95rem;
             line-height: 1.6;
@@ -116,7 +116,7 @@
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
         }
         textarea:focus { outline: none; }
-        textarea::placeholder { color: #444; }
+        textarea::placeholder { color: light-dark(#bdbdbd, #444); }
     </style>
 </head>
 <body>

@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palette Generator - AI Showcase</title>
+    <title>Palette Generator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .controls {
             display: flex;
             gap: 16px;
@@ -38,7 +38,7 @@
             align-items: center;
             gap: 12px;
         }
-        .base-color label { color: #888; font-size: 0.9rem; }
+        .base-color label { color: light-dark(#616161, #888); font-size: 0.9rem; }
         .color-input {
             width: 50px;
             height: 50px;
@@ -50,26 +50,26 @@
         .color-input::-webkit-color-swatch-wrapper { padding: 0; }
         .color-input::-webkit-color-swatch { border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
         .mode-select {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px 16px;
             border-radius: 8px;
             font-size: 0.9rem;
             cursor: pointer;
         }
-        .mode-select:focus { outline: none; border-color: #4ecdc4; }
+        .mode-select:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
         .generate-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.9rem;
             margin-left: auto;
         }
-        .generate-btn:hover { background: rgba(78, 205, 196, 0.3); }
+        .generate-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .palette-display {
             display: flex;
             border-radius: 12px;
@@ -113,38 +113,38 @@
             margin-bottom: 24px;
         }
         .action-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .action-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .export-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
-        .export-title { color: #888; font-size: 0.9rem; margin-bottom: 16px; }
+        .export-title { color: light-dark(#616161, #888); font-size: 0.9rem; margin-bottom: 16px; }
         .export-formats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
         }
         .export-format {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 12px;
         }
-        .format-label { color: #666; font-size: 0.8rem; margin-bottom: 8px; }
+        .format-label { color: light-dark(#616161, #666); font-size: 0.8rem; margin-bottom: 8px; }
         .format-value {
             font-family: monospace;
             font-size: 0.85rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             word-break: break-all;
             max-height: 60px;
             overflow-y: auto;
@@ -152,13 +152,13 @@
         .copy-format {
             background: transparent;
             border: none;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             cursor: pointer;
             font-size: 0.8rem;
             float: right;
             margin-top: 8px;
         }
-        .tip { color: #666; font-size: 0.8rem; margin-top: 16px; text-align: center; }
+        .tip { color: light-dark(#616161, #666); font-size: 0.8rem; margin-top: 16px; text-align: center; }
     </style>
 </head>
 <body>

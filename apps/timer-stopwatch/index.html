@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer & Stopwatch - AI Showcase</title>
+    <title>Timer & Stopwatch - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 500px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .tabs {
             display: flex;
             gap: 4px;
@@ -33,24 +33,24 @@
         }
         .tab {
             flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 12px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.2s;
         }
-        .tab:hover { background: rgba(255,255,255,0.08); }
+        .tab:hover { background: light-dark(#0f0f0f14, rgba(255,255,255,0.08)); }
         .tab.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
         }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 20px;
@@ -58,16 +58,16 @@
         .time-display {
             font-size: 4rem;
             font-weight: 300;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             text-align: center;
             font-family: 'SF Mono', Monaco, monospace;
             padding: 20px;
         }
-        .time-display.warning { color: #ffa502; }
-        .time-display.danger { color: #ff6b6b; }
+        .time-display.warning { color: light-dark(#ac7715, #ffa502); }
+        .time-display.danger { color: light-dark(#961313, #ff6b6b); }
         .ms {
             font-size: 2rem;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .timer-inputs {
             display: flex;
@@ -80,21 +80,21 @@
         }
         .timer-input-group label {
             display: block;
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.75rem;
             margin-bottom: 4px;
         }
         .timer-input-group input {
             width: 70px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             border-radius: 6px;
             font-size: 1.5rem;
             text-align: center;
             font-family: 'SF Mono', Monaco, monospace;
-            color-scheme: dark;
+            color-scheme: inherit;
             -moz-appearance: textfield;
         }
         .timer-input-group input::-webkit-inner-spin-button,
@@ -102,7 +102,7 @@
             -webkit-appearance: none;
             margin: 0;
         }
-        .timer-input-group input:focus { outline: none; border-color: #4ecdc4; }
+        .timer-input-group input:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
         .presets {
             display: flex;
             gap: 8px;
@@ -111,24 +111,24 @@
             margin-bottom: 20px;
         }
         .preset-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#616161, #888);
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .preset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .preset-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .controls {
             display: flex;
             gap: 12px;
             justify-content: center;
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 14px 32px;
             border-radius: 8px;
             cursor: pointer;
@@ -136,17 +136,17 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         button.danger {
-            background: rgba(255, 107, 107, 0.2);
-            border-color: rgba(255, 107, 107, 0.4);
-            color: #ff6b6b;
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            border-color: light-dark(#96131366, rgba(255, 107, 107, 0.4));
+            color: light-dark(#961313, #ff6b6b);
         }
         .laps {
             max-height: 200px;
@@ -156,12 +156,12 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             font-family: monospace;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
         .lap:last-child { border-bottom: none; }
-        .lap-number { color: #4ecdc4; }
+        .lap-number { color: light-dark(#378b85, #4ecdc4); }
         .hidden { display: none !important; }
         @media (max-width: 400px) {
             .time-display { font-size: 2.5rem; }

@@ -3,47 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inverse Kinematics - AI Showcase</title>
+    <title>Inverse Kinematics - AI Showcase</title><script src="../../site-theme.js"></script>
 <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; font-family: system-ui, sans-serif; }
         canvas { display: block; touch-action: none; cursor: crosshair; }
         .controls {
-            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
-            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            position: fixed; top: 20px; left: 20px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            padding: 20px; border-radius: 8px; color: light-dark(#0f0f0f, #fff); font-size: 14px;
             width: 250px; max-height: calc(100vh - 40px); overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #888; margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
+        .controls p { color: light-dark(#616161, #888); margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 8px 14px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin-right: 6px; margin-bottom: 6px;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         .control-group { margin-bottom: 12px; }
-        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: light-dark(#616161, #888); font-size: 12px; }
         .control-group input[type="range"], .control-group select { width: 100%; }
         select {
-            background: #16161d; color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#e2e2e8, #16161d); color: light-dark(#0f0f0f, #fff); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             padding: 6px; border-radius: 4px; font-size: 13px;
         }
-        .check { display: flex; align-items: center; gap: 8px; color: #ccc; font-size: 13px; margin-bottom: 12px; }
-        .check label { margin: 0; color: #ccc; font-size: 13px; }
+        .check { display: flex; align-items: center; gap: 8px; color: light-dark(#3f3f3f, #ccc); font-size: 13px; margin-bottom: 12px; }
+        .check label { margin: 0; color: light-dark(#3f3f3f, #ccc); font-size: 13px; }
         .readout {
-            font-family: ui-monospace, monospace; font-size: 12px; color: #9ad;
-            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; line-height: 1.6;
+            font-family: ui-monospace, monospace; font-size: 12px; color: light-dark(#303f6d, #9ad);
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); padding-top: 10px; line-height: 1.6;
         }
-        .solver-note { color: #777; font-size: 12px; line-height: 1.4; margin: -4px 0 12px; }
+        .solver-note { color: light-dark(#616161, #777); font-size: 12px; line-height: 1.4; margin: -4px 0 12px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
-        .error { color: #f88; padding: 40px; font-size: 16px; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        .error { color: light-dark(#7e1010, #f88); padding: 40px; font-size: 16px; }
         @media (max-width: 600px) {
             .controls { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 42vh; padding: 14px; }
             .controls p { display: none; }

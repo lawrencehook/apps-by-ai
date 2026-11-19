@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dependency Graph Visualizer - AI Showcase</title>
+    <title>Dependency Graph Visualizer - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
@@ -13,10 +13,10 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            background: linear-gradient(135deg, light-dark(#dbd8ef, #0f0c29) 0%, light-dark(#a6a2ce, #302b63) 50%, light-dark(#c5c5d9, #24243e) 100%);
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             overflow: hidden;
         }
 
@@ -27,10 +27,10 @@
         }
 
         .sidebar {
-            background: rgba(0, 0, 0, 0.3);
+            background: light-dark(#fcfcfc4c, rgba(0, 0, 0, 0.3));
             padding: 20px;
             overflow-y: auto;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         header {
@@ -40,27 +40,27 @@
         h1 {
             font-size: 1.6rem;
             margin-bottom: 8px;
-            background: linear-gradient(90deg, #a8edea, #fed6e3, #d299c2);
+            background: linear-gradient(90deg, light-dark(#1f615e, #a8edea), light-dark(#3d091a, #fed6e3), light-dark(#6d3a5f, #d299c2));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         header p {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
         }
 
         .panel {
-            background: rgba(255, 255, 255, 0.05);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         .panel h2 {
             font-size: 0.85rem;
-            color: #a8edea;
+            color: light-dark(#1f615e, #a8edea);
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -69,10 +69,10 @@
         textarea {
             width: 100%;
             height: 200px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#fcfcfc4c, rgba(0, 0, 0, 0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 8px;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
             font-family: 'Monaco', 'Consolas', monospace;
             font-size: 11px;
             padding: 12px;
@@ -81,7 +81,7 @@
 
         textarea:focus {
             outline: none;
-            border-color: #a8edea;
+            border-color: light-dark(#1f615e, #a8edea);
         }
 
         .file-type-tabs {
@@ -93,10 +93,10 @@
         .file-type-tab {
             flex: 1;
             padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f0d, rgba(255, 255, 255, 0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             border-radius: 6px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.8rem;
             cursor: pointer;
             text-align: center;
@@ -104,22 +104,22 @@
         }
 
         .file-type-tab.active {
-            background: rgba(168, 237, 234, 0.2);
-            border-color: #a8edea;
-            color: #a8edea;
+            background: light-dark(#1f615e33, rgba(168, 237, 234, 0.2));
+            border-color: light-dark(#1f615e, #a8edea);
+            color: light-dark(#1f615e, #a8edea);
         }
 
         .file-type-tab:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
         }
 
         button {
             width: 100%;
             padding: 12px 20px;
-            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            background: linear-gradient(135deg, light-dark(#1f615e, #a8edea), light-dark(#3d091a, #fed6e3));
             border: none;
             border-radius: 8px;
-            color: #0f0c29;
+            color: light-dark(#dbd8ef, #0f0c29);
             font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
@@ -133,24 +133,24 @@
         }
 
         button.secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
 
         button.secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             box-shadow: none;
         }
 
         .sample-data {
             font-size: 0.8rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-top: 8px;
             text-align: center;
         }
 
         .sample-data a {
-            color: #a8edea;
+            color: light-dark(#1f615e, #a8edea);
             cursor: pointer;
             text-decoration: none;
         }
@@ -166,7 +166,7 @@
         }
 
         .stat-item {
-            background: rgba(0, 0, 0, 0.2);
+            background: light-dark(#fcfcfc33, rgba(0, 0, 0, 0.2));
             padding: 12px;
             border-radius: 8px;
             text-align: center;
@@ -174,14 +174,14 @@
 
         .stat-label {
             font-size: 0.7rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
         }
 
         .stat-value {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #a8edea;
+            color: light-dark(#1f615e, #a8edea);
             margin-top: 4px;
         }
 
@@ -211,10 +211,10 @@
             height: 40px;
             padding: 0;
             margin-top: 0;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: light-dark(#fcfcfc80, rgba(0, 0, 0, 0.5));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1.2rem;
             font-weight: normal;
             cursor: pointer;
@@ -225,15 +225,15 @@
         }
 
         .control-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             transform: none;
             box-shadow: none;
         }
 
         .tooltip {
             position: absolute;
-            background: rgba(15, 12, 41, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: light-dark(#dbd8eff2, rgba(15, 12, 41, 0.95));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255, 255, 255, 0.2));
             border-radius: 8px;
             padding: 12px 16px;
             font-size: 12px;
@@ -245,17 +245,17 @@
 
         .tooltip-title {
             font-weight: 600;
-            color: #a8edea;
+            color: light-dark(#1f615e, #a8edea);
             margin-bottom: 4px;
         }
 
         .tooltip-version {
-            color: #fed6e3;
+            color: light-dark(#3d091a, #fed6e3);
             font-size: 11px;
         }
 
         .tooltip-deps {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 11px;
             margin-top: 8px;
         }
@@ -271,18 +271,18 @@
             justify-content: space-between;
             align-items: center;
             padding: 8px;
-            background: rgba(0, 0, 0, 0.2);
+            background: light-dark(#fcfcfc33, rgba(0, 0, 0, 0.2));
             border-radius: 6px;
             margin-bottom: 4px;
             font-size: 0.85rem;
         }
 
         .dep-name {
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
 
         .dep-connections {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.75rem;
         }
 
@@ -298,7 +298,7 @@
             align-items: center;
             gap: 6px;
             font-size: 0.75rem;
-            color: #888;
+            color: light-dark(#616161, #888);
         }
 
         .legend-color {
@@ -311,19 +311,19 @@
             position: fixed;
             top: 20px;
             left: 370px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             font-size: 14px;
             padding: 10px 16px;
-            background: rgba(0, 0, 0, 0.5);
+            background: light-dark(#fcfcfc80, rgba(0, 0, 0, 0.5));
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255, 255, 255, 0.1));
             transition: color 0.2s;
             z-index: 100;
         }
 
         .back-link:hover {
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
 
         @media (max-width: 900px) {
@@ -357,7 +357,7 @@
                 </div>
                 <textarea id="inputText" placeholder="Paste your package.json or requirements.txt content here..."></textarea>
                 <button id="visualizeBtn">Visualize Dependencies</button>
-                <p class="sample-data" id="parseError" style="color: #ff8a8a;" hidden></p>
+                <p class="sample-data" id="parseError" style="color: light-dark(#7c0f0f, #ff8a8a);" hidden></p>
                 <p class="sample-data">Or try with <a id="loadSample">sample data</a></p>
             </div>
 

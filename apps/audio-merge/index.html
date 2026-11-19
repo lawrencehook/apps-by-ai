@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Merge - AI Showcase</title>
+    <title>Audio Merge - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 12px;
             padding: 60px 40px;
             text-align: center;
@@ -36,18 +36,18 @@
             margin-bottom: 24px;
         }
         .drop-zone:hover, .drop-zone.dragover {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.05);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
         }
-        .drop-zone-text { color: #888; font-size: 1.1rem; }
-        .drop-zone-hint { color: #555; font-size: 0.85rem; margin-top: 8px; }
+        .drop-zone-text { color: light-dark(#616161, #888); font-size: 1.1rem; }
+        .drop-zone-hint { color: light-dark(#616161, #555); font-size: 0.85rem; margin-top: 8px; }
         input[type="file"] { display: none; }
         .files-list {
             margin-bottom: 24px;
         }
         .file-item {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 8px;
@@ -60,19 +60,19 @@
             border-style: dashed;
         }
         .file-item.drag-over {
-            border-color: #4ecdc4;
-            background: rgba(78, 205, 196, 0.1);
+            border-color: light-dark(#44aea6, #4ecdc4);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
         }
         .file-order {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             min-width: 30px;
         }
         .file-waveform {
             width: 120px;
             height: 40px;
-            background: #1a1a1f;
+            background: light-dark(#e0e0e4, #1a1a1f);
             border-radius: 4px;
             flex-shrink: 0;
         }
@@ -87,33 +87,33 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .file-meta { color: #666; font-size: 0.85rem; }
+        .file-meta { color: light-dark(#616161, #666); font-size: 0.85rem; }
         .file-actions {
             display: flex;
             gap: 8px;
         }
         .drag-handle {
             cursor: grab;
-            color: #555;
+            color: light-dark(#616161, #555);
             padding: 8px;
             font-size: 1.2rem;
         }
-        .drag-handle:hover { color: #888; }
+        .drag-handle:hover { color: light-dark(#616161, #888); }
         .remove-btn {
-            background: rgba(255,100,100,0.1);
-            border: 1px solid rgba(255,100,100,0.3);
-            color: #ff6b6b;
+            background: light-dark(#9c13131a, rgba(255,100,100,0.1));
+            border: 1px solid light-dark(#9c13134c, rgba(255,100,100,0.3));
+            color: light-dark(#961313, #ff6b6b);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
         }
         .remove-btn:hover {
-            background: rgba(255,100,100,0.2);
+            background: light-dark(#9c131333, rgba(255,100,100,0.2));
         }
         .total-info {
-            background: rgba(78, 205, 196, 0.1);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 24px;
@@ -121,11 +121,11 @@
             justify-content: space-between;
             align-items: center;
         }
-        .total-label { color: #888; }
-        .total-value { color: #4ecdc4; font-size: 1.2rem; font-weight: 600; font-family: monospace; }
+        .total-label { color: light-dark(#616161, #888); }
+        .total-value { color: light-dark(#378b85, #4ecdc4); font-size: 1.2rem; font-weight: 600; font-family: monospace; }
         .gap-setting {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 24px;
@@ -133,21 +133,21 @@
             align-items: center;
             gap: 16px;
         }
-        .gap-setting label { color: #888; }
+        .gap-setting label { color: light-dark(#616161, #888); }
         .gap-setting input {
             width: 100px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 8px 12px;
             border-radius: 6px;
             font-size: 1rem;
         }
-        .gap-setting span { color: #666; font-size: 0.85rem; }
+        .gap-setting span { color: light-dark(#616161, #666); font-size: 0.85rem; }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 14px 28px;
             border-radius: 6px;
             cursor: pointer;
@@ -155,24 +155,24 @@
             transition: all 0.2s;
             width: 100%;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
             margin-top: 12px;
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .status {
             margin-top: 24px;
             padding: 16px;
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             border-radius: 8px;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             display: none;
             text-align: center;
         }

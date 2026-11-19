@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Name Generator - AI Showcase</title>
+    <title>Name Generator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .controls {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -33,28 +33,28 @@
             margin-bottom: 24px;
         }
         .control-group {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 16px;
         }
         .control-label {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 8px;
             display: block;
         }
         select, input[type="number"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             border-radius: 8px;
             font-size: 0.95rem;
         }
-        select:focus, input:focus { outline: none; border-color: #4ecdc4; }
-        select option { background: #1a1a2e; color: #fff; }
+        select:focus, input:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
+        select option { background: light-dark(#d3d3e3, #1a1a2e); color: light-dark(#0f0f0f, #fff); }
         .checkbox-group {
             display: flex;
             flex-wrap: wrap;
@@ -69,17 +69,17 @@
         .checkbox-item input {
             width: 18px;
             height: 18px;
-            accent-color: #4ecdc4;
+            accent-color: light-dark(#44aea6, #4ecdc4);
         }
         .checkbox-item label {
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 0.9rem;
         }
         .generate-btn {
             width: 100%;
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4), light-dark(#70b5a6, #44a08d));
             border: none;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             padding: 16px;
             border-radius: 12px;
             cursor: pointer;
@@ -94,8 +94,8 @@
             box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
         }
         .results {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
@@ -105,26 +105,26 @@
             align-items: center;
             margin-bottom: 16px;
         }
-        .results-title { color: #888; font-size: 0.9rem; }
+        .results-title { color: light-dark(#616161, #888); font-size: 0.9rem; }
         .results-actions { display: flex; gap: 8px; }
         .action-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.85rem;
         }
-        .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .action-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .names-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 12px;
         }
         .name-card {
-            background: rgba(78, 205, 196, 0.05);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 8px;
             padding: 16px;
             text-align: center;
@@ -132,26 +132,26 @@
             transition: all 0.2s;
         }
         .name-card:hover {
-            background: rgba(78, 205, 196, 0.1);
+            background: light-dark(#44aea61a, rgba(78, 205, 196, 0.1));
             transform: translateY(-2px);
         }
         .name-card.selected {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
         .name-text {
             font-size: 1.1rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 4px;
         }
         .name-meta {
             font-size: 0.75rem;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
         .favorites {
             margin-top: 24px;
             padding-top: 24px;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
         }
         .favorites-header {
             display: flex;
@@ -159,16 +159,16 @@
             align-items: center;
             margin-bottom: 12px;
         }
-        .favorites-title { color: #888; font-size: 0.9rem; }
+        .favorites-title { color: light-dark(#616161, #888); font-size: 0.9rem; }
         .favorites-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
         .favorite-tag {
-            background: rgba(255, 107, 107, 0.1);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
+            background: light-dark(#9613131a, rgba(255, 107, 107, 0.1));
+            border: 1px solid light-dark(#9613134c, rgba(255, 107, 107, 0.3));
+            color: light-dark(#961313, #ff6b6b);
             padding: 6px 12px;
             border-radius: 16px;
             font-size: 0.85rem;
@@ -183,7 +183,7 @@
         .favorite-tag .remove:hover { opacity: 1; }
         .empty-state {
             text-align: center;
-            color: #555;
+            color: light-dark(#616161, #555);
             padding: 24px;
         }
     </style>

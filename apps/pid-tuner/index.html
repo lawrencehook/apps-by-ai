@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PID Tuner - AI Showcase</title>
+    <title>PID Tuner - AI Showcase</title><script src="../../site-theme.js"></script>
 <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        body { background: light-dark(#efeff3, #0a0a0f); overflow: hidden; font-family: system-ui, sans-serif; }
         canvas { display: block; touch-action: none; cursor: ns-resize; }
         .controls {
-            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
-            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            position: fixed; top: 20px; left: 20px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            padding: 20px; border-radius: 8px; color: light-dark(#0f0f0f, #fff); font-size: 14px;
             width: 260px; max-height: calc(100vh - 40px); overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #888; margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
+        .controls p { color: light-dark(#616161, #888); margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 7px 11px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 7px 11px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin-right: 4px; margin-bottom: 6px;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
         .control-group { margin-bottom: 10px; }
-        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group label { display: block; margin-bottom: 4px; color: light-dark(#616161, #888); font-size: 12px; }
         .control-group input[type="range"] { width: 100%; }
-        .kp { color: #ffa94d; } .ki { color: #69db7c; } .kd { color: #b197fc; }
+        .kp { color: light-dark(#ac6315, #ffa94d); } .ki { color: light-dark(#338f42, #69db7c); } .kd { color: light-dark(#2a1171, #b197fc); }
         .check { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .check label { color: #ccc; font-size: 13px; }
-        .section { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
+        .check label { color: light-dark(#3f3f3f, #ccc); font-size: 13px; }
+        .section { color: light-dark(#616161, #666); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
         .readout {
-            font-family: ui-monospace, monospace; font-size: 12px; color: #9ad; white-space: pre;
-            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 8px; line-height: 1.6;
+            font-family: ui-monospace, monospace; font-size: 12px; color: light-dark(#303f6d, #9ad); white-space: pre;
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); padding-top: 10px; margin-top: 8px; line-height: 1.6;
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
-        .error { color: #f88; padding: 40px; font-size: 16px; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
+        .error { color: light-dark(#7e1010, #f88); padding: 40px; font-size: 16px; }
         @media (max-width: 700px) {
             .controls { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 42vh; padding: 14px; }
             .controls p { display: none; }

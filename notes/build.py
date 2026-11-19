@@ -45,7 +45,7 @@ def tree(base, current):
 def shell(title, body, base='', current='', description='A personal reference for mathematics, computer science, and theory of computation.'):
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">{MARK}<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(title)} · Notes</title><meta name="description" content="{e(description, quote=True)}">
+<title>{e(title)} · Notes</title><script src="{base}../site-theme.js"></script><meta name="description" content="{e(description, quote=True)}">
 <link rel="icon" href="{base}../favicons/favicon.ico"><link rel="stylesheet" href="{asset(base,"style.css")}">
 <script src="{asset(base,"search-index.js")}" defer></script><script src="{asset(base,"app.js")}" defer></script></head>
 <body data-base="{base}"><a class="skip" href="#main">Skip to content</a>
@@ -134,7 +134,7 @@ def build():
         old.parent.mkdir(parents=True, exist_ok=True)
         prefix = '../' * len(relative.parts)
         target = prefix + 'notes/' + relative.as_posix()
-        old.write_text('<!doctype html><html lang="en"><head><meta charset="utf-8">'+MARK+'<meta name="viewport" content="width=device-width,initial-scale=1"><title>Moved to Notes</title><link rel="canonical" href="'+target+'"><script>location.replace('+json.dumps(target)+'+location.search+location.hash);</script></head><body><p>This page is now in <a href="'+target+'">Notes</a>.</p></body></html>', encoding='utf-8')
+        old.write_text('<!doctype html><html lang="en"><head><meta charset="utf-8">'+MARK+'<meta name="viewport" content="width=device-width,initial-scale=1"><title>Moved to Notes</title><script src="'+prefix+'site-theme.js"></script>\n<link rel="icon" href="'+prefix+'favicons/favicon.ico"><link rel="canonical" href="'+target+'"><script>location.replace('+json.dumps(target)+'+location.search+location.hash);</script></head><body><p>This page is now in <a href="'+target+'">Notes</a>.</p></body></html>', encoding='utf-8')
     prune(ROOT, set(pages)); prune(ROOT.parent / 'math', set(pages))
     print(f'Built {len(TOPICS)} sheets, {len(FIELDS)} branches, and the index.')
 

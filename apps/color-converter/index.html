@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Converter - AI Showcase</title>
+    <title>Color Converter - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .color-preview {
             height: 100px;
             border-radius: 12px;
@@ -39,8 +39,8 @@
             transition: background-color 0.2s;
         }
         .input-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -52,27 +52,27 @@
         }
         .input-row:last-child { margin-bottom: 0; }
         .format-select {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 14px;
             border-radius: 8px;
             font-size: 0.9rem;
             width: 120px;
         }
-        .format-select:focus { outline: none; border-color: #4ecdc4; }
+        .format-select:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
         .color-input {
             flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 14px;
             border-radius: 8px;
             font-family: monospace;
             font-size: 1rem;
         }
-        .color-input:focus { outline: none; border-color: #4ecdc4; }
-        .color-input.error { border-color: #ff6b6b; }
+        .color-input:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
+        .color-input.error { border-color: light-dark(#961313, #ff6b6b); }
         .color-picker-native {
             width: 50px;
             height: 50px;
@@ -84,43 +84,43 @@
         .color-picker-native::-webkit-color-swatch-wrapper { padding: 0; }
         .color-picker-native::-webkit-color-swatch { border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
         .output-section {
-            background: rgba(78, 205, 196, 0.05);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 12px;
             padding: 24px;
         }
-        .output-title { color: #888; font-size: 0.9rem; margin-bottom: 16px; }
+        .output-title { color: light-dark(#616161, #888); font-size: 0.9rem; margin-bottom: 16px; }
         .output-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 14px;
-            background: rgba(255,255,255,0.02);
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
             border-radius: 8px;
             margin-bottom: 8px;
         }
         .output-row:last-child { margin-bottom: 0; }
-        .output-label { color: #888; font-size: 0.85rem; min-width: 60px; }
+        .output-label { color: light-dark(#616161, #888); font-size: 0.85rem; min-width: 60px; }
         .output-value {
             flex: 1;
             font-family: monospace;
             font-size: 0.95rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin: 0 12px;
         }
         .copy-btn {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
         }
-        .copy-btn:hover { background: rgba(78, 205, 196, 0.3); }
-        .copy-btn.copied { background: rgba(78, 205, 196, 0.5); }
+        .copy-btn:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .copy-btn.copied { background: light-dark(#44aea680, rgba(78, 205, 196, 0.5)); }
         .error-msg {
-            color: #ff6b6b;
+            color: light-dark(#961313, #ff6b6b);
             font-size: 0.85rem;
             margin-top: 8px;
             display: none;

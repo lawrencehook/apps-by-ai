@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coin Flip - AI Showcase</title>
+    <title>Coin Flip - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 500px;
@@ -19,14 +19,14 @@
             padding: 40px 20px;
             text-align: center;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .coin-container {
             perspective: 1000px;
             margin: 40px 0;
@@ -72,27 +72,27 @@
             border: 4px solid;
         }
         .coin-heads {
-            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
-            border-color: #cc8800;
-            color: #8b6914;
+            background: linear-gradient(135deg, light-dark(#e4c727, #ffd700) 0%, light-dark(#e4a527, #ffaa00) 100%);
+            border-color: light-dark(#eab752, #cc8800);
+            color: light-dark(#dfc686, #8b6914);
         }
         .coin-tails {
-            background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%);
-            border-color: #888;
-            color: #555;
+            background: linear-gradient(135deg, light-dark(#4a4a4a, #c0c0c0) 0%, light-dark(#686868, #a0a0a0) 100%);
+            border-color: light-dark(#7e7e7e, #888);
+            color: light-dark(#616161, #555);
             transform: rotateY(180deg);
         }
         .result-text {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             margin: 20px 0;
             min-height: 1.2em;
         }
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 16px 48px;
             border-radius: 8px;
             cursor: pointer;
@@ -100,7 +100,7 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .stats {
             margin-top: 40px;
@@ -114,26 +114,26 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
         .stat-label {
             font-size: 0.85rem;
-            color: #666;
+            color: light-dark(#616161, #666);
             margin-top: 4px;
         }
         .stat-percent {
             font-size: 0.9rem;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
         }
         .reset-btn {
             margin-top: 20px;
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
             padding: 8px 20px;
             font-size: 0.9rem;
         }
-        .reset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .reset-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
     </style>
 </head>
 <body>

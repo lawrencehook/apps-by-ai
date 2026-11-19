@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tip Calculator - AI Showcase</title>
+    <title>Tip Calculator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 500px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .calc-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 24px;
@@ -38,7 +38,7 @@
         }
         .input-group label {
             display: block;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
             margin-bottom: 8px;
         }
@@ -50,7 +50,7 @@
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 1.2rem;
         }
         .input-with-symbol input {
@@ -58,17 +58,17 @@
         }
         input[type="number"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 16px;
             border-radius: 8px;
             font-size: 1.2rem;
-            color-scheme: dark;
+            color-scheme: inherit;
         }
         input[type="number"]:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
         .tip-buttons {
             display: grid;
@@ -77,9 +77,9 @@
             margin-bottom: 16px;
         }
         .tip-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             padding: 14px;
             border-radius: 8px;
             cursor: pointer;
@@ -87,13 +87,13 @@
             transition: all 0.2s;
         }
         .tip-btn:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
         }
         .tip-btn.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: rgba(78, 205, 196, 0.5);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea680, rgba(78, 205, 196, 0.5));
+            color: light-dark(#378b85, #4ecdc4);
         }
         .custom-tip {
             display: flex;
@@ -104,7 +104,7 @@
             flex: 1;
         }
         .custom-tip span {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 1.2rem;
         }
         .split-section {
@@ -113,9 +113,9 @@
             gap: 16px;
         }
         .split-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#616161, #888);
             width: 44px;
             height: 44px;
             border-radius: 8px;
@@ -125,21 +125,21 @@
             align-items: center;
             justify-content: center;
         }
-        .split-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .split-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         .split-value {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             min-width: 40px;
             text-align: center;
         }
         .split-label {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.9rem;
         }
         .results {
-            background: rgba(78, 205, 196, 0.05);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 12px;
             padding: 24px;
         }
@@ -148,27 +148,27 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
         .result-row:last-child {
             border-bottom: none;
             padding-top: 16px;
             margin-top: 8px;
-            border-top: 2px solid rgba(78, 205, 196, 0.3);
+            border-top: 2px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
         }
-        .result-label { color: #888; }
+        .result-label { color: light-dark(#616161, #888); }
         .result-value {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-family: monospace;
         }
         .result-row:last-child .result-value {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 1.5rem;
         }
         .per-person {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 0.85rem;
         }
         @media (max-width: 400px) {

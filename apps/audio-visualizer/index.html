@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Visualizer - AI Showcase</title>
+    <title>Audio Visualizer - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             overflow: hidden;
             font-family: system-ui, sans-serif;
             display: flex;
@@ -18,52 +18,52 @@
         }
         canvas { display: block; position: absolute; top: 0; left: 0; }
         .controls {
-            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
-            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
-            min-width: 260px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; left: 20px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            padding: 20px; border-radius: 8px; color: light-dark(#0f0f0f, #fff); font-size: 14px;
+            min-width: 260px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100; max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
-        .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
+        .controls p { color: light-dark(#616161, #666); margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
         button {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; padding: 10px 16px; border-radius: 4px; cursor: pointer;
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#0f0f0f, #fff); padding: 10px 16px; border-radius: 4px; cursor: pointer;
             font-size: 13px; margin-right: 6px; margin-bottom: 6px; transition: all 0.2s;
         }
-        button:hover { background: rgba(255,255,255,0.2); }
-        button.active { background: rgba(100, 200, 255, 0.3); border-color: rgba(100, 200, 255, 0.5); }
-        button.primary { background: rgba(100, 200, 255, 0.3); border-color: rgba(100, 200, 255, 0.5); }
+        button:hover { background: light-dark(#0f0f0f33, rgba(255,255,255,0.2)); }
+        button.active { background: light-dark(#136b9c4c, rgba(100, 200, 255, 0.3)); border-color: light-dark(#136b9c80, rgba(100, 200, 255, 0.5)); }
+        button.primary { background: light-dark(#136b9c4c, rgba(100, 200, 255, 0.3)); border-color: light-dark(#136b9c80, rgba(100, 200, 255, 0.5)); }
         .control-group { margin-bottom: 16px; }
-        .control-group label { display: block; margin-bottom: 6px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .control-group label { display: block; margin-bottom: 6px; color: light-dark(#616161, #888); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
         .control-group input[type="range"] { width: 100%; }
         select {
-            width: 100%; padding: 8px; background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
-            color: #fff; font-size: 13px;
+            width: 100%; padding: 8px; background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border-radius: 4px;
+            color: light-dark(#0f0f0f, #fff); font-size: 13px;
         }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .source-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
         .file-input { display: none; }
         .status {
-            padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px;
-            margin-bottom: 16px; font-size: 12px; color: #888;
+            padding: 10px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05)); border-radius: 4px;
+            margin-bottom: 16px; font-size: 12px; color: light-dark(#616161, #888);
         }
-        .status.active { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+        .status.active { color: light-dark(#2d9553, #4ade80); background: light-dark(#35b1621a, rgba(74, 222, 128, 0.1)); }
         .viz-modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
         .viz-mode {
-            padding: 12px; text-align: center; background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer;
+            padding: 12px; text-align: center; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); border-radius: 6px; cursor: pointer;
             transition: all 0.2s;
         }
-        .viz-mode:hover { background: rgba(255,255,255,0.1); }
-        .viz-mode.active { background: rgba(100, 200, 255, 0.2); border-color: rgba(100, 200, 255, 0.4); }
+        .viz-mode:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
+        .viz-mode.active { background: light-dark(#136b9c33, rgba(100, 200, 255, 0.2)); border-color: light-dark(#136b9c66, rgba(100, 200, 255, 0.4)); }
         .viz-mode .icon { font-size: 24px; margin-bottom: 4px; }
-        .viz-mode .name { font-size: 11px; color: #aaa; }
+        .viz-mode .name { font-size: 11px; color: light-dark(#5e5e5e, #aaa); }
         .color-row { display: flex; gap: 10px; }
         .color-item { flex: 1; }
         .color-item input { width: 100%; height: 32px; border: none; border-radius: 4px; cursor: pointer; }

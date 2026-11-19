@@ -3,39 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UUID Generator - AI Showcase</title>
+    <title>UUID Generator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 700px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 20px;
         }
         .uuid-display {
             position: relative;
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 8px;
             padding: 16px;
             padding-right: 50px;
@@ -44,7 +44,7 @@
         .uuid-text {
             font-size: 1.1rem;
             font-family: 'SF Mono', Monaco, monospace;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             overflow-x: auto;
             white-space: nowrap;
         }
@@ -53,9 +53,9 @@
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             width: 32px;
             height: 32px;
             border-radius: 6px;
@@ -66,21 +66,21 @@
             opacity: 0.6;
             transition: opacity 0.2s;
         }
-        .copy-btn:hover { opacity: 1; background: rgba(78, 205, 196, 0.3); }
-        .copy-btn.copied { opacity: 1; background: rgba(78, 205, 196, 0.4); }
+        .copy-btn:hover { opacity: 1; background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
+        .copy-btn.copied { opacity: 1; background: light-dark(#44aea666, rgba(78, 205, 196, 0.4)); }
         .copy-btn span { font-size: 18px; line-height: 1; }
         .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 6px;
         }
         select, input[type="number"] {
             width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #fff;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f26, rgba(255,255,255,0.15));
+            color: light-dark(#0f0f0f, #fff);
             padding: 10px 12px;
             border-radius: 6px;
             font-size: 1rem;
@@ -91,13 +91,13 @@
             gap: 8px;
             margin-top: 12px;
         }
-        .checkbox-group input { accent-color: #4ecdc4; }
-        .checkbox-group label { margin: 0; color: #aaa; font-size: 0.9rem; }
+        .checkbox-group input { accent-color: light-dark(#44aea6, #4ecdc4); }
+        .checkbox-group label { margin: 0; color: light-dark(#5e5e5e, #aaa); font-size: 0.9rem; }
         button {
             width: 100%;
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.4);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea666, rgba(78, 205, 196, 0.4));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 14px 24px;
             border-radius: 6px;
             cursor: pointer;
@@ -105,14 +105,14 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         .bulk-output {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 8px;
             padding: 16px;
             font-family: 'SF Mono', Monaco, monospace;
             font-size: 0.9rem;
-            color: #888;
+            color: light-dark(#616161, #888);
             max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
@@ -120,17 +120,17 @@
         }
         .bulk-output .uuid-line {
             padding: 4px 0;
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
         }
         .copy-all-btn {
             margin-top: 12px;
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #888;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#616161, #888);
             padding: 10px 20px;
             font-size: 0.9rem;
         }
-        .copy-all-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .copy-all-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
     </style>
 </head>
 <body>

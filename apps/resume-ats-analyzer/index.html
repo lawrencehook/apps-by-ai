@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume ATS Analyzer - AI Showcase</title>
+    <title>Resume ATS Analyzer - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         .input-section {
             display: grid;
@@ -40,14 +40,14 @@
         }
 
         .input-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
 
         .input-label {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 12px;
             display: flex;
@@ -62,9 +62,9 @@
         textarea {
             width: 100%;
             height: 200px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
             padding: 16px;
             border-radius: 8px;
             font-family: system-ui, -apple-system, sans-serif;
@@ -75,20 +75,20 @@
 
         textarea:focus {
             outline: none;
-            border-color: #4ecdc4;
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
 
         textarea::placeholder {
-            color: #555;
+            color: light-dark(#616161, #555);
         }
 
         .analyze-btn {
             width: 100%;
             padding: 16px 32px;
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            background: linear-gradient(135deg, light-dark(#44aea6, #4ecdc4), light-dark(#70b5a6, #44a08d));
             border: none;
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -116,8 +116,8 @@
         }
 
         .score-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 16px;
             padding: 32px;
             text-align: center;
@@ -159,7 +159,7 @@
         }
 
         .score-label {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.9rem;
         }
 
@@ -171,8 +171,8 @@
         }
 
         .metric-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
             text-align: center;
@@ -185,13 +185,13 @@
         }
 
         .metric-label {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
         }
 
         .keywords-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -199,7 +199,7 @@
 
         .section-title {
             font-size: 1.1rem;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -220,19 +220,19 @@
         }
 
         .keyword-tag.matched {
-            background: rgba(78, 205, 196, 0.2);
-            color: #4ecdc4;
-            border: 1px solid rgba(78, 205, 196, 0.3);
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            color: light-dark(#378b85, #4ecdc4);
+            border: 1px solid light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
         }
 
         .keyword-tag.missing {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            color: light-dark(#961313, #ff6b6b);
+            border: 1px solid light-dark(#9613134c, rgba(255, 107, 107, 0.3));
         }
 
         .keyword-tag .count {
-            background: rgba(255,255,255,0.15);
+            background: light-dark(#0f0f0f26, rgba(255,255,255,0.15));
             padding: 2px 6px;
             border-radius: 10px;
             margin-left: 6px;
@@ -240,8 +240,8 @@
         }
 
         .suggestions-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -252,7 +252,7 @@
             align-items: flex-start;
             gap: 12px;
             padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
         }
 
         .suggestion-item:last-child {
@@ -271,35 +271,35 @@
         }
 
         .suggestion-icon.warning {
-            background: rgba(241, 196, 15, 0.2);
-            color: #f1c40f;
+            background: light-dark(#dab83133, rgba(241, 196, 15, 0.2));
+            color: light-dark(#a4891e, #f1c40f);
         }
 
         .suggestion-icon.error {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
+            background: light-dark(#96131333, rgba(255, 107, 107, 0.2));
+            color: light-dark(#961313, #ff6b6b);
         }
 
         .suggestion-icon.success {
-            background: rgba(78, 205, 196, 0.2);
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            color: light-dark(#378b85, #4ecdc4);
         }
 
         .suggestion-text {
-            color: #ccc;
+            color: light-dark(#3f3f3f, #ccc);
             font-size: 0.9rem;
             line-height: 1.5;
         }
 
         .highlight-section {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
 
         .highlight-content {
-            background: rgba(0,0,0,0.3);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
             border-radius: 8px;
             padding: 20px;
             font-size: 0.9rem;
@@ -311,28 +311,28 @@
         }
 
         .highlight-content .matched-word {
-            background: rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
+            background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3));
+            color: light-dark(#378b85, #4ecdc4);
             padding: 2px 4px;
             border-radius: 3px;
         }
 
         .info-box {
-            background: rgba(78, 205, 196, 0.05);
-            border: 1px solid rgba(78, 205, 196, 0.2);
+            background: light-dark(#44aea60d, rgba(78, 205, 196, 0.05));
+            border: 1px solid light-dark(#44aea633, rgba(78, 205, 196, 0.2));
             border-radius: 12px;
             padding: 20px;
             margin-top: 24px;
         }
 
         .info-title {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 0.9rem;
             margin-bottom: 8px;
         }
 
         .info-text {
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             line-height: 1.6;
         }
@@ -396,33 +396,33 @@ We're looking for a Senior Software Engineer with:
 
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-value" id="matchedCount" style="color: #4ecdc4;">0</div>
+                    <div class="metric-value" id="matchedCount" style="color: light-dark(#378b85, #4ecdc4);">0</div>
                     <div class="metric-label">Keywords Matched</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value" id="missingCount" style="color: #ff6b6b;">0</div>
+                    <div class="metric-value" id="missingCount" style="color: light-dark(#961313, #ff6b6b);">0</div>
                     <div class="metric-label">Keywords Missing</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value" id="totalKeywords" style="color: #f1c40f;">0</div>
+                    <div class="metric-value" id="totalKeywords" style="color: light-dark(#a4891e, #f1c40f);">0</div>
                     <div class="metric-label">Total Keywords</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value" id="resumeWords" style="color: #9b59b6;">0</div>
+                    <div class="metric-value" id="resumeWords" style="color: light-dark(#6d437e, #9b59b6);">0</div>
                     <div class="metric-label">Resume Words</div>
                 </div>
             </div>
 
             <div class="keywords-section">
                 <div class="section-title">
-                    <span style="color: #4ecdc4;">✓</span> Matched Keywords
+                    <span style="color: light-dark(#378b85, #4ecdc4);">✓</span> Matched Keywords
                 </div>
                 <div class="keywords-grid" id="matchedKeywords"></div>
             </div>
 
             <div class="keywords-section">
                 <div class="section-title">
-                    <span style="color: #ff6b6b;">✗</span> Missing Keywords
+                    <span style="color: light-dark(#961313, #ff6b6b);">✗</span> Missing Keywords
                 </div>
                 <div class="keywords-grid" id="missingKeywords"></div>
             </div>

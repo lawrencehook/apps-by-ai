@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Studio - AI Showcase</title>
+    <title>QR Code Studio - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
             font-family: system-ui, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             padding: 20px;
         }
         .container {
@@ -33,21 +33,21 @@
         }
         h1 { font-size: 1.5rem; }
         .back-link {
-            color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(255,255,255,0.05);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
         .panel {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 24px;
         }
         .panel h2 {
             font-size: 1rem;
             margin-bottom: 20px;
-            color: #888;
+            color: light-dark(#616161, #888);
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 500;
@@ -56,23 +56,23 @@
         .control-group label {
             display: block;
             margin-bottom: 8px;
-            color: #aaa;
+            color: light-dark(#5e5e5e, #aaa);
             font-size: 13px;
         }
         input[type="text"], textarea {
             width: 100%;
             padding: 12px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 14px;
             font-family: inherit;
         }
         textarea { min-height: 80px; resize: vertical; }
         input:focus, textarea:focus {
             outline: none;
-            border-color: rgba(100, 150, 255, 0.5);
+            border-color: light-dark(#133f9c80, rgba(100, 150, 255, 0.5));
         }
         input[type="color"] {
             width: 50px;
@@ -94,7 +94,7 @@
             align-items: center;
             gap: 6px;
         }
-        .color-item span { font-size: 11px; color: #666; }
+        .color-item span { font-size: 11px; color: light-dark(#616161, #666); }
         .tabs {
             display: flex;
             gap: 5px;
@@ -103,20 +103,20 @@
         .tab {
             flex: 1;
             padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #888;
+            color: light-dark(#616161, #888);
             cursor: pointer;
             text-align: center;
             font-size: 13px;
             transition: all 0.2s;
         }
-        .tab:hover { background: rgba(255,255,255,0.08); }
+        .tab:hover { background: light-dark(#0f0f0f14, rgba(255,255,255,0.08)); }
         .tab.active {
-            background: rgba(100, 150, 255, 0.2);
-            border-color: rgba(100, 150, 255, 0.4);
-            color: #fff;
+            background: light-dark(#133f9c33, rgba(100, 150, 255, 0.2));
+            border-color: light-dark(#133f9c66, rgba(100, 150, 255, 0.4));
+            color: light-dark(#0f0f0f, #fff);
         }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -128,7 +128,7 @@
             min-height: 400px;
         }
         #qrCanvas {
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
@@ -141,21 +141,21 @@
         }
         button {
             padding: 12px 24px;
-            background: rgba(100, 150, 255, 0.2);
-            border: 1px solid rgba(100, 150, 255, 0.4);
-            color: #fff;
+            background: light-dark(#133f9c33, rgba(100, 150, 255, 0.2));
+            border: 1px solid light-dark(#133f9c66, rgba(100, 150, 255, 0.4));
+            color: light-dark(#0f0f0f, #fff);
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
         }
         button:hover {
-            background: rgba(100, 150, 255, 0.3);
+            background: light-dark(#133f9c4c, rgba(100, 150, 255, 0.3));
         }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
         .style-presets {
             display: grid;
@@ -175,9 +175,9 @@
             font-size: 20px;
         }
         .preset:hover { transform: scale(1.05); }
-        .preset.active { border-color: #4a90ff; }
+        .preset.active { border-color: light-dark(#1652b1, #4a90ff); }
         .logo-upload {
-            border: 2px dashed rgba(255,255,255,0.1);
+            border: 2px dashed light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
             padding: 20px;
             text-align: center;
@@ -185,8 +185,8 @@
             transition: all 0.2s;
         }
         .logo-upload:hover {
-            border-color: rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.02);
+            border-color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3));
+            background: light-dark(#0f0f0f05, rgba(255,255,255,0.02));
         }
         .logo-upload input { display: none; }
         .logo-preview {
@@ -197,16 +197,16 @@
         }
         #scanResult {
             padding: 15px;
-            background: rgba(0,255,100,0.1);
-            border: 1px solid rgba(0,255,100,0.3);
+            background: light-dark(#27e4711a, rgba(0,255,100,0.1));
+            border: 1px solid light-dark(#27e4714c, rgba(0,255,100,0.3));
             border-radius: 8px;
             margin-top: 15px;
             word-break: break-all;
             display: none;
         }
         #scanResult.error {
-            background: rgba(255,100,100,0.1);
-            border-color: rgba(255,100,100,0.3);
+            background: light-dark(#9c13131a, rgba(255,100,100,0.1));
+            border-color: light-dark(#9c13134c, rgba(255,100,100,0.3));
         }
         #videoContainer {
             position: relative;
@@ -224,7 +224,7 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 200px; height: 200px;
-            border: 2px solid rgba(0, 255, 100, 0.5);
+            border: 2px solid light-dark(#27e47180, rgba(0, 255, 100, 0.5));
             border-radius: 12px;
             animation: pulse 2s infinite;
         }
@@ -271,7 +271,7 @@
                     <label for="wifiPassword" style="margin-top: 12px;">Password</label>
                     <input type="text" id="wifiPassword" placeholder="Password">
                     <label for="wifiSecurity" style="margin-top: 12px;">Security</label>
-                    <select id="wifiSecurity" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                    <select id="wifiSecurity" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: light-dark(#0f0f0f, #fff);">
                         <option value="WPA">WPA/WPA2</option>
                         <option value="WEP">WEP</option>
                         <option value="nopass">None</option>
@@ -325,7 +325,7 @@
 
                 <div class="control-group">
                     <label for="errorCorrection">Error Correction</label>
-                    <select id="errorCorrection" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                    <select id="errorCorrection" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: light-dark(#0f0f0f, #fff);">
                         <option value="L">Low (7%)</option>
                         <option value="M" selected>Medium (15%)</option>
                         <option value="Q">Quartile (25%)</option>
@@ -346,7 +346,7 @@
 
             <div id="scanTab" class="tab-content">
                 <h2>Scan QR Code</h2>
-                <p style="color: #666; margin-bottom: 20px; font-size: 13px;">Use your camera to scan QR codes or upload an image.</p>
+                <p style="color: light-dark(#616161, #666); margin-bottom: 20px; font-size: 13px;">Use your camera to scan QR codes or upload an image.</p>
 
                 <div id="videoContainer">
                     <video id="scanVideo" autoplay playsinline></video>

@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Story Builder - AI Showcase</title>
+    <title>Data Story Builder - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, light-dark(#d3d3e3, #1a1a2e) 0%, light-dark(#c6cee5, #16213e) 100%);
             min-height: 100vh;
             font-family: system-ui, -apple-system, sans-serif;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
         }
         .container {
             max-width: 1400px;
@@ -25,16 +25,16 @@
             margin-bottom: 30px;
         }
         h1 { font-size: 1.8rem; }
-        h1 span { color: #4ecdc4; }
+        h1 span { color: light-dark(#378b85, #4ecdc4); }
         .back-link {
-            color: #888;
+            color: light-dark(#616161, #888);
             text-decoration: none;
             padding: 8px 16px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
             transition: all 0.2s;
         }
-        .back-link:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); border-color: light-dark(#0f0f0f4c, rgba(255,255,255,0.3)); }
 
         .main-layout {
             display: grid;
@@ -43,17 +43,17 @@
         }
 
         .sidebar {
-            background: rgba(255,255,255,0.05);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
 
         .section-title {
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #888;
+            color: light-dark(#616161, #888);
             margin-bottom: 12px;
         }
 
@@ -64,16 +64,16 @@
         textarea {
             width: 100%;
             height: 200px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             padding: 12px;
             font-family: 'Monaco', 'Consolas', monospace;
             font-size: 12px;
             resize: vertical;
         }
-        textarea:focus { outline: none; border-color: #4ecdc4; }
+        textarea:focus { outline: none; border-color: light-dark(#44aea6, #4ecdc4); }
 
         .btn-row {
             display: flex;
@@ -83,25 +83,25 @@
         }
 
         button {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid #4ecdc4;
-            color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border: 1px solid light-dark(#44aea6, #4ecdc4);
+            color: light-dark(#378b85, #4ecdc4);
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             transition: all 0.2s;
         }
-        button:hover { background: rgba(78, 205, 196, 0.3); }
+        button:hover { background: light-dark(#44aea64c, rgba(78, 205, 196, 0.3)); }
         button.secondary {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.2);
-            color: #aaa;
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border-color: light-dark(#0f0f0f33, rgba(255,255,255,0.2));
+            color: light-dark(#5e5e5e, #aaa);
         }
-        button.secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        button.secondary:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); color: light-dark(#0f0f0f, #fff); }
         button.active {
-            background: #4ecdc4;
-            color: #1a1a2e;
+            background: light-dark(#44aea6, #4ecdc4);
+            color: light-dark(#d3d3e3, #1a1a2e);
         }
 
         .chart-types {
@@ -116,20 +116,20 @@
             flex-direction: column;
             align-items: center;
             padding: 16px 8px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f0d, rgba(255,255,255,0.05));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .chart-type-btn:hover { background: rgba(255,255,255,0.1); }
+        .chart-type-btn:hover { background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1)); }
         .chart-type-btn.active {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: #4ecdc4;
+            background: light-dark(#44aea633, rgba(78, 205, 196, 0.2));
+            border-color: light-dark(#44aea6, #4ecdc4);
         }
         .chart-type-btn svg { width: 32px; height: 32px; margin-bottom: 8px; }
-        .chart-type-btn span { font-size: 12px; color: #aaa; }
-        .chart-type-btn.active span { color: #4ecdc4; }
+        .chart-type-btn span { font-size: 12px; color: light-dark(#5e5e5e, #aaa); }
+        .chart-type-btn.active span { color: light-dark(#378b85, #4ecdc4); }
 
         .options-group {
             margin-bottom: 20px;
@@ -144,7 +144,7 @@
 
         .option-row label {
             font-size: 13px;
-            color: #ccc;
+            color: light-dark(#3f3f3f, #ccc);
         }
 
         input[type="color"] {
@@ -158,24 +158,24 @@
 
         input[type="range"] {
             width: 120px;
-            accent-color: #4ecdc4;
+            accent-color: light-dark(#44aea6, #4ecdc4);
         }
 
         input[type="number"], select {
             width: 100px;
             padding: 6px 10px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 4px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 13px;
         }
 
         .chart-area {
-            background: rgba(255,255,255,0.03);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
             border-radius: 12px;
             padding: 30px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             display: flex;
             flex-direction: column;
         }
@@ -195,12 +195,12 @@
         .chart-title input {
             background: transparent;
             border: none;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 1.4rem;
             font-weight: 500;
             width: 300px;
         }
-        .chart-title input:focus { outline: none; border-bottom: 1px solid #4ecdc4; }
+        .chart-title input:focus { outline: none; border-bottom: 1px solid light-dark(#44aea6, #4ecdc4); }
 
         .chart-container {
             flex: 1;
@@ -222,7 +222,7 @@
             align-items: center;
             margin-top: 20px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
         }
 
         .play-btn {
@@ -238,7 +238,7 @@
         .timeline {
             flex: 1;
             height: 6px;
-            background: rgba(255,255,255,0.1);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 3px;
             cursor: pointer;
             position: relative;
@@ -246,7 +246,7 @@
 
         .timeline-progress {
             height: 100%;
-            background: linear-gradient(90deg, #4ecdc4, #ff6b6b);
+            background: linear-gradient(90deg, light-dark(#44aea6, #4ecdc4), light-dark(#961313, #ff6b6b));
             border-radius: 3px;
             width: 0%;
             transition: width 0.1s linear;
@@ -263,20 +263,20 @@
 
         .marker {
             font-size: 11px;
-            color: #666;
+            color: light-dark(#616161, #666);
         }
 
         .speed-control {
             display: flex;
             align-items: center;
             gap: 8px;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 13px;
         }
 
         .empty-state {
             text-align: center;
-            color: #666;
+            color: light-dark(#616161, #666);
             padding: 60px;
         }
         .empty-state svg { width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.3; }
@@ -346,7 +346,7 @@
             align-items: center;
             gap: 8px;
             font-size: 13px;
-            color: #ccc;
+            color: light-dark(#3f3f3f, #ccc);
         }
 
         .legend-color {
@@ -357,8 +357,8 @@
 
         .tooltip {
             position: absolute;
-            background: rgba(0,0,0,0.9);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#fcfcfce6, rgba(0,0,0,0.9));
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
             border-radius: 6px;
             padding: 10px 14px;
             font-size: 13px;
@@ -368,8 +368,8 @@
             z-index: 100;
         }
         .tooltip.visible { opacity: 1; }
-        .tooltip-label { color: #888; margin-bottom: 4px; }
-        .tooltip-value { font-size: 18px; font-weight: 600; color: #4ecdc4; }
+        .tooltip-label { color: light-dark(#616161, #888); margin-bottom: 4px; }
+        .tooltip-value { font-size: 18px; font-weight: 600; color: light-dark(#378b85, #4ecdc4); }
 
         @media (max-width: 900px) {
             .main-layout {

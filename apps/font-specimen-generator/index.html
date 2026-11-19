@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Font Specimen Generator - AI Showcase</title>
+    <title>Font Specimen Generator - AI Showcase</title><script src="../../site-theme.js"></script>
     <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0a0a0f;
+            background: light-dark(#efeff3, #0a0a0f);
             min-height: 100vh;
-            color: #e0e0e0;
+            color: light-dark(#2c2c2c, #e0e0e0);
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
-        h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
-        .subtitle { color: #666; margin-bottom: 32px; }
-        .font-notice { color: #e0a84a; font-size: 0.85rem; margin: -20px 0 24px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; color: light-dark(#0f0f0f, #fff); }
+        .subtitle { color: light-dark(#616161, #666); margin-bottom: 32px; }
+        .font-notice { color: light-dark(#966e2b, #e0a84a); font-size: 0.85rem; margin: -20px 0 24px; }
         .back-link {
-            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
-            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 20px; right: 20px; color: light-dark(#616161, #666); text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: light-dark(#fcfcfcd9, rgba(0,0,0,0.85));
+            border-radius: 6px; border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             z-index: 100;
         }
-        .back-link:hover { color: #fff; }
+        .back-link:hover { color: light-dark(#0f0f0f, #fff); }
 
         .controls {
             display: grid;
@@ -36,36 +36,36 @@
             margin-bottom: 32px;
         }
         .control-group {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: light-dark(#0f0f0f08, rgba(255,255,255,0.03));
+            border: 1px solid light-dark(#0f0f0f14, rgba(255,255,255,0.08));
             border-radius: 12px;
             padding: 20px;
         }
         .control-label {
             display: block;
-            color: #888;
+            color: light-dark(#616161, #888);
             font-size: 0.85rem;
             margin-bottom: 8px;
         }
         .control-input {
             width: 100%;
             padding: 10px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: light-dark(#fcfcfc4c, rgba(0,0,0,0.3));
+            border: 1px solid light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             font-size: 0.95rem;
         }
         .control-input:focus {
             outline: none;
-            border-color: rgba(102, 126, 234, 0.5);
+            border-color: light-dark(#273c9980, rgba(102, 126, 234, 0.5));
         }
         select.control-input {
             cursor: pointer;
         }
         select.control-input option {
-            background: #1a1a2e;
-            color: #fff;
+            background: light-dark(#d3d3e3, #1a1a2e);
+            color: light-dark(#0f0f0f, #fff);
         }
 
         .font-upload {
@@ -75,10 +75,10 @@
         }
         .upload-btn {
             padding: 10px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
             border: none;
             border-radius: 6px;
-            color: #fff;
+            color: light-dark(#0f0f0f, #fff);
             cursor: pointer;
             font-size: 0.9rem;
             white-space: nowrap;
@@ -87,7 +87,7 @@
             opacity: 0.9;
         }
         .uploaded-name {
-            color: #4ecdc4;
+            color: light-dark(#378b85, #4ecdc4);
             font-size: 0.85rem;
         }
 
@@ -106,31 +106,31 @@
             transition: all 0.2s;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
+            background: linear-gradient(135deg, light-dark(#273c99, #667eea) 0%, light-dark(#8e6eaf, #764ba2) 100%);
+            color: light-dark(#0f0f0f, #fff);
         }
         .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.2);
+            background: light-dark(#0f0f0f1a, rgba(255,255,255,0.1));
+            color: light-dark(#0f0f0f, #fff);
+            border: 1px solid light-dark(#0f0f0f33, rgba(255,255,255,0.2));
         }
         .btn:hover { transform: translateY(-1px); opacity: 0.9; }
 
         .specimen-container {
-            background: #fff;
+            background: light-dark(#0f0f0f, #fff);
             border-radius: 12px;
             overflow: hidden;
         }
 
         #specimen {
             padding: 60px;
-            color: #111;
+            color: light-dark(#ededed, #111);
         }
 
         .specimen-header {
             text-align: center;
             padding-bottom: 40px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid light-dark(#1f1f1f, #eee);
             margin-bottom: 40px;
         }
         .specimen-title {
@@ -139,7 +139,7 @@
             letter-spacing: -0.02em;
         }
         .specimen-meta {
-            color: #666;
+            color: light-dark(#616161, #666);
             font-size: 0.9rem;
         }
 
@@ -150,7 +150,7 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #999;
+            color: light-dark(#616161, #999);
             margin-bottom: 16px;
             font-family: system-ui, sans-serif;
         }
@@ -169,7 +169,7 @@
         }
         .size-label {
             font-size: 0.7rem;
-            color: #999;
+            color: light-dark(#616161, #999);
             font-family: system-ui, sans-serif;
             margin-bottom: 4px;
         }
@@ -185,7 +185,7 @@
         }
         .weight-label {
             font-size: 0.7rem;
-            color: #999;
+            color: light-dark(#616161, #999);
             font-family: system-ui, sans-serif;
             min-width: 80px;
         }
@@ -203,7 +203,7 @@
             font-size: 1rem;
             line-height: 1.7;
             max-width: 65ch;
-            color: #333;
+            color: light-dark(#cdcdcd, #333);
         }
 
         .glyphs-grid {
@@ -217,13 +217,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #f5f5f5;
+            background: light-dark(#191919, #f5f5f5);
             border-radius: 6px;
             font-size: 1.8rem;
         }
         .glyph-code {
             font-size: 0.6rem;
-            color: #999;
+            color: light-dark(#616161, #999);
             font-family: monospace;
             margin-top: 4px;
         }
@@ -242,7 +242,7 @@
             transition: transform 0.2s;
         }
         .color-option:hover { transform: scale(1.1); }
-        .color-option.active { border-color: #667eea; }
+        .color-option.active { border-color: light-dark(#273c99, #667eea); }
 
         @media (max-width: 600px) {
             #specimen { padding: 24px; }
