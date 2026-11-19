@@ -17,7 +17,7 @@
         const theme = preference === 'system' ? (system?.matches ? 'dark' : 'light') : preference;
         root.dataset.theme = theme;
         root.style.colorScheme = theme;
-        if (picker) picker.value = preference;
+        if (picker) picker.querySelector('input[value="' + preference + '"]').checked = true;
     }
 
     readPreference();
@@ -43,20 +43,36 @@
             <style>
                 :host { display:inline-flex; align-items:center; margin-inline-start:auto; }
                 :host([floating]) { position:fixed; z-index:2147483646; right:max(10px,env(safe-area-inset-right)); bottom:max(10px,env(safe-area-inset-bottom)); }
-                select { font:13px/1.2 system-ui,sans-serif; cursor:pointer; border-radius:6px; padding:5px 4px; min-height:32px;
-                    background:light-dark(#fafaf9,#242728); color:light-dark(#30353a,#e5e8ea); border:1px solid light-dark(#b6babc,#53585a); }
-                select:focus-visible { outline:2px solid light-dark(#007871,#69d6ce); outline-offset:2px; }
+                .switch { display:inline-flex; overflow:hidden; border:1px solid light-dark(#d4d4d4,#55585b);
+                    border-radius:8px; background:light-dark(#f6f6f6,#26282a); color:light-dark(#666,#c4c6c8); }
+                label { display:grid; position:relative; cursor:pointer; }
+                input { position:absolute; width:1px; height:1px; opacity:0; }
+                span { display:grid; place-items:center; width:33px; height:32px; }
+                svg { width:17px; height:17px; }
+                input:checked + span { background:#2862e9; color:white; }
+                input:focus-visible + span { outline:2px solid currentColor; outline-offset:-4px; }
                 @media print { :host { display:none; } }
             </style>
-            <select aria-label="Color theme" title="Color theme">
-                <option value="system">◐ Auto</option><option value="light">☀ Light</option><option value="dark">☾ Dark</option>
-            </select>`;
+            <div class="switch" role="radiogroup" aria-label="Color theme">
+                <label title="Use device theme"><input type="radio" name="theme" value="system" aria-label="Use device theme">
+                    <span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <rect x="2" y="4" width="20" height="14" rx="1.6"/><path d="M12 18v3m-5 0h10"/>
+                    </svg></span></label>
+                <label title="Light theme"><input type="radio" name="theme" value="light" aria-label="Light theme">
+                    <span><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="5"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>
+                    </svg></span></label>
+                <label title="Dark theme"><input type="radio" name="theme" value="dark" aria-label="Dark theme">
+                    <span><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.9 13.1a9.1 9.1 0 0 1-10-11A9.5 9.5 0 1 0 21.9 12a7 7 0 0 1-1 1.1Z"/>
+                    </svg></span></label>
+            </div>`;
         host.toggleAttribute('floating', !nav);
-        picker = shadow.querySelector('select');
-        picker.value = preference;
+        picker = shadow.querySelector('.switch');
+        apply();
         for (const type of ['keydown', 'keyup']) picker.addEventListener(type, event => event.stopPropagation());
-        picker.addEventListener('change', () => {
-            preference = picker.value;
+        picker.addEventListener('change', event => {
+            preference = event.target.value;
             try { localStorage.setItem(key, preference); } catch {}
             apply();
         });
