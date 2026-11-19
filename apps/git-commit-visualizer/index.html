@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Git Commit Visualizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -374,6 +375,8 @@ Or just paste any standard git log output!"></textarea>
         let hoveredCommit = null;
         let scrollOffset = 0;
         let maxScroll = 0;
+        let parseFailed = false;
+        let dragY = null;
 
         const colors = [
             '#58a6ff', '#a371f7', '#3fb950', '#f0883e', '#f85149',
@@ -388,6 +391,24 @@ Or just paste any standard git log output!"></textarea>
             draw();
         }
 
+        const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+
+        // Calendar date as written in the log, built with local getters (rule 21)
+        function parseLogDate(str) {
+            let m = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (m) return new Date(+m[1], m[2] - 1, +m[3]);
+            m = str.match(/([A-Z][a-z]{2})\s+(\d{1,2})\s+\d{2}:\d{2}:\d{2}\s+(\d{4})/);
+            if (m && MONTHS[m[1]] !== undefined) return new Date(+m[3], MONTHS[m[1]], +m[2]);
+            const d = new Date(str);
+            return isNaN(d) ? null : d;
+        }
+
+        // In --graph output the commit's lane is the column of its '*'
+        function graphColumn(prefix) {
+            const idx = (prefix || '').indexOf('*');
+            return idx < 0 ? 0 : Math.floor(idx / 2);
+        }
+
         function parseGitLog(logText) {
             const lines = logText.trim().split('\n').filter(line => line.trim());
             const parsedCommits = [];
@@ -395,58 +416,68 @@ Or just paste any standard git log output!"></textarea>
             const contribs = {};
 
             // Parse different git log formats
-            let currentBranch = 0;
-            let branchStack = [0];
+            let plain = null;
+            const plainCommits = [];
 
             for (const line of lines) {
+                // Plain `git log`: commit <hash> / Author: / Date: / indented message
+                const plainStart = line.match(/^commit ([a-f0-9]{7,40})\b/);
+                if (plainStart) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - parsedCommits.length);
+                    plain = { hash: plainStart[1], date, author: 'Unknown', message: '', branch: 0 };
+                    parsedCommits.push(plain);
+                    plainCommits.push(plain);
+                    branchSet.add(0);
+                    continue;
+                }
+                if (plain) {
+                    const header = line.match(/^([A-Za-z]+):\s*(.*)$/);
+                    if (header) {
+                        if (header[1] === 'Author') {
+                            plain.author = header[2].replace(/\s*<[^>]*>\s*$/, '').trim() || 'Unknown';
+                        } else if (header[1] === 'Date' || header[1] === 'AuthorDate') {
+                            plain.date = parseLogDate(header[2]) || plain.date;
+                        }
+                        continue;
+                    }
+                    if (/^\s/.test(line)) {
+                        if (!plain.message) plain.message = line.trim();
+                        continue;
+                    }
+                    plain = null;
+                }
+
                 // Try custom format: hash|date|author|message
                 const customMatch = line.match(/([a-f0-9]+)\|(\d{4}-\d{2}-\d{2})\|(.+?)\|(.+)/);
                 if (customMatch) {
                     const [, hash, date, author, message] = customMatch;
                     const commit = {
                         hash,
-                        date: new Date(date),
+                        date: parseLogDate(date),
                         author: author.trim(),
                         message: message.trim(),
-                        branch: 0
+                        branch: graphColumn(line.slice(0, customMatch.index))
                     };
                     parsedCommits.push(commit);
+                    branchSet.add(commit.branch);
                     contribs[author.trim()] = (contribs[author.trim()] || 0) + 1;
                     continue;
                 }
 
                 // Try standard oneline with graph
-                const graphMatch = line.match(/^([|\\\/*\s]+)?([a-f0-9]{7,40})\s+(.+)/);
+                const graphMatch = line.match(/^([|\\\/*\s_.-]+)?([a-f0-9]{7,40})\s+(.+)/);
                 if (graphMatch) {
                     const [, graph, hash, rest] = graphMatch;
-
-                    // Parse graph characters to determine branch
-                    if (graph) {
-                        const pipeCount = (graph.match(/\|/g) || []).length;
-                        const hasSlash = graph.includes('/') || graph.includes('\\');
-                        const hasAsterisk = graph.includes('*');
-
-                        if (hasSlash && hasAsterisk) {
-                            currentBranch = Math.max(0, currentBranch - 1);
-                        } else if (graph.includes('|\\') || graph.includes('| \\')) {
-                            currentBranch++;
-                            branchSet.add(currentBranch);
-                        }
-                    }
+                    const currentBranch = graphColumn(graph);
 
                     // Try to extract date from message or use incrementing fake date
                     let date = new Date();
                     date.setDate(date.getDate() - parsedCommits.length);
 
-                    let author = 'Unknown';
-                    let message = rest;
-
-                    // Try extracting author if format includes it
-                    const authorMatch = rest.match(/\((.+?)\)\s*(.+)/);
-                    if (authorMatch) {
-                        author = authorMatch[1];
-                        message = authorMatch[2];
-                    }
+                    // --oneline carries no author; parentheses in it are ref names or part of the subject
+                    const author = 'Unknown';
+                    const message = rest;
 
                     const commit = {
                         hash,
@@ -481,6 +512,10 @@ Or just paste any standard git log output!"></textarea>
                 }
             }
 
+            plainCommits.forEach(c => {
+                contribs[c.author] = (contribs[c.author] || 0) + 1;
+            });
+
             return { commits: parsedCommits, contributors: contribs, branches: Array.from(branchSet) };
         }
 
@@ -490,7 +525,8 @@ Or just paste any standard git log output!"></textarea>
 
             // Create 52 weeks x 7 days grid
             const commitsByWeek = {};
-            const now = new Date();
+            // 52 weeks ending at the newest commit, so old logs still show activity
+            const now = commits.reduce((latest, c) => (c.date > latest ? c.date : latest), new Date(0));
 
             commits.forEach(commit => {
                 const weekAgo = Math.floor((now - commit.date) / (7 * 24 * 60 * 60 * 1000));
@@ -531,7 +567,7 @@ Or just paste any standard git log output!"></textarea>
 
             if (commits.length > 0) {
                 const dates = commits.map(c => c.date).sort((a, b) => a - b);
-                const days = Math.ceil((dates[dates.length - 1] - dates[0]) / (24 * 60 * 60 * 1000));
+                const days = Math.round((dates[dates.length - 1] - dates[0]) / (24 * 60 * 60 * 1000));
                 if (days <= 30) {
                     document.getElementById('timespan').textContent = `${days}d`;
                 } else if (days <= 365) {
@@ -588,7 +624,8 @@ Or just paste any standard git log output!"></textarea>
                 ctx.fillStyle = '#8b949e';
                 ctx.font = '16px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('Paste git log and click "Visualize Commits"', w / 2, h / 2);
+                ctx.fillText(parseFailed ? 'No commits recognised in the pasted text' : 'Paste git log and click "Visualize Commits"', w / 2, h / 2);
+                canvas.style.touchAction = 'auto';
                 return;
             }
 
@@ -598,6 +635,8 @@ Or just paste any standard git log output!"></textarea>
             const branchSpacing = 40;
 
             maxScroll = Math.max(0, commits.length * verticalSpacing - h + padding * 2);
+            // Only take over touch drags when there is something to scroll
+            canvas.style.touchAction = maxScroll > 0 ? 'none' : 'auto';
 
             ctx.save();
             ctx.translate(0, -scrollOffset);
@@ -724,12 +763,17 @@ Or just paste any standard git log output!"></textarea>
                 tooltip.style.display = 'block';
                 tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
                 tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
-                tooltip.innerHTML = `
-                    <strong>${commit.hash}</strong><br>
-                    <span style="color: #8b949e">${commit.author}</span><br>
-                    <span style="color: #58a6ff">${commit.date.toLocaleDateString()}</span><br>
-                    ${commit.message}
-                `;
+                tooltip.textContent = '';
+                const hashEl = document.createElement('strong');
+                hashEl.textContent = commit.hash;
+                const authorEl = document.createElement('span');
+                authorEl.style.color = '#8b949e';
+                authorEl.textContent = commit.author;
+                const dateEl = document.createElement('span');
+                dateEl.style.color = '#58a6ff';
+                dateEl.textContent = commit.date.toLocaleDateString();
+                tooltip.append(hashEl, document.createElement('br'), authorEl, document.createElement('br'),
+                    dateEl, document.createElement('br'), commit.message);
                 canvas.style.cursor = 'pointer';
             } else {
                 tooltip.style.display = 'none';
@@ -753,6 +797,7 @@ Or just paste any standard git log output!"></textarea>
             commits = parsed.commits;
             contributors = parsed.contributors;
             branches = parsed.branches;
+            parseFailed = commits.length === 0;
             scrollOffset = 0;
 
             updateStats();
@@ -787,14 +832,31 @@ b4c5d6e|2024-12-28|Alice|Prepare v1.0 release`;
             commits = [];
             contributors = {};
             branches = [];
+            parseFailed = false;
             updateStats();
             document.getElementById('heatmap').innerHTML = '';
             draw();
         });
         document.getElementById('loadSample').addEventListener('click', loadSampleData);
-        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('pointerdown', e => {
+            if (e.pointerType !== 'mouse') {
+                dragY = e.clientY;
+                canvas.setPointerCapture(e.pointerId);
+            }
+            handleMouseMove(e);
+        });
+        canvas.addEventListener('pointermove', e => {
+            if (dragY !== null) {
+                scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset + dragY - e.clientY));
+                dragY = e.clientY;
+            }
+            handleMouseMove(e);
+        });
+        canvas.addEventListener('pointerup', () => { dragY = null; });
+        canvas.addEventListener('pointercancel', () => { dragY = null; });
         canvas.addEventListener('wheel', handleScroll, { passive: false });
-        canvas.addEventListener('mouseleave', () => {
+        canvas.addEventListener('pointerleave', e => {
+            if (e.pointerType !== 'mouse') return; // keep the tapped tooltip on touch
             hoveredCommit = null;
             tooltip.style.display = 'none';
             draw();

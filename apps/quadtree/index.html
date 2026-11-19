@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quadtree - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -40,15 +42,15 @@
         <h1>Quadtree</h1>
         <p>Spatial partitioning for efficient collision detection. O(n log n) instead of O(n^2).</p>
         <div class="control-group">
-            <label>Particles: <span id="countLabel">200</span></label>
+            <label for="count">Particles: <span id="countLabel">200</span></label>
             <input type="range" id="count" min="50" max="1000" step="50" value="200">
         </div>
         <div class="control-group">
-            <label>Max per Node: <span id="capacityLabel">4</span></label>
+            <label for="capacity">Max per Node: <span id="capacityLabel">4</span></label>
             <input type="range" id="capacity" min="1" max="20" value="4">
         </div>
         <div class="control-group">
-            <label>Query Radius: <span id="radiusLabel">80</span></label>
+            <label for="radius">Query Radius: <span id="radiusLabel">80</span></label>
             <input type="range" id="radius" min="20" max="200" value="80">
         </div>
         <button id="reset">Reset</button>
@@ -195,9 +197,16 @@
         }
 
         function resize() {
+            const oldWidth = width, oldHeight = height;
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            init();
+            // Keep the existing particles, moved proportionally into the new area
+            if (oldWidth && oldHeight) {
+                for (const p of particles) {
+                    p.x *= width / oldWidth;
+                    p.y *= height / oldHeight;
+                }
+            }
         }
 
         function render() {
@@ -327,6 +336,7 @@
 
         window.addEventListener('resize', resize);
         resize();
+        init();
         render();
     </script>
 </body>

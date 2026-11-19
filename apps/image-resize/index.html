@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Resize - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -178,7 +179,7 @@
         <div class="editor-layout hidden" id="editorPanel">
             <div class="sidebar">
                 <div class="form-group">
-                    <label>Resize Mode</label>
+                    <label for="resizeMode">Resize Mode</label>
                     <select id="resizeMode">
                         <option value="dimensions">By Dimensions</option>
                         <option value="percentage">By Percentage</option>
@@ -187,11 +188,11 @@
 
                 <div id="dimensionsMode">
                     <div class="form-group">
-                        <label>Width (px)</label>
+                        <label for="widthInput">Width (px)</label>
                         <input type="number" id="widthInput" min="1" max="10000">
                     </div>
                     <div class="form-group">
-                        <label>Height (px)</label>
+                        <label for="heightInput">Height (px)</label>
                         <input type="number" id="heightInput" min="1" max="10000">
                     </div>
                     <div class="checkbox-group">
@@ -214,7 +215,7 @@
 
                 <div id="percentageMode" class="hidden">
                     <div class="form-group">
-                        <label>Scale (%)</label>
+                        <label for="scaleInput">Scale (%)</label>
                         <input type="number" id="scaleInput" value="50" min="1" max="500">
                     </div>
                     <div class="preset-buttons">
@@ -228,7 +229,7 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 20px;">
-                    <label>Output Format</label>
+                    <label for="outputFormat">Output Format</label>
                     <select id="outputFormat">
                         <option value="original">Same as original</option>
                         <option value="image/png">PNG</option>
@@ -290,7 +291,27 @@
         });
         fileInput.addEventListener('change', e => {
             if (e.target.files[0]) handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
         });
+
+        // Canvas only encodes PNG, JPEG and WebP; other inputs (GIF, BMP, SVG) are saved as PNG
+        function outputType(type) {
+            return ['image/png', 'image/jpeg', 'image/webp'].includes(type) ? type : 'image/png';
+        }
+
+        function downloadCanvas(canvas, type, quality, baseName, done) {
+            canvas.toBlob(blob => {
+                if (!blob) { done(null); return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // blob.type is what the browser really encoded (PNG if it lacks the requested encoder)
+                a.download = `${baseName}.${(blob.type || 'image/png').split('/')[1]}`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                done(blob);
+            }, type, quality);
+        }
 
         function handleFile(file) {
             if (!file.type.startsWith('image/')) {
@@ -300,9 +321,16 @@
 
             currentImage = { file, type: file.type };
             const reader = new FileReader();
+            reader.onerror = () => showStatus('Error reading file. Please try again.', true);
             reader.onload = e => {
                 const img = new Image();
+                img.onerror = () => {
+                    showStatus('Could not load image. The file may be corrupt.', true);
+                    currentImage = null;
+                };
                 img.onload = () => {
+                    status.classList.remove('show');
+                    lockAspect.checked = true;
                     originalWidth = img.width;
                     originalHeight = img.height;
                     aspectRatio = img.width / img.height;
@@ -335,14 +363,17 @@
         // Dimension inputs with aspect ratio lock
         widthInput.addEventListener('input', () => {
             if (lockAspect.checked) {
-                heightInput.value = Math.round(widthInput.value / aspectRatio);
+                // Never 0: an empty or zero field falls back to the original size
+                const w = parseInt(widthInput.value);
+                heightInput.value = w > 0 ? Math.max(1, Math.round(w / aspectRatio)) : '';
             }
             updateNewSize();
         });
 
         heightInput.addEventListener('input', () => {
             if (lockAspect.checked) {
-                widthInput.value = Math.round(heightInput.value * aspectRatio);
+                const h = parseInt(heightInput.value);
+                widthInput.value = h > 0 ? Math.max(1, Math.round(h * aspectRatio)) : '';
             }
             updateNewSize();
         });
@@ -420,30 +451,31 @@
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
+            const source = currentImage;
             const img = new Image();
+            img.onerror = () => showStatus('Could not load image. The file may be corrupt.', true);
             img.onload = () => {
-                ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
                 // Determine output format
                 let format = document.getElementById('outputFormat').value;
                 if (format === 'original') {
-                    format = currentImage.type;
+                    format = outputType(source.type);
                 }
 
+                // JPEG has no alpha channel; without a fill, transparent areas come out black
+                if (format === 'image/jpeg') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, newWidth, newHeight);
+                }
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
                 const quality = format === 'image/jpeg' ? 0.92 : undefined;
-                const dataUrl = canvas.toDataURL(format, quality);
-
-                // Download
-                const ext = format.split('/')[1];
-                const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = `${baseName}_${newWidth}x${newHeight}.${ext}`;
-                a.click();
-
-                showStatus(`Resized to ${newWidth} × ${newHeight} pixels`);
+                const baseName = source.file.name.replace(/\.[^.]+$/, '');
+                downloadCanvas(canvas, format, quality, `${baseName}_${newWidth}x${newHeight}`, blob => {
+                    if (blob) showStatus(`Resized to ${newWidth} × ${newHeight} pixels`);
+                    else showStatus('Could not encode the image.', true);
+                });
             };
-            img.src = currentImage.dataUrl;
+            img.src = source.dataUrl;
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fluid Simulation - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -66,11 +67,11 @@
         <h1>Fluid Simulation</h1>
         <p>Click and drag to add dye and forces. Watch realistic fluid dynamics unfold.</p>
         <div class="control-group">
-            <label>Brush Size: <span id="brushLabel">3</span></label>
+            <label for="brush">Brush Size: <span id="brushLabel">3</span></label>
             <input type="range" id="brush" min="1" max="8" value="3">
         </div>
         <div class="control-group">
-            <label>Dye Fade: <span id="fadeLabel">0.99</span></label>
+            <label for="fade">Dye Fade: <span id="fadeLabel">0.99</span></label>
             <input type="range" id="fade" min="0.95" max="1" step="0.005" value="0.99">
         </div>
         <button id="clear">Clear</button>
@@ -81,7 +82,8 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        const SCALE = 4;
+        let SCALE = 4;
+        const MAX_GRID = 480; // cells on the longer side; keeps the solver cost bounded on large screens
         let NX, NY;
         let size;
         const dt = 0.1;
@@ -110,8 +112,10 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            NX = Math.floor(canvas.width / SCALE);
-            NY = Math.floor(canvas.height / SCALE);
+            const oldNX = NX, oldNY = NY;
+            SCALE = Math.max(4, Math.ceil(Math.max(canvas.width, canvas.height) / MAX_GRID));
+            NX = Math.max(3, Math.floor(canvas.width / SCALE));
+            NY = Math.max(3, Math.floor(canvas.height / SCALE));
             size = NX * NY;
 
             // Create cached render canvas
@@ -120,7 +124,20 @@
             renderCanvas.height = NY;
             renderCtx = renderCanvas.getContext('2d');
 
+            if (!density) { init(); return; }
+            if (NX === oldNX && NY === oldNY) return;
+            // Keep the existing fluid: resample each field onto the new grid
+            const old = [density, Vx, Vy];
             init();
+            [density, Vx, Vy].forEach((dst, f) => {
+                for (let j = 0; j < NY; j++) {
+                    const oj = Math.min(oldNY - 1, Math.floor(j * oldNY / NY));
+                    for (let i = 0; i < NX; i++) {
+                        const oi = Math.min(oldNX - 1, Math.floor(i * oldNX / NX));
+                        dst[i + j * NX] = old[f][oi + oj * oldNX];
+                    }
+                }
+            });
         }
 
         function init() {
@@ -157,7 +174,7 @@
 
         function diffuse(b, x, x0, diffusion, NX, NY) {
             const a = dt * diffusion * (NX - 2) * (NY - 2);
-            linearSolve(b, x, x0, a, 1 + 6 * a, NX, NY);
+            linearSolve(b, x, x0, a, 1 + 4 * a, NX, NY);
         }
 
         function linearSolve(b, x, x0, a, c, NX, NY) {
@@ -187,7 +204,7 @@
             }
             setBnd(0, div, NX, NY);
             setBnd(0, p, NX, NY);
-            linearSolve(0, p, div, 1, 6, NX, NY);
+            linearSolve(0, p, div, 1, 4, NX, NY);
 
             for (let j = 1; j < NY - 1; j++) {
                 for (let i = 1; i < NX - 1; i++) {

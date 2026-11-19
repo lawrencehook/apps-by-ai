@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Remove Duplicate Lines - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -165,7 +166,7 @@
             const removeEmpty = document.getElementById('removeEmpty').checked;
             const preserveOrder = document.getElementById('preserveOrder').checked;
 
-            let lines = inputText.value.split('\n');
+            let lines = inputText.value === '' ? [] : inputText.value.split('\n');
             const originalCount = lines.length;
 
             if (trimWhitespace) {
@@ -213,20 +214,25 @@
         });
 
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(outputText.value).then(() => {
-                document.getElementById('copyBtn').textContent = 'Copied!';
-                setTimeout(() => {
-                    document.getElementById('copyBtn').textContent = 'Copy';
-                }, 1500);
-            }).catch(() => {
-                outputText.select();
-                document.execCommand('copy');
-                document.getElementById('copyBtn').textContent = 'Copied!';
-                setTimeout(() => {
-                    document.getElementById('copyBtn').textContent = 'Copy';
-                }, 1500);
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(outputText.value).then(showCopied).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
         });
+
+        function showCopied() {
+            document.getElementById('copyBtn').textContent = 'Copied!';
+            setTimeout(() => {
+                document.getElementById('copyBtn').textContent = 'Copy';
+            }, 1500);
+        }
+
+        function fallbackCopy() {
+            outputText.select();
+            try { document.execCommand('copy'); } catch (e) { return; }
+            showCopied();
+        }
     </script>
 </body>
 </html>

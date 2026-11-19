@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Rotate - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
     <style>
@@ -186,6 +187,7 @@
         // pdfLibDoc removed - save handler loads from arrayBuffer directly
         let pageRotations = [];
         let selectedPages = new Set();
+        let loadId = 0;
 
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -220,19 +222,23 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }
 
+            const id = ++loadId; // a second file chosen mid-load takes over
             showStatus('Loading PDF...');
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                currentFile = { file, arrayBuffer };
 
                 // Load with pdf.js for previews
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+                const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+                if (id !== loadId) { doc.destroy(); return; }
+                if (pdfDoc) pdfDoc.destroy();
+                pdfDoc = doc;
+                currentFile = { file, arrayBuffer };
 
                 const pageCount = pdfDoc.numPages;
                 pageRotations = new Array(pageCount).fill(0);
@@ -244,6 +250,7 @@
                 editorPanel.classList.remove('hidden');
                 status.classList.remove('show');
             } catch (err) {
+                if (id !== loadId) return;
                 showStatus('Error loading PDF: ' + err.message, true);
             }
         }
@@ -295,17 +302,31 @@
             updateSelectHint();
         }
 
-        async function renderPagePreview(pageIndex, canvas) {
-            const page = await pdfDoc.getPage(pageIndex + 1);
+        // pdf.js refuses two render() calls on one canvas, so renders are queued per canvas
+        // and a queued render is skipped when a newer one has been requested.
+        const previewQueue = new WeakMap();
 
-            const rotation = pageRotations[pageIndex];
-            const viewport = page.getViewport({ scale: 0.5, rotation });
+        function renderPagePreview(pageIndex, canvas) {
+            const state = previewQueue.get(canvas) || { chain: Promise.resolve(), latest: 0 };
+            previewQueue.set(canvas, state);
+            const id = ++state.latest;
+            const doc = pdfDoc;
 
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
+            state.chain = state.chain.then(async () => {
+                if (id !== state.latest || doc !== pdfDoc) return;
+                const page = await doc.getPage(pageIndex + 1);
 
-            const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport }).promise;
+                // Added to the page's own /Rotate, as the save does
+                const rotation = (page.rotate + pageRotations[pageIndex]) % 360;
+                const viewport = page.getViewport({ scale: 0.5, rotation });
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            }).catch(() => {}); // e.g. the document was destroyed mid-render
+            return state.chain;
         }
 
         function updateSelectHint() {
@@ -339,7 +360,7 @@
         document.getElementById('rotateLeftBtn').addEventListener('click', () => rotatePage(-90));
         document.getElementById('rotateRightBtn').addEventListener('click', () => rotatePage(90));
 
-        async function rotatePage(angle) {
+        function rotatePage(angle) {
             if (selectedPages.size === 0) {
                 showStatus('Please select at least one page to rotate', true);
                 return;
@@ -356,7 +377,7 @@
                 const rotationSpan = card.querySelector('.page-rotation');
 
                 rotationSpan.textContent = `${pageRotations[pageIndex]}°`;
-                await renderPagePreview(pageIndex, canvas);
+                renderPagePreview(pageIndex, canvas);
             }
         }
 
@@ -373,7 +394,7 @@
                 for (let i = 0; i < pages.length; i++) {
                     if (pageRotations[i] !== 0) {
                         const currentRotation = pages[i].getRotation().angle;
-                        pages[i].setRotation(degrees(currentRotation + pageRotations[i]));
+                        pages[i].setRotation(degrees((((currentRotation + pageRotations[i]) % 360) + 360) % 360));
                     }
                 }
 
@@ -386,7 +407,7 @@
                 a.download = currentFile.file.name.replace(/\.pdf$/i, '_rotated.pdf');
                 a.click();
 
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showStatus('PDF saved successfully');
             } catch (err) {
                 showStatus('Error saving PDF: ' + err.message, true);
@@ -395,7 +416,9 @@
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
+            loadId++;
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
             pageRotations = [];
             selectedPages.clear();

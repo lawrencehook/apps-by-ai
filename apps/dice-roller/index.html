@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dice Roller - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -186,7 +187,8 @@
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
             if (params.has('sides')) {
-                selectedSides = parseInt(params.get('sides'));
+                const sides = parseInt(params.get('sides'));
+                if ([4, 6, 8, 10, 12, 20].includes(sides)) selectedSides = sides;
                 document.querySelectorAll('.dice-btn').forEach(b => {
                     b.classList.toggle('selected', parseInt(b.dataset.sides) === selectedSides);
                 });
@@ -218,7 +220,8 @@
         document.getElementById('rollBtn').addEventListener('click', roll);
         roll();
         document.addEventListener('keydown', e => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
             if (e.code === 'Space' || e.code === 'Enter') {
                 e.preventDefault();
                 roll();

@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metaballs - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -32,11 +34,11 @@
         <h1>Metaballs</h1>
         <p>Organic blobs that smoothly merge together. Based on implicit surfaces.</p>
         <div class="control-group">
-            <label>Blobs: <span id="countLabel">8</span></label>
+            <label for="count">Blobs: <span id="countLabel">8</span></label>
             <input type="range" id="count" min="3" max="20" value="8">
         </div>
         <div class="control-group">
-            <label>Threshold: <span id="threshLabel">1.0</span></label>
+            <label for="threshold">Threshold: <span id="threshLabel">1.0</span></label>
             <input type="range" id="threshold" min="0.5" max="2" step="0.1" value="1">
         </div>
     </div>
@@ -64,21 +66,22 @@
                 this.hue = Math.random() * 60 + 180; // Blue-cyan range
             }
 
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
+            // frames = elapsed time in 60fps frames
+            update(frames) {
+                this.x += this.vx * frames;
+                this.y += this.vy * frames;
 
-                // Bounce off walls
-                if (this.x < 0 || this.x > window.innerWidth) this.vx *= -1;
-                if (this.y < 0 || this.y > window.innerHeight) this.vy *= -1;
+                // Bounce off walls (only while still heading out, so a ball outside doesn't jitter)
+                if ((this.x < 0 && this.vx < 0) || (this.x > window.innerWidth && this.vx > 0)) this.vx *= -1;
+                if ((this.y < 0 && this.vy < 0) || (this.y > window.innerHeight && this.vy > 0)) this.vy *= -1;
 
                 // Attract to mouse
                 const dx = mouseX - this.x;
                 const dy = mouseY - this.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < 300) {
-                    this.vx += dx * 0.0005;
-                    this.vy += dy * 0.0005;
+                    this.vx += dx * 0.0005 * frames;
+                    this.vy += dy * 0.0005 * frames;
                 }
 
                 // Limit speed
@@ -170,33 +173,36 @@
             return [Math.floor((r + m) * 255), Math.floor((g + m) * 255), Math.floor((b + m) * 255)];
         }
 
+        let lastTime = performance.now();
+
         function animate() {
+            const now = performance.now();
+            const frames = Math.min((now - lastTime) / 1000, 0.1) * 60;
+            lastTime = now;
             for (const ball of balls) {
-                ball.update();
+                ball.update(frames);
             }
             render();
             requestAnimationFrame(animate);
         }
 
-        canvas.addEventListener('mousemove', e => {
+        function setPointer(e) {
             mouseX = e.clientX;
             mouseY = e.clientY;
-        });
+        }
 
-        canvas.addEventListener('mouseleave', () => {
+        function clearPointer() {
             mouseX = -1000;
             mouseY = -1000;
-        });
+        }
 
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            mouseX = e.touches[0].clientX;
-            mouseY = e.touches[0].clientY;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', () => {
-            mouseX = -1000;
-            mouseY = -1000;
+        canvas.addEventListener('pointerdown', setPointer);
+        canvas.addEventListener('pointermove', setPointer);
+        canvas.addEventListener('pointerleave', clearPointer);
+        canvas.addEventListener('pointercancel', clearPointer);
+        canvas.addEventListener('pointerup', e => {
+            // A lifted finger has no hover position
+            if (e.pointerType !== 'mouse') clearPointer();
         });
 
         document.getElementById('count').addEventListener('input', e => {

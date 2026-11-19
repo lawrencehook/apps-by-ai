@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Typing Speed Test - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -221,7 +222,7 @@
 
         <div class="settings">
             <div class="setting-group">
-                <span class="setting-label">Duration:</span>
+                <label class="setting-label" for="duration">Duration:</label>
                 <select id="duration">
                     <option value="30">30 seconds</option>
                     <option value="60" selected>1 minute</option>
@@ -229,7 +230,7 @@
                 </select>
             </div>
             <div class="setting-group">
-                <span class="setting-label">Source:</span>
+                <label class="setting-label" for="source">Source:</label>
                 <select id="source">
                     <option value="literature">Classic Literature</option>
                     <option value="science">Science & Nature</option>
@@ -429,10 +430,8 @@
         }
 
         function startTest() {
+            // keeps the passage already on screen (chosen at load or by resetTest)
             duration = parseInt(document.getElementById('duration').value);
-            const passage = getRandomPassage();
-            targetText = passage.text;
-            currentSource = passage.source;
             currentPosition = 0;
             correctChars = 0;
             incorrectChars = 0;
@@ -492,6 +491,11 @@
             hiddenInput.focus();
             if (!isRunning && !resultsCard.classList.contains('hidden')) {
                 resetTest();
+                // the input may still hold focus from the last test, so no focus event will start this one
+                if (document.activeElement === hiddenInput) {
+                    clickHint.classList.add('hidden');
+                    startTest();
+                }
             }
         });
 
@@ -531,9 +535,14 @@
             renderText();
             updateStats();
 
-            // Check if completed
+            // Passage finished before the time is up: carry on with another one
             if (currentPosition >= targetText.length) {
-                endTest();
+                let next = getRandomPassage();
+                while (targetText.endsWith(next.text)) next = getRandomPassage();
+                targetText += ' ' + next.text;
+                currentSource = next.source;
+                sourceInfo.textContent = currentSource;
+                renderText();
             }
         });
 

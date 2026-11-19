@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A* Pathfinding - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -44,7 +45,7 @@
         <h1>A* Pathfinding</h1>
         <p>Optimal pathfinding algorithm. Draw walls, set start and end points.</p>
         <div class="control-group">
-            <label>Animation Speed: <span id="speedLabel">10</span></label>
+            <label for="speed">Animation Speed: <span id="speedLabel">10</span></label>
             <input type="range" id="speed" min="1" max="50" value="10">
         </div>
         <button id="wall" class="active">Draw Walls</button>
@@ -114,7 +115,27 @@
             height = canvas.height = window.innerHeight;
             cols = Math.floor(width / CELL_SIZE);
             rows = Math.floor(height / CELL_SIZE);
+
+            // Rebuild the grid at the new size but keep the walls, start and end that still fit
+            const oldGrid = grid, oldStart = start, oldEnd = end;
             init();
+            const inside = n => n && n.y < rows && n.x < cols;
+            let newStart = inside(oldStart) ? grid[oldStart.y][oldStart.x] : start;
+            let newEnd = inside(oldEnd) ? grid[oldEnd.y][oldEnd.x] : end;
+            if (newStart === newEnd) {
+                if (inside(oldStart)) newEnd = start; else newStart = end;
+            }
+            start.type = EMPTY;
+            end.type = EMPTY;
+            for (let y = 0; y < Math.min(rows, oldGrid.length); y++) {
+                for (let x = 0; x < Math.min(cols, oldGrid[y].length); x++) {
+                    if (oldGrid[y][x].type === WALL) grid[y][x].type = WALL;
+                }
+            }
+            start = newStart;
+            start.type = START;
+            end = newEnd;
+            end.type = END;
         }
 
         function init() {
@@ -164,7 +185,7 @@
                                 continue;
                             }
                         }
-                        neighbors.push({ node: neighbor, cost: dx !== 0 && dy !== 0 ? 1.414 : 1 });
+                        neighbors.push({ node: neighbor, cost: dx !== 0 && dy !== 0 ? Math.SQRT2 : 1 });
                     }
                 }
             }
@@ -340,10 +361,12 @@
                     node.type = drawMode === 'draw' ? WALL : EMPTY;
                 }
             } else if (mode === 'start') {
+                if (node === end) return;
                 if (start) start.type = EMPTY;
                 start = node;
                 node.type = START;
             } else if (mode === 'end') {
+                if (node === start) return;
                 if (end) end.type = EMPTY;
                 end = node;
                 node.type = END;

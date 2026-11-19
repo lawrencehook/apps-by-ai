@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Watermark - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -199,11 +200,11 @@
                 <div class="section" id="textOptions">
                     <div class="section-title">Text Options</div>
                     <div class="form-group">
-                        <label>Watermark Text</label>
+                        <label for="watermarkText">Watermark Text</label>
                         <input type="text" id="watermarkText" value="© Your Name" placeholder="Enter watermark text">
                     </div>
                     <div class="form-group">
-                        <label>Font</label>
+                        <label for="fontFamily">Font</label>
                         <select id="fontFamily">
                             <option value="Arial">Arial</option>
                             <option value="Georgia">Georgia</option>
@@ -213,11 +214,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Font Size</label>
+                        <label for="fontSize">Font Size</label>
                         <input type="number" id="fontSize" value="48" min="8" max="200">
                     </div>
                     <div class="form-group">
-                        <label>Color</label>
+                        <label for="textColor">Color</label>
                         <div class="color-row">
                             <input type="color" id="textColor" value="#ffffff">
                             <span>Text Color</span>
@@ -234,7 +235,7 @@
                     <div id="watermarkImagePreview" style="margin-top: 8px; color: #888; font-size: 0.85rem;"></div>
                     <div class="form-group">
                         <div class="slider-header">
-                            <label>Scale</label>
+                            <label for="imageScale">Scale</label>
                             <span class="slider-value" id="imageScaleValue">20%</span>
                         </div>
                         <input type="range" id="imageScale" min="5" max="100" value="20">
@@ -244,7 +245,7 @@
                 <div class="section">
                     <div class="section-title">Opacity</div>
                     <div class="slider-header">
-                        <label>Opacity</label>
+                        <label for="opacity">Opacity</label>
                         <span class="slider-value" id="opacityValue">50%</span>
                     </div>
                     <input type="range" id="opacity" min="5" max="100" value="50">
@@ -310,7 +311,35 @@
         });
         fileInput.addEventListener('change', e => {
             if (e.target.files[0]) handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
         });
+
+        function showError(message) {
+            status.textContent = message;
+            status.style.background = 'rgba(255, 107, 107, 0.1)';
+            status.style.color = '#ff6b6b';
+            status.className = 'status show';
+        }
+
+        // Canvas only encodes PNG, JPEG and WebP; other inputs (GIF, BMP, SVG) are saved as PNG
+        function outputType(type) {
+            return ['image/png', 'image/jpeg', 'image/webp'].includes(type) ? type : 'image/png';
+        }
+
+        function downloadCanvas(canvas, type, quality, baseName, done) {
+            canvas.toBlob(blob => {
+                if (!blob) { done(null); return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // blob.type is what the browser really encoded (PNG if it lacks the requested encoder)
+                const ext = (blob.type || 'image/png').split('/')[1];
+                a.download = `${baseName}.${ext === 'jpeg' ? 'jpg' : ext}`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                done(blob);
+            }, type, quality);
+        }
 
         function handleFile(file) {
             if (!file.type.startsWith('image/')) {
@@ -327,8 +356,13 @@
             currentImage = { file, type: file.type };
 
             const reader = new FileReader();
+            reader.onerror = () => showError('Error reading file. Please try again.');
             reader.onload = e => {
                 const img = new Image();
+                img.onerror = () => {
+                    showError('Could not load image. The file may be corrupt.');
+                    currentImage = null;
+                };
                 img.onload = () => {
                     currentImage.img = img;
                     updatePreview();
@@ -356,9 +390,15 @@
         document.getElementById('watermarkImageInput').addEventListener('change', e => {
             if (e.target.files[0]) {
                 const file = e.target.files[0];
+                e.target.value = ''; // so picking the same file again fires change
                 const reader = new FileReader();
+                const failed = () => {
+                    document.getElementById('watermarkImagePreview').textContent = `Could not load ${file.name}`;
+                };
+                reader.onerror = failed;
                 reader.onload = ev => {
                     const img = new Image();
+                    img.onerror = failed;
                     img.onload = () => {
                         watermarkImage = img;
                         document.getElementById('watermarkImagePreview').textContent =
@@ -396,7 +436,18 @@
             document.getElementById('imageScaleValue').textContent = e.target.value + '%';
         });
 
+        // Typing and slider drags fire many events; redraw the full-size canvas once per frame
+        let previewQueued = false;
         function updatePreview() {
+            if (previewQueued) return;
+            previewQueued = true;
+            requestAnimationFrame(() => {
+                previewQueued = false;
+                renderPreview();
+            });
+        }
+
+        function renderPreview() {
             if (!currentImage || !currentImage.img) return;
 
             const img = currentImage.img;
@@ -469,8 +520,22 @@
             }
         }
 
+        // The canvas rectangle in the tile grid's coordinates (rotated -30deg about the
+        // top-left corner). Looping over this box covers the image whatever its shape.
+        function tileBounds(canvasWidth, canvasHeight) {
+            const sin = Math.sin(Math.PI / 6);
+            const cos = Math.cos(Math.PI / 6);
+            return {
+                minX: -canvasHeight * sin,
+                maxX: canvasWidth * cos,
+                minY: 0,
+                maxY: canvasWidth * sin + canvasHeight * cos
+            };
+        }
+
         function drawTiledWatermark(ctx, canvasWidth, canvasHeight, isText) {
             const spacing = 100;
+            const bounds = tileBounds(canvasWidth, canvasHeight);
 
             if (isText) {
                 const text = document.getElementById('watermarkText').value;
@@ -490,8 +555,8 @@
                 ctx.save();
                 ctx.rotate(-30 * Math.PI / 180);
 
-                for (let y = -canvasHeight; y < canvasHeight * 2; y += stepY) {
-                    for (let x = -canvasWidth; x < canvasWidth * 2; x += stepX) {
+                for (let y = bounds.minY - stepY; y < bounds.maxY + stepY; y += stepY) {
+                    for (let x = bounds.minX - stepX; x < bounds.maxX + stepX; x += stepX) {
                         ctx.fillText(text, x, y);
                     }
                 }
@@ -516,8 +581,8 @@
                 ctx.save();
                 ctx.rotate(-30 * Math.PI / 180);
 
-                for (let y = -canvasHeight; y < canvasHeight * 2; y += stepY) {
-                    for (let x = -canvasWidth; x < canvasWidth * 2; x += stepX) {
+                for (let y = bounds.minY - stepY; y < bounds.maxY + stepY; y += stepY) {
+                    for (let x = bounds.minX - stepX; x < bounds.maxX + stepX; x += stepX) {
                         ctx.drawImage(watermarkImage, x, y, finalWidth, finalHeight);
                     }
                 }
@@ -576,20 +641,20 @@
 
         document.getElementById('downloadBtn').addEventListener('click', () => {
             if (!currentImage || !currentImage.img) return;
-            const format = currentImage.type;
+            renderPreview(); // make sure a queued redraw is in the canvas
+            const format = outputType(currentImage.type);
             const quality = format === 'image/jpeg' ? 0.92 : undefined;
-            const dataUrl = previewCanvas.toDataURL(format, quality);
-
-            let ext = format.split('/')[1];
-            if (ext === 'jpeg') ext = 'jpg';
             const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${baseName}_watermarked.${ext}`;
-            a.click();
-
-            status.textContent = 'Image downloaded!';
-            status.className = 'status show';
+            downloadCanvas(previewCanvas, format, quality, `${baseName}_watermarked`, blob => {
+                if (!blob) {
+                    showError('Could not encode the image.');
+                    return;
+                }
+                status.style.background = '';
+                status.style.color = '';
+                status.textContent = 'Image downloaded!';
+                status.className = 'status show';
+            });
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {

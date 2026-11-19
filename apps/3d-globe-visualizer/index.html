@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Globe Visualizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,7 +16,7 @@
             align-items: center;
             min-height: 100vh;
         }
-        canvas { display: block; cursor: grab; }
+        canvas { display: block; cursor: grab; touch-action: none; }
         canvas:active { cursor: grabbing; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
@@ -125,7 +126,7 @@
             </div>
 
             <div class="control-group">
-                <label>Rotation: <span id="speedLabel">0.2</span></label>
+                <label for="speed">Rotation: <span id="speedLabel">0.2</span></label>
                 <input type="range" id="speed" min="0" max="2" step="0.1" value="0.2">
             </div>
 
@@ -142,6 +143,7 @@
 
     <script src="../../libs/d3-7.9.0/d3.min.js"></script>
     <script src="../../libs/topojson-client-3.1.0/topojson-client.min.js"></script>
+    <script src="land-110m.js"></script>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -210,13 +212,10 @@
         const graticule = d3.geoGraticule10();
 
         // Load land data
-        fetch('land-110m.json')
-            .then(r => r.json())
-            .then(topology => {
-                landData = topojson.feature(topology, topology.objects.land);
-                console.log('Land data loaded');
-            })
-            .catch(err => console.error('Failed to load land data:', err));
+        // Shipped as a script global so it also loads from file://
+        if (window.LAND_110M) {
+            landData = topojson.feature(window.LAND_110M, window.LAND_110M.objects.land);
+        }
 
         // Stars background
         let stars = [];
@@ -394,8 +393,8 @@
 
                     // Animated plane dot - only show if position is visible
                     const t = (Date.now() % 3000) / 3000;
-                    const interpLon = city1.lon + (city2.lon - city1.lon) * t;
-                    const interpLat = city1.lat + (city2.lat - city1.lat) * t;
+                    // Same great circle the path generator draws
+                    const [interpLon, interpLat] = d3.geoInterpolate([city1.lon, city1.lat], [city2.lon, city2.lat])(t);
 
                     if (isVisible(interpLon, interpLat)) {
                         const planePos = projection([interpLon, interpLat]);
@@ -459,14 +458,16 @@
         }
 
         // Drag to rotate
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
+            if (!e.isPrimary) return;
+            canvas.setPointerCapture(e.pointerId);
             isDragging = true;
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
         });
 
-        canvas.addEventListener('mousemove', e => {
-            if (isDragging) {
+        canvas.addEventListener('pointermove', e => {
+            if (isDragging && e.isPrimary) {
                 const deltaX = e.clientX - lastMouseX;
                 const deltaY = e.clientY - lastMouseY;
                 const sensitivity = 0.3 / zoom;
@@ -497,34 +498,8 @@
             }
         });
 
-        canvas.addEventListener('mouseup', () => isDragging = false);
-        canvas.addEventListener('mouseleave', () => isDragging = false);
-
-        // Touch support
-        canvas.addEventListener('touchstart', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            isDragging = true;
-            lastMouseX = touch.clientX;
-            lastMouseY = touch.clientY;
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            if (isDragging && e.touches.length === 1) {
-                const touch = e.touches[0];
-                const deltaX = touch.clientX - lastMouseX;
-                const deltaY = touch.clientY - lastMouseY;
-                const sensitivity = 0.3 / zoom;
-                rotation[0] += deltaX * sensitivity;
-                rotation[1] -= deltaY * sensitivity;
-                rotation[1] = Math.max(-90, Math.min(90, rotation[1]));
-                lastMouseX = touch.clientX;
-                lastMouseY = touch.clientY;
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', () => isDragging = false);
+        canvas.addEventListener('pointerup', () => isDragging = false);
+        canvas.addEventListener('pointercancel', () => isDragging = false);
 
         canvas.addEventListener('wheel', e => {
             e.preventDefault();

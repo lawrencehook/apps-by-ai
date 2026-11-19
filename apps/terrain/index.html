@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terrain Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -13,6 +14,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -39,21 +41,21 @@
     <canvas id="canvas"></canvas>
     <div class="controls">
         <h1>Terrain Generator</h1>
-        <p>Procedural landscape with sculpting. Drag to rotate, scroll to zoom.</p>
+        <p>Procedural landscape with sculpting. Drag the background to rotate, scroll or pinch to zoom.</p>
         <div class="control-group">
-            <label>Height Scale: <span id="heightLabel">80</span></label>
+            <label for="height">Height Scale: <span id="heightLabel">80</span></label>
             <input type="range" id="height" min="20" max="150" value="80">
         </div>
         <div class="control-group">
-            <label>Water Level: <span id="waterLabel">0.35</span></label>
+            <label for="water">Water Level: <span id="waterLabel">0.35</span></label>
             <input type="range" id="water" min="0" max="0.6" step="0.05" value="0.35">
         </div>
         <div class="control-group">
-            <label>Time of Day: <span id="timeLabel">12:00</span></label>
+            <label for="timeOfDay">Time of Day: <span id="timeLabel">12:00</span></label>
             <input type="range" id="timeOfDay" min="0" max="24" step="0.5" value="12">
         </div>
         <div class="control-group">
-            <label>Brush Size: <span id="brushLabel">3</span></label>
+            <label for="brush">Brush Size: <span id="brushLabel">3</span></label>
             <input type="range" id="brush" min="1" max="8" value="3">
         </div>
         <button id="raise" class="active">Raise</button>
@@ -287,7 +289,8 @@
                 }
             }
 
-            return bestTile;
+            // a pointer well away from every tile is on the background (used for rotating)
+            return bestDist <= tw * 3 ? bestTile : null;
         }
 
         function sculptTerrain(gx, gy, mode) {
@@ -422,7 +425,29 @@
         }
 
         // Event listeners
+        // Active pointers, for two-finger pinch zoom
+        const pointers = new Map();
+        let pinchDistance = 0;
+
+        function pointerSpread() {
+            const [a, b] = Array.from(pointers.values());
+            return Math.hypot(a.x - b.x, a.y - b.y);
+        }
+
+        function endPointer(e) {
+            pointers.delete(e.pointerId);
+            isDragging = false;
+            isSculpting = false;
+        }
+
         canvas.addEventListener('pointerdown', e => {
+            pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.size === 2) {
+                isDragging = false;
+                isSculpting = false;
+                pinchDistance = pointerSpread();
+                return;
+            }
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
             if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
@@ -438,6 +463,13 @@
         });
 
         canvas.addEventListener('pointermove', e => {
+            if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pointers.size === 2) {
+                const spread = pointerSpread();
+                if (pinchDistance > 0) zoom = Math.max(0.5, Math.min(3, zoom * spread / pinchDistance));
+                pinchDistance = spread;
+                return;
+            }
             if (isSculpting) {
                 const tile = screenToGrid(e.clientX, e.clientY);
                 if (tile) {
@@ -452,15 +484,9 @@
             }
         });
 
-        canvas.addEventListener('pointerup', () => {
-            isDragging = false;
-            isSculpting = false;
-        });
-
-        canvas.addEventListener('pointerleave', () => {
-            isDragging = false;
-            isSculpting = false;
-        });
+        canvas.addEventListener('pointerup', endPointer);
+        canvas.addEventListener('pointerleave', endPointer);
+        canvas.addEventListener('pointercancel', endPointer);
 
         canvas.addEventListener('wheel', e => {
             e.preventDefault();

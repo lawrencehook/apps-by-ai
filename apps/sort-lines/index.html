@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sort Lines - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -202,13 +203,21 @@
         const outputText = document.getElementById('outputText');
         let currentSort = 'alpha-asc';
 
+        // A '-' is a minus sign only at the start or after a non-word character,
+        // so the hyphen in "task-10" is a separator
+        function lineNumber(line) {
+            const m = line.match(/(?:^|\W)(-\d+\.?\d*)|(\d+\.?\d*)/);
+            return m ? parseFloat(m[1] || m[2]) : 0;
+        }
+
         function sort() {
             const caseSensitive = document.getElementById('caseSensitive').checked;
             const removeEmpty = document.getElementById('removeEmpty').checked;
             const removeDuplicates = document.getElementById('removeDuplicates').checked;
             const trimLines = document.getElementById('trimLines').checked;
 
-            let lines = inputText.value.split('\n');
+            let lines = inputText.value === '' ? [] : inputText.value.split('\n');
+            const inputCount = lines.length;
 
             if (trimLines) {
                 lines = lines.map(line => line.trim());
@@ -245,15 +254,15 @@
                     break;
                 case 'num-asc':
                     lines.sort((a, b) => {
-                        const numA = parseFloat(a.match(/-?\d+\.?\d*/)?.[0] || 0);
-                        const numB = parseFloat(b.match(/-?\d+\.?\d*/)?.[0] || 0);
+                        const numA = lineNumber(a);
+                        const numB = lineNumber(b);
                         return numA - numB;
                     });
                     break;
                 case 'num-desc':
                     lines.sort((a, b) => {
-                        const numA = parseFloat(a.match(/-?\d+\.?\d*/)?.[0] || 0);
-                        const numB = parseFloat(b.match(/-?\d+\.?\d*/)?.[0] || 0);
+                        const numA = lineNumber(a);
+                        const numB = lineNumber(b);
                         return numB - numA;
                     });
                     break;
@@ -275,7 +284,7 @@
             }
 
             outputText.value = lines.join('\n');
-            document.getElementById('inputCount').textContent = inputText.value.split('\n').length + ' lines';
+            document.getElementById('inputCount').textContent = inputCount + ' lines';
             document.getElementById('outputCount').textContent = lines.length + ' lines';
         }
 

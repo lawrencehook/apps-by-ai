@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YAML ↔ JSON Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -154,7 +155,7 @@
 
         <div class="options">
             <div class="option">
-                <label>JSON indent:</label>
+                <label for="jsonIndent">JSON indent:</label>
                 <select id="jsonIndent">
                     <option value="2">2 spaces</option>
                     <option value="4">4 spaces</option>
@@ -162,7 +163,7 @@
                 </select>
             </div>
             <div class="option">
-                <label>YAML indent:</label>
+                <label for="yamlIndent">YAML indent:</label>
                 <select id="yamlIndent">
                     <option value="2">2 spaces</option>
                     <option value="4">4 spaces</option>
@@ -201,164 +202,375 @@
     </div>
 
     <script>
-        // Simple YAML parser (handles common cases)
+        // YAML parser for the block subset people paste: nested maps and lists, comments,
+        // quoted scalars, block scalars (| and >) and flow collections. No anchors, tags or multi-docs.
         function parseYaml(yaml) {
-            const lines = yaml.split('\n');
-            const result = {};
-            const stack = [{ indent: -1, obj: result, isArray: false }];
+            const lines = yaml.replace(/\r\n?/g, '\n').split('\n');
+            let pos = 0;
+            let cur = null; // cached significant line at pos; a list item's inline content replaces it
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmed = line.trim();
-
-                // Skip empty lines and comments
-                if (!trimmed || trimmed.startsWith('#')) continue;
-
-                // Calculate indent
-                const indent = line.search(/\S/);
-
-                // Pop stack to find parent
-                while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
-                    stack.pop();
-                }
-
-                const parent = stack[stack.length - 1];
-
-                // Array item
-                if (trimmed.startsWith('- ')) {
-                    const value = trimmed.substring(2).trim();
-
-                    if (!Array.isArray(parent.obj)) {
-                        // The parent frame represents a key whose value should be an array.
-                        // Go up one level to the grandparent and replace the empty object with an array.
-                        const lastKey = parent.lastKey;
-                        if (stack.length >= 2) {
-                            const grandparent = stack[stack.length - 2];
-                            grandparent.obj[lastKey] = [];
-                            // Replace current stack frame with the array
-                            stack[stack.length - 1] = { indent: parent.indent, obj: grandparent.obj[lastKey], isArray: true, lastKey: lastKey };
-                        } else {
-                            parent.obj[lastKey] = [];
-                            stack.push({ indent, obj: parent.obj[lastKey], isArray: true });
-                        }
-                    }
-
-                    const arr = stack[stack.length - 1].obj;
-
-                    if (value.includes(': ')) {
-                        // Object in array
-                        const [key, val] = splitFirst(value, ':');
-                        const obj = {};
-                        obj[key.trim()] = parseValue(val.trim());
-                        arr.push(obj);
-                        stack.push({ indent: indent + 2, obj: obj, isArray: false, lastKey: key.trim() });
-                    } else if (value) {
-                        arr.push(parseValue(value));
-                    } else {
-                        // Nested object in array
-                        const obj = {};
-                        arr.push(obj);
-                        stack.push({ indent: indent + 2, obj: obj, isArray: false });
-                    }
-                }
-                // Key-value pair
-                else if (trimmed.includes(':')) {
-                    const [key, val] = splitFirst(trimmed, ':');
-                    const keyTrimmed = key.trim();
-                    const valTrimmed = val.trim();
-
-                    if (valTrimmed === '' || valTrimmed === '|' || valTrimmed === '>') {
-                        // Nested object or multiline string
-                        if (valTrimmed === '|' || valTrimmed === '>') {
-                            // Multiline string - collect following indented lines
-                            let multiline = [];
-                            const baseIndent = indent;
-                            while (i + 1 < lines.length) {
-                                const nextLine = lines[i + 1];
-                                const nextIndent = nextLine.search(/\S/);
-                                if (nextIndent > baseIndent || nextLine.trim() === '') {
-                                    multiline.push(nextLine.substring(baseIndent + 2) || '');
-                                    i++;
-                                } else {
-                                    break;
-                                }
-                            }
-                            parent.obj[keyTrimmed] = multiline.join(valTrimmed === '|' ? '\n' : ' ').trim();
-                        } else {
-                            parent.obj[keyTrimmed] = {};
-                            stack.push({ indent, obj: parent.obj[keyTrimmed], isArray: false, lastKey: keyTrimmed });
-                        }
-                        parent.lastKey = keyTrimmed;
-                    } else {
-                        parent.obj[keyTrimmed] = parseValue(valTrimmed);
-                        parent.lastKey = keyTrimmed;
-                    }
-                }
+            function fail(msg) {
+                throw new Error(msg + ' (line ' + Math.min(pos + 1, lines.length) + ')');
             }
 
+            function peek() {
+                if (cur) return cur;
+                for (; pos < lines.length; pos++) {
+                    const raw = lines[pos];
+                    const text = stripYamlComment(raw).trim();
+                    if (!text) continue;
+                    const indent = raw.search(/\S/);
+                    if (raw.slice(0, indent).includes('\t')) fail('Tabs cannot be used for indentation');
+                    return cur = { indent, text };
+                }
+                return null;
+            }
+
+            function advance() {
+                cur = null;
+                pos++;
+            }
+
+            function isSeqEntry(text) {
+                return text === '-' || text.startsWith('- ');
+            }
+
+            function parseNode(indent) {
+                const line = peek();
+                if (isSeqEntry(line.text)) return parseSeq(indent);
+                if (splitYamlKey(line.text)) return parseMap(indent);
+                advance();
+                return parseScalar(line.text, indent - 1);
+            }
+
+            function parseSeq(indent) {
+                const arr = [];
+                let line;
+                while ((line = peek()) && line.indent === indent && isSeqEntry(line.text)) {
+                    const rest = line.text.slice(1).trim();
+                    if (!rest) {
+                        advance();
+                        const next = peek();
+                        arr.push(next && next.indent > indent ? parseNode(next.indent) : null);
+                    } else if (isSeqEntry(rest) || splitYamlKey(rest)) {
+                        // "- key: value" / "- - x": the rest of the line is a nested block
+                        // whose indent is the column where it starts
+                        cur = { indent: indent + line.text.length - rest.length, text: rest };
+                        arr.push(parseNode(cur.indent));
+                    } else {
+                        advance();
+                        arr.push(parseScalar(rest, indent));
+                    }
+                }
+                if (line && line.indent > indent) fail('Unexpected indentation');
+                return arr;
+            }
+
+            function parseMap(indent) {
+                const obj = {};
+                let line;
+                while ((line = peek()) && line.indent === indent) {
+                    const kv = splitYamlKey(line.text);
+                    if (!kv) fail('Expected "key: value"');
+                    advance();
+                    let value = null;
+                    if (kv.rest === '') {
+                        const next = peek();
+                        if (next && next.indent > indent) value = parseNode(next.indent);
+                        // a list may sit at the same indent as its key
+                        else if (next && next.indent === indent && isSeqEntry(next.text)) value = parseSeq(indent);
+                    } else {
+                        value = parseScalar(kv.rest, indent);
+                    }
+                    setYamlKey(obj, kv.key, value);
+                }
+                if (line && line.indent > indent) fail('Unexpected indentation');
+                return obj;
+            }
+
+            // text is the scalar's first line (already consumed); parentIndent is the indent
+            // that continuation lines and block scalar content must exceed
+            function parseScalar(text, parentIndent) {
+                const block = /^([|>])([+-]?[1-9]?|[1-9][+-])$/.exec(text);
+                if (block) return parseBlockScalar(block[1], block[2], parentIndent);
+                if (text[0] === '"' || text[0] === "'") {
+                    const q = readYamlQuoted(text, 0);
+                    if (!q) fail('Unterminated quoted string');
+                    if (q.end !== text.length) fail('Unexpected text after quoted string');
+                    return q.value;
+                }
+                if (text[0] === '[' || text[0] === '{') {
+                    for (;;) {
+                        try {
+                            return parseYamlFlow(text);
+                        } catch (e) {
+                            const next = e.incomplete && peek();
+                            if (!next) fail(e.message);
+                            text += ' ' + next.text;
+                            advance();
+                        }
+                    }
+                }
+                // plain scalars may continue on more-indented lines
+                let next;
+                while ((next = peek()) && next.indent > parentIndent) {
+                    if (isSeqEntry(next.text) || splitYamlKey(next.text)) fail('Unexpected indentation');
+                    text += ' ' + next.text;
+                    advance();
+                }
+                return parseYamlPlain(text);
+            }
+
+            function parseBlockScalar(style, indicators, parentIndent) {
+                const chomp = (/[+-]/.exec(indicators) || [''])[0];
+                const explicit = /[1-9]/.exec(indicators);
+                let contentIndent = explicit ? Math.max(parentIndent, 0) + Number(explicit[0]) : -1;
+                const out = [];
+                while (pos < lines.length) {
+                    const raw = lines[pos];
+                    if (raw.trim() === '') {
+                        out.push('');
+                    } else {
+                        const indent = raw.search(/\S/);
+                        if (contentIndent < 0) {
+                            if (indent <= parentIndent) break;
+                            contentIndent = indent;
+                        } else if (indent < contentIndent) {
+                            break;
+                        }
+                        out.push(raw.slice(contentIndent));
+                    }
+                    pos++;
+                }
+                let trailing = 0;
+                while (out.length && out[out.length - 1] === '') {
+                    out.pop();
+                    trailing++;
+                }
+                let body;
+                if (style === '|') {
+                    body = out.join('\n');
+                } else {
+                    // folded: a single line break becomes a space, blank and more-indented lines keep theirs
+                    body = '';
+                    let blanks = 0;
+                    let prev = null;
+                    for (const l of out) {
+                        if (l === '') {
+                            blanks++;
+                            continue;
+                        }
+                        const literal = /^\s/.test(l) || (prev !== null && /^\s/.test(prev));
+                        if (prev === null) body += '\n'.repeat(blanks);
+                        else if (literal) body += '\n'.repeat(blanks + 1);
+                        else body += blanks ? '\n'.repeat(blanks) : ' ';
+                        body += l;
+                        blanks = 0;
+                        prev = l;
+                    }
+                }
+                if (chomp === '-') return body;
+                if (chomp === '+') return body + '\n'.repeat(trailing + (out.length ? 1 : 0));
+                return body ? body + '\n' : '';
+            }
+
+            let first = peek();
+            if (first && first.text === '---') {
+                advance();
+                first = peek();
+            }
+            if (!first) return null;
+            const result = parseNode(first.indent);
+            const extra = peek();
+            if (extra) {
+                fail(extra.text === '---' ? 'Multiple YAML documents are not supported' :
+                    extra.indent < first.indent ? 'Unexpected indentation' : 'Unexpected content');
+            }
             return result;
         }
 
-        function splitFirst(str, delimiter) {
-            const idx = str.indexOf(delimiter);
-            if (idx === -1) return [str, ''];
-            return [str.substring(0, idx), str.substring(idx + 1)];
+        function setYamlKey(obj, key, value) {
+            // plain assignment to "__proto__" would change the prototype instead of adding a key
+            Object.defineProperty(obj, key, { value, enumerable: true, writable: true, configurable: true });
         }
 
-        function parseValue(val) {
+        // Cut a trailing "# comment"; a # inside quotes or not preceded by whitespace is content
+        function stripYamlComment(s) {
+            let quote = '';
+            for (let i = 0; i < s.length; i++) {
+                const c = s[i];
+                if (quote) {
+                    if (c === '\\' && quote === '"') i++;
+                    else if (c === "'" && quote === "'" && s[i + 1] === "'") i++;
+                    else if (c === quote) quote = '';
+                } else if (c === '#' && (i === 0 || /\s/.test(s[i - 1]))) {
+                    return s.slice(0, i);
+                } else if ((c === '"' || c === "'") && /(^|[\[{,]|[:-]\s)\s*$/.test(s.slice(0, i))) {
+                    // only a quote that starts a scalar opens a string (not the one in "don't")
+                    quote = c;
+                }
+            }
+            return s;
+        }
+
+        // Read the quoted scalar starting at s[i]; returns null if it never closes
+        function readYamlQuoted(s, i) {
+            const quote = s[i];
+            const escapes = { n: '\n', t: '\t', r: '\r', 0: '\0', a: '\x07', b: '\b', e: '\x1b', f: '\f', v: '\v', N: '\x85', _: '\xa0' };
+            const hexLen = { x: 2, u: 4, U: 8 };
+            let out = '';
+            for (let j = i + 1; j < s.length; j++) {
+                const c = s[j];
+                if (quote === "'") {
+                    if (c !== "'") out += c;
+                    else if (s[j + 1] === "'") { out += "'"; j++; }
+                    else return { value: out, end: j + 1 };
+                } else if (c === '\\') {
+                    const e = s[++j];
+                    if (e === undefined) return null;
+                    if (hexLen[e]) {
+                        const hex = s.substr(j + 1, hexLen[e]);
+                        if (hex.length !== hexLen[e] || !/^[0-9a-fA-F]+$/.test(hex) || parseInt(hex, 16) > 0x10FFFF) {
+                            throw new Error('Invalid escape \\' + e + hex);
+                        }
+                        out += String.fromCodePoint(parseInt(hex, 16));
+                        j += hexLen[e];
+                    } else {
+                        out += Object.prototype.hasOwnProperty.call(escapes, e) ? escapes[e] : e;
+                    }
+                } else if (c === '"') {
+                    return { value: out, end: j + 1 };
+                } else {
+                    out += c;
+                }
+            }
+            return null;
+        }
+
+        // "key: rest" -> { key, rest }, or null when the text is not a mapping entry
+        function splitYamlKey(text) {
+            if (text[0] === '"' || text[0] === "'") {
+                let q;
+                try { q = readYamlQuoted(text, 0); } catch (e) { return null; }
+                if (!q) return null;
+                const m = /^\s*:(\s+|$)/.exec(text.slice(q.end));
+                return m ? { key: q.value, rest: text.slice(q.end + m[0].length).trim() } : null;
+            }
+            if (text[0] === '[' || text[0] === '{') return null;
+            const m = /:(\s|$)/.exec(text);
+            if (!m) return null;
+            return { key: text.slice(0, m.index).trim(), rest: text.slice(m.index + 1).trim() };
+        }
+
+        // Flow collection on one logical line: [a, "b", {c: 1}]
+        function parseYamlFlow(s) {
+            let i = 0;
+            function incomplete() {
+                const e = new Error('Unterminated flow collection');
+                e.incomplete = true;
+                throw e;
+            }
+            function ws() {
+                while (i < s.length && /\s/.test(s[i])) i++;
+            }
+            // returns the raw scalar and whether it was quoted
+            function scalar() {
+                if (s[i] === '"' || s[i] === "'") {
+                    const q = readYamlQuoted(s, i);
+                    if (!q) incomplete();
+                    i = q.end;
+                    return { text: q.value, quoted: true };
+                }
+                const start = i;
+                while (i < s.length && !',]}'.includes(s[i]) &&
+                    !(s[i] === ':' && (i + 1 === s.length || /[\s,\]}]/.test(s[i + 1])))) i++;
+                return { text: s.slice(start, i).trim(), quoted: false };
+            }
+            function value() {
+                ws();
+                if (i >= s.length) incomplete();
+                if (s[i] === '[') return seq();
+                if (s[i] === '{') return map();
+                const sc = scalar();
+                return sc.quoted ? sc.text : parseYamlPlain(sc.text);
+            }
+            function separator(close) {
+                ws();
+                if (i >= s.length) incomplete();
+                if (s[i] === ',') i++;
+                else if (s[i] !== close) throw new Error('Expected "," or "' + close + '" in flow collection');
+            }
+            function seq() {
+                const arr = [];
+                i++;
+                for (;;) {
+                    ws();
+                    if (i >= s.length) incomplete();
+                    if (s[i] === ']') { i++; return arr; }
+                    arr.push(value());
+                    separator(']');
+                }
+            }
+            function map() {
+                const obj = {};
+                i++;
+                for (;;) {
+                    ws();
+                    if (i >= s.length) incomplete();
+                    if (s[i] === '}') { i++; return obj; }
+                    const key = scalar().text;
+                    ws();
+                    let val = null;
+                    if (s[i] === ':') {
+                        i++;
+                        ws();
+                        if (s[i] !== ',' && s[i] !== '}') val = value();
+                    }
+                    setYamlKey(obj, key, val);
+                    separator('}');
+                }
+            }
+            const result = value();
+            ws();
+            if (i < s.length) throw new Error('Unexpected text after flow collection');
+            return result;
+        }
+
+        // Unquoted scalar -> null, boolean, number or string
+        function parseYamlPlain(val) {
+            if (val === '' || val === '~' || val === 'null' || val === 'Null' || val === 'NULL') return null;
             if (val === 'true' || val === 'True' || val === 'TRUE') return true;
             if (val === 'false' || val === 'False' || val === 'FALSE') return false;
-            if (val === 'null' || val === 'Null' || val === 'NULL' || val === '~') return null;
-            if (/^-?\d+$/.test(val)) return parseInt(val, 10);
-            if (/^-?\d*\.\d+$/.test(val)) return parseFloat(val);
-            // Remove quotes
-            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-                return val.slice(1, -1);
-            }
-            // Inline array
-            if (val.startsWith('[') && val.endsWith(']')) {
-                try {
-                    return JSON.parse(val);
-                } catch (e) {
-                    return val;
-                }
-            }
-            // Inline object
-            if (val.startsWith('{') && val.endsWith('}')) {
-                try {
-                    return JSON.parse(val);
-                } catch (e) {
-                    return val;
-                }
-            }
+            if (/^[-+]?\d+$/.test(val)) return parseInt(val, 10);
+            if (/^0x[0-9a-fA-F]+$/.test(val)) return parseInt(val, 16);
+            if (/^0o[0-7]+$/.test(val)) return parseInt(val.slice(2), 8);
+            if (/^[-+]?(\.\d+|\d+(\.\d*)?)([eE][-+]?\d+)?$/.test(val)) return parseFloat(val);
             return val;
         }
 
         // JSON to YAML converter
         function jsonToYaml(obj, indent = 0, indentSize = 2) {
             const spaces = ' '.repeat(indent);
-            let yaml = '';
+            const isBlock = v => typeof v === 'object' && v !== null && (Array.isArray(v) ? v.length : Object.keys(v).length) > 0;
+            if (!isBlock(obj)) return spaces + formatYamlValue(obj, indent + indentSize) + '\n';
 
+            let yaml = '';
             if (Array.isArray(obj)) {
                 for (const item of obj) {
-                    if (typeof item === 'object' && item !== null) {
-                        const inner = jsonToYaml(item, indent + indentSize, indentSize);
-                        const lines = inner.split('\n').filter(l => l.trim());
-                        yaml += spaces + '- ' + lines[0].trim() + '\n';
-                        for (let i = 1; i < lines.length; i++) {
-                            yaml += spaces + '  ' + lines[i].trim() + '\n';
-                        }
+                    if (isBlock(item)) {
+                        // the nested block starts on the dash line, so its content sits 2 columns in
+                        yaml += spaces + '- ' + jsonToYaml(item, indent + 2, indentSize).slice(indent + 2);
                     } else {
-                        yaml += spaces + '- ' + formatYamlValue(item) + '\n';
+                        yaml += spaces + '- ' + formatYamlValue(item, indent + 2) + '\n';
                     }
                 }
-            } else if (typeof obj === 'object' && obj !== null) {
+            } else {
                 for (const [key, value] of Object.entries(obj)) {
-                    if (typeof value === 'object' && value !== null) {
-                        yaml += spaces + key + ':\n';
+                    if (isBlock(value)) {
+                        yaml += spaces + formatYamlString(key) + ':\n';
                         yaml += jsonToYaml(value, indent + indentSize, indentSize);
                     } else {
-                        yaml += spaces + key + ': ' + formatYamlValue(value) + '\n';
+                        yaml += spaces + formatYamlString(key) + ': ' + formatYamlValue(value, indent + indentSize) + '\n';
                     }
                 }
             }
@@ -366,21 +578,39 @@
             return yaml;
         }
 
-        function formatYamlValue(val) {
+        // blockIndent is the column a block scalar's content is written at
+        function formatYamlValue(val, blockIndent = 2) {
             if (val === null) return 'null';
             if (typeof val === 'boolean') return val ? 'true' : 'false';
-            if (typeof val === 'number') return String(val);
+            if (typeof val === 'number') return Object.is(val, -0) ? '-0' : String(val);
             if (typeof val === 'string') {
-                if (val.includes('\n')) {
-                    return '|\n  ' + val.split('\n').join('\n  ');
+                // Literal block only where it round-trips: starts with text, no whitespace-only
+                // lines, at most one trailing newline, no control characters
+                if (val.includes('\n') && /^\S/.test(val) && !/\n\n$/.test(val) &&
+                    !/\n[^\S\n]+(\n|$)/.test(val) && !/[\x00-\x08\x0b-\x1f\x7f\x85\u2028\u2029]/.test(val)) {
+                    const keepNewline = val.endsWith('\n');
+                    const body = keepNewline ? val.slice(0, -1) : val;
+                    const pad = ' '.repeat(blockIndent);
+                    return (keepNewline ? '|' : '|-') + '\n' + body.split('\n').map(l => l ? pad + l : '').join('\n');
                 }
-                if (val.includes(':') || val.includes('#') || val.startsWith(' ') || val.endsWith(' ') ||
-                    val === '' || /^[\[\]{}>|*&!%@`]/.test(val)) {
-                    return JSON.stringify(val);
-                }
-                return val;
+                return formatYamlString(val);
             }
+            if (Array.isArray(val)) return '[]';
+            if (typeof val === 'object') return '{}';
             return String(val);
+        }
+
+        // Plain where a YAML parser would read the same string back, otherwise double-quoted
+        function formatYamlString(val) {
+            // digit-led strings are quoted too: YAML 1.1 parsers read 1_000, 12:30 and 2020-01-01 as numbers or dates
+            if (val === '' || parseYamlPlain(val) !== val || /^[-+]?[._]*\d/.test(val) ||
+                /^(y|n|yes|no|on|off|true|false|null|=|<<|[-+]?\.(inf|nan))$/i.test(val) ||
+                /^\s|\s$/.test(val) || /^[-?](\s|$)/.test(val) || /^[:,\[\]{}#&*!|>'"%@`]/.test(val) ||
+                /^(---|\.\.\.)/.test(val) || /:(\s|$)/.test(val) || /\s#/.test(val) ||
+                /[\x00-\x1f\x7f\x85\u2028\u2029\ufeff]/.test(val)) {
+                return JSON.stringify(val).replace(/[\x7f\x85\u2028\u2029\ufeff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+            }
+            return val;
         }
 
         let mode = 'yaml-to-json';
@@ -398,7 +628,8 @@
 
             try {
                 if (mode === 'yaml-to-json') {
-                    const parsed = parseYaml(text);
+                    // untrimmed: the first line's indentation matters
+                    const parsed = parseYaml(input.value);
                     const indent = parseInt(document.getElementById('jsonIndent').value);
                     output.value = JSON.stringify(parsed, null, indent || undefined);
                 } else {
@@ -422,6 +653,7 @@
 
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (btn.dataset.mode === mode) return;
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
@@ -513,11 +745,33 @@ settings:
             messageEl.innerHTML = '';
         });
 
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
+
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(output.value);
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy', 1500);
+            copyToClipboard(output.value).then(() => {
+                btn.textContent = 'Copied!';
+            }, () => {
+                btn.textContent = 'Copy failed';
+            }).then(() => setTimeout(() => btn.textContent = 'Copy', 1500));
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {

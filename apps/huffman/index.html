@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Huffman Encoding - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -14,7 +15,14 @@
         }
         .sidebar h1 { color: #fff; font-size: 1.3rem; margin-bottom: 8px; }
         .sidebar p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
-        .main { flex: 1; position: relative; }
+        .main { flex: 1; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+        @media (max-width: 700px) {
+            .container { flex-direction: column; }
+            .sidebar {
+                width: 100%; max-height: 45vh; border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+        }
         canvas { display: block; width: 100%; height: 100%; }
         button {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -55,7 +63,7 @@
             <h1>Huffman Encoding</h1>
             <p>Optimal prefix-free encoding. Frequent characters get shorter codes.</p>
 
-            <label>Input Text</label>
+            <label for="input">Input Text</label>
             <textarea id="input" placeholder="Enter text to encode...">hello huffman encoding</textarea>
             <button id="encode">Build Tree & Encode</button>
 
@@ -81,7 +89,7 @@
         let codes = new Map();
         let animationPhase = 0;
         let highlightPath = [];
-        let animationCancelled = false;
+        let runId = 0;
 
         class Node {
             constructor(char, freq) {
@@ -170,23 +178,41 @@
             const treeHeight = getHeight(root);
             const levelHeight = Math.min(70, (h - 100) / treeHeight);
 
-            function setPos(node, x, y, spread) {
+            // Leaves take evenly spaced slots left to right and parents sit above the
+            // middle of their children, so subtrees can never overlap at any depth.
+            const leafCount = countLeaves(root);
+            const slot = Math.min((w - 60) / leafCount, 70);
+            let nextX = w / 2 - slot * (leafCount - 1) / 2;
+
+            function setPos(node, y) {
                 if (!node) return;
 
-                node.targetX = x;
+                setPos(node.left, y + levelHeight);
+                setPos(node.right, y + levelHeight);
+
+                if (node.left && node.right) {
+                    node.targetX = (node.left.targetX + node.right.targetX) / 2;
+                } else if (node.left || node.right) {
+                    node.targetX = (node.left || node.right).targetX;
+                } else {
+                    node.targetX = nextX;
+                    nextX += slot;
+                }
                 node.targetY = y;
 
                 if (node.x === 0 && node.y === 0) {
                     node.x = w / 2;
                     node.y = 0;
                 }
-
-                setPos(node.left, x - spread, y + levelHeight, spread * 0.55);
-                setPos(node.right, x + spread, y + levelHeight, spread * 0.55);
             }
 
-            const spread = Math.min(w / 4, 150);
-            setPos(root, w / 2, 50, spread);
+            setPos(root, 50);
+        }
+
+        function countLeaves(node) {
+            if (!node) return 0;
+            if (!node.left && !node.right) return 1;
+            return countLeaves(node.left) + countLeaves(node.right);
         }
 
         function getHeight(node) {
@@ -194,7 +220,8 @@
             return 1 + Math.max(getHeight(node.left), getHeight(node.right));
         }
 
-        function animate() {
+        function animate(id) {
+            if (id !== runId) return; // a newer encode started its own loop
             let moving = false;
 
             function update(node) {
@@ -217,7 +244,7 @@
             draw();
 
             if (moving) {
-                requestAnimationFrame(animate);
+                requestAnimationFrame(() => animate(id));
             }
         }
 
@@ -325,7 +352,7 @@
             const text = document.getElementById('input').value;
             if (!text) return;
 
-            animationCancelled = true;
+            const id = ++runId;
             codes.clear();
             highlightPath = [];
 
@@ -334,7 +361,7 @@
 
             generateCodes(root);
             updatePositions();
-            animate();
+            animate(id);
 
             // Show codes table
             const tableEl = document.getElementById('codeTable');
@@ -371,15 +398,14 @@
             `;
 
             // Animate encoding
-            animateEncoding(text);
+            animateEncoding(text, id);
         }
 
-        async function animateEncoding(text) {
-            animationCancelled = false;
-            const maxChars = Math.min(text.length, 50);
+        async function animateEncoding(text, id) {
+            const chars = Array.from(text); // code points, matching the tree's leaves
+            const maxChars = Math.min(chars.length, 50);
             for (let i = 0; i < maxChars; i++) {
-                if (animationCancelled) return;
-                const char = text[i];
+                const char = chars[i];
                 highlightPath = [];
 
                 // Find path to character
@@ -400,12 +426,11 @@
                 draw();
 
                 await new Promise(r => setTimeout(r, 300));
+                if (id !== runId) return;
             }
 
-            if (!animationCancelled) {
-                highlightPath = [];
-                draw();
-            }
+            highlightPath = [];
+            draw();
         }
 
         document.getElementById('encode').addEventListener('click', encode);

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomodoro Flow - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -416,13 +417,20 @@
 
         function initAudio() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                try {
+                    audioCtx = new AudioCtx();
+                } catch (e) {
+                    audioCtx = null;
+                }
             }
         }
 
         function playNotification(isBreak) {
             if (!soundEnabled) return;
             initAudio();
+            if (!audioCtx) return;
 
             const frequencies = isBreak ? [523, 659, 784] : [784, 659, 523];
             const duration = 0.15;
@@ -447,7 +455,9 @@
             const icon = document.getElementById('soundIcon');
             btn.classList.toggle('active', soundEnabled);
             icon.textContent = soundEnabled ? '🔔' : '🔕';
-            localStorage.setItem('pomodoro-sound', soundEnabled);
+            try {
+                localStorage.setItem('pomodoro-sound', soundEnabled);
+            } catch (e) { /* storage unavailable */ }
         }
 
         // Timer state
@@ -462,6 +472,8 @@
         let state = {
             isRunning: false,
             isWorkPhase: true,
+            isLongBreak: false,
+            endTime: 0,
             timeRemaining: settings.workDuration * 60,
             currentSession: 0,
             completedSessions: 0
@@ -476,22 +488,30 @@
 
         let timerInterval = null;
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const data = JSON.parse(saved);
-                settings = { ...settings, ...data.settings };
-                stats = { ...stats, ...data.stats };
-
-                // Reset daily stats if new day
-                if (stats.lastDate !== new Date().toDateString()) {
-                    stats.todaySessions = 0;
-                    stats.todayMinutes = 0;
-                    stats.lastDate = new Date().toDateString();
-                }
+        // Reset daily stats if new day (the page can stay open past midnight)
+        function checkNewDay() {
+            const today = new Date().toDateString();
+            if (stats.lastDate !== today) {
+                stats.todaySessions = 0;
+                stats.todayMinutes = 0;
+                stats.lastDate = today;
             }
+        }
 
-            const soundPref = localStorage.getItem('pomodoro-sound');
+        function loadData() {
+            let soundPref = null;
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    settings = { ...settings, ...data.settings };
+                    stats = { ...stats, ...data.stats };
+                }
+                soundPref = localStorage.getItem('pomodoro-sound');
+            } catch (e) { /* storage unavailable or corrupt: keep defaults */ }
+
+            checkNewDay();
+
             if (soundPref !== null) {
                 soundEnabled = soundPref === 'true';
                 const btn = document.getElementById('soundToggle');
@@ -504,10 +524,13 @@
         }
 
         function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings, stats }));
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings, stats }));
+            } catch (e) { /* storage unavailable */ }
         }
 
         function updateDisplay() {
+            checkNewDay();
             const minutes = Math.floor(state.timeRemaining / 60);
             const seconds = state.timeRemaining % 60;
             document.getElementById('timerDisplay').textContent =
@@ -516,11 +539,11 @@
             // Update progress ring
             const totalTime = state.isWorkPhase
                 ? settings.workDuration * 60
-                : (state.currentSession >= settings.sessionsUntilLong
+                : (state.isLongBreak
                     ? settings.longBreakDuration * 60
                     : settings.shortBreakDuration * 60);
 
-            const progress = state.timeRemaining / totalTime;
+            const progress = Math.min(1, state.timeRemaining / totalTime);
             const circumference = 2 * Math.PI * 140;
             const offset = circumference * (1 - progress);
 
@@ -579,18 +602,29 @@
         function startTimer() {
             initAudio(); // Initialize audio on user interaction
             state.isRunning = true;
-            timerInterval = setInterval(tick, 1000);
+            // Count down from a wall-clock end time: interval callbacks are throttled in background tabs
+            state.endTime = Date.now() + state.timeRemaining * 1000;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(tick, 250);
             updateDisplay();
+        }
+
+        function remainingSeconds() {
+            return Math.max(0, Math.ceil((state.endTime - Date.now()) / 1000));
         }
 
         function pauseTimer() {
             state.isRunning = false;
             clearInterval(timerInterval);
+            state.timeRemaining = remainingSeconds();
             updateDisplay();
         }
 
         function tick() {
-            state.timeRemaining--;
+            if (!state.isRunning) return;
+            const remaining = remainingSeconds();
+            if (remaining === state.timeRemaining) return;
+            state.timeRemaining = remaining;
 
             if (state.timeRemaining <= 0) {
                 completePhase();
@@ -599,22 +633,26 @@
             updateDisplay();
         }
 
-        function completePhase() {
+        function completePhase(skipped = false) {
             clearInterval(timerInterval);
             state.isRunning = false;
 
             if (state.isWorkPhase) {
-                // Completed a work session
-                state.completedSessions++;
-                stats.todaySessions++;
-                stats.todayMinutes += settings.workDuration;
-                stats.totalSessions++;
-                saveData();
+                // A skipped work session is not credited to the stats or the cycle
+                if (!skipped) {
+                    checkNewDay();
+                    state.completedSessions++;
+                    stats.todaySessions++;
+                    stats.todayMinutes += settings.workDuration;
+                    stats.totalSessions++;
+                    saveData();
+                }
 
                 playNotification(true);
 
                 // Check if long break
-                if (state.completedSessions % settings.sessionsUntilLong === 0) {
+                state.isLongBreak = !skipped && state.completedSessions % settings.sessionsUntilLong === 0;
+                if (state.isLongBreak) {
                     state.timeRemaining = settings.longBreakDuration * 60;
                 } else {
                     state.timeRemaining = settings.shortBreakDuration * 60;
@@ -642,16 +680,14 @@
             clearInterval(timerInterval);
             state.isRunning = false;
             state.isWorkPhase = true;
+            state.isLongBreak = false;
             state.timeRemaining = settings.workDuration * 60;
             state.currentSession = 0;
             updateDisplay();
         }
 
         function skipPhase() {
-            state.timeRemaining = 1;
-            if (!state.isRunning) {
-                completePhase();
-            }
+            completePhase(true);
         }
 
         function adjustSetting(setting, delta) {
@@ -686,6 +722,14 @@
             if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
                 e.preventDefault();
                 toggleTimer();
+            }
+        });
+
+        // Catch up immediately when a throttled background tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                if (state.isRunning) tick();
+                else updateDisplay();
             }
         });
 

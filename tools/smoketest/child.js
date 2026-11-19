@@ -396,6 +396,7 @@ function beforeParse(window) {
       pdfjsLib, PDFLib: libStub('PDFLib'), Matter: libStub('Matter'), JSZip: libStub('JSZip'),
       jspdf: makeStub('jspdf', { jsPDF: libStub('jsPDF') }), jsPDF: libStub('jsPDF'),
       html2pdf: libStub('html2pdf'), qrcode: libStub('qrcode'), jsQR: () => null,
+      Papa: makeStub('Papa', { parse: (input, config) => { const parsed = { data: [], errors: [], meta: { fields: [] } }; if (config && typeof config.complete === 'function') config.complete(parsed); return parsed; }, unparse: () => '' }),
     };
     for (const [k, v] of Object.entries(libs)) { if (!(k in window)) window[k] = v; }
     result.libStubs = true;

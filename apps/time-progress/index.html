@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Progress - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -340,7 +341,7 @@
                     <div><span id="remainingCount">0</span> remaining</div>
                 </div>
                 <div class="age-input" id="ageInput">
-                    <label>Birthdate:</label>
+                    <label for="birthdate">Birthdate:</label>
                     <input type="date" id="birthdate">
                 </div>
             </div>
@@ -374,14 +375,16 @@
         // Set default birthdate to 30 years ago
         const defaultBirth = new Date();
         defaultBirth.setFullYear(defaultBirth.getFullYear() - 30);
-        birthdateInput.value = defaultBirth.toISOString().split('T')[0];
+        birthdateInput.value = `${defaultBirth.getFullYear()}-${String(defaultBirth.getMonth() + 1).padStart(2, '0')}-${String(defaultBirth.getDate()).padStart(2, '0')}`;
 
-        // Load from localStorage
-        const savedBirthdate = localStorage.getItem('timeProgressBirthdate');
-        if (savedBirthdate) birthdateInput.value = savedBirthdate;
+        // Load from localStorage (may be blocked)
+        try {
+            const savedBirthdate = localStorage.getItem('timeProgressBirthdate');
+            if (savedBirthdate) birthdateInput.value = savedBirthdate;
+        } catch (e) {}
 
         birthdateInput.addEventListener('change', () => {
-            localStorage.setItem('timeProgressBirthdate', birthdateInput.value);
+            try { localStorage.setItem('timeProgressBirthdate', birthdateInput.value); } catch (e) {}
             if (currentMode === 'age') render();
         });
 
@@ -406,8 +409,10 @@
                 { name: 'Winter', start: new Date(year, 11, 21), end: new Date(year + 1, 2, 19) }
             ];
 
+            // season.end is midnight at the start of the last day, so compare whole days
+            const day = new Date(year, date.getMonth(), date.getDate());
             for (const season of seasons) {
-                if (date >= season.start && date <= season.end) {
+                if (day >= season.start && day <= season.end) {
                     return season;
                 }
             }
@@ -419,9 +424,10 @@
         }
 
         function getDayOfYear(date) {
+            // midnight to midnight, rounded: DST makes some days 23 or 25 hours
             const start = new Date(date.getFullYear(), 0, 0);
-            const diff = date - start;
-            return Math.floor(diff / (1000 * 60 * 60 * 24));
+            const diff = new Date(date.getFullYear(), date.getMonth(), date.getDate()) - start;
+            return Math.round(diff / (1000 * 60 * 60 * 24));
         }
 
         function formatDate(date) {
@@ -432,6 +438,8 @@
             const now = new Date();
             const container = document.getElementById('gridContainer');
             container.innerHTML = '';
+            // the hovered cell is about to be replaced and will never fire mouseleave
+            tooltip.classList.remove('visible');
 
             let title, totalDays, elapsedDays, gridClass, days = [];
 
@@ -468,7 +476,7 @@
                     title = `Q${quarter} ${year}`;
                     totalDays = Math.round((quarterEnd - quarterStart) / (1000 * 60 * 60 * 24)) + 1;
                     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    elapsedDays = Math.floor((todayMidnight - quarterStart) / (1000 * 60 * 60 * 24)) + 1;
+                    elapsedDays = Math.round((todayMidnight - quarterStart) / (1000 * 60 * 60 * 24)) + 1;
                     gridClass = 'quarter-grid';
 
                     for (let i = 0; i < totalDays; i++) {
@@ -549,7 +557,8 @@
                     const seasonStart = season.start;
                     const seasonEnd = season.end;
                     totalDays = Math.round((seasonEnd - seasonStart) / (1000 * 60 * 60 * 24)) + 1;
-                    elapsedDays = Math.floor((now - seasonStart) / (1000 * 60 * 60 * 24)) + 1;
+                    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    elapsedDays = Math.round((todayMidnight - seasonStart) / (1000 * 60 * 60 * 24)) + 1;
                     gridClass = 'season-grid';
 
                     for (let i = 0; i < totalDays; i++) {
@@ -594,7 +603,7 @@
 
                     title = `Age ${age}`;
                     totalDays = Math.round((nextBirthday - lastBirthday) / (1000 * 60 * 60 * 24));
-                    elapsedDays = Math.floor((todayMidnight - lastBirthday) / (1000 * 60 * 60 * 24)) + 1;
+                    elapsedDays = Math.round((todayMidnight - lastBirthday) / (1000 * 60 * 60 * 24)) + 1;
                     gridClass = 'age-grid';
 
                     for (let i = 0; i < totalDays; i++) {

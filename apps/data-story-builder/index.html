@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Story Builder - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -447,23 +448,23 @@ Example JSON:
                 <div class="section-title">Appearance</div>
                 <div class="options-group">
                     <div class="option-row">
-                        <label>Primary Color</label>
+                        <label for="primaryColor">Primary Color</label>
                         <input type="color" id="primaryColor" value="#4ecdc4" onchange="updateChart()">
                     </div>
                     <div class="option-row">
-                        <label>Secondary Color</label>
+                        <label for="secondaryColor">Secondary Color</label>
                         <input type="color" id="secondaryColor" value="#ff6b6b" onchange="updateChart()">
                     </div>
                     <div class="option-row">
-                        <label>Animation Speed</label>
+                        <label for="animSpeed">Animation Speed</label>
                         <input type="range" id="animSpeed" min="500" max="3000" value="1500" onchange="updateAnimSpeed()">
                     </div>
                     <div class="option-row">
-                        <label>Show Grid</label>
+                        <label for="showGrid">Show Grid</label>
                         <input type="checkbox" id="showGrid" checked onchange="updateChart()">
                     </div>
                     <div class="option-row">
-                        <label>Show Values</label>
+                        <label for="showValues">Show Values</label>
                         <input type="checkbox" id="showValues" checked onchange="updateChart()">
                     </div>
                 </div>
@@ -535,19 +536,56 @@ Example JSON:
             '#00b894', '#0984e3', '#6c5ce7', '#fdcb6e', '#e17055'
         ];
 
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Split one CSV line, keeping commas inside "quoted, fields" ("" is an escaped quote)
+        function splitCSVLine(line) {
+            const out = [];
+            let cur = '', quoted = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (quoted) {
+                    if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+                    else if (c === '"') quoted = false;
+                    else cur += c;
+                } else if (c === '"') quoted = true;
+                else if (c === ',') { out.push(cur); cur = ''; }
+                else cur += c;
+            }
+            out.push(cur);
+            return out.map(v => v.trim());
+        }
+
+        // The renderers treat a column as a series when its first row is a number, and then
+        // do arithmetic on every row. Make that hold: a column whose first non-empty cell is
+        // a number gets 0 for empty or non-numeric cells; other columns are left as text.
+        function normalizeValues(parsed) {
+            const isEmpty = v => v === null || v === undefined || v === '';
+            parsed.headers.slice(1).forEach(h => {
+                const first = parsed.data.find(row => !isEmpty(row[h]));
+                if (!first || typeof first[h] !== 'number') return;
+                parsed.data.forEach(row => {
+                    if (typeof row[h] !== 'number' || !isFinite(row[h])) row[h] = 0;
+                });
+            });
+            return parsed;
+        }
+
         function parseCSV(text) {
             const lines = text.trim().split('\n').filter(l => l.trim());
             if (lines.length < 2) return null;
 
-            const headers = lines[0].split(',').map(h => h.trim());
+            const headers = splitCSVLine(lines[0]);
             const data = [];
 
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
+                const values = splitCSVLine(lines[i]);
                 const row = {};
                 headers.forEach((h, idx) => {
                     const val = values[idx];
-                    row[h] = isNaN(val) ? val : parseFloat(val);
+                    row[h] = val === undefined || val === '' ? null : (isNaN(val) ? val : Number(val));
                 });
                 data.push(row);
             }
@@ -578,7 +616,7 @@ Example JSON:
                 return;
             }
 
-            chartData = parsed;
+            chartData = normalizeValues(parsed);
             updateChart();
         }
 
@@ -680,7 +718,7 @@ Toys,28000`
             const chartColors = getChartColors();
 
             // Calculate scales
-            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k])));
+            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k]))) || 1;
             const barGroupWidth = (width - padding.left - padding.right) / data.length;
             const barWidth = Math.min(40, (barGroupWidth - 20) / valueKeys.length);
             const showGrid = document.getElementById('showGrid').checked;
@@ -707,7 +745,7 @@ Toys,28000`
                 const groupX = padding.left + i * barGroupWidth + barGroupWidth / 2;
 
                 // Label
-                inner += `<text x="${groupX}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${groupX}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${escapeHtml(d[labelKey])}</text>`;
 
                 valueKeys.forEach((key, j) => {
                     const val = d[key];
@@ -715,7 +753,7 @@ Toys,28000`
                     const x = groupX - (valueKeys.length * barWidth) / 2 + j * barWidth + 2;
                     const y = baseY - barHeight;
 
-                    inner += `<rect class="data-bar" data-label="${d[labelKey]}" data-key="${key}" data-value="${val}"
+                    inner += `<rect class="data-bar" data-label="${escapeHtml(d[labelKey])}" data-key="${escapeHtml(key)}" data-value="${val}"
                         x="${x}" y="${baseY}" width="${barWidth - 4}" height="0"
                         data-base-y="${baseY}"
                         fill="${chartColors[j % chartColors.length]}" rx="3"
@@ -748,7 +786,7 @@ Toys,28000`
             const valueKeys = headers.slice(1).filter(h => typeof data[0][h] === 'number');
             const chartColors = getChartColors();
 
-            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k])));
+            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k]))) || 1;
             const pointSpacing = (width - padding.left - padding.right) / (data.length - 1 || 1);
             const showGrid = document.getElementById('showGrid').checked;
             const showValues = document.getElementById('showValues').checked;
@@ -767,7 +805,7 @@ Toys,28000`
             // X labels
             data.forEach((d, i) => {
                 const x = padding.left + i * pointSpacing;
-                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${escapeHtml(d[labelKey])}</text>`;
             });
 
             // Lines and points
@@ -791,7 +829,7 @@ Toys,28000`
 
                 // Points
                 points.forEach((p, i) => {
-                    inner += `<circle class="data-point" data-label="${p.label}" data-key="${key}" data-value="${p.val}"
+                    inner += `<circle class="data-point" data-label="${escapeHtml(p.label)}" data-key="${escapeHtml(key)}" data-value="${p.val}"
                         cx="${p.x}" cy="${p.y}" r="0" fill="${color}" stroke="#1a1a2e" stroke-width="2"
                         style="--target-r: 6"/>`;
 
@@ -804,9 +842,21 @@ Toys,28000`
 
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.innerHTML = inner;
+            measureLines(svg);
 
             renderLegend(valueKeys, chartColors);
             setupTooltips();
+        }
+
+        // The dash that draws a line in must be exactly as long as the path
+        function measureLines(svg) {
+            svg.querySelectorAll('.data-line').forEach(line => {
+                const length = line.getTotalLength ? Math.ceil(line.getTotalLength()) : 0;
+                if (!length) return;
+                line.setAttribute('stroke-dasharray', length);
+                line.setAttribute('stroke-dashoffset', length);
+                line.style.setProperty('--path-length', length);
+            });
         }
 
         function renderAreaChart() {
@@ -821,7 +871,7 @@ Toys,28000`
             const valueKeys = headers.slice(1).filter(h => typeof data[0][h] === 'number');
             const chartColors = getChartColors();
 
-            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k])));
+            const maxVal = Math.max(...data.flatMap(d => valueKeys.map(k => d[k]))) || 1;
             const pointSpacing = (width - padding.left - padding.right) / (data.length - 1 || 1);
             const showGrid = document.getElementById('showGrid').checked;
             const baseY = height - padding.bottom;
@@ -840,7 +890,7 @@ Toys,28000`
             // X labels
             data.forEach((d, i) => {
                 const x = padding.left + i * pointSpacing;
-                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${d[labelKey]}</text>`;
+                inner += `<text x="${x}" y="${height - padding.bottom + 25}" class="axis-label" text-anchor="middle">${escapeHtml(d[labelKey])}</text>`;
             });
 
             // Areas (reverse order for layering)
@@ -878,6 +928,7 @@ Toys,28000`
 
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.innerHTML = inner;
+            measureLines(svg);
 
             renderLegend(valueKeys, chartColors);
         }
@@ -914,10 +965,13 @@ Toys,28000`
 
                 const largeArc = angle > Math.PI ? 1 : 0;
 
-                const pathD = `M${cx},${cy} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`;
+                // An arc whose end equals its start draws nothing, so a 100% slice is two half circles
+                const pathD = angle >= Math.PI * 2 - 1e-9
+                    ? `M${cx},${cy - radius} A${radius},${radius} 0 1,1 ${cx},${cy + radius} A${radius},${radius} 0 1,1 ${cx},${cy - radius} Z`
+                    : `M${cx},${cy} L${x1},${y1} A${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`;
 
                 inner += `<path class="pie-slice" d="${pathD}" fill="${chartColors[i % chartColors.length]}"
-                    data-label="${d[labelKey]}" data-value="${value}" data-percent="${((value/total)*100).toFixed(1)}"
+                    data-label="${escapeHtml(d[labelKey])}" data-value="${value}" data-percent="${((value/total)*100).toFixed(1)}"
                     transform="scale(0)" style="transform-origin: ${cx}px ${cy}px; --target-scale: 1"/>`;
 
                 // Label
@@ -945,7 +999,7 @@ Toys,28000`
             legend.innerHTML = labels.map((label, i) => `
                 <div class="legend-item">
                     <div class="legend-color" style="background: ${colors[i % colors.length]}"></div>
-                    <span>${label}</span>
+                    <span>${escapeHtml(label)}</span>
                 </div>
             `).join('');
         }
@@ -962,7 +1016,7 @@ Toys,28000`
                     const percent = el.dataset.percent;
 
                     tooltip.innerHTML = `
-                        <div class="tooltip-label">${label}${key ? ' - ' + key : ''}</div>
+                        <div class="tooltip-label">${escapeHtml(label)}${key ? ' - ' + escapeHtml(key) : ''}</div>
                         <div class="tooltip-value">${parseFloat(value).toLocaleString()}${percent ? ` (${percent}%)` : ''}</div>
                     `;
                     tooltip.classList.add('visible');
@@ -984,7 +1038,7 @@ Toys,28000`
         function playAnimation() {
             isPlaying = true;
             document.getElementById('playIcon').innerHTML = '&#10074;&#10074;';
-            animStartTime = performance.now() - (animationProgress * animDuration);
+            animStartTime = performance.now() - (animationProgress * animDuration / speed);
             animate();
         }
 
@@ -1047,15 +1101,22 @@ Toys,28000`
             });
 
             // Points
-            document.querySelectorAll('.data-point').forEach((point, i) => {
-                const delay = i * 0.1;
+            // Staggers are capped so the last element's delay still leaves it time to finish by progress 1
+            const stagger = (count, step, room) => Math.min(step, room / Math.max(1, count));
+
+            const points = document.querySelectorAll('.data-point');
+            const pointStep = stagger(points.length, 0.1, 0.6);
+            points.forEach((point, i) => {
+                const delay = i * pointStep;
                 const pointProgress = Math.max(0, Math.min(1, (progress - delay) / (1 - delay)));
                 point.setAttribute('r', 6 * easeOutBack(pointProgress));
             });
 
             // Point values
-            document.querySelectorAll('.point-value').forEach((text, i) => {
-                const delay = i * 0.1 + 0.3;
+            const pointValues = document.querySelectorAll('.point-value');
+            const pointValueStep = stagger(pointValues.length, 0.1, 0.36); // 0.3 start + 1/3 fade
+            pointValues.forEach((text, i) => {
+                const delay = i * pointValueStep + 0.3;
                 text.setAttribute('opacity', Math.max(0, Math.min(1, (progress - delay) * 3)));
             });
 
@@ -1067,15 +1128,19 @@ Toys,28000`
             });
 
             // Pie slices
-            document.querySelectorAll('.pie-slice').forEach((slice, i) => {
-                const delay = i * 0.08;
+            const slices = document.querySelectorAll('.pie-slice');
+            const sliceStep = stagger(slices.length, 0.08, 0.6); // 0.4 grow
+            slices.forEach((slice, i) => {
+                const delay = i * sliceStep;
                 const sliceProgress = Math.max(0, Math.min(1, (progress - delay) / 0.4));
                 slice.style.transform = `scale(${easeOutBack(sliceProgress)})`;
             });
 
             // Pie labels
-            document.querySelectorAll('.pie-label').forEach((label, i) => {
-                const delay = i * 0.08 + 0.3;
+            const pieLabels = document.querySelectorAll('.pie-label');
+            const pieLabelStep = stagger(pieLabels.length, 0.08, 0.45); // 0.3 start + 1/4 fade
+            pieLabels.forEach((label, i) => {
+                const delay = i * pieLabelStep + 0.3;
                 label.setAttribute('opacity', Math.max(0, Math.min(1, (progress - delay) * 4)));
             });
         }
@@ -1091,14 +1156,14 @@ Toys,28000`
         }
 
         function seekAnimation(e) {
-            const rect = e.target.getBoundingClientRect();
+            const rect = e.currentTarget.getBoundingClientRect();
             const progress = (e.clientX - rect.left) / rect.width;
             animationProgress = Math.max(0, Math.min(1, progress));
             updateAnimationProgress(animationProgress);
             document.getElementById('timelineProgress').style.width = (animationProgress * 100) + '%';
 
             if (isPlaying) {
-                animStartTime = performance.now() - (animationProgress * animDuration);
+                animStartTime = performance.now() - (animationProgress * animDuration / speed);
             }
         }
 
@@ -1111,33 +1176,104 @@ Toys,28000`
 
         function updateAnimSpeed() {
             animDuration = parseInt(document.getElementById('animSpeed').value);
+            if (isPlaying) {
+                animStartTime = performance.now() - (animationProgress * animDuration / speed);
+            }
         }
 
         // Export functions
-        function exportSVG() {
+        // Standalone copy of the chart: the page stylesheet does not travel with the SVG,
+        // so the rules it needs are embedded, and the title and legend (HTML on the page) are drawn in.
+        function buildExportSvg() {
             const svg = document.getElementById('chart');
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const ns = 'http://www.w3.org/2000/svg';
+            const [, , width, height] = svg.getAttribute('viewBox').split(/\s+/).map(Number);
+            const clone = svg.cloneNode(true);
+            const el = (name, attrs, text) => {
+                const node = document.createElementNS(ns, name);
+                Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+                if (text !== undefined) node.textContent = text;
+                return node;
+            };
+
+            // Legend rows, wrapped to the chart width
+            const measure = document.createElement('canvas').getContext('2d');
+            measure.font = '12px sans-serif';
+            const rows = [[]];
+            let rowWidth = 0;
+            document.querySelectorAll('#legend .legend-item').forEach(item => {
+                const label = item.querySelector('span').textContent;
+                const itemWidth = 20 + measure.measureText(label).width + 16;
+                if (rowWidth + itemWidth > width - 40 && rows[rows.length - 1].length) {
+                    rows.push([]);
+                    rowWidth = 0;
+                }
+                rows[rows.length - 1].push({ label, color: item.querySelector('.legend-color').style.backgroundColor, x: rowWidth, width: itemWidth });
+                rowWidth += itemWidth;
+            });
+            const legendHeight = rows[0].length ? rows.length * 22 + 14 : 0;
+            const totalHeight = height + legendHeight;
+
+            const legend = el('g', {});
+            rows.forEach((row, r) => {
+                const last = row[row.length - 1];
+                const left = last ? (width - (last.x + last.width - 16)) / 2 : 0;
+                const y = height + 4 + r * 22;
+                row.forEach(item => {
+                    legend.appendChild(el('rect', { x: left + item.x, y, width: 14, height: 14, rx: 3, fill: item.color }));
+                    legend.appendChild(el('text', { x: left + item.x + 20, y: y + 11, fill: '#aaa', 'font-size': 12 }, item.label));
+                });
+            });
+
+            const style = el('style', {}, `
+                text { font-family: system-ui, -apple-system, sans-serif; }
+                .axis-label { fill: #888; font-size: 11px; }
+                .axis-line { stroke: rgba(255,255,255,0.1); }
+                .grid-line { stroke: rgba(255,255,255,0.05); }
+                .data-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+                .data-area { opacity: 0.3; }
+            `);
+            const background = el('rect', { x: 0, y: 0, width, height: totalHeight, fill: '#1a1a2e' });
+            const title = document.getElementById('chartTitle').value.trim();
+
+            clone.insertBefore(background, clone.firstChild);
+            clone.insertBefore(style, background);
+            if (title) {
+                clone.appendChild(el('text', { x: width / 2, y: 24, fill: '#fff', 'font-size': 18, 'font-weight': 600, 'text-anchor': 'middle' }, title));
+            }
+            clone.appendChild(legend);
+
+            // The animated scale lives in the inline style; the initial transform="scale(0)" would hide slices in editors
+            clone.querySelectorAll('.pie-slice').forEach(slice => slice.removeAttribute('transform'));
+            clone.removeAttribute('class');
+            clone.removeAttribute('id');
+            clone.removeAttribute('style');
+            clone.setAttribute('viewBox', `0 0 ${width} ${totalHeight}`);
+            clone.setAttribute('width', width);
+            clone.setAttribute('height', totalHeight);
+            return { data: new XMLSerializer().serializeToString(clone), width, height: totalHeight };
+        }
+
+        function exportSVG() {
+            if (!chartData) return;
+            const blob = new Blob([buildExportSvg().data], { type: 'image/svg+xml' });
             downloadBlob(blob, 'chart.svg');
         }
 
         function exportPNG() {
-            const svg = document.getElementById('chart');
+            if (!chartData) return;
+            const { data: svgData, width, height } = buildExportSvg();
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            const rect = svg.getBoundingClientRect();
 
-            canvas.width = rect.width * 2;
-            canvas.height = rect.height * 2;
+            canvas.width = width * 2;
+            canvas.height = height * 2;
             ctx.scale(2, 2);
 
-            const svgData = new XMLSerializer().serializeToString(svg);
             const img = new Image();
 
             img.onload = () => {
-                ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(0, 0, rect.width, rect.height);
-                ctx.drawImage(img, 0, 0, rect.width, rect.height);
+                ctx.drawImage(img, 0, 0, width, height);
 
                 canvas.toBlob(blob => {
                     downloadBlob(blob, 'chart.png');

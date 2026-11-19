@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG Path Animator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -183,6 +184,7 @@
         #svgCanvas {
             background: #1a1a2e;
             border-radius: 8px;
+            touch-action: none;
         }
 
         .drawing-hint {
@@ -354,7 +356,7 @@
                 <div class="card">
                     <h3>SVG Path</h3>
                     <div class="control-group">
-                        <label>Path Data (d attribute)</label>
+                        <label for="pathInput">Path Data (d attribute)</label>
                         <textarea id="pathInput" placeholder="M 10 10 L 50 50..."></textarea>
                     </div>
                     <div class="btn-group">
@@ -367,14 +369,14 @@
                 <div class="card">
                     <h3>Animation</h3>
                     <div class="control-group">
-                        <label>Duration</label>
+                        <label for="duration">Duration</label>
                         <div class="range-row">
                             <input type="range" id="duration" min="0.5" max="10" step="0.1" value="2">
                             <span class="range-value" id="durationValue">2.0s</span>
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>Easing</label>
+                        <label for="easing">Easing</label>
                         <select id="easing">
                             <option value="linear">Linear</option>
                             <option value="easeInOut" selected>Ease In Out</option>
@@ -391,7 +393,7 @@
                         </select>
                     </div>
                     <div class="control-group">
-                        <label>Direction</label>
+                        <label for="direction">Direction</label>
                         <select id="direction">
                             <option value="normal">Normal</option>
                             <option value="reverse">Reverse</option>
@@ -408,21 +410,21 @@
                 <div class="card">
                     <h3>Stroke</h3>
                     <div class="control-group">
-                        <label>Color</label>
+                        <label for="strokeColorText">Color</label>
                         <div class="color-row">
                             <input type="color" id="strokeColor" value="#667eea">
                             <input type="text" id="strokeColorText" value="#667eea" style="flex: 1;">
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>Width</label>
+                        <label for="strokeWidth">Width</label>
                         <div class="range-row">
                             <input type="range" id="strokeWidth" min="1" max="20" step="0.5" value="3">
                             <span class="range-value" id="strokeWidthValue">3px</span>
                         </div>
                     </div>
                     <div class="control-group">
-                        <label>Line Cap</label>
+                        <label for="lineCap">Line Cap</label>
                         <select id="lineCap">
                             <option value="round" selected>Round</option>
                             <option value="butt">Butt</option>
@@ -430,7 +432,7 @@
                         </select>
                     </div>
                     <div class="control-group">
-                        <label>Line Join</label>
+                        <label for="lineJoin">Line Join</label>
                         <select id="lineJoin">
                             <option value="round" selected>Round</option>
                             <option value="miter">Miter</option>
@@ -533,6 +535,8 @@
         let isPlaying = false;
         let animationId = null;
         let progress = 0;
+        // Linear position within the current cycle; progress is the eased value shown
+        let timeT = 0;
         let pathLength = 0;
         let isDrawing = false;
         let drawnPoints = [];
@@ -607,6 +611,7 @@
             path.style.strokeDashoffset = pathLength;
 
             progress = 0;
+            timeT = 0;
             updateProgress();
             updateCode();
         }
@@ -638,6 +643,7 @@
 
             const elapsed = Date.now() - startTime;
             let t = Math.min(elapsed / duration, 1);
+            timeT = t;
 
             // Apply easing
             const easedT = easings[easing](t);
@@ -658,9 +664,11 @@
             if (t >= 1) {
                 if (loop) {
                     animCycle++;
+                    timeT = 0;
                     animationId = requestAnimationFrame(() => animate(Date.now()));
                 } else if (direction === 'alternate' && animCycle % 2 === 0) {
                     animCycle++;
+                    timeT = 0;
                     animationId = requestAnimationFrame(() => animate(Date.now()));
                 } else {
                     stopAnimation();
@@ -672,11 +680,26 @@
 
         function startAnimation() {
             if (pathLength === 0) return;
+            // A finished run plays again from the start
+            if (timeT >= 1) {
+                timeT = 0;
+                animCycle = 0;
+            }
             isPlaying = true;
             playIcon.style.display = 'none';
             pauseIcon.style.display = 'block';
-            if (progress >= 1 || progress <= 0) animCycle = 0;
-            animate(Date.now() - (progress * parseFloat(document.getElementById('duration').value) * 1000));
+            animate(Date.now() - (timeT * parseFloat(document.getElementById('duration').value) * 1000));
+        }
+
+        // Earliest linear time at which the current easing reaches the given progress
+        function timeForProgress(p) {
+            const ease = easings[document.getElementById('easing').value];
+            const backwards = document.getElementById('direction').value === 'alternate' && animCycle % 2 === 1;
+            const target = backwards ? 1 - p : p;
+            for (let i = 0; i <= 200; i++) {
+                if (ease(i / 200) >= target) return i / 200;
+            }
+            return 1;
         }
 
         function stopAnimation() {
@@ -692,34 +715,59 @@
         function resetAnimation() {
             stopAnimation();
             progress = 0;
+            timeT = 0;
             animCycle = 0;
             updateProgress();
+        }
+
+        function escapeXml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        const cssEasing = {
+            linear: 'linear',
+            easeIn: 'ease-in',
+            easeOut: 'ease-out',
+            easeInOut: 'ease-in-out',
+            easeInQuad: 'cubic-bezier(0.55, 0.085, 0.68, 0.53)',
+            easeOutQuad: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            easeInCubic: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+            easeOutCubic: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+            easeInOutCubic: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+            easeInElastic: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
+            easeOutElastic: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            easeOutBounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+        };
+
+        // The CSS equivalent of the preview's duration, easing, direction and loop.
+        // "Reverse" draws from the path's end (negative offset). "Alternate" is one
+        // out-and-back keyframe cycle so the easing applies to each half as it does here.
+        function buildAnimationCss() {
+            const duration = parseFloat(document.getElementById('duration').value);
+            const easing = document.getElementById('easing').value;
+            const direction = document.getElementById('direction').value;
+            const loop = document.getElementById('loopAnim').checked;
+            const len = Math.round(pathLength);
+            const alternate = direction === 'alternate';
+            const start = direction === 'reverse' ? -len : len;
+            const time = alternate ? parseFloat((duration * 2).toFixed(1)) : duration;
+            return {
+                start,
+                animation: `draw ${time}s ${cssEasing[easing]}${loop ? ' infinite' : ''} forwards`,
+                keyframes: alternate
+                    ? [`0%, 100% { stroke-dashoffset: ${start}; }`, '50% { stroke-dashoffset: 0; }']
+                    : ['to { stroke-dashoffset: 0; }']
+            };
         }
 
         // Update code output
         function updateCode() {
             const d = pathInput.value.trim();
-            const duration = document.getElementById('duration').value;
-            const easing = document.getElementById('easing').value;
-            const strokeColor = document.getElementById('strokeColor').value;
+            const strokeColor = path.getAttribute('stroke');
+            const anim = buildAnimationCss();
             const strokeWidth = document.getElementById('strokeWidth').value;
             const lineCap = document.getElementById('lineCap').value;
             const lineJoin = document.getElementById('lineJoin').value;
-
-            const cssEasing = {
-                linear: 'linear',
-                easeIn: 'ease-in',
-                easeOut: 'ease-out',
-                easeInOut: 'ease-in-out',
-                easeInQuad: 'cubic-bezier(0.55, 0.085, 0.68, 0.53)',
-                easeOutQuad: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                easeInCubic: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
-                easeOutCubic: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
-                easeInOutCubic: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
-                easeInElastic: 'cubic-bezier(0.6, -0.28, 0.735, 0.045)',
-                easeOutElastic: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                easeOutBounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-            };
 
             const code = `/* SVG Path Animation */
 .animated-path {
@@ -729,14 +777,12 @@
   stroke-linejoin: ${lineJoin};
   fill: none;
   stroke-dasharray: ${Math.round(pathLength)};
-  stroke-dashoffset: ${Math.round(pathLength)};
-  animation: draw ${duration}s ${cssEasing[easing]} forwards;
+  stroke-dashoffset: ${anim.start};
+  animation: ${anim.animation};
 }
 
 @keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-  }
+  ${anim.keyframes.join('\n  ')}
 }
 
 /* Path data: d="${d.substring(0, 50)}${d.length > 50 ? '...' : ''}" */`;
@@ -746,6 +792,7 @@
 
         // Drawing functionality
         function startDrawing(e) {
+            stopAnimation();
             isDrawing = true;
             drawnPoints = [];
             const point = getPoint(e);
@@ -777,7 +824,7 @@
             if (!isDrawing) return;
             isDrawing = false;
 
-            if (drawnPoints.length > 2) {
+            if (drawnPoints.length > 1) {
                 // Smooth the path using Catmull-Rom spline
                 const smoothed = smoothPath(drawnPoints);
                 pathInput.value = smoothed;
@@ -786,6 +833,8 @@
                 path.style.strokeDasharray = pathLength;
                 path.style.strokeDashoffset = pathLength;
                 progress = 0;
+                timeT = 0;
+                animCycle = 0;
                 updateProgress();
                 updateCode();
             }
@@ -796,12 +845,6 @@
             const scaleX = svg.viewBox.baseVal.width / rect.width;
             const scaleY = svg.viewBox.baseVal.height / rect.height;
 
-            if (e.touches) {
-                return {
-                    x: Math.round((e.touches[0].clientX - rect.left) * scaleX),
-                    y: Math.round((e.touches[0].clientY - rect.top) * scaleY)
-                };
-            }
             return {
                 x: Math.round((e.clientX - rect.left) * scaleX),
                 y: Math.round((e.clientY - rect.top) * scaleY)
@@ -857,6 +900,8 @@
             path.setAttribute('d', '');
             pathLength = 0;
             progress = 0;
+            timeT = 0;
+            animCycle = 0;
             stopAnimation();
             updateProgress();
             drawingHint.style.display = 'block';
@@ -871,7 +916,10 @@
         });
         document.getElementById('strokeColorText').addEventListener('input', e => {
             path.setAttribute('stroke', e.target.value);
-            document.getElementById('strokeColor').value = e.target.value;
+            // The colour input turns anything but #rrggbb into #000000
+            if (/^#[0-9a-f]{6}$/i.test(e.target.value)) {
+                document.getElementById('strokeColor').value = e.target.value;
+            }
             updateCode();
         });
         document.getElementById('strokeWidth').addEventListener('input', e => {
@@ -895,23 +943,26 @@
         });
         document.getElementById('easing').addEventListener('change', updateCode);
         document.getElementById('direction').addEventListener('change', updateCode);
+        document.getElementById('loopAnim').addEventListener('change', updateCode);
 
         // Progress bar scrubbing
         const progressContainer = document.getElementById('progressContainer');
         progressContainer.addEventListener('click', e => {
             const rect = progressContainer.getBoundingClientRect();
+            const wasPlaying = isPlaying;
+            if (wasPlaying) stopAnimation();
             progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            timeT = timeForProgress(progress);
             updateProgress();
+            if (wasPlaying) startAnimation();
         });
 
         // Drawing events
-        svg.addEventListener('mousedown', startDrawing);
-        svg.addEventListener('mousemove', draw);
-        svg.addEventListener('mouseup', stopDrawing);
-        svg.addEventListener('mouseleave', stopDrawing);
-        svg.addEventListener('touchstart', e => { e.preventDefault(); startDrawing(e); });
-        svg.addEventListener('touchmove', e => { e.preventDefault(); draw(e); });
-        svg.addEventListener('touchend', stopDrawing);
+        svg.addEventListener('pointerdown', startDrawing);
+        svg.addEventListener('pointermove', draw);
+        svg.addEventListener('pointerup', stopDrawing);
+        svg.addEventListener('pointercancel', stopDrawing);
+        svg.addEventListener('pointerleave', stopDrawing);
 
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -958,25 +1009,25 @@
         document.getElementById('downloadSvgBtn').addEventListener('click', () => {
             const d = pathInput.value.trim();
             if (!d) return;
-            const duration = document.getElementById('duration').value;
-            const strokeColor = document.getElementById('strokeColor').value;
+            const strokeColor = path.getAttribute('stroke');
             const strokeWidth = document.getElementById('strokeWidth').value;
             const lineCap = document.getElementById('lineCap').value;
             const lineJoin = document.getElementById('lineJoin').value;
             const vb = svg.getAttribute('viewBox');
+            const anim = buildAnimationCss();
 
             const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">
   <style>
     .animated-path {
       stroke-dasharray: ${Math.round(pathLength)};
-      stroke-dashoffset: ${Math.round(pathLength)};
-      animation: draw ${duration}s ease-in-out forwards;
+      stroke-dashoffset: ${anim.start};
+      animation: ${anim.animation};
     }
     @keyframes draw {
-      to { stroke-dashoffset: 0; }
+      ${anim.keyframes.join('\n      ')}
     }
   </style>
-  <path class="animated-path" d="${d}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="${lineCap}" stroke-linejoin="${lineJoin}"/>
+  <path class="animated-path" d="${escapeXml(d)}" fill="none" stroke="${escapeXml(strokeColor)}" stroke-width="${strokeWidth}" stroke-linecap="${lineCap}" stroke-linejoin="${lineJoin}"/>
 </svg>`;
 
             const blob = new Blob([svgContent], { type: 'image/svg+xml' });

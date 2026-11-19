@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Walkthrough Creator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -28,11 +29,13 @@
             .app-container {
                 grid-template-columns: 1fr;
             }
-            .sidebar-left, .sidebar-right {
+            /* .app-container prefix: these must beat the display:flex rules further down */
+            .app-container .sidebar-left, .app-container .sidebar-right {
                 display: none;
             }
-            .sidebar-left.mobile-open, .sidebar-right.mobile-open {
-                display: block;
+            .app-container .sidebar-left.mobile-open, .app-container .sidebar-right.mobile-open {
+                display: flex;
+                background: #12121c;
                 position: fixed;
                 top: 0;
                 bottom: 0;
@@ -738,13 +741,14 @@
             </div>
             <div class="steps-list" id="stepsList"></div>
             <button class="add-step-btn" id="addStepBtn">+ Add Step</button>
+            <button class="add-step-btn" id="addCoverBtn" style="display: none; margin-top: 0; background: rgba(255, 255, 255, 0.1);">+ Add Cover Page</button>
         </div>
 
         <!-- Main Canvas Area -->
         <div class="main-area">
             <div class="toolbar">
                 <div class="toolbar-group">
-                    <button class="tool-btn" id="selectTool" title="Select (V)">
+                    <button class="tool-btn" id="selectTool" title="Pointer: no drawing (V)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
                         </svg>
@@ -854,11 +858,11 @@
                 <div class="panel-section" id="stepProperties">
                     <h3>Step Properties</h3>
                     <div class="form-group">
-                        <label>Step Title</label>
+                        <label for="stepTitle">Step Title</label>
                         <input type="text" id="stepTitle" placeholder="e.g., Click the File menu">
                     </div>
                     <div class="form-group">
-                        <label>Description</label>
+                        <label for="stepDescription">Description</label>
                         <textarea id="stepDescription" placeholder="Explain what the user should do..."></textarea>
                     </div>
                     <div class="form-group">
@@ -871,7 +875,7 @@
                         </div>
                     </div>
                     <div class="form-group" id="calloutTextGroup" style="display: none;">
-                        <label>Callout Text</label>
+                        <label for="calloutText">Callout Text</label>
                         <textarea id="calloutText" placeholder="Additional tip or warning..."></textarea>
                     </div>
                 </div>
@@ -879,19 +883,19 @@
                 <div class="panel-section" id="coverProperties" style="display: none;">
                     <h3>Cover Page</h3>
                     <div class="form-group">
-                        <label>Document Title</label>
+                        <label for="coverTitle">Document Title</label>
                         <input type="text" id="coverTitle" placeholder="How to...">
                     </div>
                     <div class="form-group">
-                        <label>Subtitle</label>
+                        <label for="coverSubtitle">Subtitle</label>
                         <input type="text" id="coverSubtitle" placeholder="A step-by-step guide">
                     </div>
                     <div class="form-group">
-                        <label>Author</label>
+                        <label for="coverAuthor">Author</label>
                         <input type="text" id="coverAuthor" placeholder="Your name">
                     </div>
                     <div class="form-group">
-                        <label>Date</label>
+                        <label for="coverDate">Date</label>
                         <input type="text" id="coverDate" placeholder="December 2024">
                     </div>
                     <div class="form-group">
@@ -945,8 +949,8 @@
             strokeWidth: 3,
             isDrawing: false,
             drawStart: { x: 0, y: 0 },
-            history: [],
-            historyIndex: -1,
+            history: [],   // annotation snapshots to undo to
+            redoStack: [],
             draggedStepIndex: -1,
             coverPage: {
                 enabled: true,
@@ -962,6 +966,7 @@
         const elements = {
             stepsList: document.getElementById('stepsList'),
             addStepBtn: document.getElementById('addStepBtn'),
+            addCoverBtn: document.getElementById('addCoverBtn'),
             mainCanvas: document.getElementById('mainCanvas'),
             canvasWrapper: document.getElementById('canvasWrapper'),
             canvasContainer: document.getElementById('canvasContainer'),
@@ -1079,11 +1084,20 @@
                 }
             });
 
+            // Keep the same step selected; if it was the one deleted, take its neighbour
+            const deletedCurrent = index === state.currentStepIndex;
+            if (index < state.currentStepIndex) state.currentStepIndex--;
+            state.currentStepIndex = Math.min(state.currentStepIndex, state.steps.length - 1);
+
             renderStepsList();
-            if (state.currentStepIndex >= state.steps.length) {
-                selectStep(state.steps.length - 1);
-            } else {
+            if (!deletedCurrent) return;
+            if (state.currentStepIndex >= 0) {
                 selectStep(state.currentStepIndex);
+            } else {
+                // nothing left: back to the placeholder
+                state.history = [];
+                state.redoStack = [];
+                renderStep();
             }
         }
 
@@ -1123,7 +1137,7 @@
 
             // Reset history for this step
             state.history = [];
-            state.historyIndex = -1;
+            state.redoStack = [];
         }
 
         function escapeHtml(str) {
@@ -1153,10 +1167,10 @@
                              data-index="${i}" draggable="true">
                             <span class="drag-handle">⋮⋮</span>
                             <div class="step-thumb">
-                                ${step.image ? `<img src="${step.image}" alt="">` : ''}
+                                ${step.image ? `<img src="${escapeHtml(step.image)}" alt="">` : ''}
                             </div>
                             <div class="step-info">
-                                <div class="step-number">STEP ${step.number}</div>
+                                <div class="step-number">STEP ${escapeHtml(step.number)}</div>
                                 <div class="step-title">${escapeHtml(step.title || 'Untitled')}</div>
                             </div>
                             <button class="delete-btn" data-index="${i}">×</button>
@@ -1164,6 +1178,8 @@
                     `;
                 }
             }).join('');
+
+            elements.addCoverBtn.style.display = state.steps.some(s => s.type === 'cover') ? 'none' : '';
 
             // Add click listeners
             document.querySelectorAll('.step-item').forEach(el => {
@@ -1203,18 +1219,23 @@
                 item.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     const targetIndex = parseInt(item.dataset.index);
-                    if (targetIndex !== state.draggedStepIndex) {
+                    // the dragged step takes the target's slot, which is below it when moving down
+                    if (targetIndex > state.draggedStepIndex) {
+                        item.style.borderBottom = '2px solid #667eea';
+                    } else if (targetIndex < state.draggedStepIndex) {
                         item.style.borderTop = '2px solid #667eea';
                     }
                 });
 
                 item.addEventListener('dragleave', () => {
                     item.style.borderTop = '';
+                    item.style.borderBottom = '';
                 });
 
                 item.addEventListener('drop', (e) => {
                     e.preventDefault();
                     item.style.borderTop = '';
+                    item.style.borderBottom = '';
                     const targetIndex = parseInt(item.dataset.index);
 
                     if (targetIndex !== state.draggedStepIndex && state.draggedStepIndex >= 0) {
@@ -1253,7 +1274,7 @@
 
             const step = state.steps[state.currentStepIndex];
             coverEl.innerHTML = `
-                ${step.logo ? `<img src="${step.logo}" style="max-height: 60px; margin-bottom: 30px;">` : ''}
+                ${step.logo ? `<img src="${escapeHtml(step.logo)}" style="max-height: 60px; margin-bottom: 30px;">` : ''}
                 <h1 style="font-size: 2.5em; color: #1a1a2e; margin-bottom: 15px;">${escapeHtml(step.title || 'Document Title')}</h1>
                 <p style="font-size: 1.3em; color: #666; margin-bottom: 40px;">${escapeHtml(step.subtitle || 'Subtitle')}</p>
                 <div style="margin-top: 60px; padding-top: 20px; border-top: 2px solid #eee; color: #888;">
@@ -1278,21 +1299,47 @@
             elements.placeholder.style.display = 'none';
             elements.mainCanvas.style.display = 'block';
 
+            // Already decoded: paint now, so a drag preview drawn right after is not wiped later
+            if (shownImage && shownImageSrc === step.image) {
+                paintStep(step, shownImage);
+                return;
+            }
+
+            const src = step.image;
             const img = new Image();
             img.onload = () => {
-                elements.mainCanvas.width = img.width;
-                elements.mainCanvas.height = img.height;
-
-                ctx.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
-                ctx.drawImage(img, 0, 0);
-
-                // Draw annotations
-                drawAnnotations(step.annotations);
+                shownImage = img;
+                shownImageSrc = src;
+                // the selection may have changed while the image was decoding
+                const current = state.steps[state.currentStepIndex];
+                if (current && current.image === src) paintStep(current, img);
             };
-            img.src = step.image;
+            img.onerror = () => {
+                if (step.image !== src) return;
+                step.image = null;
+                showToast('Could not load image');
+                renderStepsList();
+                if (state.steps[state.currentStepIndex] === step) renderStep();
+            };
+            img.src = src;
         }
 
-        function drawAnnotations(annotations) {
+        // Decoded image of the step on screen
+        let shownImage = null;
+        let shownImageSrc = null;
+
+        function paintStep(step, img) {
+            elements.mainCanvas.width = img.width;
+            elements.mainCanvas.height = img.height;
+
+            ctx.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            drawAnnotations(ctx, step.annotations);
+        }
+
+        // Used for the editor canvas and for the PDF's temporary canvas
+        function drawAnnotations(ctx, annotations) {
             if (!annotations) return;
 
             annotations.forEach(ann => {
@@ -1305,7 +1352,7 @@
 
                 switch (ann.type) {
                     case 'arrow':
-                        drawArrow(ann.x1, ann.y1, ann.x2, ann.y2);
+                        drawArrow(ctx, ann.x1, ann.y1, ann.x2, ann.y2);
                         break;
                     case 'rect':
                         ctx.strokeRect(ann.x, ann.y, ann.width, ann.height);
@@ -1327,10 +1374,10 @@
                         ctx.fillText(ann.text, ann.x, ann.y);
                         break;
                     case 'number':
-                        drawStepNumber(ann.x, ann.y, ann.number);
+                        drawStepNumber(ctx, ann.x, ann.y, ann.number);
                         break;
                     case 'blur':
-                        applyBlur(ann.x, ann.y, ann.width, ann.height);
+                        applyBlur(ctx, ann.x, ann.y, ann.width, ann.height);
                         break;
                     case 'highlight':
                         ctx.globalAlpha = 0.3;
@@ -1343,7 +1390,7 @@
             });
         }
 
-        function drawArrow(x1, y1, x2, y2) {
+        function drawArrow(ctx, x1, y1, x2, y2) {
             const headLength = 15;
             const angle = Math.atan2(y2 - y1, x2 - x1);
 
@@ -1360,7 +1407,7 @@
             ctx.stroke();
         }
 
-        function drawStepNumber(x, y, number) {
+        function drawStepNumber(ctx, x, y, number) {
             const radius = 16;
 
             // Draw circle background
@@ -1383,24 +1430,31 @@
             ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(number.toString(), x, y);
+            ctx.fillText(String(number), x, y);
         }
 
-        function applyBlur(x, y, width, height) {
-            // Get image data
-            const imageData = ctx.getImageData(x, y, width, height);
+        function applyBlur(ctx, x, y, width, height) {
+            // getImageData works in whole pixels and throws on an empty area,
+            // so snap the region to the pixel grid inside the canvas
+            const left = Math.max(0, Math.round(x));
+            const top = Math.max(0, Math.round(y));
+            const w = Math.min(ctx.canvas.width, Math.round(x + width)) - left;
+            const h = Math.min(ctx.canvas.height, Math.round(y + height)) - top;
+            if (!(w >= 1 && h >= 1)) return;
+
+            const imageData = ctx.getImageData(left, top, w, h);
             const data = imageData.data;
 
             // Pixelate effect (simpler than blur)
             const pixelSize = 10;
-            for (let py = 0; py < height; py += pixelSize) {
-                for (let px = 0; px < width; px += pixelSize) {
-                    const i = (py * width + px) * 4;
+            for (let py = 0; py < h; py += pixelSize) {
+                for (let px = 0; px < w; px += pixelSize) {
+                    const i = (py * w + px) * 4;
                     const r = data[i], g = data[i + 1], b = data[i + 2];
 
-                    for (let y2 = py; y2 < py + pixelSize && y2 < height; y2++) {
-                        for (let x2 = px; x2 < px + pixelSize && x2 < width; x2++) {
-                            const j = (y2 * width + x2) * 4;
+                    for (let y2 = py; y2 < py + pixelSize && y2 < h; y2++) {
+                        for (let x2 = px; x2 < px + pixelSize && x2 < w; x2++) {
+                            const j = (y2 * w + x2) * 4;
                             data[j] = r;
                             data[j + 1] = g;
                             data[j + 2] = b;
@@ -1409,7 +1463,7 @@
                 }
             }
 
-            ctx.putImageData(imageData, x, y);
+            ctx.putImageData(imageData, left, top);
         }
 
         // ============ Tool Listeners ============
@@ -1429,6 +1483,8 @@
             Object.entries(toolButtons).forEach(([tool, btn]) => {
                 btn.addEventListener('click', () => {
                     state.currentTool = tool;
+                    // while a drawing tool is active a touch drag draws instead of scrolling
+                    elements.mainCanvas.style.touchAction = tool === 'select' ? '' : 'none';
                     Object.values(toolButtons).forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                 });
@@ -1453,10 +1509,15 @@
 
         // ============ Canvas Listeners ============
         function setupCanvasListeners() {
-            elements.mainCanvas.addEventListener('mousedown', startDrawing);
-            elements.mainCanvas.addEventListener('mousemove', drawing);
-            elements.mainCanvas.addEventListener('mouseup', endDrawing);
-            elements.mainCanvas.addEventListener('mouseleave', endDrawing);
+            elements.mainCanvas.addEventListener('pointerdown', startDrawing);
+            elements.mainCanvas.addEventListener('pointermove', drawing);
+            elements.mainCanvas.addEventListener('pointerup', endDrawing);
+            elements.mainCanvas.addEventListener('pointerleave', endDrawing);
+            elements.mainCanvas.addEventListener('pointercancel', () => {
+                if (!state.isDrawing) return;
+                state.isDrawing = false;
+                renderStep();
+            });
         }
 
         function getCanvasPos(e) {
@@ -1529,7 +1590,7 @@
 
             switch (state.currentTool) {
                 case 'arrow':
-                    drawArrow(state.drawStart.x, state.drawStart.y, pos.x, pos.y);
+                    drawArrow(ctx, state.drawStart.x, state.drawStart.y, pos.x, pos.y);
                     break;
                 case 'rect':
                     ctx.strokeRect(state.drawStart.x, state.drawStart.y,
@@ -1575,6 +1636,15 @@
             }
 
             const pos = getCanvasPos(e);
+            const dx = Math.abs(pos.x - state.drawStart.x);
+            const dy = Math.abs(pos.y - state.drawStart.y);
+            const isLine = state.currentTool === 'arrow' || state.currentTool === 'line';
+            // a click without a drag would add an annotation with no size
+            if (isLine ? dx + dy < 1 : (dx < 1 || dy < 1)) {
+                state.isDrawing = false;
+                renderStep();
+                return;
+            }
             saveHistory();
 
             const annotation = {
@@ -1608,34 +1678,34 @@
         }
 
         // ============ History ============
+        // Call before changing the current step's annotations
         function saveHistory() {
             const step = state.steps[state.currentStepIndex];
             if (!step) return;
 
-            state.history = state.history.slice(0, state.historyIndex + 1);
             state.history.push(JSON.stringify(step.annotations));
-            state.historyIndex = state.history.length - 1;
+            state.redoStack = [];
         }
 
         function undo() {
-            if (state.historyIndex <= 0) return;
+            if (state.history.length === 0) return;
 
             const step = state.steps[state.currentStepIndex];
             if (!step || step.type === 'cover') return;
 
-            state.historyIndex--;
-            step.annotations = JSON.parse(state.history[state.historyIndex]);
+            state.redoStack.push(JSON.stringify(step.annotations));
+            step.annotations = JSON.parse(state.history.pop());
             renderStep();
         }
 
         function redo() {
-            if (state.historyIndex >= state.history.length - 1) return;
+            if (state.redoStack.length === 0) return;
 
             const step = state.steps[state.currentStepIndex];
             if (!step || step.type === 'cover') return;
 
-            state.historyIndex++;
-            step.annotations = JSON.parse(state.history[state.historyIndex]);
+            state.history.push(JSON.stringify(step.annotations));
+            step.annotations = JSON.parse(state.redoStack.pop());
             renderStep();
         }
 
@@ -1711,6 +1781,7 @@
         function setupFileListeners() {
             elements.imageInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
+                e.target.value = ''; // so picking the same file again fires change
                 if (!file) return;
 
                 const reader = new FileReader();
@@ -1720,7 +1791,7 @@
                         step.image = event.target.result;
                         step.annotations = [];
                         state.history = [];
-                        state.historyIndex = -1;
+                        state.redoStack = [];
                         renderStep();
                         renderStepsList();
                     }
@@ -1730,6 +1801,7 @@
 
             elements.logoInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
+                e.target.value = '';
                 if (!file) return;
 
                 const reader = new FileReader();
@@ -1769,6 +1841,8 @@
                         if (currentStep && currentStep.type === 'step') {
                             currentStep.image = event.target.result;
                             currentStep.annotations = [];
+                            state.history = [];
+                            state.redoStack = [];
                             renderStep();
                             renderStepsList();
                         }
@@ -1780,7 +1854,9 @@
 
         // ============ Export ============
         function setupExportListeners() {
-            elements.exportPdfBtn.addEventListener('click', exportToPDF);
+            elements.exportPdfBtn.addEventListener('click', () => {
+                exportToPDF().catch(() => showToast('Error exporting PDF'));
+            });
 
             elements.saveProjectBtn.addEventListener('click', () => {
                 const project = {
@@ -1806,14 +1882,15 @@
 
             elements.loadProjectInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
+                e.target.value = '';
                 if (!file) return;
 
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
                         const project = JSON.parse(event.target.result);
-                        state.steps = project.steps;
-                        state.coverPage = project.coverPage || state.coverPage;
+                        state.steps = sanitizeSteps(project && project.steps);
+                        state.currentStepIndex = 0;
                         renderStepsList();
                         selectStep(0);
                         showToast('Project loaded!');
@@ -1823,6 +1900,47 @@
                 };
                 reader.readAsText(file);
             });
+        }
+
+        // A project file is untrusted input: rebuild every step from known fields only
+        function sanitizeSteps(steps) {
+            if (!Array.isArray(steps)) throw new Error('Invalid project');
+            const text = v => typeof v === 'string' ? v : '';
+            const image = v => typeof v === 'string' && /^data:image\//i.test(v) ? v : null;
+            const num = v => typeof v === 'number' && Number.isFinite(v) ? v : 0;
+            const annotationTypes = ['arrow', 'rect', 'circle', 'line', 'text', 'number', 'blur', 'highlight'];
+            let stepNumber = 0;
+
+            const result = steps.filter(s => s && typeof s === 'object').map(s => {
+                if (s.type === 'cover') {
+                    return {
+                        type: 'cover', enabled: true,
+                        title: text(s.title), subtitle: text(s.subtitle),
+                        author: text(s.author), date: text(s.date), logo: image(s.logo)
+                    };
+                }
+                return {
+                    type: 'step',
+                    number: ++stepNumber,
+                    title: text(s.title),
+                    description: text(s.description),
+                    calloutType: ['tip', 'warning', 'note'].includes(s.calloutType) ? s.calloutType : 'none',
+                    calloutText: text(s.calloutText),
+                    image: image(s.image),
+                    annotations: (Array.isArray(s.annotations) ? s.annotations : [])
+                        .filter(a => a && annotationTypes.includes(a.type))
+                        .map(a => ({
+                            type: a.type,
+                            color: /^#[0-9a-f]{3,8}$/i.test(a.color) ? a.color : '#e74c3c',
+                            strokeWidth: num(a.strokeWidth) || 3,
+                            x: num(a.x), y: num(a.y), width: num(a.width), height: num(a.height),
+                            x1: num(a.x1), y1: num(a.y1), x2: num(a.x2), y2: num(a.y2),
+                            text: text(a.text), number: num(a.number), fontSize: num(a.fontSize) || 18
+                        }))
+                };
+            });
+            if (result.length === 0) throw new Error('Invalid project');
+            return result;
         }
 
         async function exportToPDF() {
@@ -1852,20 +1970,31 @@
 
                     if (step.logo) {
                         try {
-                            pdf.addImage(step.logo, 'PNG', margin, yPos, 40, 20);
+                            // Fit inside 40x20mm keeping the logo's proportions; drawn through a
+                            // canvas so any image type the browser can decode embeds as PNG
+                            const logoImg = await loadImage(step.logo);
+                            const scale = Math.min(40 / logoImg.width, 20 / logoImg.height);
+                            const logoCanvas = document.createElement('canvas');
+                            logoCanvas.width = logoImg.width;
+                            logoCanvas.height = logoImg.height;
+                            logoCanvas.getContext('2d').drawImage(logoImg, 0, 0);
+                            pdf.addImage(logoCanvas.toDataURL('image/png'), 'PNG', margin, yPos, logoImg.width * scale, logoImg.height * scale);
                             yPos += 35;
                         } catch (e) {}
                     }
 
                     pdf.setFontSize(32);
                     pdf.setTextColor(26, 26, 46);
-                    pdf.text(step.title || 'Document Title', margin, yPos);
-                    yPos += 15;
+                    // line advance in mm = font size (pt) * 1.15 line height * 0.3528
+                    const titleLines = pdf.splitTextToSize(step.title || 'Document Title', contentWidth);
+                    pdf.text(titleLines, margin, yPos);
+                    yPos += 15 + (titleLines.length - 1) * 13;
 
                     pdf.setFontSize(16);
                     pdf.setTextColor(100, 100, 100);
-                    pdf.text(step.subtitle || '', margin, yPos);
-                    yPos += 40;
+                    const subtitleLines = pdf.splitTextToSize(step.subtitle || '', contentWidth);
+                    pdf.text(subtitleLines, margin, yPos);
+                    yPos += 40 + (subtitleLines.length - 1) * 6.5;
 
                     pdf.setDrawColor(200, 200, 200);
                     pdf.line(margin, yPos, pageWidth - margin, yPos);
@@ -1895,8 +2024,9 @@
                     // Title
                     pdf.setFontSize(18);
                     pdf.setTextColor(26, 26, 46);
-                    pdf.text(step.title || 'Untitled Step', margin, yPos);
-                    yPos += 12;
+                    const stepTitleLines = pdf.splitTextToSize(step.title || 'Untitled Step', contentWidth);
+                    pdf.text(stepTitleLines, margin, yPos);
+                    yPos += 12 + (stepTitleLines.length - 1) * 7.3;
 
                     // Description
                     if (step.description) {
@@ -1918,52 +2048,7 @@
                         tempCanvas.height = img.height;
                         tempCtx.drawImage(img, 0, 0);
 
-                        // Draw annotations
-                        step.annotations.forEach(ann => {
-                            tempCtx.save();
-                            tempCtx.strokeStyle = ann.color;
-                            tempCtx.fillStyle = ann.color;
-                            tempCtx.lineWidth = ann.strokeWidth || 3;
-                            tempCtx.lineCap = 'round';
-                            tempCtx.lineJoin = 'round';
-
-                            switch (ann.type) {
-                                case 'arrow':
-                                    drawArrowOnCtx(tempCtx, ann.x1, ann.y1, ann.x2, ann.y2);
-                                    break;
-                                case 'rect':
-                                    tempCtx.strokeRect(ann.x, ann.y, ann.width, ann.height);
-                                    break;
-                                case 'circle':
-                                    tempCtx.beginPath();
-                                    tempCtx.ellipse(ann.x + ann.width/2, ann.y + ann.height/2,
-                                                   Math.abs(ann.width/2), Math.abs(ann.height/2), 0, 0, Math.PI * 2);
-                                    tempCtx.stroke();
-                                    break;
-                                case 'line':
-                                    tempCtx.beginPath();
-                                    tempCtx.moveTo(ann.x1, ann.y1);
-                                    tempCtx.lineTo(ann.x2, ann.y2);
-                                    tempCtx.stroke();
-                                    break;
-                                case 'text':
-                                    tempCtx.font = `${ann.fontSize || 18}px sans-serif`;
-                                    tempCtx.fillText(ann.text, ann.x, ann.y);
-                                    break;
-                                case 'number':
-                                    drawStepNumberOnCtx(tempCtx, ann.x, ann.y, ann.number);
-                                    break;
-                                case 'blur':
-                                    applyBlurOnCtx(tempCtx, ann.x, ann.y, ann.width, ann.height);
-                                    break;
-                                case 'highlight':
-                                    tempCtx.globalAlpha = 0.3;
-                                    tempCtx.fillRect(ann.x, ann.y, ann.width, ann.height);
-                                    tempCtx.globalAlpha = 1;
-                                    break;
-                            }
-                            tempCtx.restore();
-                        });
+                        drawAnnotations(tempCtx, step.annotations);
 
                         const imgData = tempCanvas.toDataURL('image/png');
                         const aspectRatio = img.height / img.width;
@@ -2015,68 +2100,6 @@
             });
         }
 
-        function drawArrowOnCtx(ctx, x1, y1, x2, y2) {
-            const headLength = 15;
-            const angle = Math.atan2(y2 - y1, x2 - x1);
-
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(x2, y2);
-            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
-            ctx.moveTo(x2, y2);
-            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
-            ctx.stroke();
-        }
-
-        function drawStepNumberOnCtx(ctx, x, y, number) {
-            const radius = 16;
-            const gradient = ctx.createLinearGradient(x - radius, y - radius, x + radius, y + radius);
-            gradient.addColorStop(0, '#667eea');
-            gradient.addColorStop(1, '#764ba2');
-
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(number.toString(), x, y);
-        }
-
-        function applyBlurOnCtx(ctx, x, y, width, height) {
-            const imageData = ctx.getImageData(x, y, width, height);
-            const data = imageData.data;
-            const pixelSize = 10;
-
-            for (let py = 0; py < height; py += pixelSize) {
-                for (let px = 0; px < width; px += pixelSize) {
-                    const i = (py * width + px) * 4;
-                    const r = data[i], g = data[i + 1], b = data[i + 2];
-
-                    for (let y2 = py; y2 < py + pixelSize && y2 < height; y2++) {
-                        for (let x2 = px; x2 < px + pixelSize && x2 < width; x2++) {
-                            const j = (y2 * width + x2) * 4;
-                            data[j] = r;
-                            data[j + 1] = g;
-                            data[j + 2] = b;
-                        }
-                    }
-                }
-            }
-
-            ctx.putImageData(imageData, x, y);
-        }
-
         // ============ Mobile ============
         function setupMobileListeners() {
             elements.mobileLeftBtn.addEventListener('click', () => {
@@ -2093,20 +2116,22 @@
         // ============ Keyboard Shortcuts ============
         function setupKeyboardShortcuts() {
             document.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                // buttons are not excluded: a toolbar button keeps focus after a click
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
                 if (e.ctrlKey || e.metaKey) {
-                    if (e.key === 'z') {
+                    const key = e.key.toLowerCase();
+                    if (key === 'z') {
                         e.preventDefault();
-                        undo();
-                    } else if (e.key === 'y') {
+                        if (e.shiftKey) redo(); else undo();
+                    } else if (key === 'y') {
                         e.preventDefault();
                         redo();
-                    } else if (e.key === 's') {
+                    } else if (key === 's') {
                         e.preventDefault();
                         elements.saveProjectBtn.click();
                     }
-                } else {
+                } else if (!e.altKey) {
                     switch (e.key.toLowerCase()) {
                         case 'v': elements.selectTool.click(); break;
                         case 'a': elements.arrowTool.click(); break;
@@ -2131,6 +2156,13 @@
 
         // ============ Initialize ============
         elements.addStepBtn.addEventListener('click', addStep);
+        elements.addCoverBtn.addEventListener('click', () => {
+            if (state.steps.some(s => s.type === 'cover')) return;
+            state.coverPage.enabled = true;
+            addCoverPage();
+            renderStepsList();
+            selectStep(0);
+        });
         init();
     </script>
 </body>

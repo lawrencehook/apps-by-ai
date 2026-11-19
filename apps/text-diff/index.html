@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Diff - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -267,8 +268,9 @@
         }
 
         function diffByLine(text1, text2) {
-            const lines1 = text1.split('\n');
-            const lines2 = text2.split('\n');
+            // an empty side has no lines (''.split gives one empty line)
+            const lines1 = text1 ? text1.split('\n') : [];
+            const lines2 = text2 ? text2.split('\n') : [];
 
             const diff = computeLCS(lines1, lines2);
 
@@ -277,18 +279,18 @@
 
             diff.forEach(item => {
                 if (item.type === 'added') {
-                    html += `<span class="diff-line added">+ ${escapeHtml(item.value)}</span>\n`;
+                    html += `<span class="diff-line added">+ ${escapeHtml(item.value)}</span>`;
                     added++;
                 } else if (item.type === 'removed') {
-                    html += `<span class="diff-line removed">- ${escapeHtml(item.value)}</span>\n`;
+                    html += `<span class="diff-line removed">- ${escapeHtml(item.value)}</span>`;
                     removed++;
                 } else {
-                    html += `<span class="diff-line unchanged">  ${escapeHtml(item.value)}</span>\n`;
+                    html += `<span class="diff-line unchanged">  ${escapeHtml(item.value)}</span>`;
                     unchanged++;
                 }
             });
 
-            document.getElementById('diffOutput').innerHTML = html || '<span style="color: #4ecdc4;">No differences found!</span>';
+            document.getElementById('diffOutput').innerHTML = (added || removed) ? approximateNote(diff) + html : '<span style="color: #4ecdc4;">No differences found!</span>';
             document.getElementById('addedCount').textContent = added;
             document.getElementById('removedCount').textContent = removed;
             document.getElementById('unchangedCount').textContent = unchanged;
@@ -300,7 +302,7 @@
 
             const diff = computeLCS(words1, words2);
 
-            let html = '<div class="inline-diff">';
+            let html = approximateNote(diff) + '<div class="inline-diff">';
             let added = 0, removed = 0, unchanged = 0;
 
             diff.forEach(item => {
@@ -323,7 +325,27 @@
             document.getElementById('unchangedCount').textContent = unchanged;
         }
 
+        function approximateNote(diff) {
+            return diff.approximate ? '<div style="color: #f0ad4e; margin-bottom: 8px;">Too large for a full diff: the changed section was compared position by position.</div>' : '';
+        }
+
         function computeLCS(arr1, arr2) {
+            // Identical leading and trailing items never need the table
+            let start = 0;
+            while (start < arr1.length && start < arr2.length && arr1[start] === arr2[start]) start++;
+            let end = 0;
+            while (end < arr1.length - start && end < arr2.length - start &&
+                arr1[arr1.length - 1 - end] === arr2[arr2.length - 1 - end]) end++;
+            const head = arr1.slice(0, start).map(value => ({ type: 'unchanged', value }));
+            const tail = arr1.slice(arr1.length - end).map(value => ({ type: 'unchanged', value }));
+            const middle = diffMiddle(arr1.slice(start, arr1.length - end), arr2.slice(start, arr2.length - end));
+            const result = head.concat(middle, tail);
+            result.approximate = !!middle.approximate;
+            return result;
+        }
+
+        // The result has .approximate set when the input is too large for the LCS table
+        function diffMiddle(arr1, arr2) {
             const m = arr1.length;
             const n = arr2.length;
 
@@ -341,6 +363,7 @@
                         if (i < n) result.push({ type: 'added', value: arr2[i] });
                     }
                 }
+                result.approximate = true;
                 return result;
             }
 
@@ -363,19 +386,19 @@
 
             while (i > 0 || j > 0) {
                 if (i > 0 && j > 0 && arr1[i - 1] === arr2[j - 1]) {
-                    result.unshift({ type: 'unchanged', value: arr1[i - 1] });
+                    result.push({ type: 'unchanged', value: arr1[i - 1] });
                     i--;
                     j--;
                 } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-                    result.unshift({ type: 'added', value: arr2[j - 1] });
+                    result.push({ type: 'added', value: arr2[j - 1] });
                     j--;
                 } else if (i > 0) {
-                    result.unshift({ type: 'removed', value: arr1[i - 1] });
+                    result.push({ type: 'removed', value: arr1[i - 1] });
                     i--;
                 }
             }
 
-            return result;
+            return result.reverse();
         }
 
         function escapeHtml(text) {

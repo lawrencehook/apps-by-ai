@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finite State Machine - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,11 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 260px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -60,7 +66,7 @@
         <p>Deterministic Finite Automaton. Test if strings match a pattern.</p>
 
         <div class="control-group">
-            <label>Preset Machines</label>
+            <label for="preset">Preset Machines</label>
             <select id="preset">
                 <option value="binary_div3">Binary divisible by 3</option>
                 <option value="ends_ab">Ends with "ab"</option>
@@ -70,7 +76,7 @@
         </div>
 
         <div class="control-group">
-            <label>Input String</label>
+            <label for="input">Input String</label>
             <input type="text" id="input" placeholder="Enter input...">
         </div>
 
@@ -100,6 +106,8 @@
         let inputString = '';
         let inputIndex = 0;
         let running = false;
+        let runId = 0;
+        let invalidSymbol = null;
         let alphabet = ['0', '1'];
 
         const presets = {
@@ -179,8 +187,12 @@
                 symbol
             }));
 
+            runId++;
+            running = false;
             currentState = null;
             inputIndex = 0;
+            inputString = '';
+            invalidSymbol = null;
             document.getElementById('input').placeholder = `Enter ${alphabet.join('/')}...`;
             positionStates();
             updateUI();
@@ -219,7 +231,9 @@
             const to = trans.to;
 
             if (from === to) {
-                // Self-loop
+                // Self-loop: several symbols share one loop, so draw it once with a combined label
+                const loops = transitions.filter(t => t.from === from && t.to === from);
+                if (loops[0] !== trans) return;
                 const angle = -Math.PI / 2;
                 const loopRadius = 30;
                 const cx = from.x + Math.cos(angle) * 50;
@@ -241,7 +255,7 @@
                 ctx.fillStyle = '#ffe66d';
                 ctx.font = 'bold 14px system-ui';
                 ctx.textAlign = 'center';
-                ctx.fillText(trans.symbol, cx, cy - loopRadius - 10);
+                ctx.fillText(loops.map(t => t.symbol).join(', '), cx, cy - loopRadius - 10);
             } else {
                 // Check for reverse transition
                 const hasReverse = transitions.some(t =>
@@ -361,7 +375,10 @@
             // Result
             const resultEl = document.getElementById('result');
             if (currentState && inputIndex >= inputString.length) {
-                if (acceptStates.has(currentState)) {
+                if (invalidSymbol !== null) {
+                    resultEl.textContent = `REJECTED (invalid symbol: "${invalidSymbol}")`;
+                    resultEl.className = 'result reject';
+                } else if (acceptStates.has(currentState)) {
                     resultEl.textContent = 'ACCEPTED';
                     resultEl.className = 'result accept';
                 } else {
@@ -381,6 +398,7 @@
                 currentState = startState;
                 inputString = document.getElementById('input').value;
                 inputIndex = 0;
+                invalidSymbol = null;
             }
 
             if (inputIndex >= inputString.length) {
@@ -394,8 +412,7 @@
             // Validate symbol is in alphabet
             if (!alphabet.includes(symbol)) {
                 inputIndex = inputString.length;
-                document.getElementById('result').textContent = `REJECTED (invalid symbol: "${symbol}")`;
-                document.getElementById('result').className = 'result reject';
+                invalidSymbol = symbol;
                 updateUI();
                 draw();
                 return false;
@@ -423,6 +440,7 @@
             if (running) return;
 
             const input = document.getElementById('input').value;
+            invalidSymbol = null;
             if (input.length === 0) {
                 // Handle empty string: just show accept/reject of start state
                 currentState = startState;
@@ -434,6 +452,7 @@
             }
 
             running = true;
+            const id = ++runId;
 
             // Reset
             currentState = startState;
@@ -443,13 +462,13 @@
             draw();
 
             await new Promise(r => setTimeout(r, 300));
+            if (id !== runId) return;
 
             while (inputIndex < inputString.length) {
                 const symbol = inputString[inputIndex];
                 if (!alphabet.includes(symbol)) {
                     inputIndex = inputString.length;
-                    document.getElementById('result').textContent = `REJECTED (invalid symbol: "${symbol}")`;
-                    document.getElementById('result').className = 'result reject';
+                    invalidSymbol = symbol;
                     updateUI();
                     draw();
                     break;
@@ -469,6 +488,7 @@
                 updateUI();
                 draw();
                 await new Promise(r => setTimeout(r, 500));
+                if (id !== runId) return;
             }
 
             running = false;
@@ -478,7 +498,9 @@
             currentState = null;
             inputIndex = 0;
             inputString = '';
+            runId++;
             running = false;
+            invalidSymbol = null;
             document.getElementById('result').textContent = '';
             document.getElementById('tape').innerHTML = '';
             updateUI();

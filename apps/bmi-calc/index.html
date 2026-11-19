@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BMI Calculator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -139,12 +140,15 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .scale-labels {
-            display: flex;
-            justify-content: space-between;
+            position: relative;
+            height: 1.2em;
             font-size: 0.75rem;
             color: #666;
-            padding: 0 4px;
         }
+        /* Labels sit at the same 0/14/40/60/100% stops as the bar colours */
+        .scale-labels span { position: absolute; transform: translateX(-50%); }
+        .scale-labels span:first-child { left: 0; transform: none; }
+        .scale-labels span:last-child { right: 0; transform: none; }
         .categories {
             margin-top: 24px;
             text-align: left;
@@ -192,7 +196,7 @@
             </div>
 
             <div class="input-group">
-                <label>Weight</label>
+                <label for="weight">Weight</label>
                 <div class="input-with-unit">
                     <input type="number" id="weight" placeholder="70" min="0" step="0.1">
                     <span class="unit" id="weightUnit">kg</span>
@@ -209,9 +213,9 @@
             </div>
             <div class="scale-labels">
                 <span>15</span>
-                <span>18.5</span>
-                <span>25</span>
-                <span>30</span>
+                <span style="left: 14%">18.5</span>
+                <span style="left: 40%">25</span>
+                <span style="left: 60%">30</span>
                 <span>40</span>
             </div>
 
@@ -299,7 +303,8 @@
                 return;
             }
 
-            const bmi = weightKg / (heightM * heightM);
+            // Classify the value as displayed, so 24.96 reads "25.0 Overweight"
+            const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
             document.getElementById('bmiValue').textContent = bmi.toFixed(1);
 
             let category, color, categoryKey;

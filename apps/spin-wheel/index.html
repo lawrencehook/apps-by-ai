@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spin the Wheel - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -268,7 +269,9 @@ Pasta</textarea>
             const params = new URLSearchParams(window.location.search);
             const urlOptions = params.get('options');
             if (urlOptions) {
-                optionsInput.value = urlOptions.split(',').map(o => decodeURIComponent(o.trim())).join('\n');
+                optionsInput.value = urlOptions.split(',').map(o => {
+                    try { return decodeURIComponent(o.trim()); } catch (e) { return o.trim(); }
+                }).join('\n');
             }
         }
 
@@ -349,6 +352,14 @@ Pasta</textarea>
             ctx.stroke();
         }
 
+        // Slice i is drawn from (rotation + i * slice) past the top, so the pointer
+        // at the top sits in the slice that has not yet rotated past it
+        function winnerAt(rotation, count) {
+            const sliceAngle = (2 * Math.PI) / count;
+            const normalizedRotation = ((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            return (count - 1 - Math.floor(normalizedRotation / sliceAngle) + count) % count;
+        }
+
         function spin() {
             if (spinning) return;
             if (options.length < 2) {
@@ -383,12 +394,7 @@ Pasta</textarea>
                     spinBtn.disabled = false;
                     canvas.classList.remove('spinning');
 
-                    // Calculate winner - pointer is at top
-                    const sliceAngle = (2 * Math.PI) / options.length;
-                    // Normalize rotation to 0 to 2*PI
-                    const normalizedRotation = ((currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    // The winning slice is the one that rotated to be under the pointer
-                    const winnerIndex = ((options.length - Math.floor(normalizedRotation / sliceAngle)) % options.length + options.length) % options.length;
+                    const winnerIndex = winnerAt(currentRotation, options.length);
                     const winner = options[winnerIndex];
 
                     resultEl.textContent = winner;

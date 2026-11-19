@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hash Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -247,6 +248,8 @@
             const bitLength = utf8.length * 8;
             words[utf8.length >> 2] |= 0x80 << ((utf8.length % 4) * 8);
             words[(((utf8.length + 8) >>> 6) << 4) + 14] = bitLength;
+            // The two writes above leave holes; undefined would turn the additions into NaN
+            for (let i = 0; i < words.length; i++) words[i] = words[i] | 0;
 
             let a = 0x67452301, b = 0xefcdab89, c = 0x98badcfe, d = 0x10325476;
 
@@ -306,7 +309,11 @@
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
+        const SHA_UNAVAILABLE = 'Unavailable (Web Crypto needs HTTPS or localhost)';
+        let runId = 0;
+
         async function generateHashes() {
+            const id = ++runId;
             const text = inputText.value;
             const isUppercase = uppercase.checked;
 
@@ -327,15 +334,21 @@
             // SHA hashes using Web Crypto API
             try {
                 const sha1Hash = await sha('SHA-1', text);
+                if (id !== runId) return; // newer input took over
                 document.getElementById('sha1Hash').textContent = isUppercase ? sha1Hash.toUpperCase() : sha1Hash;
 
                 const sha256Hash = await sha('SHA-256', text);
+                if (id !== runId) return;
                 document.getElementById('sha256Hash').textContent = isUppercase ? sha256Hash.toUpperCase() : sha256Hash;
 
                 const sha512Hash = await sha('SHA-512', text);
+                if (id !== runId) return;
                 document.getElementById('sha512Hash').textContent = isUppercase ? sha512Hash.toUpperCase() : sha512Hash;
             } catch (e) {
-                console.error('Error generating SHA hashes:', e);
+                if (id !== runId) return;
+                ['sha1Hash', 'sha256Hash', 'sha512Hash'].forEach(elId => {
+                    document.getElementById(elId).textContent = SHA_UNAVAILABLE;
+                });
             }
         }
 
@@ -346,11 +359,12 @@
             btn.addEventListener('click', () => {
                 const hashType = btn.dataset.hash;
                 const hashValue = document.getElementById(hashType + 'Hash').textContent;
-                if (hashValue && hashValue !== '-') {
-                    navigator.clipboard.writeText(hashValue).then(() => {
-                        btn.textContent = 'Copied!';
+                if (hashValue && hashValue !== '-' && hashValue !== SHA_UNAVAILABLE) {
+                    const copied = ok => {
+                        btn.textContent = ok ? 'Copied!' : 'Copy failed';
                         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-                    }).catch(() => {
+                    };
+                    const fallback = () => {
                         // Fallback for non-HTTPS or denied clipboard permission
                         const textarea = document.createElement('textarea');
                         textarea.value = hashValue;
@@ -358,11 +372,16 @@
                         textarea.style.opacity = '0';
                         document.body.appendChild(textarea);
                         textarea.select();
-                        document.execCommand('copy');
+                        let ok = false;
+                        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
                         document.body.removeChild(textarea);
-                        btn.textContent = 'Copied!';
-                        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-                    });
+                        copied(ok);
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(hashValue).then(() => copied(true)).catch(fallback);
+                    } else {
+                        fallback();
+                    }
                 }
             });
         });

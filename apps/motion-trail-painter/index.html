@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motion Trail Painter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -24,6 +25,7 @@
             height: 100vh;
             display: block;
             cursor: crosshair;
+            touch-action: none;
         }
         .controls {
             position: fixed;
@@ -143,7 +145,7 @@
             .info-panel {
                 top: 10px;
                 left: 10px;
-                right: 10px;
+                right: 110px; /* leave room for the Back link */
                 padding: 12px;
             }
             .info-panel h1 { font-size: 1rem; }
@@ -162,23 +164,23 @@
 
     <div class="controls">
         <div class="control-group">
-            <span class="control-label">Color</span>
+            <label class="control-label" for="colorPicker">Color</label>
             <input type="color" id="colorPicker" value="#4ecdc4">
         </div>
         <div class="control-group">
-            <span class="control-label">Size</span>
+            <label class="control-label" for="sizeSlider">Size</label>
             <input type="range" id="sizeSlider" min="2" max="50" value="15">
         </div>
         <div class="control-group">
-            <span class="control-label">Glow</span>
+            <label class="control-label" for="glowSlider">Glow</label>
             <input type="range" id="glowSlider" min="0" max="50" value="20">
         </div>
         <div class="control-group">
-            <span class="control-label">Decay</span>
+            <label class="control-label" for="decaySlider">Decay</label>
             <input type="range" id="decaySlider" min="1" max="20" value="5">
         </div>
         <div class="control-group">
-            <span class="control-label">Mode</span>
+            <label class="control-label" for="modeSelect">Mode</label>
             <select id="modeSelect">
                 <option value="normal">Normal</option>
                 <option value="rainbow">Rainbow</option>
@@ -188,7 +190,7 @@
         </div>
         <div class="control-group checkbox-group">
             <input type="checkbox" id="mirrorCheck">
-            <span class="control-label">Mirror</span>
+            <label class="control-label" for="mirrorCheck">Mirror</label>
         </div>
         <button class="btn" id="clearBtn">Clear</button>
         <button class="btn btn-primary" id="saveBtn">Save PNG</button>
@@ -369,13 +371,14 @@
         }
 
         function getEventPos(e) {
-            if (e.touches) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
             return { x: e.clientX, y: e.clientY };
         }
 
+        let activePointer = null;
+
         function startDrawing(e) {
+            if (isDrawing) return;
+            activePointer = e.pointerId;
             isDrawing = true;
             const pos = getEventPos(e);
             lastX = pos.x;
@@ -383,13 +386,13 @@
             addTrailPoint(pos.x, pos.y);
         }
 
-        function stopDrawing() {
+        function stopDrawing(e) {
+            if (e.pointerId !== activePointer) return;
             isDrawing = false;
         }
 
         function drawMove(e) {
-            if (!isDrawing) return;
-            e.preventDefault();
+            if (!isDrawing || e.pointerId !== activePointer) return;
 
             const pos = getEventPos(e);
 
@@ -411,20 +414,11 @@
         }
 
         // Event listeners
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', drawMove);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseleave', stopDrawing);
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            startDrawing(e);
-        });
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            drawMove(e);
-        });
-        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('pointerdown', startDrawing);
+        canvas.addEventListener('pointermove', drawMove);
+        canvas.addEventListener('pointerup', stopDrawing);
+        canvas.addEventListener('pointerleave', stopDrawing);
+        canvas.addEventListener('pointercancel', stopDrawing);
 
         // Controls
         document.getElementById('colorPicker').addEventListener('input', (e) => {

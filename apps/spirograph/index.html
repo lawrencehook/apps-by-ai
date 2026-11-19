@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spirograph - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -107,17 +108,17 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>R (outer)</label>
+                <label for="R">R (outer)</label>
                 <input type="range" id="R" min="50" max="200" value="150">
                 <span class="value" id="Rval">150</span>
             </div>
             <div class="control-group">
-                <label>r (inner)</label>
+                <label for="r">r (inner)</label>
                 <input type="range" id="r" min="10" max="150" value="45">
                 <span class="value" id="rval">45</span>
             </div>
             <div class="control-group">
-                <label>d (pen)</label>
+                <label for="d">d (pen)</label>
                 <input type="range" id="d" min="10" max="150" value="80">
                 <span class="value" id="dval">80</span>
             </div>
@@ -205,7 +206,17 @@
                 x = (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t);
                 y = (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t);
             }
-            return { x: cx + x, y: cy + y };
+            // Shrink curves that would not fit the canvas
+            const extent = (isEpi ? R + r : Math.abs(R - r)) + d;
+            const scale = Math.min(1, (width / 2 - 10) / extent);
+            return { x: cx + x * scale, y: cy + y * scale };
+        }
+
+        // How much faster the pen angle turns than t; step size must shrink by this
+        function getDetail() {
+            const R = parseFloat(RSlider.value);
+            const r = parseFloat(rSlider.value);
+            return Math.max(1, Math.abs(epitrochoidCheck.checked ? R + r : R - r) / r);
         }
 
         function getMaxT() {
@@ -239,21 +250,28 @@
             ctx.fillRect(0, 0, width, height);
 
             const maxT = getMaxT();
-            const steps = Math.max(5000, maxT * 500);
+            const steps = Math.ceil(maxT * getDetail() / 0.03);
             const dt = maxT / steps;
 
             ctx.lineWidth = 1.5;
 
             if (rainbowCheck.checked) {
-                let prev = getPoint(0);
+                // One stroke per whole degree of hue rather than one per segment
+                let hue = 0;
+                const start = getPoint(0);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
                 for (let i = 1; i <= steps; i++) {
                     const pt = getPoint(i * dt);
-                    ctx.beginPath();
-                    ctx.moveTo(prev.x, prev.y);
                     ctx.lineTo(pt.x, pt.y);
-                    ctx.strokeStyle = `hsl(${(i / steps) * 360}, 80%, 60%)`;
-                    ctx.stroke();
-                    prev = pt;
+                    const h = Math.floor((i / steps) * 360);
+                    if (h !== hue || i === steps) {
+                        ctx.strokeStyle = `hsl(${hue}, 80%, 60%)`;
+                        ctx.stroke();
+                        hue = h;
+                        ctx.beginPath();
+                        ctx.moveTo(pt.x, pt.y);
+                    }
                 }
             } else {
                 ctx.beginPath();
@@ -282,25 +300,28 @@
             const speed = 0.05;
 
             if (t < maxT) {
-                const pt = getPoint(t);
-                points.push({ ...pt, t });
+                if (points.length === 0) points.push(getPoint(t));
+                let pt = points[points.length - 1];
+                const startT = t;
+                const n = Math.ceil(getDetail() * speed / 0.03);
 
-                if (points.length > 1) {
-                    const prev = points[points.length - 2];
-                    ctx.beginPath();
-                    ctx.moveTo(prev.x, prev.y);
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y);
+                for (let i = 0; i < n && t < maxT; i++) {
+                    t = Math.min(startT + speed * (i + 1) / n, maxT);
+                    pt = getPoint(t);
                     ctx.lineTo(pt.x, pt.y);
-
-                    if (rainbowCheck.checked) {
-                        ctx.strokeStyle = `hsl(${(t / maxT) * 360}, 80%, 60%)`;
-                    } else {
-                        ctx.strokeStyle = '#4ecdc4';
-                    }
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
                 }
+                points = [pt];
 
-                t += speed;
+                if (rainbowCheck.checked) {
+                    ctx.strokeStyle = `hsl(${(startT / maxT) * 360}, 80%, 60%)`;
+                } else {
+                    ctx.strokeStyle = '#4ecdc4';
+                }
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
                 animId = requestAnimationFrame(animate);
             }
         }

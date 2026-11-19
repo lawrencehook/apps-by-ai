@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Flip - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -172,6 +173,7 @@
         let heads = 0;
         let tails = 0;
         let isFlipping = false;
+        let flipTimeout = null;
 
         const coin = document.getElementById('coin');
         const flipBtn = document.getElementById('flipBtn');
@@ -180,6 +182,7 @@
         document.getElementById('resetBtn').addEventListener('click', resetStats);
 
         document.addEventListener('keydown', e => {
+            if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target.tagName)) return;
             if (e.code === 'Space' && !isFlipping) {
                 e.preventDefault();
                 flip();
@@ -199,7 +202,8 @@
             coin.classList.add(result === 'heads' ? 'flipping-heads' : 'flipping-tails');
             document.getElementById('result').textContent = '...';
 
-            setTimeout(() => {
+            flipTimeout = setTimeout(() => {
+                flipTimeout = null;
                 coin.classList.remove('flipping-heads', 'flipping-tails');
                 coin.classList.add(result);
 
@@ -226,6 +230,12 @@
         }
 
         function resetStats() {
+            if (flipTimeout !== null) {
+                clearTimeout(flipTimeout);
+                flipTimeout = null;
+                isFlipping = false;
+                flipBtn.disabled = false;
+            }
             heads = 0;
             tails = 0;
             updateStats();

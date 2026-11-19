@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF to Images - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdfjs-3.11.174/pdf.min.js"></script>
+    <script src="../../libs/jszip-3.10.1/jszip.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -231,7 +233,7 @@
 
         let currentFile = null;
         let pdfDoc = null;
-        let renderedCanvases = [];
+        let loadId = 0; // bumped when the file is replaced; async work checks it after every await
 
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -278,33 +280,41 @@
                 return;
             }
 
+            const id = ++loadId;
             showStatus('Loading PDF...');
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
+                const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                if (id !== loadId) { doc.destroy(); return; }
+                if (pdfDoc) pdfDoc.destroy();
+                pdfDoc = doc;
                 currentFile = { file, arrayBuffer };
 
-                pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                renderedCanvases = [];
-
-                await renderPageGrid();
+                await renderPageGrid(id);
+                if (id !== loadId) return;
 
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
                 status.classList.remove('show');
             } catch (err) {
+                if (id !== loadId) return;
                 showStatus('Error loading PDF: ' + err.message, true);
             }
         }
 
-        async function renderPageGrid() {
+        // Thumbnails are small and independent of the export scale; full-size pages are
+        // rendered one at a time on download (50 pages kept at 4x would be about 1.5GB).
+        const THUMBNAIL_WIDTH = 320;
+
+        async function renderPageGrid(id) {
+            const doc = pdfDoc;
             pageGrid.innerHTML = '';
-            const scale = parseFloat(document.getElementById('scaleSelect').value);
 
             showStatus('Rendering pages...');
             showProgress(0);
 
-            for (let i = 0; i < pdfDoc.numPages; i++) {
+            for (let i = 0; i < doc.numPages; i++) {
                 const card = document.createElement('div');
                 card.className = 'page-card';
 
@@ -320,13 +330,15 @@
                     <span class="page-number">Page ${i + 1}</span>
                     <button class="download-btn" data-page="${i}">Download</button>
                 `;
+                info.querySelector('.download-btn').addEventListener('click', () => downloadPage(i));
 
                 card.appendChild(preview);
                 card.appendChild(info);
                 pageGrid.appendChild(card);
 
-                // Render at full scale but display smaller
-                const page = await pdfDoc.getPage(i + 1);
+                const page = await doc.getPage(i + 1);
+                if (id !== loadId) return;
+                const scale = Math.min(1, THUMBNAIL_WIDTH / page.getViewport({ scale: 1 }).width);
                 const viewport = page.getViewport({ scale });
 
                 canvas.width = viewport.width;
@@ -334,75 +346,112 @@
 
                 const ctx = canvas.getContext('2d');
                 await page.render({ canvasContext: ctx, viewport }).promise;
+                if (id !== loadId) return;
 
-                renderedCanvases[i] = canvas;
-
-                showProgress((i + 1) / pdfDoc.numPages * 100);
+                showProgress((i + 1) / doc.numPages * 100);
             }
-
-            // Add download handlers
-            pageGrid.querySelectorAll('.download-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const pageIndex = parseInt(btn.dataset.page);
-                    downloadPage(pageIndex);
-                });
-            });
 
             hideProgress();
             status.classList.remove('show');
         }
 
-        function downloadPage(pageIndex) {
-            const canvas = renderedCanvases[pageIndex];
-            const format = formatSelect.value;
-            const quality = parseInt(document.getElementById('qualityInput').value) / 100;
+        // Render one page at the chosen scale and encode it; the canvas is released afterwards
+        async function renderPageBlob(doc, pageIndex, scale, format, quality) {
+            const page = await doc.getPage(pageIndex + 1);
+            const viewport = page.getViewport({ scale });
 
-            const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-            const dataUrl = format === 'jpeg'
-                ? canvas.toDataURL(mimeType, quality)
-                : canvas.toDataURL(mimeType);
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
 
-            const baseName = currentFile.file.name.replace(/\.pdf$/i, '');
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+            const blob = await new Promise(resolve => {
+                if (format === 'jpeg') canvas.toBlob(resolve, 'image/jpeg', quality);
+                else canvas.toBlob(resolve, 'image/png');
+            });
+            canvas.width = canvas.height = 0;
+            if (!blob) throw new Error(`Page ${pageIndex + 1} is too large to render at ${scale}x`);
+            return blob;
+        }
+
+        function exportOptions() {
+            return {
+                scale: parseFloat(document.getElementById('scaleSelect').value),
+                format: formatSelect.value,
+                quality: parseInt(document.getElementById('qualityInput').value) / 100
+            };
+        }
+
+        function saveBlob(blob, name) {
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${baseName}_page_${pageIndex + 1}.${format}`;
+            a.href = url;
+            a.download = name;
             a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        async function downloadPage(pageIndex) {
+            const id = loadId;
+            const { scale, format, quality } = exportOptions();
+            const baseName = currentFile.file.name.replace(/\.pdf$/i, '');
+
+            showStatus(`Rendering page ${pageIndex + 1}...`);
+            try {
+                const blob = await renderPageBlob(pdfDoc, pageIndex, scale, format, quality);
+                if (id !== loadId) return;
+                saveBlob(blob, `${baseName}_page_${pageIndex + 1}.${format}`);
+                status.classList.remove('show');
+            } catch (err) {
+                if (id !== loadId) return;
+                showStatus('Error rendering page: ' + err.message, true);
+            }
         }
 
         document.getElementById('downloadAllBtn').addEventListener('click', async () => {
-            const format = formatSelect.value;
-            const quality = parseInt(document.getElementById('qualityInput').value) / 100;
+            const downloadAllBtn = document.getElementById('downloadAllBtn');
+            const id = loadId;
+            const doc = pdfDoc;
+            const { scale, format, quality } = exportOptions();
             const baseName = currentFile.file.name.replace(/\.pdf$/i, '');
 
-            showStatus('Preparing downloads...');
+            downloadAllBtn.disabled = true;
+            showStatus('Rendering pages...');
             showProgress(0);
 
-            for (let i = 0; i < renderedCanvases.length; i++) {
-                const canvas = renderedCanvases[i];
-                const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-                const dataUrl = format === 'jpeg'
-                    ? canvas.toDataURL(mimeType, quality)
-                    : canvas.toDataURL(mimeType);
+            try {
+                // One zip instead of one download per page, which browsers block
+                const zip = new JSZip();
+                let single = null;
 
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = `${baseName}_page_${i + 1}.${format}`;
-                a.click();
+                for (let i = 0; i < doc.numPages; i++) {
+                    const blob = await renderPageBlob(doc, i, scale, format, quality);
+                    if (id !== loadId) return;
+                    if (doc.numPages === 1) single = blob;
+                    else zip.file(`${baseName}_page_${i + 1}.${format}`, blob);
 
-                showProgress((i + 1) / renderedCanvases.length * 100);
+                    showProgress((i + 1) / doc.numPages * 100);
+                }
 
-                // Small delay between downloads
-                await new Promise(r => setTimeout(r, 200));
-            }
+                if (single) {
+                    saveBlob(single, `${baseName}_page_1.${format}`);
+                } else {
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    if (id !== loadId) return;
+                    saveBlob(zipBlob, `${baseName}_images.zip`);
+                }
 
-            hideProgress();
-            showStatus(`Downloaded ${renderedCanvases.length} images`);
-        });
-
-        // Re-render when scale changes
-        document.getElementById('scaleSelect').addEventListener('change', () => {
-            if (pdfDoc) {
-                renderPageGrid();
+                hideProgress();
+                showStatus(doc.numPages === 1
+                    ? 'Downloaded 1 image'
+                    : `Downloaded ${doc.numPages} images as ${baseName}_images.zip`);
+            } catch (err) {
+                if (id !== loadId) return;
+                hideProgress();
+                showStatus('Error rendering pages: ' + err.message, true);
+            } finally {
+                downloadAllBtn.disabled = false;
             }
         });
 
@@ -423,9 +472,11 @@
         }
 
         document.getElementById('resetBtn').addEventListener('click', () => {
+            loadId++;
             currentFile = null;
+            if (pdfDoc) pdfDoc.destroy();
             pdfDoc = null;
-            renderedCanvases = [];
+            hideProgress();
             fileInput.value = '';
             dropZone.classList.remove('hidden');
             editorPanel.classList.add('hidden');

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Recorder - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -264,11 +265,6 @@
             <div class="timer" id="timer">00:00</div>
             <div class="status" id="status">Click record to start</div>
 
-            <div class="format-select">
-                <button class="format-btn active" data-format="webm">WebM</button>
-                <button class="format-btn" data-format="wav">WAV</button>
-            </div>
-
             <div class="controls">
                 <button class="control-btn pause-btn" id="pauseBtn" disabled title="Pause">
                     <svg class="btn-icon" viewBox="0 0 24 24">
@@ -311,7 +307,7 @@
         let timerInterval = null;
         let isRecording = false;
         let isPaused = false;
-        let selectedFormat = 'webm';
+        let isStarting = false;
 
         const canvas = document.getElementById('visualizer');
         const ctx = canvas.getContext('2d');
@@ -330,15 +326,6 @@
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
-
-        // Format selection
-        document.querySelectorAll('.format-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedFormat = btn.dataset.format;
-            });
-        });
 
         // Draw visualizer
         function drawVisualizer() {
@@ -403,7 +390,12 @@
 
         // Start recording
         async function startRecording() {
+            // getUserMedia is async: a second click must not start a second pipeline
+            if (isRecording || isStarting) return;
+            isStarting = true;
             try {
+                stream = null;
+                audioContext = null;
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 document.getElementById('permissionError').style.display = 'none';
 
@@ -415,23 +407,9 @@
                 analyser.fftSize = 2048;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                // Set up media recorder - determine best supported MIME type
-                let mimeType;
-                if (selectedFormat === 'webm') {
-                    mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-                               MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined;
-                } else {
-                    // WAV is rarely supported by MediaRecorder; try it, then fall back
-                    mimeType = MediaRecorder.isTypeSupported('audio/wav') ? 'audio/wav' : undefined;
-                    if (!mimeType) {
-                        // Fall back to webm with a note
-                        mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-                                   MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined;
-                        selectedFormat = 'webm';
-                        document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelector('.format-btn[data-format="webm"]').classList.add('active');
-                    }
-                }
+                // Set up media recorder - the browser decides the container (WebM, or MP4 in Safari)
+                const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+                    .find(type => MediaRecorder.isTypeSupported(type));
                 const options = mimeType ? { mimeType } : {};
                 mediaRecorder = new MediaRecorder(stream, options);
                 chunks = [];
@@ -468,8 +446,26 @@
                 timerInterval = setInterval(updateTimer, 100);
 
             } catch (err) {
-                console.error('Error accessing microphone:', err);
-                document.getElementById('permissionError').style.display = 'block';
+                console.error('Error starting recording:', err);
+                if (stream) stream.getTracks().forEach(track => track.stop());
+                if (audioContext) audioContext.close();
+                stream = null;
+                audioContext = null;
+
+                const errorEl = document.getElementById('permissionError');
+                const name = err && err.name;
+                if (name === 'NotAllowedError' || name === 'SecurityError') {
+                    errorEl.textContent = 'Microphone access denied. Please allow microphone access to record audio.';
+                } else if (name === 'NotFoundError') {
+                    errorEl.textContent = 'No microphone found. Connect one and try again.';
+                } else if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
+                    errorEl.textContent = 'Recording is not supported in this browser (it needs HTTPS or localhost).';
+                } else {
+                    errorEl.textContent = 'Could not start recording: ' + (err && err.message ? err.message : name || 'unknown error');
+                }
+                errorEl.style.display = 'block';
+            } finally {
+                isStarting = false;
             }
         }
 
@@ -542,8 +538,10 @@
         // Add recording to list
         function addRecording(blob, duration) {
             const url = URL.createObjectURL(blob);
-            // Determine actual file extension from blob type
-            const actualFormat = blob.type.includes('wav') ? 'wav' : 'webm';
+            // File extension follows the container the browser actually recorded
+            const actualFormat = blob.type.includes('mp4') ? 'm4a' :
+                                 blob.type.includes('ogg') ? 'ogg' :
+                                 blob.type.includes('wav') ? 'wav' : 'webm';
             const recording = {
                 id: Date.now(),
                 url,
@@ -571,7 +569,7 @@
                         <div class="recording-meta">${rec.duration} • ${rec.format.toUpperCase()} • ${rec.date}</div>
                     </div>
                     <div class="recording-actions">
-                        <button class="action-btn play-btn" data-id="${rec.id}">Play</button>
+                        <button class="action-btn play-btn${rec.id === currentPlayingId ? ' playing' : ''}" data-id="${rec.id}">${rec.id === currentPlayingId ? 'Stop' : 'Play'}</button>
                         <button class="action-btn download" data-id="${rec.id}">Download</button>
                         <button class="action-btn delete" data-id="${rec.id}">Delete</button>
                     </div>
@@ -624,14 +622,22 @@
             btn.textContent = 'Stop';
             btn.classList.add('playing');
 
-            currentAudio.onended = () => {
-                btn.textContent = 'Play';
-                btn.classList.remove('playing');
+            const audio = currentAudio;
+            const finished = () => {
+                if (currentAudio !== audio) return;
+                // The list may have been re-rendered since playback started
+                const playingBtn = recordingsList.querySelector(`.play-btn[data-id="${id}"]`);
+                if (playingBtn) {
+                    playingBtn.textContent = 'Play';
+                    playingBtn.classList.remove('playing');
+                }
                 currentAudio = null;
                 currentPlayingId = null;
             };
+            audio.onended = finished;
 
-            currentAudio.play();
+            const started = audio.play();
+            if (started) started.catch(finished);
         }
 
         function downloadRecording(id) {
@@ -647,6 +653,11 @@
         function deleteRecording(id) {
             const idx = recordings.findIndex(r => r.id === id);
             if (idx !== -1) {
+                if (currentPlayingId === id) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                    currentPlayingId = null;
+                }
                 URL.revokeObjectURL(recordings[idx].url);
                 recordings.splice(idx, 1);
                 renderRecordings();

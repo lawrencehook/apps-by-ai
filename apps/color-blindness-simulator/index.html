@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Blindness Simulator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -405,6 +406,7 @@
                     currentImage = img;
                     showComparison();
                 };
+                img.onerror = () => alert('Could not load that image.');
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
@@ -609,12 +611,11 @@
             return imageData;
         }
 
-        function createCanvas(img, type = null) {
+        function createCanvas(img, type = null, maxSize = 800) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
             // Limit size for performance
-            const maxSize = 800;
             let w = img.width;
             let h = img.height;
 
@@ -677,6 +678,7 @@
 
             function drawSlider() {
                 const splitX = Math.floor(originalCanvas.width * sliderPosition);
+                sliderCtx.clearRect(0, 0, sliderCanvas.width, sliderCanvas.height);
 
                 // Draw original on left
                 sliderCtx.drawImage(originalCanvas, 0, 0, splitX, originalCanvas.height, 0, 0, splitX, originalCanvas.height);
@@ -765,7 +767,7 @@
         }
 
         function downloadImage() {
-            const canvas = createCanvas(currentImage, currentType);
+            const canvas = createCanvas(currentImage, currentType, Infinity);
             const link = document.createElement('a');
             link.download = `colorblind-${currentType}.png`;
             link.href = canvas.toDataURL('image/png');

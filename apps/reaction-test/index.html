@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reaction Time Test - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -344,7 +345,7 @@
             `;
         }
 
-        gameArea.addEventListener('click', () => {
+        function handlePress() {
             if (state === 'idle' || gameArea.classList.contains('clicked') || gameArea.classList.contains('too-early')) {
                 startWaiting();
             } else if (state === 'waiting') {
@@ -357,6 +358,12 @@
                 state = 'idle';
                 showResult(reactionTime);
             }
+        }
+
+        // pointerdown, not click: click fires on release and adds the hold time to the result
+        gameArea.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            handlePress();
         });
 
         document.getElementById('clearBtn').addEventListener('click', () => {
@@ -367,10 +374,12 @@
 
         // Prevent accidental spacebar triggering
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                gameArea.click();
-            }
+            if (e.code !== 'Space') return;
+            if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            e.preventDefault();
+            if (e.repeat) return; // a held key must not start, fail and restart the test
+            handlePress();
         });
     </script>
 </body>

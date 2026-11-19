@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Name Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -195,7 +196,7 @@
 
         <div class="controls">
             <div class="control-group">
-                <label class="control-label">Name Type</label>
+                <label class="control-label" for="nameType">Name Type</label>
                 <select id="nameType">
                     <option value="full">Full Names</option>
                     <option value="first">First Names Only</option>
@@ -208,7 +209,7 @@
             </div>
 
             <div class="control-group">
-                <label class="control-label">Gender (for human names)</label>
+                <label class="control-label" for="gender">Gender (for human names)</label>
                 <select id="gender">
                     <option value="any">Any</option>
                     <option value="male">Male</option>
@@ -218,7 +219,7 @@
             </div>
 
             <div class="control-group">
-                <label class="control-label">Number of Names</label>
+                <label class="control-label" for="count">Number of Names</label>
                 <input type="number" id="count" value="12" min="1" max="50">
             </div>
 
@@ -241,7 +242,7 @@
 
         <div class="results">
             <div class="results-header">
-                <span class="results-title">Generated Names (click to favorite)</span>
+                <span class="results-title" id="resultsTitle">Generated Names (click to favorite)</span>
                 <div class="results-actions">
                     <button class="action-btn" id="copyAllBtn">Copy All</button>
                     <button class="action-btn" id="regenerateBtn">Regenerate</button>
@@ -287,9 +288,12 @@
         // Load settings from URL
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('type')) document.getElementById('nameType').value = params.get('type');
-            if (params.get('gender')) document.getElementById('gender').value = params.get('gender');
-            if (params.get('count')) document.getElementById('count').value = params.get('count');
+            for (const [param, id] of [['type', 'nameType'], ['gender', 'gender']]) {
+                const select = document.getElementById(id);
+                const value = params.get(param);
+                if ([...select.options].some(o => o.value === value)) select.value = value;
+            }
+            if (params.get('count')) document.getElementById('count').value = clampCount(params.get('count'));
             if (params.get('alliteration') === 'true') document.getElementById('alliteration').checked = true;
             if (params.get('unique') === 'false') document.getElementById('unique').checked = false;
         }
@@ -306,8 +310,18 @@
             window.history.replaceState({}, '', newURL);
         }
 
+        function clampCount(value) {
+            return Math.min(50, Math.max(1, parseInt(value) || 12));
+        }
+
         function random(arr) {
             return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // First parts that have at least one second part with the same initial
+        function alliterable(firsts, seconds) {
+            const ok = firsts.filter(f => seconds.some(s => s[0].toLowerCase() === f[0].toLowerCase()));
+            return ok.length ? ok : firsts;
         }
 
         function generateName(type, gender, alliteration) {
@@ -316,11 +330,12 @@
 
             switch (type) {
                 case 'full': {
-                    let firstName;
-                    if (gender === 'male') firstName = random(firstNamesMale);
-                    else if (gender === 'female') firstName = random(firstNamesFemale);
-                    else if (gender === 'neutral') firstName = random(firstNamesNeutral);
-                    else firstName = random([...firstNamesMale, ...firstNamesFemale, ...firstNamesNeutral]);
+                    let pool;
+                    if (gender === 'male') pool = firstNamesMale;
+                    else if (gender === 'female') pool = firstNamesFemale;
+                    else if (gender === 'neutral') pool = firstNamesNeutral;
+                    else pool = [...firstNamesMale, ...firstNamesFemale, ...firstNamesNeutral];
+                    const firstName = random(alliteration ? alliterable(pool, lastNames) : pool);
 
                     let lastName = random(lastNames);
                     if (alliteration) {
@@ -343,7 +358,7 @@
                     name = random(lastNames);
                     break;
                 case 'fantasy': {
-                    const prefix = random(fantasyPrefixes);
+                    const prefix = random(alliteration ? alliterable(fantasyPrefixes, fantasySuffixes) : fantasyPrefixes);
                     let suffix = random(fantasySuffixes);
                     if (alliteration) {
                         const letter = prefix[0].toLowerCase();
@@ -355,7 +370,7 @@
                     break;
                 }
                 case 'username': {
-                    const adj = random(usernameAdjectives);
+                    const adj = random(alliteration ? alliterable(usernameAdjectives, usernameNouns) : usernameAdjectives);
                     let noun = random(usernameNouns);
                     if (alliteration) {
                         const letter = adj[0];
@@ -368,7 +383,7 @@
                     break;
                 }
                 case 'band': {
-                    const adj = random(bandAdjectives);
+                    const adj = random(alliteration ? alliterable(bandAdjectives, bandNouns) : bandAdjectives);
                     let noun = random(bandNouns);
                     if (alliteration) {
                         const letter = adj[0];
@@ -381,8 +396,12 @@
                     break;
                 }
                 case 'company': {
-                    const prefix = random(companyPrefixes);
-                    const suffix = random(companySuffixes);
+                    const prefix = random(alliteration ? alliterable(companyPrefixes, companySuffixes) : companyPrefixes);
+                    let suffix = random(companySuffixes);
+                    if (alliteration) {
+                        const matching = companySuffixes.filter(s => s[0] === prefix[0]);
+                        if (matching.length > 0) suffix = random(matching);
+                    }
                     name = prefix + suffix;
                     meta = 'company';
                     break;
@@ -395,7 +414,7 @@
         function generate() {
             const type = document.getElementById('nameType').value;
             const gender = document.getElementById('gender').value;
-            const count = parseInt(document.getElementById('count').value) || 12;
+            const count = clampCount(document.getElementById('count').value);
             const alliteration = document.getElementById('alliteration').checked;
             const unique = document.getElementById('unique').checked;
 
@@ -412,6 +431,8 @@
                 currentNames.push(result);
             }
 
+            document.getElementById('resultsTitle').textContent = 'Generated Names (click to favorite)' +
+                (currentNames.length < count ? ` - only ${currentNames.length} unique names found` : '');
             renderNames();
         }
 

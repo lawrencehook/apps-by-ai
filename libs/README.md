@@ -14,7 +14,7 @@ static host.
 | `topojson-client-3.1.0` | `topojson-client@3.1.0` | `topojson-client.min.js` | ISC | 3d-globe-visualizer |
 | `three-0.128.0` | `three@0.128.0` (r128) | `three.min.js` | MIT | 3d-room-planner, games/lantern-labyrinth |
 | `matter-js-0.19.0` | `matter-js@0.19.0` | `matter.min.js` | MIT | physics-sandbox |
-| `jszip-3.10.1` | `jszip@3.10.1` | `jszip.min.js` | MIT or GPL-3.0-or-later | favicon-generator |
+| `jszip-3.10.1` | `jszip@3.10.1` | `jszip.min.js` | MIT or GPL-3.0-or-later | favicon-generator, pdf-split, pdf-to-images |
 | `html2pdf.js-0.10.1` | `html2pdf.js@0.10.1` | `html2pdf.bundle.min.js` | MIT | invoice-generator |
 | `qrcode-generator-1.4.4` | `qrcode-generator@1.4.4` | `qrcode.js` | MIT | qr-code-studio |
 | `jsqr-1.4.0` | `jsqr@1.4.0` | `jsQR.js` | Apache-2.0 | qr-code-studio |

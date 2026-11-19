@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Reverse - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -251,17 +252,19 @@
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
                 document.getElementById('fileChannels').textContent = audioBuffer.numberOfChannels === 1 ? 'Mono' : 'Stereo';
 
                 // Create reversed buffer
                 reversedBuffer = createReversedBuffer(audioBuffer);
 
-                drawWaveform('originalWaveform', audioBuffer);
-                drawWaveform('reversedWaveform', reversedBuffer);
-
+                // Show the panel first: the canvases have no size while hidden
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
+                status.classList.remove('show', 'error');
+
+                drawWaveform('originalWaveform', audioBuffer);
+                drawWaveform('reversedWaveform', reversedBuffer);
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show', 'error');
@@ -393,6 +396,7 @@
             setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             status.textContent = 'Reversed audio saved!';
+            status.classList.remove('error');
             status.classList.add('show');
         });
 

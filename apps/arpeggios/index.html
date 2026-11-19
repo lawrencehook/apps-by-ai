@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arpeggios - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -272,6 +273,8 @@
             position: relative;
             overflow: hidden;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -667,7 +670,7 @@
         <div class="config-panel">
             <div class="config-grid">
                 <div class="config-group">
-                    <label>Instrument</label>
+                    <label for="instrument">Instrument</label>
                     <select id="instrument">
                         <option value="piano" selected>Piano</option>
                         <option value="guitar">Guitar</option>
@@ -681,7 +684,7 @@
                 </div>
 
                 <div class="config-group">
-                    <label>Pattern</label>
+                    <label for="pattern">Pattern</label>
                     <select id="pattern">
                         <option value="up" selected>Up (1-3-5)</option>
                         <option value="up+oct">Up + Octave (1-3-5-8)</option>
@@ -705,7 +708,7 @@
                 </div>
 
                 <div class="config-group">
-                    <label>Octave</label>
+                    <label for="octave">Octave</label>
                     <select id="octave">
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -715,26 +718,26 @@
                 </div>
 
                 <div class="config-group">
-                    <label>Speed (ms)</label>
+                    <label for="speed">Speed (ms)</label>
                     <input type="number" id="speed" value="100" min="30" max="500" step="10">
                 </div>
 
                 <div class="config-divider"></div>
 
                 <div class="config-group">
-                    <label>Volume</label>
+                    <label for="volume">Volume</label>
                     <input type="range" id="volume" min="0" max="100" value="70">
                     <div class="slider-value" id="volumeValue">70%</div>
                 </div>
 
                 <div class="config-group">
-                    <label>Reverb</label>
+                    <label for="reverb">Reverb</label>
                     <input type="range" id="reverb" min="0" max="100" value="30">
                     <div class="slider-value" id="reverbValue">30%</div>
                 </div>
 
                 <div class="config-group">
-                    <label>Release</label>
+                    <label for="release">Release</label>
                     <input type="range" id="release" min="10" max="200" value="50">
                     <div class="slider-value" id="releaseValue">50ms</div>
                 </div>
@@ -755,7 +758,7 @@
             <div class="grid-header">
                 <div class="theory-panel">
                     <div class="theory-group">
-                        <label>Key</label>
+                        <label for="keySignature">Key</label>
                         <select id="keySignature">
                             <option value="">None</option>
                             <option value="0-major">C Major</option>
@@ -830,6 +833,7 @@
                     <span class="key-hint">ASDFGHJKL; = diatonic</span>
                     <span class="key-hint">1-0 = favorites</span>
                     <span class="key-hint">Alt+click = add fav</span>
+                    <span class="key-hint">Empty slot = save last chord</span>
                     <span class="key-hint">CapsLock = chords</span>
                 </div>
             </div>
@@ -952,6 +956,7 @@
         let lastPlayedChord = null;
         let activeCell = null;
         let favorites = Array(10).fill(null); // 10 favorite slots
+        let favoritesFromURL = false;
         let currentKey = null; // { root: 0-11, mode: 'major'|'minor' }
         let diatonicBindings = {}; // Maps keyboard keys to chords when key is selected
         let capsLockOn = false; // Track caps lock for chord mode
@@ -1191,7 +1196,7 @@
         // Play a single note with instrument characteristics
         function playNote(freq, startTime, duration, velocity = 1) {
             const inst = INSTRUMENTS[settings.instrument];
-            const vol = settings.volume * velocity * 0.3;
+            const vol = velocity * 0.3; // settings.volume is applied by masterGain
 
             // Create primary oscillator
             const osc = audioCtx.createOscillator();
@@ -1219,19 +1224,27 @@
             // Clean envelope inspired by chord-visualizer
             const { attack, decay, sustain } = inst;
             // Use user-configurable release setting (converted from ms to seconds)
-            const release = settings.release / 1000 || inst.release;
+            const release = settings.release / 1000;
             const totalDuration = duration + release;
 
-            gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(vol, startTime + attack);
-
-            // Smooth decay to sustain level
             const sustainLevel = vol * sustain;
-            gainNode.gain.linearRampToValueAtTime(sustainLevel, startTime + attack + decay);
-
-            // Hold sustain, then release
             const releaseStart = startTime + duration;
-            gainNode.gain.setValueAtTime(sustainLevel, releaseStart);
+
+            // Automation events must be in time order, so a note shorter than
+            // attack + decay is cut off at the level the envelope has reached.
+            gainNode.gain.setValueAtTime(0, startTime);
+            if (duration <= attack) {
+                gainNode.gain.linearRampToValueAtTime(vol * duration / attack, releaseStart);
+            } else if (duration < attack + decay) {
+                gainNode.gain.linearRampToValueAtTime(vol, startTime + attack);
+                gainNode.gain.linearRampToValueAtTime(vol + (sustainLevel - vol) * (duration - attack) / decay, releaseStart);
+            } else {
+                gainNode.gain.linearRampToValueAtTime(vol, startTime + attack);
+                // Smooth decay to sustain level
+                gainNode.gain.linearRampToValueAtTime(sustainLevel, startTime + attack + decay);
+                // Hold sustain, then release
+                gainNode.gain.setValueAtTime(sustainLevel, releaseStart);
+            }
             gainNode.gain.exponentialRampToValueAtTime(0.001, releaseStart + release);
 
             osc.start(startTime);
@@ -1240,7 +1253,11 @@
             if (osc2) {
                 if (gain2) {
                     gain2.gain.setValueAtTime(0, startTime);
-                    gain2.gain.linearRampToValueAtTime(vol * 0.2, startTime + attack);
+                    if (duration < attack) {
+                        gain2.gain.linearRampToValueAtTime(vol * 0.2 * duration / attack, releaseStart);
+                    } else {
+                        gain2.gain.linearRampToValueAtTime(vol * 0.2, startTime + attack);
+                    }
                     gain2.gain.exponentialRampToValueAtTime(0.001, releaseStart + release);
                 }
                 osc2.start(startTime);
@@ -1357,53 +1374,59 @@
                     keyLabel.className = 'key-binding';
                     cell.appendChild(keyLabel);
 
-                    // Left click - arpeggio (or chord if caps lock), Alt+click - add to favorites
-                    cell.addEventListener('mousedown', (e) => {
-                        if (e.button === 0) { // Left click only
-                            if (e.altKey) {
-                                e.preventDefault();
-                                addToFavorites(rootIndex, chordType);
-                            } else {
-                                handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
-                            }
-                        }
-                    });
-                    cell.addEventListener('mouseup', () => handleCellRelease(cell));
-                    cell.addEventListener('mouseleave', () => handleCellRelease(cell));
-
-                    // Right click - chord
-                    cell.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        handleCellTrigger(cell, rootIndex, chordType, e, true);
-                        setTimeout(() => handleCellRelease(cell), 300);
-                    });
-
-                    // Touch events
+                    // Mouse: left click - arpeggio (or chord if caps lock), Alt+click - add to favorites
+                    // Touch/pen: short tap - arpeggio, long press - chord. The touch path never
+                    // calls preventDefault, so a swipe still scrolls the grid (pointercancel).
                     let touchTimer = null;
-                    let touchTriggered = false;
-                    cell.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        touchTriggered = false;
-                        // Long press for chord, short tap for arpeggio
+                    let touchPress = false;
+                    cell.addEventListener('pointerdown', (e) => {
+                        if (e.pointerType === 'mouse') {
+                            if (e.button === 0) { // Left click only
+                                if (e.altKey) {
+                                    addToFavorites(rootIndex, chordType);
+                                } else {
+                                    handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
+                                }
+                            }
+                            return;
+                        }
+                        touchPress = true;
+                        clearTimeout(touchTimer);
                         touchTimer = setTimeout(() => {
-                            touchTriggered = true;
-                            handleCellTrigger(cell, rootIndex, chordType, e, true);
                             touchTimer = null;
+                            handleCellTrigger(cell, rootIndex, chordType, e, true);
                         }, 500);
                         // Visual feedback immediately
                         cell.classList.add('active');
                     });
-                    cell.addEventListener('touchend', (e) => {
-                        e.preventDefault();
+                    cell.addEventListener('mousedown', (e) => {
+                        if (e.button === 0 && e.altKey) e.preventDefault();
+                    });
+                    cell.addEventListener('pointerup', (e) => {
                         if (touchTimer) {
                             clearTimeout(touchTimer);
                             touchTimer = null;
                             // Short tap - play arpeggio (or chord if caps lock)
-                            if (!touchTriggered) {
-                                handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
-                            }
+                            handleCellTrigger(cell, rootIndex, chordType, e, capsLockOn);
                         }
+                        touchPress = false;
                         handleCellRelease(cell);
+                    });
+                    const cancelPress = () => {
+                        clearTimeout(touchTimer);
+                        touchTimer = null;
+                        touchPress = false;
+                        handleCellRelease(cell);
+                    };
+                    cell.addEventListener('pointerleave', cancelPress);
+                    cell.addEventListener('pointercancel', cancelPress);
+
+                    // Right click - chord
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        if (touchPress) return; // long press is handled by the timer above
+                        handleCellTrigger(cell, rootIndex, chordType, e, true);
+                        setTimeout(() => handleCellRelease(cell), 300);
                     });
 
                     row.appendChild(cell);
@@ -1522,14 +1545,33 @@
 
         // Save favorites to localStorage
         function saveFavorites() {
-            localStorage.setItem('arpeggios-favorites', JSON.stringify(favorites));
+            try {
+                localStorage.setItem('arpeggios-favorites', JSON.stringify(favorites));
+            } catch (e) { /* storage unavailable */ }
+        }
+
+        // Returns 10 slots of valid { root, chordType } or null; null if the input is not a list
+        function sanitizeFavorites(list) {
+            if (!Array.isArray(list)) return null;
+            return Array.from({ length: 10 }, (_, i) => {
+                const f = list[i];
+                return f && Number.isInteger(f.root) && f.root >= 0 && f.root < 12 &&
+                    Object.prototype.hasOwnProperty.call(CHORD_TYPES, f.chordType)
+                    ? { root: f.root, chordType: f.chordType }
+                    : null;
+            });
         }
 
         // Load favorites from localStorage
         function loadFavorites() {
-            const saved = localStorage.getItem('arpeggios-favorites');
+            // Favorites in a shared link win over the stored ones
+            if (favoritesFromURL) return;
+            let saved = null;
+            try {
+                saved = sanitizeFavorites(JSON.parse(localStorage.getItem('arpeggios-favorites')));
+            } catch (e) { /* storage unavailable or corrupt */ }
             if (saved) {
-                favorites = JSON.parse(saved);
+                favorites = saved;
                 updateFavoritesUI();
                 updateGridFavorites();
             }
@@ -1745,7 +1787,16 @@
                 updateCapsLock(e);
 
                 // Ignore if typing in an input
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+                // Space on a focused button clicks it
+                if (e.target.tagName === 'BUTTON' && e.code === 'Space') return;
+                // Leave browser shortcuts (Cmd+R, Ctrl+1, Alt+D...) alone
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                // A held key must not retrigger notes
+                if (e.repeat) {
+                    if (e.code === 'Space' && lastPlayedChord) e.preventDefault();
+                    return;
+                }
 
                 // Check if chord mode (caps lock or shift)
                 const chordMode = capsLockOn || e.shiftKey;
@@ -1839,6 +1890,14 @@
                     const slotIndex = parseInt(slot.dataset.slot);
                     if (favorites[slotIndex]) {
                         playFavorite(slotIndex, e.shiftKey);
+                    } else if (lastPlayedChord && !favorites.some(f =>
+                        f && f.root === lastPlayedChord.root && f.chordType === lastPlayedChord.chordType)) {
+                        // Empty slot: save the last played chord (the only way to add one on touch)
+                        favorites[slotIndex] = { ...lastPlayedChord };
+                        updateFavoritesUI();
+                        updateGridFavorites();
+                        saveFavorites();
+                        debouncedUpdateURL();
                     }
                 });
 
@@ -1979,48 +2038,63 @@
             const params = new URLSearchParams(window.location.search);
 
             // Load settings from URL
-            if (params.has('instrument')) {
-                settings.instrument = params.get('instrument');
-                document.getElementById('instrument').value = settings.instrument;
+            // Every value is checked against what the controls allow before it is applied
+            const hasOption = (id, value) =>
+                Array.from(document.getElementById(id).options).some(o => o.value === value);
+            const inRange = (v, min, max) => Number.isFinite(v) && v >= min && v <= max;
+
+            const instrument = params.get('instrument');
+            if (instrument !== null && hasOption('instrument', instrument) &&
+                Object.prototype.hasOwnProperty.call(INSTRUMENTS, instrument)) {
+                settings.instrument = instrument;
+                document.getElementById('instrument').value = instrument;
             }
-            if (params.has('pattern')) {
-                settings.pattern = params.get('pattern');
-                document.getElementById('pattern').value = settings.pattern;
+            const pattern = params.get('pattern');
+            if (pattern !== null && hasOption('pattern', pattern)) {
+                settings.pattern = pattern;
+                document.getElementById('pattern').value = pattern;
             }
-            if (params.has('octave')) {
-                settings.octave = parseInt(params.get('octave'));
-                document.getElementById('octave').value = settings.octave;
+            const octave = params.get('octave');
+            if (octave !== null && hasOption('octave', octave)) {
+                settings.octave = parseInt(octave);
+                document.getElementById('octave').value = octave;
             }
-            if (params.has('speed')) {
-                settings.speed = parseInt(params.get('speed'));
+            const speed = parseInt(params.get('speed'));
+            if (Number.isFinite(speed)) {
+                settings.speed = Math.max(30, Math.min(500, speed));
                 document.getElementById('speed').value = settings.speed;
             }
-            if (params.has('volume')) {
-                settings.volume = parseFloat(params.get('volume'));
+            const volume = parseFloat(params.get('volume'));
+            if (inRange(volume, 0, 1)) {
+                settings.volume = volume;
                 document.getElementById('volume').value = Math.round(settings.volume * 100);
                 document.getElementById('volumeValue').textContent = Math.round(settings.volume * 100) + '%';
             }
-            if (params.has('reverb')) {
-                settings.reverb = parseFloat(params.get('reverb'));
+            const reverb = parseFloat(params.get('reverb'));
+            if (inRange(reverb, 0, 1)) {
+                settings.reverb = reverb;
                 document.getElementById('reverb').value = Math.round(settings.reverb * 100);
                 document.getElementById('reverbValue').textContent = Math.round(settings.reverb * 100) + '%';
             }
-            if (params.has('release')) {
-                settings.release = parseInt(params.get('release'));
+            const release = parseInt(params.get('release'));
+            if (inRange(release, 10, 200)) {
+                settings.release = release;
                 document.getElementById('release').value = settings.release;
                 document.getElementById('releaseValue').textContent = settings.release + 'ms';
             }
-            if (params.has('key')) {
-                const keyVal = params.get('key');
+            const keyVal = params.get('key');
+            if (keyVal && hasOption('keySignature', keyVal)) {
                 document.getElementById('keySignature').value = keyVal;
-                if (keyVal) {
-                    const [root, mode] = keyVal.split('-');
-                    currentKey = { root: parseInt(root), mode };
-                }
+                const [root, mode] = keyVal.split('-');
+                currentKey = { root: parseInt(root), mode };
             }
             if (params.has('favorites')) {
                 try {
-                    favorites = JSON.parse(decodeURIComponent(params.get('favorites')));
+                    const fromURL = sanitizeFavorites(JSON.parse(decodeURIComponent(params.get('favorites'))));
+                    if (fromURL) {
+                        favorites = fromURL;
+                        favoritesFromURL = true;
+                    }
                 } catch (e) {
                     console.warn('Failed to parse favorites from URL');
                 }

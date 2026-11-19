@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer & Stopwatch - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -200,15 +201,15 @@
                 <div class="time-display" id="timerDisplay">00:00:00</div>
                 <div class="timer-inputs" id="timerInputs">
                     <div class="timer-input-group">
-                        <label>Hours</label>
+                        <label for="timerHours">Hours</label>
                         <input type="number" id="timerHours" value="0" min="0" max="99">
                     </div>
                     <div class="timer-input-group">
-                        <label>Minutes</label>
+                        <label for="timerMinutes">Minutes</label>
                         <input type="number" id="timerMinutes" value="5" min="0" max="59">
                     </div>
                     <div class="timer-input-group">
-                        <label>Seconds</label>
+                        <label for="timerSeconds">Seconds</label>
                         <input type="number" id="timerSeconds" value="0" min="0" max="59">
                     </div>
                 </div>
@@ -231,15 +232,20 @@
         // URL parameter handling
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
-            if (params.has('mode')) {
-                const mode = params.get('mode');
+            const mode = params.get('mode');
+            if (mode === 'stopwatch' || mode === 'timer') {
                 document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
                 document.getElementById('stopwatchPanel').classList.toggle('hidden', mode !== 'stopwatch');
                 document.getElementById('timerPanel').classList.toggle('hidden', mode !== 'timer');
             }
-            if (params.has('h')) document.getElementById('timerHours').value = params.get('h');
-            if (params.has('m')) document.getElementById('timerMinutes').value = params.get('m');
-            if (params.has('s')) document.getElementById('timerSeconds').value = params.get('s');
+            const setNumber = (id, key) => {
+                const el = document.getElementById(id);
+                const n = parseInt(params.get(key), 10);
+                if (Number.isFinite(n)) el.value = Math.min(Number(el.max), Math.max(0, n));
+            };
+            setNumber('timerHours', 'h');
+            setNumber('timerMinutes', 'm');
+            setNumber('timerSeconds', 's');
         }
 
         function updateURL() {
@@ -384,6 +390,11 @@
             const display = document.getElementById('timerDisplay');
             display.innerHTML = formatTime(total * 1000, false);
             display.classList.remove('warning', 'danger');
+            if (!timerRunning) {
+                // a paused remainder no longer matches what is shown
+                timerRemaining = 0;
+                document.getElementById('timerStart').textContent = 'Start';
+            }
         }
 
         function toggleTimer() {
@@ -410,7 +421,8 @@
         function updateTimer() {
             const remaining = Math.max(0, timerEndTime - Date.now());
             const display = document.getElementById('timerDisplay');
-            display.innerHTML = formatTime(remaining, false);
+            // round up so a full second shows until it has actually elapsed (5:00 starts at 5:00)
+            display.innerHTML = formatTime(Math.ceil(remaining / 1000) * 1000, false);
 
             // Color warnings
             display.classList.remove('warning', 'danger');
@@ -428,8 +440,12 @@
                 document.getElementById('timerInputs').classList.remove('hidden');
                 display.classList.add('danger');
                 // Alert
-                if (Notification.permission === 'granted') {
-                    new Notification('Timer Complete!');
+                try {
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('Timer Complete!');
+                    }
+                } catch (e) {
+                    // some mobile browsers only allow notifications from a service worker
                 }
                 playBeep();
             }
@@ -472,6 +488,8 @@
                 Notification.requestPermission();
             }
         }
+
+        updateTimerDisplay();
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Physics Sandbox - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/matter-js-0.19.0/matter.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -205,7 +206,7 @@
         <div class="toolbar-group">
             <span class="toolbar-label">Size</span>
             <div class="slider-group">
-                <input type="range" id="sizeSlider" min="10" max="80" value="30">
+                <input type="range" id="sizeSlider" min="10" max="80" value="30" aria-label="Size">
                 <span class="slider-value" id="sizeValue">30</span>
             </div>
         </div>
@@ -292,6 +293,7 @@
 
         // Mouse constraint for dragging existing bodies
         const mouse = Mouse.create(render.canvas);
+        mouse.pixelRatio = render.options.pixelRatio; // Matter parses it with parseInt, which breaks 1.25/1.5
         const mouseConstraint = MouseConstraint.create(engine, {
             mouse: mouse,
             constraint: {
@@ -427,9 +429,11 @@
 
         document.querySelectorAll('[data-mode]').forEach(btn => {
             btn.addEventListener('click', () => {
+                // Clicking the active mode again returns to normal (dynamic) creation
+                const wasActive = btn.classList.contains('active');
                 document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentMode = btn.dataset.mode === 'static' ? 'static' : 'dynamic';
+                if (!wasActive) btn.classList.add('active');
+                currentMode = wasActive ? 'dynamic' : btn.dataset.mode;
             });
         });
 
@@ -494,7 +498,7 @@
         Events.on(engine, 'afterUpdate', () => {
             const bodies = Composite.allBodies(engine.world);
             bodies.forEach(body => {
-                if (body.position.y > height + 200 && !body.isStatic) {
+                if (body.position.y > render.options.height + 200 && !body.isStatic) {
                     Composite.remove(engine.world, body);
                     updateStats();
                 }
@@ -509,10 +513,10 @@
             const newWidth = window.innerWidth;
             const newHeight = window.innerHeight - 56;
 
-            render.canvas.width = newWidth;
-            render.canvas.height = newHeight;
             render.options.width = newWidth;
             render.options.height = newHeight;
+            // Sizes the backing store and the CSS box together, keeping the pixel ratio
+            Render.setPixelRatio(render, render.options.pixelRatio);
 
             // Update boundaries
             Body.setPosition(ground, { x: newWidth / 2, y: newHeight + 30 });

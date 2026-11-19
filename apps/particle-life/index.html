@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Particle Life - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -144,17 +145,17 @@
         <p>Particles attract or repel based on color. Simple rules create complex, lifelike behavior.</p>
 
         <div class="control-group">
-            <label>Particles: <span id="particleCountLabel">1000</span></label>
+            <label for="particleCount">Particles: <span id="particleCountLabel">1000</span></label>
             <input type="range" id="particleCount" min="200" max="3000" value="1000" step="100">
         </div>
 
         <div class="control-group">
-            <label>Friction: <span id="frictionLabel">0.05</span></label>
+            <label for="friction">Friction: <span id="frictionLabel">0.05</span></label>
             <input type="range" id="friction" min="0.01" max="0.2" value="0.05" step="0.01">
         </div>
 
         <div class="control-group">
-            <label>Force Range: <span id="rangeLabel">80</span></label>
+            <label for="forceRange">Force Range: <span id="rangeLabel">80</span></label>
             <input type="range" id="forceRange" min="30" max="200" value="80" step="10">
         </div>
 
@@ -267,30 +268,46 @@
             };
         }
 
-        // Spatial grid for performance optimization
+        // Spatial grid for performance optimization.
+        // Cells divide the canvas evenly and are at least forceRange wide, so the
+        // 3x3 block around a cell (wrapped at the edges) holds everything in range.
         let grid = {};
-        let cellSize = 80;
+        let gridCols = 1, gridRows = 1;
+        let cellW = 80, cellH = 80;
+
+        function cellOf(p) {
+            return {
+                cx: Math.min(gridCols - 1, Math.max(0, Math.floor(p.x / cellW))),
+                cy: Math.min(gridRows - 1, Math.max(0, Math.floor(p.y / cellH)))
+            };
+        }
 
         function buildGrid() {
             grid = {};
-            cellSize = config.forceRange;
+            gridCols = Math.max(1, Math.floor(width / config.forceRange));
+            gridRows = Math.max(1, Math.floor(height / config.forceRange));
+            cellW = width / gridCols;
+            cellH = height / gridRows;
             for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                const cx = Math.floor(p.x / cellSize);
-                const cy = Math.floor(p.y / cellSize);
+                const { cx, cy } = cellOf(particles[i]);
                 const key = cx + ',' + cy;
                 if (!grid[key]) grid[key] = [];
                 grid[key].push(i);
             }
         }
 
+        // Cell c and its two wrapped neighbours, without repeats when there are under 3 cells
+        function wrappedCells(c, n) {
+            if (n < 3) return n === 1 ? [0] : [0, 1];
+            return [(c + n - 1) % n, c, (c + 1) % n];
+        }
+
         function getNeighbors(p) {
-            const cx = Math.floor(p.x / cellSize);
-            const cy = Math.floor(p.y / cellSize);
+            const { cx, cy } = cellOf(p);
             const neighbors = [];
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    const key = (cx + dx) + ',' + (cy + dy);
+            for (const x of wrappedCells(cx, gridCols)) {
+                for (const y of wrappedCells(cy, gridRows)) {
+                    const key = x + ',' + y;
                     if (grid[key]) {
                         for (const idx of grid[key]) {
                             neighbors.push(idx);

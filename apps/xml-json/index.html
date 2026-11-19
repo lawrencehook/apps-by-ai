@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XML ↔ JSON Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -163,7 +164,7 @@
                 <label for="preserveAttrs">Preserve attributes (as @attr)</label>
             </div>
             <div class="option">
-                <label>Indent:</label>
+                <label for="indent">Indent:</label>
                 <select id="indent">
                     <option value="2">2 spaces</option>
                     <option value="4">4 spaces</option>
@@ -220,7 +221,8 @@
             const preserveAttrs = document.getElementById('preserveAttrs').checked;
 
             function parseNode(node) {
-                const obj = {};
+                // no prototype, so <constructor> or <__proto__> are ordinary keys
+                const obj = Object.create(null);
 
                 // Handle attributes
                 if (preserveAttrs && node.attributes && node.attributes.length > 0) {
@@ -232,7 +234,7 @@
                 // Handle children
                 const children = node.childNodes;
                 let textContent = '';
-                const childElements = {};
+                const childElements = Object.create(null);
 
                 for (const child of children) {
                     if (child.nodeType === Node.TEXT_NODE) {
@@ -241,7 +243,7 @@
                         const childName = child.nodeName;
                         const childValue = parseNode(child);
 
-                        if (childElements[childName]) {
+                        if (childName in childElements) {
                             if (!Array.isArray(childElements[childName])) {
                                 childElements[childName] = [childElements[childName]];
                             }
@@ -264,7 +266,8 @@
                         // Try to parse as number/boolean
                         if (textContent === 'true') return true;
                         if (textContent === 'false') return false;
-                        if (!isNaN(textContent) && textContent !== '') return Number(textContent);
+                        // only numbers that print back identically: keeps 02134, 1.50 and long ids as text
+                        if (/^-?\d+(\.\d+)?$/.test(textContent) && String(Number(textContent)) === textContent) return Number(textContent);
                         return textContent;
                     } else {
                         obj['#text'] = textContent;
@@ -274,7 +277,7 @@
                 return Object.keys(obj).length === 0 ? null : obj;
             }
 
-            const result = {};
+            const result = Object.create(null);
             result[doc.documentElement.nodeName] = parseNode(doc.documentElement);
             return result;
         }
@@ -290,7 +293,14 @@
                     .replace(/"/g, '&quot;');
             }
 
+            function checkName(name) {
+                if (!/^[\p{L}_:][\p{L}\p{N}_.:-]*$/u.test(name)) {
+                    throw new Error('"' + name + '" is not a valid XML name');
+                }
+            }
+
             function convert(obj, tagName, level = 0) {
+                checkName(tagName);
                 if (obj === null || obj === undefined) {
                     return `${spaces(level)}<${tagName}/>\n`;
                 }
@@ -300,6 +310,8 @@
                 }
 
                 if (Array.isArray(obj)) {
+                    // XML has no empty list; keep the element rather than drop the key
+                    if (obj.length === 0) return `${spaces(level)}<${tagName}/>\n`;
                     return obj.map(item => convert(item, tagName, level)).join('');
                 }
 
@@ -309,6 +321,7 @@
 
                 for (const [key, value] of Object.entries(obj)) {
                     if (key.startsWith('@')) {
+                        checkName(key.substring(1));
                         attrs += ` ${key.substring(1)}="${escape(value)}"`;
                     } else if (key === '#text') {
                         textContent = escape(value);
@@ -328,7 +341,7 @@
                 }
             }
 
-            if (typeof json !== 'object' || Array.isArray(json)) {
+            if (typeof json !== 'object' || json === null || Array.isArray(json)) {
                 throw new Error('JSON must be an object with a root element');
             }
 
@@ -377,6 +390,7 @@
 
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (btn.dataset.mode === mode) return;
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 mode = btn.dataset.mode;
@@ -464,11 +478,33 @@
             messageEl.innerHTML = '';
         });
 
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            }
+            return fallbackCopy(text);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
+            return ok ? Promise.resolve() : Promise.reject(new Error('Copy failed'));
+        }
+
         document.getElementById('copyBtn').addEventListener('click', () => {
-            navigator.clipboard.writeText(output.value);
             const btn = document.getElementById('copyBtn');
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = 'Copy', 1500);
+            copyToClipboard(output.value).then(() => {
+                btn.textContent = 'Copied!';
+            }, () => {
+                btn.textContent = 'Copy failed';
+            }).then(() => setTimeout(() => btn.textContent = 'Copy', 1500));
         });
 
         document.getElementById('downloadBtn').addEventListener('click', () => {

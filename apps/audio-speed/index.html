@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Speed - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -215,7 +216,7 @@
 
                 <div class="slider-row">
                     <span class="min-max">0.25x</span>
-                    <input type="range" id="speedSlider" min="25" max="400" value="100">
+                    <input type="range" id="speedSlider" min="25" max="400" value="100" aria-label="Playback speed">
                     <span class="min-max">4.00x</span>
                 </div>
 
@@ -297,16 +298,19 @@
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
 
                 document.getElementById('originalDuration').textContent = formatTime(audioBuffer.duration);
 
                 speedSlider.value = 100;
                 updateSpeedDisplay();
-                drawWaveform();
 
+                // Show the panel first: the canvas has no size while hidden
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
+                status.classList.remove('show');
+
+                drawWaveform();
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show');
@@ -359,6 +363,7 @@
         function updateSpeedDisplay() {
             const speed = speedSlider.value / 100;
             document.getElementById('speedValue').textContent = speed.toFixed(2) + 'x';
+            if (sourceNode) sourceNode.playbackRate.value = speed;
 
             const newDuration = audioBuffer.duration / speed;
             document.getElementById('newDuration').textContent = formatTime(newDuration);

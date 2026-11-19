@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unix Timestamp Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -149,7 +150,7 @@
                 <button class="unit-btn" data-unit="ms">Milliseconds</button>
             </div>
             <div class="form-group">
-                <label>Unix Timestamp</label>
+                <label for="timestampInput">Unix Timestamp</label>
                 <input type="text" id="timestampInput" placeholder="e.g. 1704067200">
             </div>
             <div class="result" id="timestampResult">
@@ -172,11 +173,11 @@
             <div class="card-title">Date → Timestamp</div>
             <div class="input-row">
                 <div class="form-group">
-                    <label>Date</label>
+                    <label for="dateInput">Date</label>
                     <input type="date" id="dateInput">
                 </div>
                 <div class="form-group">
-                    <label>Time</label>
+                    <label for="timeInput">Time</label>
                     <input type="time" id="timeInput" step="1">
                 </div>
             </div>
@@ -200,7 +201,7 @@
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
             if (params.has('ts')) document.getElementById('timestampInput').value = params.get('ts');
-            if (params.has('unit')) {
+            if (['s', 'ms'].includes(params.get('unit'))) {
                 unit = params.get('unit');
                 document.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
             }
@@ -287,7 +288,8 @@
                 return;
             }
 
-            let ts = parseInt(input);
+            // digits only: parseInt would read "1,704,067,200" as 1
+            let ts = /^-?\d+$/.test(input) ? Number(input) : NaN;
             if (isNaN(ts)) {
                 document.getElementById('utcResult').textContent = 'Invalid';
                 document.getElementById('localResult').textContent = '-';
@@ -320,7 +322,7 @@
 
         // Set defaults
         const now = new Date();
-        dateInput.value = now.toISOString().split('T')[0];
+        dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         timeInput.value = now.toTimeString().slice(0, 8);
 
         loadFromURL();
@@ -361,11 +363,12 @@
             el.title = 'Click to copy';
             el.addEventListener('click', () => {
                 const text = el.textContent;
-                if (text && text !== '-' && text !== 'Invalid') {
+                if (text && text !== '-' && text !== 'Invalid' && text !== 'Copied!') {
                     copyToClipboard(text);
                     const original = text;
                     el.textContent = 'Copied!';
-                    setTimeout(() => el.textContent = original, 1000);
+                    // leave it alone if a conversion replaced the text meanwhile
+                    setTimeout(() => { if (el.textContent === 'Copied!') el.textContent = original; }, 1000);
                 }
             });
         });

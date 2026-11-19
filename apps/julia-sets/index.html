@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Julia Sets - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -117,22 +118,22 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>Real (c)</label>
+                <label for="realC">Real (c)</label>
                 <input type="range" id="realC" min="-2" max="2" step="0.001" value="-0.7">
                 <span class="value" id="realVal">-0.70</span>
             </div>
             <div class="control-group">
-                <label>Imag (c)</label>
+                <label for="imagC">Imag (c)</label>
                 <input type="range" id="imagC" min="-2" max="2" step="0.001" value="0.27">
                 <span class="value" id="imagVal">0.27</span>
             </div>
             <div class="control-group">
-                <label>Iterations</label>
+                <label for="maxIter">Iterations</label>
                 <input type="range" id="maxIter" min="50" max="500" step="10" value="200">
                 <span class="value" id="iterVal">200</span>
             </div>
             <div class="control-group">
-                <label>Color</label>
+                <label for="colorScheme">Color</label>
                 <select id="colorScheme">
                     <option value="classic">Classic</option>
                     <option value="fire">Fire</option>
@@ -152,7 +153,7 @@
 
         <div class="canvas-container">
             <canvas id="canvas"></canvas>
-            <div class="info">c = <span id="cValue">-0.70 + 0.27i</span> | Click Mandelbrot point to explore</div>
+            <div class="info">c = <span id="cValue">-0.70 + 0.27i</span></div>
             <div class="loading" id="loading" style="display: none;">Rendering...</div>
         </div>
     </div>

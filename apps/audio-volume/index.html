@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Volume - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -223,7 +224,7 @@
 
             <div class="volume-control">
                 <div class="control-row">
-                    <label>Volume</label>
+                    <label for="volumeSlider">Volume</label>
                     <input type="range" id="volumeSlider" min="0" max="300" value="100">
                     <span class="value" id="volumeValue">100%</span>
                 </div>
@@ -294,16 +295,17 @@
         });
 
         async function handleFile(file) {
-            initAudioContext();
             currentFile = file;
 
             try {
+                initAudioContext();
                 const arrayBuffer = await file.arrayBuffer();
                 audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                // decodeAudioData resamples to the device rate, so this is not the file's own rate
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
 
                 // Calculate original peak
                 originalPeak = calculatePeak(audioBuffer);
@@ -313,12 +315,14 @@
                 document.getElementById('volumeValue').textContent = '100%';
                 updatePresetButtons(100);
 
+                // Show the panel first: the canvases measure 0x0 while it is hidden
+                dropZone.classList.add('hidden');
+                editorPanel.classList.remove('hidden');
+                status.classList.remove('show');
+
                 drawWaveform('originalWaveform', audioBuffer, 1);
                 drawWaveform('adjustedWaveform', audioBuffer, 1);
                 updateAdjustedPeak();
-
-                dropZone.classList.add('hidden');
-                editorPanel.classList.remove('hidden');
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show');
@@ -401,6 +405,7 @@
             const peakEl = document.getElementById('adjustedPeak');
             peakEl.textContent = db > 0 ? '+' + db.toFixed(1) : db.toFixed(1);
             peakEl.style.color = adjustedPeak > 1 ? '#ff6b6b' : '#4ecdc4';
+            if (gainNode) gainNode.gain.value = gain; // follow the slider during preview
         }
 
         volumeSlider.addEventListener('input', () => {
@@ -432,16 +437,20 @@
             if (originalPeak === 0) return;
 
             // Calculate gain to bring peak to 1.0 (0 dB)
+            // Floor so the slider's whole-percent gain never pushes the peak past 0 dB,
+            // and cap at the slider maximum, which is the gain actually applied.
             const normalizeGain = 1 / originalPeak;
-            const percentage = Math.round(normalizeGain * 100);
+            const percentage = Math.min(300, Math.floor(normalizeGain * 100));
 
-            volumeSlider.value = Math.min(300, percentage);
+            volumeSlider.value = percentage;
             document.getElementById('volumeValue').textContent = volumeSlider.value + '%';
-            updatePresetButtons(-1); // Clear all presets
-            drawWaveform('adjustedWaveform', audioBuffer, normalizeGain);
+            updatePresetButtons(percentage);
+            drawWaveform('adjustedWaveform', audioBuffer, percentage / 100);
             updateAdjustedPeak();
 
-            status.textContent = `Normalized to ${percentage}% (peak at 0 dB)`;
+            status.textContent = normalizeGain * 100 > 300
+                ? 'Audio is too quiet to normalize fully: set to the 300% maximum'
+                : `Normalized to ${percentage}% (peak at 0 dB)`;
             status.classList.add('show');
         });
 

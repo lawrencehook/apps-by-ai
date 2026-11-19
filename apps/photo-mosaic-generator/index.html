@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Mosaic Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -479,13 +480,19 @@
             if (e.target.files[0]) {
                 loadImage(e.target.files[0]);
             }
+            imageInput.value = ''; // so the same file can be chosen again
         });
 
         function loadImage(file) {
+            const uploadText = uploadZone.querySelector('p');
             const reader = new FileReader();
             reader.onload = e => {
                 const img = new Image();
+                img.onerror = () => {
+                    uploadText.textContent = 'Could not read that image. Try another file.';
+                };
                 img.onload = () => {
+                    uploadText.textContent = 'Drop image here or click to upload';
                     sourceImage = img;
                     previewThumb.src = e.target.result;
                     previewThumb.classList.add('visible');
@@ -535,8 +542,11 @@
         // Generate mosaic
         generateBtn.addEventListener('click', generateMosaic);
 
+        let mosaicRun = 0;
+
         async function generateMosaic() {
             if (!sourceImage) return;
+            const runId = ++mosaicRun; // a newer run takes over the canvas
 
             const resolution = parseInt(document.getElementById('resolution').value);
             const tileType = document.getElementById('tileType').value;
@@ -547,6 +557,7 @@
             updateProgress(0, 'Analyzing image...');
 
             await delay(50);
+            if (runId !== mosaicRun) return;
 
             // Calculate dimensions
             const aspectRatio = sourceImage.width / sourceImage.height;
@@ -563,6 +574,7 @@
 
             updateProgress(20, 'Preparing tiles...');
             await delay(50);
+            if (runId !== mosaicRun) return;
 
             // Set output canvas size
             const tileSize = tileType === 'emoji' ? 24 : tileType === 'ascii' ? 12 : 16;
@@ -654,7 +666,7 @@
                         }
 
                         case 'dots': {
-                            const dotRadius = (tileSize / 2) * Math.sqrt(1 - brightness);
+                            const dotRadius = (tileSize / 2) * Math.sqrt(brightness); // light dots on the dark background
                             if (dotRadius > 0.5) {
                                 ctx.beginPath();
                                 ctx.arc(px + tileSize / 2, py + tileSize / 2, dotRadius, 0, Math.PI * 2);
@@ -671,12 +683,14 @@
                         const progress = 20 + (tilesDrawn / totalTiles) * 75;
                         updateProgress(progress, `Drawing tiles... ${tilesDrawn}/${totalTiles}`);
                         await delay(0);
+                        if (runId !== mosaicRun) return;
                     }
                 }
             }
 
             updateProgress(100, 'Complete!');
             await delay(300);
+            if (runId !== mosaicRun) return;
 
             progressOverlay.classList.remove('visible');
             downloadBtn.disabled = false;

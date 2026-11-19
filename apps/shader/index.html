@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shader Art - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
@@ -33,7 +34,7 @@
         <h1>Shader Art</h1>
         <p>Real-time GLSL fragment shaders. GPU-accelerated procedural graphics.</p>
         <div class="control-group">
-            <label>Shader</label>
+            <label for="shader">Shader</label>
             <select id="shader">
                 <option value="plasma">Plasma</option>
                 <option value="tunnel">Tunnel</option>
@@ -55,6 +56,7 @@
 
         let width, height;
         let program = null;
+        let positionBuffer = null;
         let timeLocation, resolutionLocation, mouseLocation;
         let startTime = Date.now();
         let mouseX = 0.5, mouseY = 0.5;
@@ -268,8 +270,13 @@
             gl.attachShader(prog, fragmentShader);
             gl.linkProgram(prog);
 
+            // A linked program keeps its own copy; flag the shaders for deletion
+            gl.deleteShader(vertexShader);
+            gl.deleteShader(fragmentShader);
+
             if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
                 console.error('Program link error:', gl.getProgramInfoLog(prog));
+                gl.deleteProgram(prog);
                 return null;
             }
 
@@ -290,12 +297,14 @@
 
             // Set up geometry
             const positionLocation = gl.getAttribLocation(program, 'position');
-            const positionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                -1, -1, 1, -1, -1, 1,
-                -1, 1, 1, -1, 1, 1
-            ]), gl.STATIC_DRAW);
+            if (!positionBuffer) {
+                positionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                    -1, -1, 1, -1, -1, 1,
+                    -1, 1, 1, -1, 1, 1
+                ]), gl.STATIC_DRAW);
+            }
 
             gl.enableVertexAttribArray(positionLocation);
             gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
@@ -306,7 +315,7 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            gl.viewport(0, 0, width, height);
+            if (gl) gl.viewport(0, 0, width, height);
         }
 
         function render() {
@@ -322,16 +331,10 @@
             requestAnimationFrame(render);
         }
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             mouseX = e.clientX / width;
             mouseY = 1.0 - e.clientY / height;
         });
-
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            mouseX = e.touches[0].clientX / width;
-            mouseY = 1.0 - e.touches[0].clientY / height;
-        }, { passive: false });
 
         document.getElementById('shader').addEventListener('change', e => {
             setShader(e.target.value);

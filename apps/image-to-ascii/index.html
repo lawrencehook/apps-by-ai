@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image to ASCII - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -311,7 +312,7 @@
                             <span class="control-label">Width (chars)</span>
                             <span class="control-value" id="widthValue">120</span>
                         </div>
-                        <input type="range" id="widthSlider" min="40" max="300" value="120">
+                        <input type="range" id="widthSlider" aria-label="Width (chars)" min="40" max="300" value="120">
                     </div>
                 </div>
 
@@ -319,7 +320,7 @@
                     <div class="section-title">Character Set</div>
                     <div class="char-sets" id="charSets">
                         <button class="char-set-btn active" data-chars=" .:-=+*#%@">Standard</button>
-                        <button class="char-set-btn" data-chars=" .'`^\",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$">Detailed</button>
+                        <button class="char-set-btn" data-chars=" .'`^&quot;,:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$">Detailed</button>
                         <button class="char-set-btn" data-chars=" ░▒▓█">Blocks</button>
                         <button class="char-set-btn" data-chars=" ○◔◑◕●">Circles</button>
                         <button class="char-set-btn" data-chars=" .oO@">Simple</button>
@@ -334,14 +335,14 @@
                             <span class="control-label">Brightness</span>
                             <span class="control-value" id="brightnessValue">0</span>
                         </div>
-                        <input type="range" id="brightnessSlider" min="-100" max="100" value="0">
+                        <input type="range" id="brightnessSlider" aria-label="Brightness" min="-100" max="100" value="0">
                     </div>
                     <div class="control-row">
                         <div class="control-header">
                             <span class="control-label">Contrast</span>
                             <span class="control-value" id="contrastValue">0</span>
                         </div>
-                        <input type="range" id="contrastSlider" min="-100" max="100" value="0">
+                        <input type="range" id="contrastSlider" aria-label="Contrast" min="-100" max="100" value="0">
                     </div>
                     <div class="control-row">
                         <div class="checkbox-row">
@@ -358,7 +359,7 @@
                 <div class="control-section">
                     <div class="section-title">Output</div>
                     <div class="control-row">
-                        <select id="bgSelect">
+                        <select id="bgSelect" aria-label="Background">
                             <option value="dark">Dark background</option>
                             <option value="light">Light background</option>
                         </select>
@@ -452,19 +453,31 @@
             if (file) {
                 loadImage(file);
             }
+            imageInput.value = ''; // so picking the same file again fires change
         });
 
+        const uploadText = uploadArea.querySelector('.upload-text');
+        const uploadPrompt = uploadText.textContent;
+
         function loadImage(file) {
+            const loadFailed = () => {
+                uploadText.textContent = 'Could not load that image. Drop another or click to upload';
+            };
             const reader = new FileReader();
+            reader.onerror = loadFailed;
             reader.onload = (e) => {
-                currentImage = new Image();
-                currentImage.onload = () => {
+                // Only replace currentImage once the new one has decoded
+                const img = new Image();
+                img.onerror = loadFailed;
+                img.onload = () => {
+                    currentImage = img;
+                    uploadText.textContent = uploadPrompt;
                     imagePreview.src = e.target.result;
                     imagePreview.classList.add('visible');
                     convertBtn.disabled = false;
                     convertToAscii();
                 };
-                currentImage.src = e.target.result;
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -518,7 +531,7 @@
             const targetWidth = parseInt(widthSlider.value);
             const aspectRatio = currentImage.height / currentImage.width;
             const charAspect = 0.55; // Characters are taller than wide
-            const targetHeight = Math.round(targetWidth * aspectRatio * charAspect);
+            const targetHeight = Math.max(1, Math.round(targetWidth * aspectRatio * charAspect));
 
             canvas.width = targetWidth;
             canvas.height = targetHeight;
@@ -569,8 +582,10 @@
                         b = 255 - b;
                     }
 
-                    // Map to character
-                    const charIndex = Math.floor((gray / 255) * charsLen);
+                    // Map to character. The ramp runs sparse to dense: on a dark background dense
+                    // glyphs are the bright areas, on a light one they are the dark areas.
+                    const density = isDarkBg ? gray : 255 - gray;
+                    const charIndex = Math.floor((density / 255) * charsLen);
                     const char = currentChars[charIndex];
 
                     asciiParts.push(char);
@@ -608,14 +623,7 @@
 
         copyBtn.addEventListener('click', () => {
             if (currentAscii) {
-                navigator.clipboard.writeText(currentAscii).then(() => {
-                    copyBtn.textContent = 'Copied!';
-                    copyBtn.classList.add('copied');
-                    setTimeout(() => {
-                        copyBtn.textContent = 'Copy';
-                        copyBtn.classList.remove('copied');
-                    }, 1500);
-                }).catch(() => {
+                const fallback = () => {
                     // Fallback for non-HTTPS environments
                     const textarea = document.createElement('textarea');
                     textarea.value = currentAscii;
@@ -636,7 +644,19 @@
                         setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
                     }
                     document.body.removeChild(textarea);
-                });
+                };
+                if (!navigator.clipboard || !navigator.clipboard.writeText) {
+                    fallback();
+                    return;
+                }
+                navigator.clipboard.writeText(currentAscii).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 1500);
+                }).catch(fallback);
             }
         });
 

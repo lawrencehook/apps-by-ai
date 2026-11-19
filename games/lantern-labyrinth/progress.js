@@ -5,7 +5,7 @@
         try {
             const data = JSON.parse(storage.getItem(KEY));
             if (!data || data.version !== 1) return { bowLevel: 0, speedLevel: 0, coins: 0 };
-            const number = (value, max) => Number.isInteger(value) && value >= 0 && value <= max ? value : 0;
+            const number = (value, max) => Number.isInteger(value) ? Math.max(0, Math.min(Math.floor(max), value)) : 0;
             const styles = ['balanced', 'quick', 'heavy', 'piercing'];
             const unlocks = ['balanced', ...new Set(Array.isArray(data.bowUnlocks) ? data.bowUnlocks.filter(style => styles.includes(style)) : [])];
             const bow = data.bowStyle ? { bowUnlocks: [...new Set(unlocks)], bowStyle: unlocks.includes(data.bowStyle) ? data.bowStyle : 'balanced' } : {};
@@ -29,7 +29,7 @@
             if (x === tx && z === tz) continue;
             const height = map.grid.blocked?.has(`${x},${z}`) ? 3.25 : map.grid[z]?.[x] !== 0 ?
                 (map.seed === 'town' ? (map.buildings?.find(b => b.cells.some(c => c[0] === x && c[1] === z))?.height ?? 1.1) : 6) : 0;
-            if (height > y && !map.fences?.some(c => c[0] === x && c[1] === z)) return false;
+            if (height > y) return false;
         }
         return true;
     }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Info Dashboard - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -393,11 +394,42 @@
             el.className = 'info-value ' + (supported ? 'success' : 'error');
         }
 
+        // One context for the page's lifetime; browsers cap live WebGL contexts
+        let cachedGL;
+        function getGL() {
+            if (cachedGL === undefined) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    cachedGL = canvas.getContext('webgl2') || canvas.getContext('webgl') || null;
+                } catch (e) {
+                    cachedGL = null;
+                }
+            }
+            return cachedGL;
+        }
+
+        function detectBrowser(ua) {
+            if (ua.includes('Firefox') || ua.includes('FxiOS')) return 'Firefox';
+            if (ua.includes('Edg/') || ua.includes('EdgiOS') || ua.includes('EdgA')) return 'Edge';
+            if (ua.includes('OPR/') || ua.includes('OPT/') || ua.includes('Opera')) return 'Opera';
+            if (ua.includes('Chrome') || ua.includes('CriOS')) return 'Chrome';
+            if (ua.includes('Safari')) return 'Safari';
+            return 'Unknown';
+        }
+
+        // Safari reports every Mac as "Apple GPU", which says nothing about the CPU
+        function macArchFromRenderer(renderer) {
+            if (/Apple M\d/.test(renderer)) return 'ARM64 (Apple Silicon)';
+            if (/Intel|AMD|Radeon|NVIDIA|GeForce/i.test(renderer)) return 'x86_64 (Intel)';
+            return 'Unknown';
+        }
+
+        let batteryListening = false;
+
         async function gatherInfo() {
             // GPU Info via WebGL
             try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                const gl = getGL();
                 if (gl) {
                     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                     if (debugInfo) {
@@ -451,14 +483,11 @@
             else if (navigator.platform) {
                 if (navigator.platform.includes('Mac') && navigator.userAgent.includes('Mac OS X')) {
                     // Check for Apple Silicon
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl');
+                    const gl = getGL();
                     if (gl) {
                         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                         if (debugInfo) {
-                            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                            if (renderer.includes('Apple M')) arch = 'ARM64 (Apple Silicon)';
-                            else arch = 'x86_64 (Intel)';
+                            arch = macArchFromRenderer(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '');
                         }
                     }
                 }
@@ -509,8 +538,11 @@
                         }
                     };
                     updateBattery();
-                    battery.addEventListener('levelchange', updateBattery);
-                    battery.addEventListener('chargingchange', updateBattery);
+                    if (!batteryListening) {
+                        batteryListening = true;
+                        battery.addEventListener('levelchange', updateBattery);
+                        battery.addEventListener('chargingchange', updateBattery);
+                    }
                 } catch (e) {
                     document.getElementById('batteryLevel').innerHTML = '<span class="unavailable">Not available</span>';
                 }
@@ -525,8 +557,8 @@
                 const conn = navigator.connection;
                 document.getElementById('netType').textContent = conn.type || 'Unknown';
                 document.getElementById('netEffective').textContent = conn.effectiveType || 'Unknown';
-                document.getElementById('netDownlink').textContent = conn.downlink ? conn.downlink + ' Mbps' : 'Unknown';
-                document.getElementById('netRtt').textContent = conn.rtt ? conn.rtt + ' ms' : 'Unknown';
+                document.getElementById('netDownlink').textContent = conn.downlink != null ? conn.downlink + ' Mbps' : 'Unknown';
+                document.getElementById('netRtt').textContent = conn.rtt != null ? conn.rtt + ' ms' : 'Unknown';
             } else {
                 document.getElementById('netType').innerHTML = '<span class="unavailable">API not available</span>';
                 document.getElementById('netEffective').innerHTML = '<span class="unavailable">-</span>';
@@ -545,12 +577,7 @@
             document.getElementById('hdrSupport').className = 'info-value ' + (hdr ? 'success' : '');
 
             // Browser
-            let browserName = 'Unknown';
-            if (ua.includes('Firefox')) browserName = 'Firefox';
-            else if (ua.includes('Edg/')) browserName = 'Edge';
-            else if (ua.includes('Chrome')) browserName = 'Chrome';
-            else if (ua.includes('Safari')) browserName = 'Safari';
-            else if (ua.includes('Opera')) browserName = 'Opera';
+            const browserName = detectBrowser(ua);
             document.getElementById('browserName').textContent = browserName;
             document.getElementById('platform').textContent = navigator.platform || 'Unknown';
             document.getElementById('language').textContent = navigator.language;
@@ -583,7 +610,7 @@
             }
 
             // API Support
-            setSupport('hasWebGL', !!document.createElement('canvas').getContext('webgl'));
+            setSupport('hasWebGL', !!getGL());
             setSupport('hasWebGPU', !!navigator.gpu);
             setSupport('hasWebRTC', !!window.RTCPeerConnection);
             setSupport('hasWebAudio', !!(window.AudioContext || window.webkitAudioContext));

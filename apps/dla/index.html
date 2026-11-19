@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DLA - Diffusion Limited Aggregation - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,11 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+            .controls { min-width: unset; right: 20px; padding: 14px; }
+            .back-link { display: none; }
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -40,7 +46,7 @@
         <h1>DLA</h1>
         <p>Diffusion-Limited Aggregation. Random walkers stick on contact, creating fractal crystal structures.</p>
         <div class="control-group">
-            <label>Seed Type</label>
+            <label for="seed">Seed Type</label>
             <select id="seed">
                 <option value="center">Center Point</option>
                 <option value="line">Bottom Line</option>
@@ -48,11 +54,11 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Walkers: <span id="walkersLabel">500</span></label>
+            <label for="walkers">Walkers: <span id="walkersLabel">500</span></label>
             <input type="range" id="walkers" min="100" max="2000" step="100" value="500">
         </div>
         <div class="control-group">
-            <label>Stickiness: <span id="stickyLabel">1.0</span></label>
+            <label for="sticky">Stickiness: <span id="stickyLabel">1.0</span></label>
             <input type="range" id="sticky" min="0.1" max="1" step="0.1" value="1">
         </div>
         <button id="reset">Reset</button>
@@ -78,13 +84,50 @@
         const SCALE = 2;
 
         function resize() {
+            const oldGrid = grid, oldWidth = width, oldHeight = height;
             width = Math.floor(window.innerWidth / SCALE);
             height = Math.floor(window.innerHeight / SCALE);
-            canvas.width = width;
-            canvas.height = height;
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
-            init();
+            if (oldGrid && width === oldWidth && height === oldHeight) return;
+            canvas.width = width;
+            canvas.height = height;
+            if (!oldGrid) { init(); return; }
+
+            // Keep the structure: copy it across, anchored the same way the seed is
+            const ox = Math.floor(width / 2) - Math.floor(oldWidth / 2);
+            const oy = seedType === 'line' ? height - oldHeight : Math.floor(height / 2) - Math.floor(oldHeight / 2);
+            grid = new Uint8Array(width * height);
+            particleCount = 0;
+            for (let y = 0; y < oldHeight; y++) {
+                const ny = y + oy;
+                if (ny < 0 || ny >= height) continue;
+                for (let x = 0; x < oldWidth; x++) {
+                    const nx = x + ox;
+                    if (oldGrid[y * oldWidth + x] === 1 && nx >= 0 && nx < width) {
+                        grid[ny * width + nx] = 1;
+                        particleCount++;
+                    }
+                }
+            }
+            if (seedType === 'line') {
+                for (let x = 0; x < width; x++) {
+                    if (grid[(height - 1) * width + x] !== 1) {
+                        grid[(height - 1) * width + x] = 1;
+                        particleCount++;
+                    }
+                }
+            }
+            const count = walkers.length;
+            walkers = walkers
+                .map(w => ({ x: w.x + ox, y: w.y + oy }))
+                .filter(w => w.x >= 0 && w.x < width && w.y >= 0 && w.y < height);
+            while (walkers.length < count) spawnWalker();
+
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            drawGrid();
+            document.getElementById('status').textContent = `Particles: ${particleCount.toLocaleString()}`;
         }
 
         function init() {
@@ -108,6 +151,7 @@
                 const cx = Math.floor(width / 2);
                 const cy = Math.floor(height / 2);
                 const r = 30;
+                maxRadius = r; // walkers spawn at maxRadius + 20, clear of the ring
                 for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
                     const x = Math.floor(cx + Math.cos(angle) * r);
                     const y = Math.floor(cy + Math.sin(angle) * r);
@@ -238,8 +282,14 @@
                     continue;
                 }
 
-                // Check if walker should stick
-                if (hasNeighbor(w.x, w.y)) {
+                // Occupied cells block the walker
+                if (grid[w.y * width + w.x] === 1) {
+                    w.x -= dx;
+                    w.y -= dy;
+                }
+
+                // Check if walker should stick (never onto a cell that is already part of the structure)
+                if (grid[w.y * width + w.x] !== 1 && hasNeighbor(w.x, w.y)) {
                     if (Math.random() < stickiness) {
                         grid[w.y * width + w.x] = 1;
                         particleCount++;
@@ -295,7 +345,11 @@
                 spawnWalker();
             }
             while (walkers.length > numWalkers) {
-                walkers.pop();
+                const w = walkers.pop();
+                if (grid[w.y * width + w.x] !== 1) {
+                    ctx.fillStyle = '#0a0a0f';
+                    ctx.fillRect(w.x, w.y, 1, 1);
+                }
             }
         });
 

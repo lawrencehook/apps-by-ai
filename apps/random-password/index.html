@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Password Generator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -148,7 +149,7 @@
 
         <div class="card">
             <div class="form-group">
-                <label>Length</label>
+                <label for="length">Length</label>
                 <div class="slider-row">
                     <input type="range" id="length" min="4" max="64" value="16">
                     <span class="slider-value" id="lengthValue">16</span>
@@ -194,8 +195,11 @@
         function loadFromURL() {
             const params = new URLSearchParams(window.location.search);
             if (params.has('len')) {
-                lengthSlider.value = params.get('len');
-                lengthValue.textContent = params.get('len');
+                const len = parseInt(params.get('len'), 10);
+                if (!Number.isNaN(len)) {
+                    lengthSlider.value = Math.min(Number(lengthSlider.max), Math.max(Number(lengthSlider.min), len));
+                    lengthValue.textContent = lengthSlider.value;
+                }
             }
             if (params.has('upper')) document.getElementById('uppercase').checked = params.get('upper') === '1';
             if (params.has('lower')) document.getElementById('lowercase').checked = params.get('lower') === '1';
@@ -287,10 +291,30 @@
             document.getElementById('strengthLabel').style.color = color;
         }
 
+        // navigator.clipboard is missing on plain http and can reject in iframes
+        function copyText(text) {
+            const fallback = () => new Promise((resolve, reject) => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                let ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+                document.body.removeChild(ta);
+                ok ? resolve() : reject(new Error('copy failed'));
+            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text).catch(fallback);
+            }
+            return fallback();
+        }
+
         function copyPassword() {
             const password = document.getElementById('password').textContent;
             if (password && password !== 'Click Generate' && password !== 'Select at least one option') {
-                navigator.clipboard.writeText(password).then(() => {
+                copyText(password).then(() => {
                     const btn = document.getElementById('copyBtn');
                     btn.querySelector('.icon-copy').style.display = 'none';
                     btn.querySelector('.icon-check').style.display = 'block';

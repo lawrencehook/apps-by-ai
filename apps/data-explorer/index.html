@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Explorer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/papaparse-5.4.1/papaparse.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -620,9 +621,9 @@
             <div class="card" id="scatterCard">
                 <div class="card-title"><span class="icon">🔵</span> Scatter Plot</div>
                 <div class="scatter-controls">
-                    <select id="xAxis"></select>
+                    <select id="xAxis" aria-label="X axis column"></select>
                     <span style="color: #666; align-self: center;">vs</span>
-                    <select id="yAxis"></select>
+                    <select id="yAxis" aria-label="Y axis column"></select>
                 </div>
                 <div class="scatter-wrapper">
                     <div class="scatter-y-label" id="scatterYLabel"></div>
@@ -665,7 +666,13 @@
         let sortDirection = 'asc';
         let sortedData = [];
         let columnSortOrder = 'original';
-        let filters = {}; // column -> filter value
+        let filters = Object.create(null); // column -> filter value
+
+        // Rendering caps so a large file doesn't build hundreds of thousands of elements
+        const MAX_TABLE_ROWS = 1000;
+        const MAX_SCATTER_DOTS = 2000;
+        const MAX_UNIQUE_VALUES = 100;
+        const MAX_FILTER_OPTIONS = 500;
 
         function escapeHtml(str) {
             return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -680,19 +687,17 @@
         const tableView = document.getElementById('tableView');
 
         // View toggle
-        document.querySelectorAll('.view-btn').forEach(btn => {
+        function showView(view) {
+            document.querySelectorAll('.view-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            statsView.classList.toggle('hidden', view !== 'stats');
+            tableView.classList.toggle('hidden', view === 'stats');
+        }
+
+        // #loadNewBtn shares the .view-btn class for styling only
+        document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const view = btn.dataset.view;
-                if (view === 'stats') {
-                    statsView.classList.remove('hidden');
-                    tableView.classList.add('hidden');
-                } else {
-                    statsView.classList.add('hidden');
-                    tableView.classList.remove('hidden');
-                    renderFullTable();
-                }
+                showView(btn.dataset.view);
+                if (btn.dataset.view === 'table') renderFullTable();
             });
         });
 
@@ -704,7 +709,9 @@
             sortColumn = null;
             sortDirection = 'asc';
             sortedData = [];
-            filters = {};
+            filters = Object.create(null);
+            showView('stats');
+            document.getElementById('fullTable').innerHTML = '';
             results.classList.add('hidden');
             uploadArea.classList.remove('hidden');
             fileInput.value = '';
@@ -790,6 +797,18 @@ Olivia,32,65000,Marketing,6`;
             reader.readAsText(file);
         }
 
+        // Plain decimals only (allowing "$1,234.56"). "02134", "0x1A", "Infinity" and
+        // integers too big for a double stay text instead of being mangled.
+        function parseNumber(val) {
+            const numStr = val.replace(/[$,]/g, '');
+            if (!/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(numStr)) return null;
+            if (/^[-+]?0\d/.test(numStr)) return null;
+            const n = Number(numStr);
+            if (!isFinite(n)) return null;
+            if (/^[-+]?\d+$/.test(numStr) && !Number.isSafeInteger(n)) return null;
+            return n;
+        }
+
         function parseCSV(text) {
             // Use PapaParse for robust CSV parsing (handles quoted fields, commas in values, etc.)
             const result = Papa.parse(text, {
@@ -803,21 +822,27 @@ Olivia,32,65000,Marketing,6`;
             data = result.data.map(row => {
                 const cleanRow = {};
                 headers.forEach(h => {
-                    let val = row[h]?.trim() || '';
-                    // Try to parse as number (handle currency like "$1,234.56")
-                    const numStr = val.replace(/[$,]/g, '');
-                    if (numStr !== '' && !isNaN(numStr)) {
-                        cleanRow[h] = parseFloat(numStr);
-                    } else {
-                        cleanRow[h] = val;
-                    }
+                    cleanRow[h] = row[h]?.trim() || '';
                 });
                 return cleanRow;
             });
 
-            // Find numeric columns (columns where at least some values are numbers)
+            // A column is numeric when most of its non-empty cells parse as numbers,
+            // so one stray number doesn't turn a text column numeric
             numericColumns = headers.filter(h => {
-                return data.some(row => typeof row[h] === 'number' && !isNaN(row[h]));
+                let filled = 0, numeric = 0;
+                for (const row of data) {
+                    if (row[h] === '') continue;
+                    filled++;
+                    if (parseNumber(row[h]) !== null) numeric++;
+                }
+                return numeric * 2 > filled;
+            });
+            numericColumns.forEach(h => {
+                for (const row of data) {
+                    const n = parseNumber(row[h]);
+                    if (n !== null) row[h] = n;
+                }
             });
 
             displayResults();
@@ -914,7 +939,7 @@ Olivia,32,65000,Marketing,6`;
 
                     return `
                         <div class="column-card">
-                            <div class="column-name">${h}</div>
+                            <div class="column-name">${escapeHtml(h)}</div>
                             <div class="column-type numeric">Numeric (${nums.length} values)</div>
                             <div class="mini-stats">
                                 <div class="mini-stat"><span class="mini-stat-label">Min</span><span class="mini-stat-value">${formatNum(stats.min)}</span></div>
@@ -935,14 +960,17 @@ Olivia,32,65000,Marketing,6`;
                     `;
                 } else {
                     // Count occurrences and sort by frequency
-                    const freq = {};
+                    const freq = Object.create(null);
                     values.forEach(v => freq[v] = (freq[v] || 0) + 1);
                     const sortedUnique = Object.entries(freq)
                         .sort((a, b) => b[1] - a[1]);
                     const uniqueCount = sortedUnique.length;
+                    const moreHtml = uniqueCount > MAX_UNIQUE_VALUES
+                        ? `<div class="unique-value-hint">+ ${uniqueCount - MAX_UNIQUE_VALUES} more values not shown</div>`
+                        : '';
 
                     // Build unique values list with data attributes for filtering
-                    const uniqueValuesHtml = sortedUnique.map(([val, count]) => `
+                    const uniqueValuesHtml = sortedUnique.slice(0, MAX_UNIQUE_VALUES).map(([val, count]) => `
                         <div class="unique-value" data-column="${escapeHtml(h)}" data-value="${escapeHtml(val)}">
                             <span class="unique-value-name" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
                             <span class="unique-value-count">${count}</span>
@@ -951,11 +979,12 @@ Olivia,32,65000,Marketing,6`;
 
                     return `
                         <div class="column-card">
-                            <div class="column-name">${h}</div>
+                            <div class="column-name">${escapeHtml(h)}</div>
                             <div class="column-type text">Text (${values.length} values)</div>
                             <div class="mini-stat" style="margin-bottom: 8px;"><span class="mini-stat-label">Unique</span><span class="mini-stat-value">${uniqueCount}</span></div>
                             <div class="unique-values">
                                 ${uniqueValuesHtml}
+                                ${moreHtml}
                                 <div class="unique-value-hint">Double-click to filter in table</div>
                             </div>
                         </div>
@@ -974,10 +1003,14 @@ Olivia,32,65000,Marketing,6`;
             const stdDev = Math.sqrt(variance);
 
             // Mode
-            const freq = {};
-            nums.forEach(v => freq[v] = (freq[v] || 0) + 1);
-            const maxFreq = Math.max(...Object.values(freq));
-            const mode = parseFloat(Object.keys(freq).find(k => freq[k] === maxFreq));
+            // Loop rather than spread: one entry per distinct value can exceed the argument limit
+            const freq = new Map();
+            let mode, maxFreq = 0;
+            for (const v of nums) {
+                const c = (freq.get(v) || 0) + 1;
+                freq.set(v, c);
+                if (c > maxFreq) { maxFreq = c; mode = v; }
+            }
 
             return {
                 min: sorted[0],
@@ -989,13 +1022,6 @@ Olivia,32,65000,Marketing,6`;
             };
         }
 
-        function findMode(values) {
-            const freq = {};
-            values.forEach(v => freq[v] = (freq[v] || 0) + 1);
-            const maxFreq = Math.max(...Object.values(freq));
-            return Object.keys(freq).find(k => freq[k] === maxFreq) || '-';
-        }
-
         function setupUniqueValueFilters() {
             document.querySelectorAll('.unique-value[data-column]').forEach(el => {
                 el.addEventListener('dblclick', () => {
@@ -1003,7 +1029,7 @@ Olivia,32,65000,Marketing,6`;
                     const value = el.dataset.value;
 
                     // Set the filter
-                    filters = {}; // Clear other filters
+                    filters = Object.create(null); // Clear other filters
                     filters[column] = value;
 
                     // Switch to table view
@@ -1066,14 +1092,15 @@ Olivia,32,65000,Marketing,6`;
             }).join('');
         }
 
-        function setupScatterPlot() {
-            if (numericColumns.length < 2) {
-                document.getElementById('scatterCard').classList.add('hidden');
-                return;
-            }
+        const xSelect = document.getElementById('xAxis');
+        const ySelect = document.getElementById('yAxis');
+        const updateScatter = () => drawScatterPlot(xSelect.value, ySelect.value);
+        xSelect.addEventListener('change', updateScatter);
+        ySelect.addEventListener('change', updateScatter);
 
-            const xSelect = document.getElementById('xAxis');
-            const ySelect = document.getElementById('yAxis');
+        function setupScatterPlot() {
+            document.getElementById('scatterCard').classList.toggle('hidden', numericColumns.length < 2);
+            if (numericColumns.length < 2) return;
 
             xSelect.innerHTML = numericColumns.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
             ySelect.innerHTML = numericColumns.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
@@ -1081,9 +1108,6 @@ Olivia,32,65000,Marketing,6`;
             // Default: first two numeric columns
             ySelect.selectedIndex = Math.min(1, numericColumns.length - 1);
 
-            const updateScatter = () => drawScatterPlot(xSelect.value, ySelect.value);
-            xSelect.addEventListener('change', updateScatter);
-            ySelect.addEventListener('change', updateScatter);
             updateScatter();
         }
 
@@ -1106,23 +1130,33 @@ Olivia,32,65000,Marketing,6`;
             const xRange = xMax - xMin || 1;
             const yRange = yMax - yMin || 1;
 
-            const dots = data.map((row, idx) => {
+            const plottable = [];
+            data.forEach((row, idx) => {
+                if (typeof row[xCol] === 'number' && typeof row[yCol] === 'number') plottable.push(idx);
+            });
+            // Evenly sample when there are more points than the cap
+            const step = Math.ceil(plottable.length / MAX_SCATTER_DOTS) || 1;
+            const shown = plottable.filter((_, i) => i % step === 0);
+
+            const dots = shown.map(idx => {
+                const row = data[idx];
                 const x = row[xCol], y = row[yCol];
-                if (typeof x !== 'number' || typeof y !== 'number') return '';
                 const left = ((x - xMin) / xRange) * 90 + 5;
                 const top = 95 - ((y - yMin) / yRange) * 90;
                 return `<div class="scatter-dot" style="left: ${left}%; top: ${top}%"
                     data-idx="${idx}"
                     data-x="${x}"
                     data-y="${y}"
-                    data-xcol="${xCol}"
-                    data-ycol="${yCol}"></div>`;
+                    data-xcol="${escapeHtml(xCol)}"
+                    data-ycol="${escapeHtml(yCol)}"></div>`;
             }).join('');
 
             plot.innerHTML = dots;
 
             // Update axis labels and values
-            document.getElementById('scatterXLabel').textContent = xCol;
+            document.getElementById('scatterXLabel').textContent = shown.length < plottable.length
+                ? `${xCol} (showing ${shown.length.toLocaleString()} of ${plottable.length.toLocaleString()} points)`
+                : xCol;
             document.getElementById('scatterYLabel').textContent = yCol;
             document.getElementById('scatterXValues').innerHTML = `<span>${formatNum(xMin)}</span><span>${formatNum(xMax)}</span>`;
             document.getElementById('scatterYValues').innerHTML = `<span>${formatNum(yMax)}</span><span>${formatNum(yMin)}</span>`;
@@ -1138,11 +1172,11 @@ Olivia,32,65000,Marketing,6`;
                     // Build tooltip with key values from the row
                     let html = `
                         <div class="tooltip-row">
-                            <div class="tooltip-label">${xCol}</div>
+                            <div class="tooltip-label">${escapeHtml(xCol)}</div>
                             <div class="tooltip-value">${formatNum(row[xCol])}</div>
                         </div>
                         <div class="tooltip-row">
-                            <div class="tooltip-label">${yCol}</div>
+                            <div class="tooltip-label">${escapeHtml(yCol)}</div>
                             <div class="tooltip-value">${formatNum(row[yCol])}</div>
                         </div>
                     `;
@@ -1152,8 +1186,8 @@ Olivia,32,65000,Marketing,6`;
                     if (textCols.length > 0) {
                         html = `
                             <div class="tooltip-row">
-                                <div class="tooltip-label">${textCols[0]}</div>
-                                <div class="tooltip-value" style="color: #fff;">${row[textCols[0]]}</div>
+                                <div class="tooltip-label">${escapeHtml(textCols[0])}</div>
+                                <div class="tooltip-value" style="color: #fff;">${escapeHtml(row[textCols[0]])}</div>
                             </div>
                         ` + html;
                     }
@@ -1185,6 +1219,90 @@ Olivia,32,65000,Marketing,6`;
         function renderFullTable() {
             const table = document.getElementById('fullTable');
 
+            // Build filter inputs
+            const filterRowHtml = headers.map(h => {
+                const isNumeric = numericColumns.includes(h);
+                const currentFilter = filters[h] || '';
+
+                if (isNumeric) {
+                    return `<th>
+                        <input type="text" class="filter-input" data-col="${escapeHtml(h)}"
+                            placeholder="Filter..." value="${escapeHtml(currentFilter)}">
+                    </th>`;
+                } else {
+                    // Get unique values for dropdown
+                    const allVals = [...new Set(data.map(row => row[h]).filter(v => v !== '' && v != null))].sort();
+                    const uniqueVals = allVals.slice(0, MAX_FILTER_OPTIONS);
+                    // Keep an active filter (set by double-click in Stats View) selectable past the cap
+                    if (currentFilter && !uniqueVals.includes(currentFilter)) uniqueVals.push(currentFilter);
+                    const options = uniqueVals.map(v =>
+                        `<option value="${escapeHtml(v)}" ${currentFilter === String(v) ? 'selected' : ''}>${escapeHtml(v)}</option>`
+                    ).join('');
+                    return `<th>
+                        <select class="filter-select" data-col="${escapeHtml(h)}">
+                            <option value="">All</option>
+                            ${options}
+                        </select>
+                    </th>`;
+                }
+            }).join('');
+
+            // Render header; the body is filled by renderTableBody()
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        ${headers.map(h => {
+                            const isSorted = sortColumn === h;
+                            const icon = isSorted ? (sortDirection === 'asc' ? '↑' : '↓') : '↕';
+                            return `<th class="${isSorted ? 'sorted' : ''}" data-col="${escapeHtml(h)}">
+                                ${escapeHtml(h)}<span class="sort-icon">${icon}</span>
+                            </th>`;
+                        }).join('')}
+                    </tr>
+                    <tr class="filter-row">${filterRowHtml}</tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            // Add sort listeners (only on header row, not filter row)
+            table.querySelectorAll('thead tr:first-child th').forEach(th => {
+                th.addEventListener('click', () => {
+                    const col = th.dataset.col;
+                    if (sortColumn === col) {
+                        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortColumn = col;
+                        sortDirection = 'asc';
+                    }
+                    renderFullTable();
+                });
+            });
+
+            // Add filter listeners
+            table.querySelectorAll('.filter-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    filters[e.target.dataset.col] = e.target.value;
+                    // Body only: rebuilding the header would destroy the input being typed in
+                    renderTableBody();
+                });
+                // Prevent sort when clicking in input
+                input.addEventListener('click', e => e.stopPropagation());
+            });
+
+            table.querySelectorAll('.filter-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    filters[e.target.dataset.col] = e.target.value;
+                    renderTableBody();
+                });
+                select.addEventListener('click', e => e.stopPropagation());
+            });
+
+            renderTableBody();
+        }
+
+        function renderTableBody() {
+            const table = document.getElementById('fullTable');
+
             // Apply filters
             let filteredData = data.filter(row => {
                 return headers.every(h => {
@@ -1195,9 +1313,10 @@ Olivia,32,65000,Marketing,6`;
                     const isNumeric = numericColumns.includes(h);
 
                     if (isNumeric) {
-                        // For numeric: search in formatted string
-                        const cellStr = String(cellVal ?? '').toLowerCase();
-                        return cellStr.includes(filterVal.toLowerCase());
+                        // For numeric: search in the raw number and in the string the cell displays
+                        const needle = filterVal.toLowerCase();
+                        if (String(cellVal ?? '').toLowerCase().includes(needle)) return true;
+                        return typeof cellVal === 'number' && formatNum(cellVal).toLowerCase().includes(needle);
                     } else {
                         // For text: exact match from dropdown
                         return String(cellVal ?? '') === filterVal;
@@ -1228,106 +1347,32 @@ Olivia,32,65000,Marketing,6`;
                 sortedData = [...filteredData];
             }
 
-            // Build filter inputs
-            const filterRowHtml = headers.map(h => {
-                const isNumeric = numericColumns.includes(h);
-                const currentFilter = filters[h] || '';
-
-                if (isNumeric) {
-                    return `<th>
-                        <input type="text" class="filter-input" data-col="${h}"
-                            placeholder="Filter..." value="${currentFilter}">
-                    </th>`;
-                } else {
-                    // Get unique values for dropdown
-                    const uniqueVals = [...new Set(data.map(row => row[h]).filter(v => v !== '' && v != null))].sort();
-                    const options = uniqueVals.map(v =>
-                        `<option value="${v}" ${currentFilter === String(v) ? 'selected' : ''}>${v}</option>`
-                    ).join('');
-                    return `<th>
-                        <select class="filter-select" data-col="${h}">
-                            <option value="">All</option>
-                            ${options}
-                        </select>
-                    </th>`;
-                }
-            }).join('');
-
-            // Render table
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        ${headers.map(h => {
-                            const isSorted = sortColumn === h;
-                            const icon = isSorted ? (sortDirection === 'asc' ? '↑' : '↓') : '↕';
-                            return `<th class="${isSorted ? 'sorted' : ''}" data-col="${h}">
-                                ${h}<span class="sort-icon">${icon}</span>
-                            </th>`;
-                        }).join('')}
-                    </tr>
-                    <tr class="filter-row">${filterRowHtml}</tr>
-                </thead>
-                <tbody>
-                    ${sortedData.map(row => `
+            table.tBodies[0].innerHTML = sortedData.slice(0, MAX_TABLE_ROWS).map(row => `
                         <tr>
                             ${headers.map(h => {
                                 const val = row[h];
                                 const isNum = typeof val === 'number';
-                                const display = isNum ? formatNum(val) : (val || '');
+                                const display = escapeHtml(isNum ? formatNum(val) : (val || ''));
                                 return `<td class="${isNum ? 'numeric' : ''}" title="${display}">${display}</td>`;
                             }).join('')}
                         </tr>
-                    `).join('')}
-                </tbody>
-            `;
+                    `).join('');
 
             // Update info
             const hasFilters = Object.values(filters).some(v => v && v !== '');
-            const filterInfo = hasFilters ? ` (${sortedData.length} shown)` : '';
-            document.getElementById('tableRowCount').innerHTML = hasFilters
+            const capInfo = sortedData.length > MAX_TABLE_ROWS ? ` (first ${MAX_TABLE_ROWS.toLocaleString()} shown)` : '';
+            document.getElementById('tableRowCount').innerHTML = (hasFilters
                 ? `<span class="filter-active">${sortedData.length} of ${data.length} rows</span> × ${headers.length} columns`
-                : `${data.length} rows × ${headers.length} columns`;
+                : `${data.length} rows × ${headers.length} columns`) + capInfo;
             document.getElementById('tableSortInfo').innerHTML = hasFilters
                 ? `<button class="clear-filters" id="clearFiltersBtn">Clear filters</button>`
-                : (sortColumn ? `Sorted by ${sortColumn} (${sortDirection === 'asc' ? 'ascending' : 'descending'})` : 'Click a column header to sort');
-
-            // Add sort listeners (only on header row, not filter row)
-            table.querySelectorAll('thead tr:first-child th').forEach(th => {
-                th.addEventListener('click', () => {
-                    const col = th.dataset.col;
-                    if (sortColumn === col) {
-                        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortColumn = col;
-                        sortDirection = 'asc';
-                    }
-                    renderFullTable();
-                });
-            });
-
-            // Add filter listeners
-            table.querySelectorAll('.filter-input').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    filters[e.target.dataset.col] = e.target.value;
-                    renderFullTable();
-                });
-                // Prevent sort when clicking in input
-                input.addEventListener('click', e => e.stopPropagation());
-            });
-
-            table.querySelectorAll('.filter-select').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    filters[e.target.dataset.col] = e.target.value;
-                    renderFullTable();
-                });
-                select.addEventListener('click', e => e.stopPropagation());
-            });
+                : (sortColumn ? `Sorted by ${escapeHtml(sortColumn)} (${sortDirection === 'asc' ? 'ascending' : 'descending'})` : 'Click a column header to sort');
 
             // Clear filters button
             const clearBtn = document.getElementById('clearFiltersBtn');
             if (clearBtn) {
                 clearBtn.addEventListener('click', () => {
-                    filters = {};
+                    filters = Object.create(null);
                     renderFullTable();
                 });
             }

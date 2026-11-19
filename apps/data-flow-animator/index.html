@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Flow Animator - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -162,6 +163,7 @@
             min-width: 100px;
             cursor: move;
             user-select: none;
+            touch-action: none;
             z-index: 10;
             transition: box-shadow 0.2s;
         }
@@ -224,7 +226,7 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
-        .node:hover .node-delete { opacity: 1; }
+        .node:hover .node-delete, .node.selected .node-delete { opacity: 1; }
 
         .help-text {
             font-size: 0.75rem;
@@ -262,6 +264,7 @@
             }
             .canvas-container {
                 min-height: 60vh;
+                overflow: auto;
             }
             .stats {
                 bottom: auto;
@@ -331,19 +334,19 @@
             <div class="sidebar-section">
                 <div class="sidebar-title">Animation</div>
                 <div class="setting-row">
-                    <label>Speed</label>
+                    <label for="animSpeed">Speed</label>
                     <input type="range" id="animSpeed" min="0.5" max="3" step="0.1" value="1">
                 </div>
                 <div class="setting-row">
-                    <label>Particle Size</label>
+                    <label for="particleSize">Particle Size</label>
                     <input type="range" id="particleSize" min="3" max="12" step="1" value="6">
                 </div>
                 <div class="setting-row">
-                    <label>Particle Color</label>
+                    <label for="particleColor">Particle Color</label>
                     <input type="color" id="particleColor" value="#4ecdc4">
                 </div>
                 <div class="setting-row">
-                    <label>Trail Effect</label>
+                    <label for="trailEffect">Trail Effect</label>
                     <select id="trailEffect">
                         <option value="glow">Glow</option>
                         <option value="solid">Solid</option>
@@ -356,7 +359,7 @@
                 <div class="sidebar-title">Controls</div>
                 <div class="controls">
                     <button id="toggleAnim">⏸ Pause Animation</button>
-                    <button id="exportGif" class="secondary">📷 Export as GIF</button>
+                    <button id="exportGif" class="secondary">📷 Export as PNG</button>
                     <button id="clearAll" class="secondary danger">🗑 Clear All</button>
                 </div>
             </div>
@@ -373,7 +376,8 @@
                 <strong>How to use:</strong><br>
                 • Drag components to canvas<br>
                 • Connect ports by clicking<br>
-                • Click node to select/edit<br>
+                • Connect again to disconnect<br>
+                • Click node to select<br>
                 • Delete key to remove
             </div>
         </div>
@@ -400,8 +404,15 @@
         const ctx = canvas.getContext('2d');
 
         function resizeCanvas() {
-            canvas.width = canvasContainer.clientWidth;
-            canvas.height = canvasContainer.clientHeight;
+            // Cover nodes beyond the visible area too (the container scrolls on narrow screens)
+            let w = canvasContainer.clientWidth;
+            let h = canvasContainer.clientHeight;
+            nodes.forEach(n => {
+                w = Math.max(w, n.x + n.width + 20);
+                h = Math.max(h, n.y + n.height + 20);
+            });
+            if (canvas.width !== w) canvas.width = w;
+            if (canvas.height !== h) canvas.height = h;
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -433,7 +444,7 @@
             const type = e.dataTransfer.getData('nodeType');
             if (type) {
                 const rect = canvasContainer.getBoundingClientRect();
-                createNode(type, e.clientX - rect.left - 60, e.clientY - rect.top - 30);
+                createNode(type, e.clientX - rect.left + canvasContainer.scrollLeft - 60, e.clientY - rect.top + canvasContainer.scrollTop - 30);
             }
         });
 
@@ -461,7 +472,7 @@
         // Global drag state to avoid per-node document listeners
         let dragState = { isDragging: false, node: null, el: null, offsetX: 0, offsetY: 0 };
 
-        document.addEventListener('mousemove', e => {
+        document.addEventListener('pointermove', e => {
             if (dragState.isDragging && dragState.node && dragState.el) {
                 dragState.node.x = e.clientX - dragState.offsetX;
                 dragState.node.y = e.clientY - dragState.offsetY;
@@ -470,9 +481,13 @@
             }
         });
 
-        document.addEventListener('mouseup', () => {
+        function endDrag() {
+            if (!dragState.isDragging) return;
             dragState.isDragging = false;
-        });
+            resizeCanvas();
+        }
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
 
         function renderNodes() {
             // Remove existing DOM nodes
@@ -500,7 +515,7 @@
                 // Store reference for measurements
                 node.element = el;
 
-                el.addEventListener('mousedown', e => {
+                el.addEventListener('pointerdown', e => {
                     if (e.target.classList.contains('port') || e.target.classList.contains('node-delete')) return;
 
                     dragState.isDragging = true;
@@ -509,7 +524,9 @@
                     dragState.offsetX = e.clientX - node.x;
                     dragState.offsetY = e.clientY - node.y;
                     selectedNode = node;
-                    renderNodes();
+                    // Update in place: re-rendering here would detach the element being dragged
+                    document.querySelectorAll('.node.selected').forEach(n => n.classList.remove('selected'));
+                    el.classList.add('selected');
                 });
 
                 // Port connections
@@ -528,18 +545,20 @@
                         } else {
                             if (portType === 'input' && connectingFrom.node !== node) {
                                 // Create connection
-                                const exists = connections.some(c =>
+                                const existing = connections.findIndex(c =>
                                     c.from === connectingFrom.node.id && c.to === node.id
                                 );
 
-                                if (!exists) {
+                                if (existing === -1) {
                                     connections.push({
                                         from: connectingFrom.node.id,
                                         to: node.id,
                                         color: connectingFrom.node.color
                                     });
-                                    updateStats();
+                                } else {
+                                    connections.splice(existing, 1);
                                 }
+                                updateStats();
                             }
                             // Reset
                             document.querySelectorAll('.port').forEach(p => p.style.boxShadow = '');
@@ -562,6 +581,7 @@
                     node.height = el.offsetHeight;
                 });
             });
+            resizeCanvas();
         }
 
         function deleteNode(id) {
@@ -603,7 +623,13 @@
             return nodes.find(n => n.id === id);
         }
 
-        function animate() {
+        let lastFrameTime = 0;
+
+        function animate(now) {
+            // Wall-clock delta so speed doesn't depend on the display's refresh rate
+            const dt = now && lastFrameTime ? Math.min(0.1, (now - lastFrameTime) / 1000) : 0;
+            if (now) lastFrameTime = now;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const speed = parseFloat(document.getElementById('animSpeed').value);
@@ -612,7 +638,7 @@
             const trailEffect = document.getElementById('trailEffect').value;
 
             if (isAnimating) {
-                animationTime += 0.016 * speed;
+                animationTime += dt * speed;
             }
 
             // Draw connections and particles
@@ -685,15 +711,6 @@
                     }
                 }
             });
-
-            // Draw connecting line preview
-            if (connectingFrom) {
-                const fromNode = connectingFrom.node;
-                const x1 = fromNode.x + fromNode.width;
-                const y1 = fromNode.y + fromNode.height / 2;
-
-                // We'd need mouse position here - simplified for now
-            }
 
             requestAnimationFrame(animate);
         }
@@ -775,7 +792,7 @@
             }, 100);
         });
 
-        // Export GIF (simplified - captures current frame as PNG)
+        // Export the current frame as PNG
         document.getElementById('exportGif').addEventListener('click', () => {
             // Create a composite canvas with both the connections and nodes
             const exportCanvas = document.createElement('canvas');

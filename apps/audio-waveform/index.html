@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Waveform - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -233,12 +234,12 @@
                 <div class="control-group">
                     <h3>Dimensions</h3>
                     <div class="control-row">
-                        <label>Width</label>
+                        <label for="canvasWidth">Width</label>
                         <input type="number" id="canvasWidth" value="1200" min="200" max="4000" step="100">
                         <span>px</span>
                     </div>
                     <div class="control-row">
-                        <label>Height</label>
+                        <label for="canvasHeight">Height</label>
                         <input type="number" id="canvasHeight" value="200" min="50" max="1000" step="50">
                         <span>px</span>
                     </div>
@@ -247,7 +248,7 @@
                 <div class="control-group">
                     <h3>Style</h3>
                     <div class="control-row">
-                        <label>Type</label>
+                        <label for="waveformStyle">Type</label>
                         <select id="waveformStyle">
                             <option value="bars">Bars</option>
                             <option value="line">Line</option>
@@ -255,12 +256,12 @@
                         </select>
                     </div>
                     <div class="control-row">
-                        <label>Bar Width</label>
+                        <label for="barWidth">Bar Width</label>
                         <input type="range" id="barWidth" min="1" max="10" value="2">
                         <span class="value" id="barWidthValue">2</span>
                     </div>
                     <div class="control-row">
-                        <label>Gap</label>
+                        <label for="barGap">Gap</label>
                         <input type="range" id="barGap" min="0" max="5" value="1">
                         <span class="value" id="barGapValue">1</span>
                     </div>
@@ -277,7 +278,7 @@
                         <div class="color-preset" style="background: #fff" data-color="#ffffff"></div>
                     </div>
                     <div class="control-row" style="margin-top: 10px;">
-                        <label>Custom</label>
+                        <label for="waveformColor">Custom</label>
                         <input type="color" id="waveformColor" value="#4ecdc4">
                     </div>
                 </div>
@@ -291,7 +292,7 @@
                         <div class="color-preset" style="background: transparent; border: 2px dashed #555" data-color="transparent"></div>
                     </div>
                     <div class="control-row" style="margin-top: 10px;">
-                        <label>Custom</label>
+                        <label for="bgColor">Custom</label>
                         <input type="color" id="bgColor" value="#1a1a1f">
                     </div>
                 </div>
@@ -350,21 +351,24 @@
         });
 
         async function handleFile(file) {
-            initAudioContext();
             currentFile = file;
 
             try {
+                initAudioContext();
                 const arrayBuffer = await file.arrayBuffer();
                 audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
                 document.getElementById('fileName').textContent = file.name;
                 document.getElementById('fileDuration').textContent = formatTime(audioBuffer.duration);
-                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz';
+                // decodeAudioData resamples to the device rate, so this is not the file's own rate
+                document.getElementById('fileSampleRate').textContent = audioBuffer.sampleRate + ' Hz (decoded)';
 
-                drawWaveform();
-
+                // Show the panel first: the preview measures 0 wide while it is hidden
                 dropZone.classList.add('hidden');
                 editorPanel.classList.remove('hidden');
+                status.classList.remove('show');
+
+                drawWaveform();
             } catch (err) {
                 status.textContent = 'Error loading audio file: ' + err.message;
                 status.classList.add('show');
@@ -415,67 +419,9 @@
             canvas.width = previewWidth * dpr;
             canvas.height = previewHeight * dpr;
             canvas.style.height = previewHeight + 'px';
-            ctx.scale(dpr, dpr);
-
-            const width = previewWidth;
-            const height = previewHeight;
-
-            // Background
-            if (settings.bgColor === 'transparent') {
-                ctx.clearRect(0, 0, width, height);
-            } else {
-                ctx.fillStyle = settings.bgColor;
-                ctx.fillRect(0, 0, width, height);
-            }
-
-            const barWidth = settings.barWidth;
-            const barGap = settings.barGap;
-            const totalBarWidth = barWidth + barGap;
-            const numBars = Math.floor(width / totalBarWidth);
-
-            const audioData = getAudioData(numBars);
-
-            ctx.fillStyle = settings.waveformColor;
-            ctx.strokeStyle = settings.waveformColor;
-
-            const centerY = height / 2;
-
-            if (settings.style === 'line') {
-                ctx.lineWidth = settings.barWidth;
-                ctx.lineJoin = 'round';
-                ctx.beginPath();
-                for (let i = 0; i < numBars; i++) {
-                    const x = i * totalBarWidth + barWidth / 2;
-                    const value = audioData[i];
-                    const y = centerY - value * height * 0.45;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                // Draw mirrored line below center
-                ctx.beginPath();
-                for (let i = 0; i < numBars; i++) {
-                    const x = i * totalBarWidth + barWidth / 2;
-                    const value = audioData[i];
-                    const y = centerY + value * height * 0.45;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            } else {
-                for (let i = 0; i < numBars; i++) {
-                    const x = i * totalBarWidth;
-                    const value = audioData[i];
-
-                    if (settings.style === 'bars') {
-                        const barHeight = value * height * 0.9;
-                        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-                    } else if (settings.style === 'mirror') {
-                        const barHeight = value * height * 0.45;
-                        ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
-                    }
-                }
-            }
+            // Draw in export coordinates so the preview shows exactly what is exported
+            ctx.scale(dpr * previewWidth / settings.width, dpr * previewHeight / settings.height);
+            paintWaveform(ctx);
         }
 
         function drawExportCanvas() {
@@ -485,6 +431,12 @@
             canvas.width = settings.width;
             canvas.height = settings.height;
 
+            paintWaveform(ctx);
+
+            return canvas;
+        }
+
+        function paintWaveform(ctx) {
             const width = settings.width;
             const height = settings.height;
 
@@ -543,8 +495,6 @@
                     }
                 }
             }
-
-            return canvas;
         }
 
         function generateSVG() {
@@ -597,14 +547,22 @@ ${rects}
         }
 
         // Event listeners for controls
+        // Empty or out-of-range sizes fall back to the last good value / the input's limits
+        function readDimension(input, previous) {
+            const value = parseInt(input.value);
+            const result = isNaN(value) ? previous : Math.min(Number(input.max), Math.max(Number(input.min), value));
+            input.value = result;
+            return result;
+        }
+
         document.getElementById('canvasWidth').addEventListener('change', e => {
-            settings.width = parseInt(e.target.value);
+            settings.width = readDimension(e.target, settings.width);
             if (audioBuffer) drawWaveform();
         });
 
         document.getElementById('canvasHeight').addEventListener('change', e => {
-            settings.height = parseInt(e.target.value);
-            drawWaveform();
+            settings.height = readDimension(e.target, settings.height);
+            if (audioBuffer) drawWaveform();
         });
 
         document.getElementById('waveformStyle').addEventListener('change', e => {

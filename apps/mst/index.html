@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimum Spanning Tree - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -44,18 +45,18 @@
         <h1>Minimum Spanning Tree</h1>
         <p>Connect all nodes with minimum total edge weight. Compare Prim's vs Kruskal's.</p>
         <div class="control-group">
-            <label>Algorithm</label>
+            <label for="algorithm">Algorithm</label>
             <select id="algorithm">
                 <option value="prim">Prim's Algorithm</option>
                 <option value="kruskal">Kruskal's Algorithm</option>
             </select>
         </div>
         <div class="control-group">
-            <label>Speed: <span id="speedLabel">100</span>ms</label>
+            <label for="speed">Speed: <span id="speedLabel">100</span>ms</label>
             <input type="range" id="speed" min="20" max="500" value="100">
         </div>
         <div class="control-group">
-            <label>Nodes: <span id="nodesLabel">20</span></label>
+            <label for="nodes">Nodes: <span id="nodesLabel">20</span></label>
             <input type="range" id="nodes" min="10" max="50" value="20">
         </div>
         <button id="run">Build MST</button>
@@ -76,15 +77,22 @@
         let speed = 100;
         let algorithm = 'prim';
         let running = false;
+        let runId = 0;
         let currentEdge = null;
         let visitedNodes = new Set();
 
         function resize() {
+            const oldWidth = width, oldHeight = height;
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            if (!running) {
+            if (!nodes.length || !oldWidth || !oldHeight) {
                 generateGraph();
             } else {
+                // Keep the graph (and any result); only move the nodes with the window
+                for (const node of nodes) {
+                    node.x *= width / oldWidth;
+                    node.y *= height / oldHeight;
+                }
                 draw();
             }
         }
@@ -153,6 +161,7 @@
         }
 
         async function primMST() {
+            const id = ++runId;
             running = true;
             mstEdges = [];
             visitedNodes.clear();
@@ -171,6 +180,7 @@
                         currentEdge = edge;
                         draw();
                         await sleep(speed / 3);
+                        if (id !== runId) return;
 
                         if (edge.weight < minWeight) {
                             minWeight = edge.weight;
@@ -186,6 +196,7 @@
                     currentEdge = minEdge;
                     draw();
                     await sleep(speed);
+                    if (id !== runId) return;
                 }
             }
 
@@ -195,6 +206,7 @@
         }
 
         async function kruskalMST() {
+            const id = ++runId;
             running = true;
             mstEdges = [];
             visitedNodes.clear();
@@ -240,6 +252,7 @@
                 currentEdge = edge;
                 draw();
                 await sleep(speed / 2);
+                if (id !== runId) return;
 
                 if (union(edge.a, edge.b)) {
                     mstEdges.push(edge);
@@ -247,6 +260,7 @@
                     visitedNodes.add(edge.b);
                     draw();
                     await sleep(speed);
+                    if (id !== runId) return;
 
                     if (mstEdges.length === nodes.length - 1) break;
                 }
@@ -354,6 +368,7 @@
         });
 
         document.getElementById('reset').addEventListener('click', () => {
+            runId++;
             running = false;
             generateGraph();
         });

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Split - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <script src="../../libs/pdf-lib-1.17.1/pdf-lib.min.js"></script>
+    <script src="../../libs/jszip-3.10.1/jszip.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -252,7 +254,7 @@
         });
 
         async function handleFile(file) {
-            if (file.type !== 'application/pdf') {
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
                 showStatus('Please select a PDF file', true);
                 return;
             }
@@ -295,6 +297,35 @@
             status.className = 'status show' + (isError ? ' error' : '');
         }
 
+        // "1-3, 5, 7-9" -> [[0,1,2],[4],[6,7,8]]. Anything that is not N or N-M is rejected
+        // rather than half-read; dashes pasted from documents count as hyphens.
+        function parseRanges(rangeStr, pageCount) {
+            const parts = rangeStr.replace(/[\u2010-\u2015\u2212]/g, '-').split(',').map(s => s.trim()).filter(s => s);
+            const ranges = [];
+
+            for (const part of parts) {
+                const match = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(part);
+                if (!match) {
+                    throw new Error(`Invalid range: ${part}`);
+                }
+                const start = parseInt(match[1], 10);
+                const end = match[2] === undefined ? start : parseInt(match[2], 10);
+                if (start < 1 || end > pageCount || start > end) {
+                    throw new Error(`Invalid ${match[2] === undefined ? 'page' : 'range'}: ${part}`);
+                }
+                const pages = [];
+                for (let i = start - 1; i < end; i++) {
+                    pages.push(i);
+                }
+                ranges.push(pages);
+            }
+
+            if (ranges.length === 0) {
+                throw new Error('Please enter valid page ranges');
+            }
+            return ranges;
+        }
+
         resetBtn.addEventListener('click', () => {
             currentFile = null;
             currentPdf = null;
@@ -320,32 +351,7 @@
                         ranges.push([i]);
                     }
                 } else if (mode === 'range') {
-                    const rangeStr = document.getElementById('rangeInput').value;
-                    const parts = rangeStr.split(',').map(s => s.trim()).filter(s => s);
-
-                    for (const part of parts) {
-                        if (part.includes('-')) {
-                            const [start, end] = part.split('-').map(n => parseInt(n.trim()));
-                            if (isNaN(start) || isNaN(end) || start < 1 || end > pageCount || start > end) {
-                                throw new Error(`Invalid range: ${part}`);
-                            }
-                            const pages = [];
-                            for (let i = start - 1; i < end; i++) {
-                                pages.push(i);
-                            }
-                            ranges.push(pages);
-                        } else {
-                            const page = parseInt(part);
-                            if (isNaN(page) || page < 1 || page > pageCount) {
-                                throw new Error(`Invalid page: ${part}`);
-                            }
-                            ranges.push([page - 1]);
-                        }
-                    }
-
-                    if (ranges.length === 0) {
-                        throw new Error('Please enter valid page ranges');
-                    }
+                    ranges.push(...parseRanges(document.getElementById('rangeInput').value, pageCount));
                 } else if (mode === 'every') {
                     const n = parseInt(document.getElementById('everyInput').value);
                     if (isNaN(n) || n < 1) {
@@ -361,37 +367,44 @@
                     }
                 }
 
-                // Create and download PDFs
+                // Create the PDFs; several go into one zip, because browsers block a burst of downloads
+                const sourcePdf = currentPdf;
                 const baseName = currentFile.file.name.replace(/\.pdf$/i, '');
+                const outputs = [];
 
                 for (let i = 0; i < ranges.length; i++) {
                     const newPdf = await PDFDocument.create();
-                    const pages = await newPdf.copyPages(currentPdf, ranges[i]);
+                    const pages = await newPdf.copyPages(sourcePdf, ranges[i]);
                     pages.forEach(page => newPdf.addPage(page));
 
-                    const pdfBytes = await newPdf.save();
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-
-                    const a = document.createElement('a');
-                    a.href = url;
-
-                    if (mode === 'single') {
-                        a.download = `${baseName}_page_${ranges[i][0] + 1}.pdf`;
-                    } else {
-                        a.download = `${baseName}_part_${i + 1}.pdf`;
-                    }
-
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-                    // Delay between downloads to avoid browser blocking
-                    if (i < ranges.length - 1) {
-                        await new Promise(r => setTimeout(r, 300));
-                    }
+                    outputs.push({
+                        name: mode === 'single'
+                            ? `${baseName}_page_${ranges[i][0] + 1}.pdf`
+                            : `${baseName}_part_${i + 1}.pdf`,
+                        bytes: await newPdf.save()
+                    });
                 }
 
-                showStatus(`Successfully created ${ranges.length} PDF file${ranges.length !== 1 ? 's' : ''}`);
+                let blob, downloadName;
+                if (outputs.length === 1) {
+                    blob = new Blob([outputs[0].bytes], { type: 'application/pdf' });
+                    downloadName = outputs[0].name;
+                } else {
+                    const zip = new JSZip();
+                    outputs.forEach(o => zip.file(o.name, o.bytes));
+                    blob = await zip.generateAsync({ type: 'blob' });
+                    downloadName = `${baseName}_split.zip`;
+                }
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = downloadName;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                showStatus(`Successfully created ${ranges.length} PDF file${ranges.length !== 1 ? 's' : ''}` +
+                    (outputs.length > 1 ? ` (downloaded as ${downloadName})` : ''));
             } catch (err) {
                 showStatus('Error splitting PDF: ' + err.message, true);
             }

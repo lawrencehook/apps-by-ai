@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lorenz Attractor - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -38,19 +40,19 @@
         <h1>Lorenz Attractor</h1>
         <p>A chaotic system discovered by Edward Lorenz. The "butterfly effect" visualized.</p>
         <div class="control-group">
-            <label>Sigma (σ): <span id="sigmaLabel">10</span></label>
+            <label for="sigma">Sigma (σ): <span id="sigmaLabel">10</span></label>
             <input type="range" id="sigma" min="1" max="20" step="0.5" value="10">
         </div>
         <div class="control-group">
-            <label>Rho (ρ): <span id="rhoLabel">28</span></label>
+            <label for="rho">Rho (ρ): <span id="rhoLabel">28</span></label>
             <input type="range" id="rho" min="10" max="50" step="0.5" value="28">
         </div>
         <div class="control-group">
-            <label>Beta (β): <span id="betaLabel">2.67</span></label>
+            <label for="beta">Beta (β): <span id="betaLabel">2.67</span></label>
             <input type="range" id="beta" min="0.5" max="5" step="0.1" value="2.67">
         </div>
         <div class="control-group">
-            <label>Trails: <span id="trailsLabel">3</span></label>
+            <label for="trails">Trails: <span id="trailsLabel">3</span></label>
             <input type="range" id="trails" min="1" max="10" value="3">
         </div>
         <button id="reset">Reset</button>
@@ -153,16 +155,28 @@
             height = canvas.height = window.innerHeight;
         }
 
+        let lastTime = performance.now();
+        let stepDebt = 0;
+
         function render() {
+            const now = performance.now();
+            const frameDt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
             ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
             ctx.fillRect(0, 0, width, height);
 
             if (autoRotate) {
-                rotationY += 0.003;
+                rotationY += 0.18 * frameDt; // 0.003 rad per frame at 60fps
             }
 
+            // 5 integration steps per frame at 60fps, scaled by real elapsed time
+            stepDebt += 300 * frameDt;
+            const substeps = Math.floor(stepDebt);
+            stepDebt -= substeps;
+
             for (const particle of particles) {
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < substeps; i++) {
                     particle.update();
                 }
 
@@ -197,14 +211,14 @@
         let isDragging = false;
         let lastX, lastY;
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             isDragging = true;
             autoRotate = false;
             lastX = e.clientX;
             lastY = e.clientY;
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             if (isDragging) {
                 rotationY += (e.clientX - lastX) * 0.01;
                 rotationX += (e.clientY - lastY) * 0.01;
@@ -213,27 +227,9 @@
             }
         });
 
-        canvas.addEventListener('mouseup', () => isDragging = false);
-        canvas.addEventListener('mouseleave', () => isDragging = false);
-
-        // Touch support
-        canvas.addEventListener('touchstart', e => {
-            e.preventDefault();
-            isDragging = true;
-            autoRotate = false;
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-        }, { passive: false });
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            if (isDragging) {
-                rotationY += (e.touches[0].clientX - lastX) * 0.01;
-                rotationX += (e.touches[0].clientY - lastY) * 0.01;
-                lastX = e.touches[0].clientX;
-                lastY = e.touches[0].clientY;
-            }
-        }, { passive: false });
-        canvas.addEventListener('touchend', () => isDragging = false);
+        canvas.addEventListener('pointerup', () => isDragging = false);
+        canvas.addEventListener('pointerleave', () => isDragging = false);
+        canvas.addEventListener('pointercancel', () => isDragging = false);
 
         document.getElementById('sigma').addEventListener('input', e => {
             sigma = parseFloat(e.target.value);

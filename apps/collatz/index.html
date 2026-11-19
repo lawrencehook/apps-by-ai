@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collatz Conjecture - Apps by AI</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -117,7 +118,7 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>Mode</label>
+                <label for="mode">Mode</label>
                 <select id="mode">
                     <option value="tree">Tree (1-N)</option>
                     <option value="single">Single Path</option>
@@ -125,16 +126,16 @@
                 </select>
             </div>
             <div class="control-group" id="rangeGroup">
-                <label>Range</label>
+                <label for="range">Range</label>
                 <input type="range" id="range" min="10" max="1000" value="100">
                 <span class="value" id="rangeVal">100</span>
             </div>
             <div class="control-group" id="numberGroup" style="display: none;">
-                <label>Start</label>
+                <label for="startNum">Start</label>
                 <input type="number" id="startNum" value="27" min="1" max="999999">
             </div>
             <div class="control-group">
-                <label>Angle</label>
+                <label for="angle">Angle</label>
                 <input type="range" id="angle" min="2" max="20" value="8">
                 <span class="value" id="angleVal">8°</span>
             </div>
@@ -212,7 +213,7 @@
             }
 
             document.getElementById('numCount').textContent = maxN;
-            document.getElementById('maxSteps').textContent = maxSteps;
+            document.getElementById('maxSteps').textContent = Math.max(0, maxSteps - 1);
             document.getElementById('maxValue').textContent = maxValue.toLocaleString();
 
             const segmentLen = Math.min(12, height / maxSteps * 0.8);
@@ -253,7 +254,7 @@
             const seq = collatzSequence(n);
 
             document.getElementById('numCount').textContent = '1';
-            document.getElementById('maxSteps').textContent = seq.length;
+            document.getElementById('maxSteps').textContent = seq.length - 1;
             document.getElementById('maxValue').textContent = arrayMax(seq).toLocaleString();
 
             ctx.fillStyle = '#0a0a0f';
@@ -265,7 +266,7 @@
             const graphHeight = height - padding * 2;
 
             const maxVal = arrayMax(seq);
-            const stepW = graphWidth / (seq.length - 1);
+            const stepW = seq.length > 1 ? graphWidth / (seq.length - 1) : 0;
 
             // Draw axes
             ctx.strokeStyle = '#333';
@@ -302,7 +303,7 @@
             ctx.fillStyle = '#888';
             ctx.font = '11px system-ui';
             ctx.fillText(`Start: ${n}`, padding, padding - 10);
-            ctx.fillText(`Steps: ${seq.length}`, padding + 100, padding - 10);
+            ctx.fillText(`Steps: ${seq.length - 1}`, padding + 100, padding - 10);
             ctx.fillText(`Max: ${maxVal}`, padding + 200, padding - 10);
         }
 
@@ -318,7 +319,7 @@
             const maxVal = sequences.reduce((m, s) => Math.max(m, arrayMax(s.seq)), 0);
 
             document.getElementById('numCount').textContent = numbers.length;
-            document.getElementById('maxSteps').textContent = maxLen;
+            document.getElementById('maxSteps').textContent = maxLen - 1;
             document.getElementById('maxValue').textContent = maxVal.toLocaleString();
 
             const padding = 50;
@@ -358,7 +359,7 @@
                 ctx.fillRect(width - 120, padding + idx * 20, 12, 12);
                 ctx.fillStyle = '#888';
                 ctx.font = '11px system-ui';
-                ctx.fillText(`n=${data.n} (${data.seq.length})`, width - 100, padding + idx * 20 + 10);
+                ctx.fillText(`n=${data.n} (${data.seq.length - 1})`, width - 100, padding + idx * 20 + 10);
             });
         }
 

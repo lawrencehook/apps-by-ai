@@ -256,7 +256,10 @@
 
         // Upload handlers
         uploadZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
+        });
 
         uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -311,7 +314,8 @@
                 const x = (size - w) / 2;
                 const y = (size - h) / 2;
 
-                ctx.imageSmoothingEnabled = size > 64;
+                // Only skip smoothing when enlarging a tiny source; downscaling without it is nearest-neighbour
+                ctx.imageSmoothingEnabled = scale < 1 || size > 64;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, x, y, w, h);
 
@@ -386,111 +390,8 @@
             generateIco([16, 32, 48]);
         });
 
-        function generateIco(sizes) {
-            const images = sizes.map(size => {
-                const canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-
-                const scale = Math.min(size / originalImage.width, size / originalImage.height);
-                const w = originalImage.width * scale;
-                const h = originalImage.height * scale;
-                const x = (size - w) / 2;
-                const y = (size - h) / 2;
-
-                ctx.imageSmoothingEnabled = size > 32;
-                ctx.drawImage(originalImage, x, y, w, h);
-
-                return {
-                    size,
-                    canvas,
-                    data: ctx.getImageData(0, 0, size, size)
-                };
-            });
-
-            // Build ICO file
-            const numImages = images.length;
-            let fileSize = 6 + (numImages * 16); // Header + directory entries
-
-            const imageDataArrays = images.map(img => {
-                // Create BMP data (no file header, just DIB)
-                const size = img.size;
-                const rowSize = size * 4;
-                const pixelDataSize = rowSize * size;
-                const bmpSize = 40 + pixelDataSize + (size * size / 8); // DIB header + pixels + mask
-
-                const bmp = new ArrayBuffer(40 + pixelDataSize);
-                const view = new DataView(bmp);
-
-                // BITMAPINFOHEADER
-                view.setUint32(0, 40, true); // Header size
-                view.setInt32(4, size, true); // Width
-                view.setInt32(8, size * 2, true); // Height (doubled for XOR + AND mask)
-                view.setUint16(12, 1, true); // Planes
-                view.setUint16(14, 32, true); // Bits per pixel
-                view.setUint32(16, 0, true); // Compression (none)
-                view.setUint32(20, pixelDataSize, true); // Image size
-                view.setUint32(24, 0, true); // X pixels per meter
-                view.setUint32(28, 0, true); // Y pixels per meter
-                view.setUint32(32, 0, true); // Colors used
-                view.setUint32(36, 0, true); // Important colors
-
-                // Pixel data (BGRA, bottom-up)
-                const pixels = new Uint8Array(bmp, 40);
-                const imgData = img.data.data;
-                for (let y = 0; y < size; y++) {
-                    for (let x = 0; x < size; x++) {
-                        const srcIdx = ((size - 1 - y) * size + x) * 4;
-                        const dstIdx = (y * size + x) * 4;
-                        pixels[dstIdx] = imgData[srcIdx + 2]; // B
-                        pixels[dstIdx + 1] = imgData[srcIdx + 1]; // G
-                        pixels[dstIdx + 2] = imgData[srcIdx]; // R
-                        pixels[dstIdx + 3] = imgData[srcIdx + 3]; // A
-                    }
-                }
-
-                return new Uint8Array(bmp);
-            });
-
-            // Calculate offsets
-            let offset = 6 + (numImages * 16);
-            const offsets = imageDataArrays.map(data => {
-                const o = offset;
-                offset += data.length;
-                return o;
-            });
-
-            // Create final ICO buffer
-            const ico = new ArrayBuffer(offset);
-            const icoView = new DataView(ico);
-            const icoBytes = new Uint8Array(ico);
-
-            // ICO Header
-            icoView.setUint16(0, 0, true); // Reserved
-            icoView.setUint16(2, 1, true); // Type (1 = ICO)
-            icoView.setUint16(4, numImages, true); // Number of images
-
-            // Directory entries
-            images.forEach((img, i) => {
-                const entryOffset = 6 + (i * 16);
-                icoView.setUint8(entryOffset, img.size < 256 ? img.size : 0); // Width
-                icoView.setUint8(entryOffset + 1, img.size < 256 ? img.size : 0); // Height
-                icoView.setUint8(entryOffset + 2, 0); // Color palette
-                icoView.setUint8(entryOffset + 3, 0); // Reserved
-                icoView.setUint16(entryOffset + 4, 1, true); // Color planes
-                icoView.setUint16(entryOffset + 6, 32, true); // Bits per pixel
-                icoView.setUint32(entryOffset + 8, imageDataArrays[i].length, true); // Size
-                icoView.setUint32(entryOffset + 12, offsets[i], true); // Offset
-            });
-
-            // Image data
-            imageDataArrays.forEach((data, i) => {
-                icoBytes.set(data, offsets[i]);
-            });
-
-            // Download
-            const blob = new Blob([ico], { type: 'image/x-icon' });
+        async function generateIco(sizes) {
+            const blob = await generateIcoBlob(sizes);
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -559,7 +460,8 @@
                     const x = (size - w) / 2;
                     const y = (size - h) / 2;
 
-                    ctx.imageSmoothingEnabled = size > 32;
+                    ctx.imageSmoothingEnabled = scale < 1 || size > 32;
+                    ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(originalImage, x, y, w, h);
 
                     return {
@@ -572,7 +474,10 @@
                 const imageDataArrays = images.map(img => {
                     const size = img.size;
                     const pixelDataSize = size * size * 4;
-                    const bmp = new ArrayBuffer(40 + pixelDataSize);
+                    // The doubled height below promises a 1-bit AND mask after the pixels (rows padded to 32 bits).
+                    // Left as zeros: 32-bit icons take transparency from the alpha channel.
+                    const maskSize = Math.ceil(size / 32) * 4 * size;
+                    const bmp = new ArrayBuffer(40 + pixelDataSize + maskSize);
                     const view = new DataView(bmp);
 
                     view.setUint32(0, 40, true);
@@ -583,7 +488,7 @@
                     view.setUint32(16, 0, true);
                     view.setUint32(20, pixelDataSize, true);
 
-                    const pixels = new Uint8Array(bmp, 40);
+                    const pixels = new Uint8Array(bmp, 40, pixelDataSize);
                     const imgData = img.data.data;
                     for (let y = 0; y < size; y++) {
                         for (let x = 0; x < size; x++) {

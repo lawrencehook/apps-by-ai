@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloth Physics - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
-        canvas { display: block; cursor: grab; }
+        canvas { display: block; cursor: grab; touch-action: none; }
         canvas:active { cursor: grabbing; }
         .controls {
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
@@ -39,11 +40,11 @@
         <h1>Cloth Physics</h1>
         <p>Drag the cloth with your mouse. Click to tear it. Watch realistic fabric physics.</p>
         <div class="control-group">
-            <label>Gravity: <span id="gravLabel">0.5</span></label>
+            <label for="gravity">Gravity: <span id="gravLabel">0.5</span></label>
             <input type="range" id="gravity" min="0" max="2" step="0.1" value="0.5">
         </div>
         <div class="control-group">
-            <label>Wind: <span id="windLabel">0</span></label>
+            <label for="wind">Wind: <span id="windLabel">0</span></label>
             <input type="range" id="wind" min="-2" max="2" step="0.1" value="0">
         </div>
         <button id="reset">Reset</button>
@@ -121,6 +122,7 @@
                     return;
                 }
 
+                if (dist === 0) return;
                 const diff = (this.length - dist) / dist;
                 const offsetX = dx * diff * 0.5;
                 const offsetY = dy * diff * 0.5;
@@ -149,6 +151,8 @@
             spacing = Math.min(width, height) / (COLS + 5);
             const startX = (width - (COLS - 1) * spacing) / 2;
             const startY = 50;
+            // Tear threshold has to grow with the mesh, or big windows tear at rest
+            tearDistance = Math.max(50, spacing * 2.5);
 
             // Create points
             for (let y = 0; y < ROWS; y++) {
@@ -236,14 +240,14 @@
             return closest;
         }
 
-        canvas.addEventListener('mousedown', e => {
+        canvas.addEventListener('pointerdown', e => {
             mouse.down = true;
             mouse.x = e.clientX;
             mouse.y = e.clientY;
             selectedPoint = findClosestPoint(mouse.x, mouse.y);
         });
 
-        canvas.addEventListener('mousemove', e => {
+        canvas.addEventListener('pointermove', e => {
             mouse.px = mouse.x;
             mouse.py = mouse.y;
             mouse.x = e.clientX;
@@ -262,51 +266,13 @@
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
+        function endDrag() {
             mouse.down = false;
             selectedPoint = null;
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            mouse.down = false;
-            selectedPoint = null;
-        });
-
-        // Touch support
-        canvas.addEventListener('touchstart', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            mouse.down = true;
-            mouse.x = touch.clientX;
-            mouse.y = touch.clientY;
-            selectedPoint = findClosestPoint(mouse.x, mouse.y);
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            mouse.px = mouse.x;
-            mouse.py = mouse.y;
-            mouse.x = touch.clientX;
-            mouse.y = touch.clientY;
-
-            if (mouse.down && !selectedPoint) {
-                for (const stick of sticks) {
-                    if (!stick.active) continue;
-                    const mx = (stick.p1.x + stick.p2.x) / 2;
-                    const my = (stick.p1.y + stick.p2.y) / 2;
-                    if (Math.hypot(mouse.x - mx, mouse.y - my) < 15) {
-                        stick.active = false;
-                    }
-                }
-            }
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', e => {
-            e.preventDefault();
-            mouse.down = false;
-            selectedPoint = null;
-        });
+        }
+        canvas.addEventListener('pointerup', endDrag);
+        canvas.addEventListener('pointerleave', endDrag);
+        canvas.addEventListener('pointercancel', endDrag);
 
         document.getElementById('gravity').addEventListener('input', e => {
             gravity = parseFloat(e.target.value);

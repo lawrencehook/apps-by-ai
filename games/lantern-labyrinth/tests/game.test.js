@@ -7,7 +7,7 @@ const { JSDOM, VirtualConsole } = require('jsdom');
 const THREE = require('../../../libs/three-0.128.0/three.min.js');
 const root = path.resolve(__dirname, '..');
 
-function openGame({ webgl = true, town = false, saved = null } = {}) {
+function openGame({ webgl = true, town = false, saved = null, skip = null } = {}) {
     const errors = [], vc = new VirtualConsole();
     vc.on('jsdomError', e => errors.push(e));
     if (webgl) vc.on('error', (...args) => errors.push(args));
@@ -16,7 +16,7 @@ function openGame({ webgl = true, town = false, saved = null } = {}) {
     const window = dom.window;
     window.HTMLCanvasElement.prototype.getContext = () => ({ fillRect() {}, beginPath() {}, arc() {}, fill() {}, save() {}, restore() {}, rect() {}, clip() {}, moveTo() {}, lineTo() {}, closePath() {}, stroke() {}, translate() {}, rotate() {}, fillText() {} });
     if (saved) window.localStorage.setItem('dungeon-progress-v1', JSON.stringify(saved));
-    let frame = null;
+    let frame = null, renders = 0;
     window.requestAnimationFrame = cb => { frame = cb; return 1; };
     window.cancelAnimationFrame = () => { frame = null; };
     window.HTMLElement.prototype.setPointerCapture = () => {};
@@ -27,13 +27,13 @@ function openGame({ webgl = true, town = false, saved = null } = {}) {
     window.document.exitPointerLock = () => { locked = null; window.document.dispatchEvent(new window.Event('pointerlockchange')); };
     window.THREE = { ...THREE, WebGLRenderer: class {
         constructor() { if (!webgl) throw new Error('WebGL disabled'); }
-        setPixelRatio() {} setSize() {} render(scene, camera) { scene.updateMatrixWorld(); camera.updateMatrixWorld(); }
+        setPixelRatio() {} setSize() {} render(scene, camera) { renders++; scene.updateMatrixWorld(); camera.updateMatrixWorld(); }
     } };
-    window.eval(fs.readFileSync(path.join(root, 'maze.js'), 'utf8'));
-    window.eval(fs.readFileSync(path.join(root, 'town.js'), 'utf8'));
-    window.eval(fs.readFileSync(path.join(root, 'combat.js'), 'utf8'));
-    window.eval(fs.readFileSync(path.join(root, 'progress.js'), 'utf8'));
-    const source = fs.readFileSync(path.join(root, 'game.js'), 'utf8').replace('let depth = 0,', `let depth = ${town ? 0 : 1},`);
+    for (const file of ['maze.js', 'town.js', 'combat.js', 'enemy-audio.js', 'progress.js']) if (file !== skip) window.eval(fs.readFileSync(path.join(root, file), 'utf8'));
+    const original = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+    assert.equal(original.split('let depth = 0,').length, 2, 'depth hook anchor must appear exactly once in game.js');
+    assert.ok(original.endsWith('\n})();\n') && original.split('\n})();').length === 2, 'test hook anchor must close game.js');
+    const source = original.replace('let depth = 0,', `let depth = ${town ? 0 : 1},`);
     // Test-only access; production exposes no debug, route, or teleport controls.
     window.eval(source.replace('\n})();', `
     window.gameTest = { start, move, pause, newMaze, travel, fastTravel, spray, jump, shoot, animateBow, openShop, die, syncCombat, clearInput, createMaze, updateCamera, position,
@@ -41,7 +41,7 @@ function openGame({ webgl = true, town = false, saved = null } = {}) {
         get state() { return { groundHeight, townWorld, depth, phase, maze, keys, camera, walls, marks, avatar, world, wallTextures, jumpHeight, verticalSpeed, combat, bow, weaponRig, leftArm, rightArm, bowString }; } };
 })();`));
     window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
-    return { dom, window, api: window.gameTest, errors, tick: now => frame?.(now) };
+    return { dom, window, api: window.gameTest, errors, tick: now => frame?.(now), get renders() { return renders; } };
 }
 function press(game, code, type = 'keydown') {
     game.window.document.getElementById('world').dispatchEvent(new game.window.KeyboardEvent(type, { code, key: code, bubbles: true, cancelable: true }));
@@ -67,7 +67,7 @@ function faceWall(game, reach = true) {
     for (const [x, z] of window.MazeWorld.paths(api.state.maze.grid, api.state.maze.start).queue) {
         for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
             const grid = api.state.maze.grid;
-            if (grid.blocked?.has(`${x},${z}`) || api.state.maze.fences?.some(c => c[0] === x + dx && c[1] === z + dz)) continue;
+            if (grid.blocked?.has(`${x},${z}`)) continue;
             if (reach ? grid[z + dz]?.[x + dx] === 1 : grid[z + dz]?.[x + dx] === 0 && grid[z + dz * 2]?.[x + dx * 2] === 0) {
                 api.position.x = x * 3.2; api.position.z = z * 3.2; api.setHeading(Math.atan2(-dx, -dz));
                 return [x, z, dx, dz];
@@ -186,8 +186,13 @@ test('touch cancellation and blur clear movement; WebGL failure is visible', () 
         game.window.dispatchEvent(new game.window.Event('blur')); assert.equal(game.api.state.phase, 'paused');
     } finally { game.dom.window.close(); }
     const failed = openGame({ webgl: false });
-    try { assert.equal(failed.api.state.phase, 'error'); assert.equal(failed.window.document.getElementById('error').classList.contains('hidden'), false); }
+    try { assert.equal(failed.api.state.phase, 'error'); assert.equal(failed.window.document.getElementById('error').classList.contains('hidden'), false); assert.match(failed.window.document.getElementById('errorText').textContent, /WebGL/); }
     finally { failed.dom.window.close(); }
+    for (const skip of ['town.js', 'progress.js', 'enemy-audio.js']) {
+        const missing = openGame({ skip });
+        try { assert.equal(missing.api.state.phase, 'error'); assert.match(missing.window.document.getElementById('errorText').textContent, /Game files could not load/); }
+        finally { missing.dom.window.close(); }
+    }
 });
 
 
@@ -303,7 +308,10 @@ test('town is safe; stairs preserve progression and cleared floors; defeat recov
         api.travel(); api.fastTravel(1); assert.equal(api.state.combat, floor); assert.equal(floor.enemies.length, 0);
         api.position.x = api.state.maze.exit[0] * 3.2; api.position.z = api.state.maze.exit[1] * 3.2;
         api.travel(); assert.equal(api.state.depth, 2); assert.equal(api.state.combat.bowLevel, 1);
-        api.state.combat.health = 0; api.die(); api.start();
+        api.state.combat.health = 0; const before = api.state.combat.coins; api.die();
+        assert.equal(api.state.combat.coins, Math.floor(before * 0.75));
+        assert.equal(JSON.parse(window.localStorage.getItem('dungeon-progress-v1')).coins, 60, 'the death penalty is saved before the menu is dismissed');
+        api.start();
         assert.equal(api.state.depth, 0); assert.equal(api.state.combat.coins, 60); assert.equal(api.state.combat.bowLevel, 1);
     } finally { game.dom.window.close(); }
 });
@@ -404,5 +412,24 @@ test('town movement climbs stairs, supports the upper floor, and returns downsta
         press(game, 'KeyW', 'keyup');
         assert.ok(api.state.groundHeight < 0.05);
         assert.deepEqual(game.errors, []);
+    } finally { game.dom.window.close(); }
+});
+
+test('paused frames render at a reduced rate and a failing save is not retried every frame', () => {
+    const game = openGame(), { api, window } = game;
+    try {
+        api.start(); let now = window.performance.now() + 1000, before = game.renders;
+        for (let i = 0; i < 10; i++) game.tick(now += 16);
+        assert.equal(game.renders - before, 10);
+        api.pause(); assert.equal(api.state.phase, 'paused'); before = game.renders;
+        for (let i = 0; i < 30; i++) game.tick(now += 16);
+        assert.ok(game.renders - before <= 3, `rendered ${game.renders - before} of 30 paused frames`);
+        api.pause(); let writes = 0;
+        window.Storage.prototype.setItem = () => { writes++; throw new Error('quota'); };
+        api.state.combat.coins += 5;
+        for (let i = 0; i < 30; i++) game.tick(now += 16);
+        assert.equal(writes, 1);
+        assert.match(window.document.getElementById('saveStatus').textContent, /unavailable/);
+        api.state.combat.coins += 5; game.tick(now += 16); assert.equal(writes, 2, 'a new change is attempted immediately');
     } finally { game.dom.window.close(); }
 });

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timezone Converter - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -143,21 +144,21 @@
         <div class="card">
             <div class="input-row">
                 <div class="form-group">
-                    <label>Date</label>
+                    <label for="inputDate">Date</label>
                     <input type="date" id="inputDate">
                 </div>
                 <div class="form-group">
-                    <label>Time</label>
+                    <label for="inputTime">Time</label>
                     <input type="time" id="inputTime">
                 </div>
                 <button class="now-btn" id="nowBtn">Now</button>
             </div>
             <div class="form-group">
-                <label>From Timezone</label>
+                <label for="fromTz">From Timezone</label>
                 <select id="fromTz"></select>
             </div>
             <div class="form-group">
-                <label>To Timezone</label>
+                <label for="toTz">To Timezone</label>
                 <select id="toTz"></select>
             </div>
         </div>
@@ -215,8 +216,10 @@
             const params = new URLSearchParams(window.location.search);
             if (params.has('date')) document.getElementById('inputDate').value = params.get('date');
             if (params.has('time')) document.getElementById('inputTime').value = params.get('time');
-            if (params.has('from')) fromSelect.value = params.get('from');
-            if (params.has('to')) toSelect.value = params.get('to');
+            // only zones that are in the list; anything else would leave the select empty
+            const known = id => Array.from(fromSelect.options).some(o => o.value === id);
+            if (known(params.get('from'))) fromSelect.value = params.get('from');
+            if (known(params.get('to'))) toSelect.value = params.get('to');
         }
 
         function updateURL() {
@@ -229,15 +232,24 @@
         }
 
         // Set defaults
-        const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        fromSelect.value = localTz || 'America/New_York';
+        let localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (!localTz) {
+            localTz = 'America/New_York';
+        } else if (!timezones.some(tz => tz.id === localTz)) {
+            // the visitor's zone is not one of the listed ones: add it so the default is valid
+            const label = `${localTz.split('/').pop().replace(/_/g, ' ')} - Local Time`;
+            fromSelect.add(new Option(label, localTz));
+            toSelect.add(new Option(label, localTz));
+        }
+        fromSelect.value = localTz;
         toSelect.value = 'UTC';
 
         // Set current date/time
         function setNow() {
-            const now = new Date();
-            document.getElementById('inputDate').value = now.toISOString().split('T')[0];
-            document.getElementById('inputTime').value = now.toTimeString().slice(0, 5);
+            // the inputs are wall-clock time in the From zone, so "now" is read there too
+            const wall = new Date(Date.now() + getTimezoneOffsetMs(new Date(), fromSelect.value)).toISOString();
+            document.getElementById('inputDate').value = wall.slice(0, 10);
+            document.getElementById('inputTime').value = wall.slice(11, 16);
             convert();
             updateURL();
         }
@@ -251,7 +263,7 @@
         toSelect.addEventListener('change', () => { convert(); updateURL(); });
 
         function getTimezoneOffsetMs(date, tz) {
-            // Get the UTC components of the date as displayed in the given timezone
+            // Wall-clock time in tz read as if it were UTC, minus the real instant
             const parts = new Intl.DateTimeFormat('en-US', {
                 timeZone: tz,
                 year: 'numeric', month: '2-digit', day: '2-digit',
@@ -266,8 +278,20 @@
 
             let hour = get('hour');
             if (hour === 24) hour = 0; // midnight edge case
-            const tzDate = new Date(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
-            return tzDate.getTime() - date.getTime();
+            const wallMs = Date.UTC(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
+            return wallMs - Math.floor(date.getTime() / 1000) * 1000;
+        }
+
+        // UTC instant of a wall-clock time (given as if it were UTC) in tz
+        function wallTimeToInstant(wallMs, tz) {
+            const day = 86400000;
+            const before = getTimezoneOffsetMs(new Date(wallMs - day), tz);
+            const after = getTimezoneOffsetMs(new Date(wallMs + day), tz);
+            if (before === after) return wallMs - before;
+            // a DST change is nearby: keep the offsets that actually map back to this wall time
+            const valid = [wallMs - before, wallMs - after].filter(t => getTimezoneOffsetMs(new Date(t), tz) === wallMs - t);
+            // repeated hour: first occurrence; skipped hour: carry on with the old offset
+            return valid.length ? Math.min(...valid) : wallMs - before;
         }
 
         function convert() {
@@ -279,17 +303,9 @@
             if (!dateStr || !timeStr) return;
 
             try {
-                // Parse input as a local Date
-                const dateTimeStr = `${dateStr}T${timeStr}:00`;
-                const naiveDate = new Date(dateTimeStr);
-
-                // Calculate the offset of the "from" timezone at this approximate time
-                const fromOffsetMs = getTimezoneOffsetMs(naiveDate, fromTz);
-                const localOffsetMs = naiveDate.getTimezoneOffset() * -60000;
-
-                // Adjust: we want the UTC instant that corresponds to the entered time in fromTz
-                // naiveDate is interpreted as local time; we need to shift it
-                const utcInstant = new Date(naiveDate.getTime() - fromOffsetMs);
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                const utcInstant = new Date(wallTimeToInstant(Date.UTC(year, month - 1, day, hours, minutes), fromTz));
 
                 const timeFormatter = new Intl.DateTimeFormat('en-US', {
                     timeZone: toTz,
@@ -350,7 +366,9 @@
             }).join('');
         }
 
-        setNow();
+        // a shared link keeps its date and time
+        if (document.getElementById('inputDate').value && document.getElementById('inputTime').value) convert();
+        else setNow();
         updateWorldClocks();
         setInterval(updateWorldClocks, 60000);
     </script>

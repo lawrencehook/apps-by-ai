@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Font Pairing Preview - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
@@ -21,6 +22,7 @@
         }
         h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
         .subtitle { color: #666; margin-bottom: 32px; }
+        .font-notice { color: #e0a84a; font-size: 0.85rem; margin: -20px 0 24px; }
         .back-link {
             position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
             font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
@@ -266,6 +268,7 @@
     <div class="container">
         <h1>Font Pairing Preview</h1>
         <p class="subtitle">Test and preview font combinations with real-time typography controls.</p>
+        <p class="font-notice" id="fontNotice" hidden>Google Fonts could not be loaded (are you offline?). The previews are showing fallback system fonts.</p>
 
         <div class="layout">
             <div class="controls-panel">
@@ -406,6 +409,7 @@
             const link = document.createElement('link');
             link.href = `https://fonts.googleapis.com/css2?${fontFamilies}&display=swap`;
             link.rel = 'stylesheet';
+            link.onerror = () => { document.getElementById('fontNotice').hidden = false; };
             document.head.appendChild(link);
         }
 
@@ -518,8 +522,12 @@
         }
 
         function updateCSSOutput(headingFont, bodyFont, headingSize, bodySize, headingWeight, lineHeight, letterSpacing) {
+            // Google drops a family when asked for a weight it lacks, so request the nearest one it has
+            const available = (fonts.find(f => f.name === headingFont)?.weights || '400').split(';').map(Number);
+            const importWeight = available.reduce((best, w) =>
+                Math.abs(w - headingWeight) < Math.abs(best - headingWeight) ? w : best);
             const css = `/* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@${headingWeight}&family=${bodyFont.replace(/ /g, '+')}:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=${headingFont.replace(/ /g, '+')}:wght@${importWeight}&family=${bodyFont.replace(/ /g, '+')}:wght@400&display=swap');
 
 /* Heading */
 h1, h2, h3 {

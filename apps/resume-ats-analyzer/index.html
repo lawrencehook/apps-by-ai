@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume ATS Analyzer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -346,7 +347,7 @@
 
         <div class="input-section">
             <div class="input-card">
-                <label class="input-label">
+                <label class="input-label" for="resumeText">
                     <span>📄</span> Your Resume
                 </label>
                 <textarea id="resumeText" placeholder="Paste your resume text here...
@@ -363,7 +364,7 @@ Experience:
 Skills: JavaScript, Python, AWS, Docker, Git"></textarea>
             </div>
             <div class="input-card">
-                <label class="input-label">
+                <label class="input-label" for="jobText">
                     <span>💼</span> Job Description
                 </label>
                 <textarea id="jobText" placeholder="Paste the job description here...
@@ -532,6 +533,38 @@ We're looking for a Senior Software Engineer with:
             return keywordCounts;
         }
 
+        // Partial match: one word is the other plus a short ending (test/testing, api/apis).
+        // A plain substring test matched "ui" against "requires".
+        function isInflection(a, b) {
+            const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+            return short.length >= 3 && long.length - short.length <= 3 && long.startsWith(short);
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // One pass over the raw text, so inserted markup is never re-scanned.
+        // \b can't be used: it fails after the non-word characters in "c++" and "c#".
+        function highlightKeywords(text, keywords) {
+            if (keywords.length === 0) return escapeHtml(text);
+            const alts = keywords.slice().sort((a, b) => b.length - a.length)
+                .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+'));
+            const regex = new RegExp(`(^|[^\\w])(${alts.join('|')})(?![\\w])`, 'gi');
+            let html = '';
+            let last = 0;
+            let m;
+            while ((m = regex.exec(text)) !== null) {
+                const start = m.index + m[1].length;
+                html += escapeHtml(text.slice(last, start));
+                html += `<span class="matched-word">${escapeHtml(m[2])}</span>`;
+                last = regex.lastIndex;
+            }
+            return html + escapeHtml(text.slice(last));
+        }
+
+        let scoreInterval = null;
+
         function analyzeMatch() {
             const resumeText = document.getElementById('resumeText').value;
             const jobText = document.getElementById('jobText').value;
@@ -565,7 +598,7 @@ We're looking for a Senior Software Engineer with:
                     // Check for partial matches
                     let found = false;
                     resumeKeywords.forEach((_, resumeWord) => {
-                        if (resumeWord.includes(keyword) || keyword.includes(resumeWord)) {
+                        if (isInflection(resumeWord, keyword)) {
                             found = true;
                         }
                     });
@@ -623,7 +656,10 @@ We're looking for a Senior Software Engineer with:
 
             // Animate
             let currentScore = 0;
-            const animate = setInterval(() => {
+            clearInterval(scoreInterval);
+            scoreValue.textContent = '0%';
+            progressRing.style.strokeDashoffset = circumference;
+            const animate = scoreInterval = setInterval(() => {
                 if (currentScore >= score) {
                     clearInterval(animate);
                     return;
@@ -661,17 +697,9 @@ We're looking for a Senior Software Engineer with:
                 </div>
             `).join('');
 
-            // Highlight resume - sanitize HTML first to prevent XSS
-            let highlightedText = resumeText
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-            matched.forEach(m => {
-                const regex = new RegExp(`\\b(${m.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'gi');
-                highlightedText = highlightedText.replace(regex, '<span class="matched-word">$1</span>');
-            });
-            document.getElementById('highlightedResume').innerHTML = highlightedText;
+            // Highlight resume
+            document.getElementById('highlightedResume').innerHTML =
+                highlightKeywords(resumeText, matched.map(m => m.keyword));
 
             // Scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });

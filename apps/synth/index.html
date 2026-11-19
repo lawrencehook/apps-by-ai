@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sound Synthesizer - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 260px; border: 1px solid rgba(255,255,255,0.1);
+            max-width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -33,6 +35,7 @@
             width: 30px; height: 80px; background: #fff; border-radius: 0 0 4px 4px;
             cursor: pointer; display: flex; align-items: flex-end; justify-content: center;
             padding-bottom: 5px; font-size: 10px; color: #333;
+            touch-action: none; user-select: none; -webkit-user-select: none;
         }
         .key:hover { background: #ddd; }
         .key:active, .key.active { background: #4ecdc4; }
@@ -57,7 +60,7 @@
         <h1>Sound Synthesizer</h1>
         <p>Web Audio API synthesizer with waveform visualization.</p>
         <div class="control-group">
-            <label>Waveform</label>
+            <label for="waveform">Waveform</label>
             <select id="waveform">
                 <option value="sine">Sine</option>
                 <option value="square">Square</option>
@@ -66,23 +69,23 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Attack: <span id="attackLabel">0.1</span>s</label>
+            <label for="attack">Attack: <span id="attackLabel">0.1</span>s</label>
             <input type="range" id="attack" min="0.01" max="1" step="0.01" value="0.1">
         </div>
         <div class="control-group">
-            <label>Decay: <span id="decayLabel">0.2</span>s</label>
+            <label for="decay">Decay: <span id="decayLabel">0.2</span>s</label>
             <input type="range" id="decay" min="0.01" max="1" step="0.01" value="0.2">
         </div>
         <div class="control-group">
-            <label>Sustain: <span id="sustainLabel">0.5</span></label>
+            <label for="sustain">Sustain: <span id="sustainLabel">0.5</span></label>
             <input type="range" id="sustain" min="0" max="1" step="0.05" value="0.5">
         </div>
         <div class="control-group">
-            <label>Release: <span id="releaseLabel">0.3</span>s</label>
+            <label for="release">Release: <span id="releaseLabel">0.3</span>s</label>
             <input type="range" id="release" min="0.01" max="2" step="0.01" value="0.3">
         </div>
         <div class="control-group">
-            <label>Filter Cutoff: <span id="filterLabel">2000</span>Hz</label>
+            <label for="filter">Filter Cutoff: <span id="filterLabel">2000</span>Hz</label>
             <input type="range" id="filter" min="100" max="10000" step="100" value="2000">
         </div>
         <div class="keyboard" id="keyboard"></div>
@@ -155,6 +158,7 @@
 
         function playNote(freq, noteKey) {
             initAudio();
+            if (!audioCtx) return;
 
             if (activeOscillators.has(noteKey)) return;
 
@@ -211,11 +215,10 @@
                 key.dataset.note = note.key;
                 key.textContent = note.key.toUpperCase();
 
-                key.addEventListener('mousedown', (e) => { e.preventDefault(); playNote(note.freq, note.key); });
-                key.addEventListener('mouseup', () => stopNote(note.key));
-                key.addEventListener('mouseleave', () => stopNote(note.key));
-                key.addEventListener('touchstart', (e) => { e.preventDefault(); playNote(note.freq, note.key); }, { passive: false });
-                key.addEventListener('touchend', (e) => { e.preventDefault(); stopNote(note.key); }, { passive: false });
+                key.addEventListener('pointerdown', (e) => { e.preventDefault(); playNote(note.freq, note.key); });
+                key.addEventListener('pointerup', () => stopNote(note.key));
+                key.addEventListener('pointerleave', () => stopNote(note.key));
+                key.addEventListener('pointercancel', () => stopNote(note.key));
 
                 keyboard.appendChild(key);
             }
@@ -282,7 +285,10 @@
 
         // Keyboard input
         document.addEventListener('keydown', e => {
-            if (e.repeat) return;
+            if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+            // Sliders don't take letters, so the keys still play while one is focused
+            const tag = e.target.tagName;
+            if (tag === 'SELECT' || tag === 'TEXTAREA' || (tag === 'INPUT' && e.target.type !== 'range')) return;
             const note = notes.find(n => n.key === e.key.toLowerCase());
             if (note) {
                 e.preventDefault();
@@ -295,6 +301,11 @@
             if (note) {
                 stopNote(note.key);
             }
+        });
+
+        // keyup never arrives if focus leaves while a key is held
+        window.addEventListener('blur', () => {
+            for (const noteKey of [...activeOscillators.keys()]) stopNote(noteKey);
         });
 
         // Controls

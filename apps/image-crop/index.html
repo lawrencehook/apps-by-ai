@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Crop - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -120,6 +121,7 @@
             .editor-layout { flex-direction: column; }
             .preview-sidebar { width: 100%; }
         }
+        .crop-overlay, .crop-box, .crop-handle { touch-action: none; }
         .crop-overlay {
             position: absolute;
             top: 0;
@@ -188,7 +190,7 @@
         <div class="hidden" id="editorPanel">
             <div class="toolbar">
                 <div class="toolbar-group">
-                    <label>Aspect Ratio:</label>
+                    <label for="aspectRatio">Aspect Ratio:</label>
                     <select id="aspectRatio">
                         <option value="free">Free</option>
                         <option value="1:1">1:1 (Square)</option>
@@ -274,18 +276,53 @@
         });
         fileInput.addEventListener('change', e => {
             if (e.target.files[0]) handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
         });
 
+        function showStatus(message) {
+            status.textContent = message;
+            status.className = 'status show';
+        }
+
+        // Canvas only encodes PNG, JPEG and WebP; other inputs (GIF, BMP, SVG) are saved as PNG
+        function outputType(type) {
+            return ['image/png', 'image/jpeg', 'image/webp'].includes(type) ? type : 'image/png';
+        }
+
+        function downloadCanvas(canvas, type, quality, baseName, done) {
+            canvas.toBlob(blob => {
+                if (!blob) { done(null); return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // blob.type is what the browser really encoded (PNG if it lacks the requested encoder)
+                a.download = `${baseName}.${(blob.type || 'image/png').split('/')[1]}`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                done(blob);
+            }, type, quality);
+        }
+
         function handleFile(file) {
-            if (!file.type.startsWith('image/')) return;
+            if (!file.type.startsWith('image/')) {
+                showStatus('Please select a valid image file.');
+                return;
+            }
 
             currentImage = { file, type: file.type };
             const reader = new FileReader();
+            reader.onerror = () => showStatus('Error reading file. Please try again.');
             reader.onload = e => {
                 currentImage.dataUrl = e.target.result;
 
                 loadedImg = new Image();
+                loadedImg.onerror = () => {
+                    showStatus('Could not load image. The file may be corrupt.');
+                    currentImage = null;
+                    loadedImg = null;
+                };
                 loadedImg.onload = () => {
+                    status.classList.remove('show');
                     sourceImage.src = currentImage.dataUrl;
 
                     // Wait for the displayed image to render
@@ -371,8 +408,31 @@
             };
         }
 
-        // Handle mousedown on crop box (for dragging/resizing)
-        cropBoxEl.addEventListener('mousedown', e => {
+        // Resize from a corner: the opposite corner stays put, and the box is fitted
+        // inside the image as a whole so a locked aspect ratio survives the clamp.
+        function resizeCrop(start, handle, dx, dy, maxW, maxH, ratio) {
+            const west = handle.includes('w');
+            const north = handle.includes('n');
+            const right = start.x + start.width;
+            const bottom = start.y + start.height;
+            const availW = west ? right : maxW - start.x;
+            const availH = north ? bottom : maxH - start.y;
+
+            let w = start.width + (west ? -dx : dx);
+            let h = start.height + (north ? -dy : dy);
+            if (ratio) {
+                w = Math.max(w, 20, 20 * ratio);
+                w = Math.min(w, availW, availH * ratio);
+                h = w / ratio;
+            } else {
+                w = Math.min(Math.max(w, 20), availW);
+                h = Math.min(Math.max(h, 20), availH);
+            }
+            return { x: west ? right - w : start.x, y: north ? bottom - h : start.y, width: w, height: h };
+        }
+
+        // Handle pointerdown on crop box (for dragging/resizing)
+        cropBoxEl.addEventListener('pointerdown', e => {
             e.stopPropagation();
             const pos = getMousePos(e);
             dragStart = pos;
@@ -388,7 +448,7 @@
         });
 
         // Handle mousedown on overlay (for creating new selection)
-        cropOverlay.addEventListener('mousedown', e => {
+        cropOverlay.addEventListener('pointerdown', e => {
             if (e.target === cropOverlay) {
                 const pos = getMousePos(e);
                 dragStart = pos;
@@ -400,7 +460,7 @@
             }
         });
 
-        document.addEventListener('mousemove', e => {
+        document.addEventListener('pointermove', e => {
             if (!isDragging && !isResizing && !isCreating) return;
 
             const pos = getMousePos(e);
@@ -418,76 +478,39 @@
                 let newW = pos.x - cropStart.x;
                 let newH = pos.y - cropStart.y;
 
+                // Room between the starting point and the image edge being dragged towards
+                const availW = newW < 0 ? cropStart.x : maxW - cropStart.x;
+                const availH = newH < 0 ? cropStart.y : maxH - cropStart.y;
+                let w = Math.min(Math.abs(newW), availW);
+                let h = Math.min(Math.abs(newH), availH);
+
                 // Handle aspect ratio for new selection
                 if (aspectSelect !== 'free') {
                     const [aw, ah] = aspectSelect.split(':').map(Number);
                     const targetRatio = aw / ah;
-                    if (Math.abs(newW) / targetRatio > Math.abs(newH)) {
-                        newH = Math.sign(newH || 1) * Math.abs(newW) / targetRatio;
-                    } else {
-                        newW = Math.sign(newW || 1) * Math.abs(newH) * targetRatio;
-                    }
+                    w = Math.min(Math.max(Math.abs(newW), Math.abs(newH) * targetRatio), availW, availH * targetRatio);
+                    h = w / targetRatio;
                 }
 
                 // Handle negative dimensions (dragging up/left)
-                if (newW < 0) {
-                    cropBox.x = Math.max(0, cropStart.x + newW);
-                    cropBox.width = Math.min(cropStart.x, -newW);
-                } else {
-                    cropBox.x = cropStart.x;
-                    cropBox.width = Math.min(maxW - cropStart.x, newW);
-                }
-
-                if (newH < 0) {
-                    cropBox.y = Math.max(0, cropStart.y + newH);
-                    cropBox.height = Math.min(cropStart.y, -newH);
-                } else {
-                    cropBox.y = cropStart.y;
-                    cropBox.height = Math.min(maxH - cropStart.y, newH);
-                }
+                cropBox.x = newW < 0 ? cropStart.x - w : cropStart.x;
+                cropBox.y = newH < 0 ? cropStart.y - h : cropStart.y;
+                cropBox.width = w;
+                cropBox.height = h;
             } else if (isResizing) {
-                let newX = cropStart.x;
-                let newY = cropStart.y;
-                let newW = cropStart.width;
-                let newH = cropStart.height;
-
-                const dx = pos.x - dragStart.x;
-                const dy = pos.y - dragStart.y;
-
-                if (activeHandle.includes('e')) newW = cropStart.width + dx;
-                if (activeHandle.includes('w')) { newX = cropStart.x + dx; newW = cropStart.width - dx; }
-                if (activeHandle.includes('s')) newH = cropStart.height + dy;
-                if (activeHandle.includes('n')) { newY = cropStart.y + dy; newH = cropStart.height - dy; }
-
-                // Apply aspect ratio constraint
+                let ratio = null;
                 if (aspectSelect !== 'free') {
                     const [aw, ah] = aspectSelect.split(':').map(Number);
-                    const targetRatio = aw / ah;
-
-                    if (activeHandle.includes('e') || activeHandle.includes('w')) {
-                        newH = newW / targetRatio;
-                    } else {
-                        newW = newH * targetRatio;
-                    }
+                    ratio = aw / ah;
                 }
-
-                // Ensure minimum size and bounds
-                newW = Math.max(20, newW);
-                newH = Math.max(20, newH);
-                newX = Math.max(0, newX);
-                newY = Math.max(0, newY);
-
-                if (newX + newW > maxW) newW = maxW - newX;
-                if (newY + newH > maxH) newH = maxH - newY;
-
-                cropBox = { x: newX, y: newY, width: newW, height: newH };
+                cropBox = resizeCrop(cropStart, activeHandle, pos.x - dragStart.x, pos.y - dragStart.y, maxW, maxH, ratio);
             }
 
             updateCropBox();
             updatePreview();
         });
 
-        document.addEventListener('mouseup', () => {
+        function endCropDrag() {
             // Ensure minimum size after creation
             if (isCreating && (cropBox.width < 20 || cropBox.height < 20)) {
                 const maxW = sourceImage.offsetWidth;
@@ -506,7 +529,9 @@
             isResizing = false;
             isCreating = false;
             activeHandle = null;
-        });
+        }
+        document.addEventListener('pointerup', endCropDrag);
+        document.addEventListener('pointercancel', endCropDrag);
 
         document.getElementById('aspectRatio').addEventListener('change', () => {
             const aspectSelect = document.getElementById('aspectRatio').value;
@@ -545,19 +570,12 @@
 
             ctx.drawImage(loadedImg, realX, realY, realW, realH, 0, 0, realW, realH);
 
-            const format = currentImage.type;
+            const format = outputType(currentImage.type);
             const quality = format === 'image/jpeg' ? 0.92 : undefined;
-            const dataUrl = canvas.toDataURL(format, quality);
-
-            const ext = format.split('/')[1];
             const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${baseName}_cropped.${ext}`;
-            a.click();
-
-            status.textContent = `Cropped to ${realW} × ${realH} pixels`;
-            status.className = 'status show';
+            downloadCanvas(canvas, format, quality, `${baseName}_cropped`, blob => {
+                showStatus(blob ? `Cropped to ${realW} × ${realH} pixels` : 'Could not encode the image.');
+            });
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {
@@ -596,72 +614,6 @@
 
             updateCropBox();
             updatePreview();
-        });
-
-        // Touch support for crop interactions
-        function getTouchPos(e) {
-            const touch = e.touches[0];
-            const rect = sourceImage.getBoundingClientRect();
-            return {
-                x: touch.clientX - rect.left,
-                y: touch.clientY - rect.top
-            };
-        }
-
-        cropBoxEl.addEventListener('touchstart', e => {
-            e.stopPropagation();
-            e.preventDefault();
-            const pos = getTouchPos(e);
-            dragStart = pos;
-            cropStart = { ...cropBox };
-
-            if (e.target.classList.contains('crop-handle')) {
-                isResizing = true;
-                activeHandle = e.target.dataset.handle;
-            } else {
-                isDragging = true;
-            }
-        }, { passive: false });
-
-        cropOverlay.addEventListener('touchstart', e => {
-            if (e.target === cropOverlay) {
-                e.preventDefault();
-                const pos = getTouchPos(e);
-                dragStart = pos;
-                cropStart = { x: pos.x, y: pos.y, width: 0, height: 0 };
-                cropBox = { x: pos.x, y: pos.y, width: 0, height: 0 };
-                isCreating = true;
-                updateCropBox();
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchmove', e => {
-            if (!isDragging && !isResizing && !isCreating) return;
-            e.preventDefault();
-            const fakeEvent = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
-            const pos = getMousePos(fakeEvent);
-            const maxW = sourceImage.offsetWidth;
-            const maxH = sourceImage.offsetHeight;
-            const aspectSelect = document.getElementById('aspectRatio').value;
-
-            if (isDragging) {
-                const dx = pos.x - dragStart.x;
-                const dy = pos.y - dragStart.y;
-                cropBox.x = Math.max(0, Math.min(maxW - cropStart.width, cropStart.x + dx));
-                cropBox.y = Math.max(0, Math.min(maxH - cropStart.height, cropStart.y + dy));
-            } else if (isCreating || isResizing) {
-                // Reuse mouse logic via synthetic event
-                const mouseEvent = new MouseEvent('mousemove', { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
-                document.dispatchEvent(mouseEvent);
-                return;
-            }
-
-            updateCropBox();
-            updatePreview();
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
-            document.dispatchEvent(new MouseEvent('mouseup'));
         });
     </script>
 </body>

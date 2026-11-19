@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Convert - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -213,10 +214,9 @@
             <div class="quality-section" id="qualitySection">
                 <h3>Quality</h3>
                 <div class="quality-slider">
-                    <input type="range" id="qualitySlider" min="1" max="100" value="92">
+                    <input type="range" id="qualitySlider" aria-label="Quality" min="1" max="100" value="92">
                     <span class="quality-value" id="qualityValue">92%</span>
                 </div>
-                <div class="size-estimate" id="sizeEstimate"></div>
             </div>
 
             <button id="convertBtn">Convert & Download</button>
@@ -250,6 +250,7 @@
         });
         fileInput.addEventListener('change', e => {
             if (e.target.files[0]) handleFile(e.target.files[0]);
+            fileInput.value = ''; // so picking the same file again fires change
         });
 
         function handleFile(file) {
@@ -291,6 +292,7 @@
 
                     dropZone.classList.add('hidden');
                     editorPanel.classList.remove('hidden');
+                    status.classList.remove('show');
                 };
                 img.src = e.target.result;
             };
@@ -348,27 +350,35 @@
             ctx.drawImage(img, 0, 0);
 
             const quality = selectedFormat === 'image/png' ? undefined : qualitySlider.value / 100;
-            const dataUrl = canvas.toDataURL(selectedFormat, quality);
+            const requested = selectedFormat;
+            const file = currentImage.file;
+            canvas.toBlob(blob => {
+                if (!blob) {
+                    status.textContent = 'Could not encode the image.';
+                    status.className = 'status show';
+                    return;
+                }
+                // A browser without the requested encoder silently returns PNG
+                const actual = blob.type || 'image/png';
+                const ext = actual.split('/')[1];
+                const baseName = file.name.replace(/\.[^.]+$/, '');
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${baseName}.${ext}`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-            // Calculate new size (account for base64 padding)
-            const base64 = dataUrl.split(',')[1];
-            const padding = (base64.match(/=+$/) || [''])[0].length;
-            const newSize = Math.round((base64.length * 3) / 4) - padding;
+                const savings = file.size - blob.size;
+                const savingsText = savings > 0
+                    ? `Saved ${formatSize(Math.abs(savings))} (${Math.round(Math.abs(savings) / file.size * 100)}% smaller)`
+                    : `New file is ${formatSize(Math.abs(savings))} larger`;
 
-            const ext = selectedFormat.split('/')[1];
-            const baseName = currentImage.file.name.replace(/\.[^.]+$/, '');
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${baseName}.${ext}`;
-            a.click();
-
-            const savings = currentImage.file.size - newSize;
-            const savingsText = savings > 0
-                ? `Saved ${formatSize(Math.abs(savings))} (${Math.round(Math.abs(savings) / currentImage.file.size * 100)}% smaller)`
-                : `New file is ${formatSize(Math.abs(savings))} larger`;
-
-            status.textContent = `Converted to ${ext.toUpperCase()}! ${savingsText}`;
-            status.className = 'status show';
+                status.textContent = actual === requested
+                    ? `Converted to ${ext.toUpperCase()}! ${savingsText}`
+                    : `This browser cannot encode ${requested.split('/')[1].toUpperCase()}; saved as ${ext.toUpperCase()} instead. ${savingsText}`;
+                status.className = 'status show';
+            }, selectedFormat, quality);
         });
 
         document.getElementById('resetBtn').addEventListener('click', () => {

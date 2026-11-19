@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Double Pendulum - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -12,6 +13,7 @@
             position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
             padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
             min-width: 220px; border: 1px solid rgba(255,255,255,0.1);
+            max-width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -107,10 +109,11 @@
 
                 this.trail.push({ x: x2, y: y2 });
                 if (this.trail.length > trailLength) {
-                    this.trail.shift();
+                    this.trail.splice(0, this.trail.length - trailLength);
                 }
 
-                return { x1, y1, x2, y2 };
+                this.pos = { x1, y1, x2, y2 };
+                return this.pos;
             }
 
             draw(pos) {
@@ -179,13 +182,24 @@
             }
         }
 
-        function animate() {
+        // Physics is tuned for one step per 60 Hz frame; step by elapsed time so
+        // the speed is the same on 120 Hz displays and after a throttled frame.
+        const STEP_MS = 1000 / 60;
+        let lastTime = null;
+        let stepDebt = 0;
+
+        function animate(now) {
             ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
             ctx.fillRect(0, 0, width, height);
 
+            if (lastTime !== null) stepDebt += Math.min(now - lastTime, 100);
+            lastTime = now;
+            let steps = 0;
+            while (stepDebt >= STEP_MS) { stepDebt -= STEP_MS; steps++; }
+
             for (const pendulum of pendulums) {
-                const pos = pendulum.update();
-                pendulum.draw(pos);
+                for (let i = 0; i < steps || !pendulum.pos; i++) pendulum.update();
+                pendulum.draw(pendulum.pos);
             }
 
             requestAnimationFrame(animate);
@@ -207,7 +221,7 @@
         window.addEventListener('resize', resize);
         resize();
         init();
-        animate();
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>

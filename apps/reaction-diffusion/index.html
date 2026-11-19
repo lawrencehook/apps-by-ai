@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reaction-Diffusion - AI Showcase</title>
+    <link rel="icon" href="../../favicons/favicon.ico">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
@@ -19,6 +20,9 @@
             font-size: 14px;
             min-width: 220px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
         }
         .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
         .controls p { color: #666; margin-bottom: 16px; line-height: 1.4; font-size: 13px; }
@@ -51,7 +55,7 @@
         <h1>Reaction-Diffusion</h1>
         <p>Click to add chemical B. Turing patterns emerge from two diffusing chemicals that react.</p>
         <div class="control-group">
-            <label>Preset</label>
+            <label for="preset">Preset</label>
             <select id="preset">
                 <option value="default">Default</option>
                 <option value="mitosis">Mitosis</option>
@@ -61,11 +65,11 @@
             </select>
         </div>
         <div class="control-group">
-            <label>Feed Rate: <span id="feedLabel">0.055</span></label>
+            <label for="feed">Feed Rate: <span id="feedLabel">0.055</span></label>
             <input type="range" id="feed" min="0.01" max="0.1" step="0.001" value="0.055">
         </div>
         <div class="control-group">
-            <label>Kill Rate: <span id="killLabel">0.062</span></label>
+            <label for="kill">Kill Rate: <span id="killLabel">0.062</span></label>
             <input type="range" id="kill" min="0.01" max="0.1" step="0.001" value="0.062">
         </div>
         <button id="clear">Clear</button>
@@ -77,7 +81,10 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        const SCALE = 2;
+        // Ten simulation steps run per frame on the CPU, so the grid is capped:
+        // screen pixels per cell grows on large windows (2 at minimum, as before).
+        const MAX_CELLS = 150000;
+        let SCALE = 2;
         let width, height, cols, rows;
         let gridA, gridB, nextA, nextB;
 
@@ -97,9 +104,23 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            cols = Math.floor(canvas.width / SCALE);
-            rows = Math.floor(canvas.height / SCALE);
+            const oldCols = cols, oldRows = rows, oldA = gridA, oldB = gridB;
+            SCALE = Math.max(2, Math.ceil(Math.sqrt(canvas.width * canvas.height / MAX_CELLS)));
+            cols = Math.max(1, Math.floor(canvas.width / SCALE));
+            rows = Math.max(1, Math.floor(canvas.height / SCALE));
+            if (oldA && oldCols === cols && oldRows === rows) return;
             init();
+            if (oldA) {
+                // Keep the existing pattern: resample the old grid (nearest cell) into the new one
+                for (let y = 1; y < rows - 1; y++) {
+                    const sy = Math.min(oldRows - 1, Math.floor(y * oldRows / rows));
+                    for (let x = 1; x < cols - 1; x++) {
+                        const sx = Math.min(oldCols - 1, Math.floor(x * oldCols / cols));
+                        gridA[y * cols + x] = oldA[sy * oldCols + sx];
+                        gridB[y * cols + x] = oldB[sy * oldCols + sx];
+                    }
+                }
+            }
         }
 
         function init() {
@@ -148,18 +169,19 @@
             }
         }
 
-        function laplacian(grid, x, y) {
-            const idx = y * cols + x;
+        // 3x3 Laplacian (centre -1, edges 0.2, corners 0.05). Only interior cells
+        // are stepped, so every neighbour index is in range.
+        function laplacian(grid, idx) {
             let sum = 0;
             sum += grid[idx] * -1;
-            sum += (grid[idx - 1] || 0) * 0.2;
-            sum += (grid[idx + 1] || 0) * 0.2;
-            sum += (grid[(y - 1) * cols + x] || 0) * 0.2;
-            sum += (grid[(y + 1) * cols + x] || 0) * 0.2;
-            sum += (grid[(y - 1) * cols + x - 1] || 0) * 0.05;
-            sum += (grid[(y - 1) * cols + x + 1] || 0) * 0.05;
-            sum += (grid[(y + 1) * cols + x - 1] || 0) * 0.05;
-            sum += (grid[(y + 1) * cols + x + 1] || 0) * 0.05;
+            sum += grid[idx - 1] * 0.2;
+            sum += grid[idx + 1] * 0.2;
+            sum += grid[idx - cols] * 0.2;
+            sum += grid[idx + cols] * 0.2;
+            sum += grid[idx - cols - 1] * 0.05;
+            sum += grid[idx - cols + 1] * 0.05;
+            sum += grid[idx + cols - 1] * 0.05;
+            sum += grid[idx + cols + 1] * 0.05;
             return sum;
         }
 
@@ -171,8 +193,8 @@
                     const b = gridB[idx];
                     const reaction = a * b * b;
 
-                    nextA[idx] = a + (dA * laplacian(gridA, x, y) - reaction + feed * (1 - a));
-                    nextB[idx] = b + (dB * laplacian(gridB, x, y) + reaction - (kill + feed) * b);
+                    nextA[idx] = a + (dA * laplacian(gridA, idx) - reaction + feed * (1 - a));
+                    nextB[idx] = b + (dB * laplacian(gridB, idx) + reaction - (kill + feed) * b);
 
                     nextA[idx] = Math.max(0, Math.min(1, nextA[idx]));
                     nextB[idx] = Math.max(0, Math.min(1, nextB[idx]));
