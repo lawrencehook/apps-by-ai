@@ -28,21 +28,14 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 .pair{display:grid;grid-template-columns:minmax(140px,1fr) 1fr 1fr;gap:12px;align-items:center;border-top:1px solid var(--rule);padding:12px 0}.pair h3{margin:0;font-size:21px}.pair a{display:grid;grid-template-columns:minmax(0,1fr) minmax(50px,100px);align-items:center;gap:6px;padding:5px 0}.pair a:hover{text-decoration:underline}.pair small{display:block;color:var(--muted);font-size:12px}
 @media(max-width:720px){.pair a{grid-template-columns:minmax(0,1fr)}.pair canvas{max-width:100px}}
 @media(max-width:540px){.pair{grid-template-columns:1.1fr 1fr 1fr;gap:6px}.pair h3{font-size:17px}.section:has(#clavier-title){flex-wrap:wrap}}
-.collections{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:0 28px}
-.collections a{display:block;border-bottom:1px solid var(--rule);padding:14px 2px}.collections strong{font:normal 24px Georgia,serif}.collections small{display:block;color:var(--muted);margin-top:5px}.collections a:hover strong{color:var(--gold)}
-#bach{font:normal clamp(35px,5vw,60px)/1.1 Georgia,serif;letter-spacing:-.045em;margin:54px 0 0}
+#other-collections{margin-top:32px;border-top:1px solid var(--rule);padding-top:14px;color:var(--muted)}
+#other-collections h2{font-size:21px;margin:0 0 8px}
+#other-collections ul{display:flex;flex-wrap:wrap;gap:8px 22px;list-style:none;margin:0;padding:0;font-size:14px}
+#other-collections a{text-decoration:underline;text-underline-offset:3px}#other-collections a:hover{color:var(--gold)}
 </style>
 <main>
 <nav aria-label="Site sections"><a href="../index.html">Apps</a><a href="../games/index.html">Games</a><a href="../notes/index.html">Notes</a><a href="index.html" aria-current="page">Music</a></nav>
-<h1 class="title">Music collections</h1>
-<ul class="collections" aria-label="Collections">
-<li><a href="#bach"><strong>Johann Sebastian Bach</strong><small>Keyboard, organ and ensemble scores</small></a></li>
-<li><a href="carnatic/index.html"><strong>Carnatic kṛtis</strong><small>South India · Muttusvāmi Dīkṣitar</small></a></li>
-<li><a href="guqin/index.html"><strong>Shenqi Mipu</strong><small>China · Guqin tablature</small></a></li>
-<li><a href="jeongganbo/index.html"><strong>Jeongganbo</strong><small>Korea · Five scores in time-cell notation</small></a></li>
-<li><a href="ottoman/index.html"><strong>Ottoman saz semâîsi</strong><small>Ottoman instrumental music · 39 scores</small></a></li>
-</ul>
-<h2 id="bach">Johann Sebastian Bach</h2>
+<h1 class="title" id="bach">Johann Sebastian Bach</h1>
 <section aria-labelledby="selected-heading"><div class="section"><h2 id="selected-heading">Selected works</h2></div>
 <div id="featured-works"></div></section>
 <div class="section"><h2>Two-Part Inventions</h2><span class="meta" id="count"></span></div>
@@ -51,7 +44,16 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 <div class="grid" id="sinfonias"></div>
 <div class="section"><h2 id="clavier-title">The Well-Tempered Clavier, Book I</h2><span class="meta">24 pairs</span></div>
 <div id="clavier" aria-labelledby="clavier-title"></div>
-<footer><span>Scores from Mutopia, Project Gutenberg, and Knute Snortum</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a><a href="bach-data/concerto-credits.txt">Concerto recordings</a><a href="archive/index.html">Archive</a></footer>
+<section id="other-collections" aria-labelledby="other-heading">
+<h2 id="other-heading">Other music collections</h2>
+<ul>
+<li><a href="carnatic/index.html">Carnatic kṛtis</a></li>
+<li><a href="guqin/index.html">Guqin · Shenqi Mipu</a></li>
+<li><a href="jeongganbo/index.html">Korean jeongganbo</a></li>
+<li><a href="ottoman/index.html">Ottoman saz semâîsi</a></li>
+</ul>
+</section>
+<footer><span>Bach scores from Mutopia, Project Gutenberg, and Knute Snortum</span><a href="bach-data/piano-credits.txt">Piano recordings by Alexander Holm</a><a href="bach-data/ensemble-credits.txt">Organ and string recordings</a><a href="bach-data/concerto-credits.txt">Concerto recordings</a><a href="archive/index.html">Archive</a></footer>
 </main>
 <script src="bach-data/scores.js"></script><script src="bach-data/sinfonias.js"></script><script src="bach-data/preludes.js"></script><script src="bach-data/organ-work.js"></script><script src="bach-data/air-work.js"></script><script src="bach-data/brandenburg.js"></script><script src="bach-data/wtc1.js"></script><script src="bach-data/library.js"></script>
 <script>
