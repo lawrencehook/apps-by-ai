@@ -15,7 +15,7 @@ h2,h3{font-family:Georgia,serif;font-weight:normal;letter-spacing:-.035em}
 .section{margin:35px 0 10px;align-items:baseline}.section h2{font-size:31px;margin:0}
 .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:34px}
 .work{border-top:1px solid var(--rule);display:grid;grid-template-columns:36px 1fr minmax(50px,100px) 38px;align-items:center;gap:10px;padding:16px 3px}
-.number,.time{font:12px ui-monospace,monospace;color:var(--muted)}.time{text-align:right}.work h3{font-size:22px;margin:0 0 2px}.work canvas{width:100%;height:42px;opacity:.85}
+.number,.time{font:12px ui-monospace,monospace;color:var(--muted)}.time{text-align:right}.work h3{font-size:22px;margin:0 0 2px}.work canvas,.pair canvas{width:100%;height:42px;opacity:.85}
 a:hover h2,a:hover h3{color:var(--gold)}a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 footer{margin-top:30px;border-top:1px solid var(--rule);padding-top:14px;flex-wrap:wrap}footer a{text-decoration:underline;text-underline-offset:3px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.feature{grid-template-columns:1fr}.feature canvas{height:95px}.work{grid-template-columns:30px 1fr 65px 35px}.section h2{font-size:26px}}
@@ -25,7 +25,8 @@ nav{display:flex;flex-wrap:wrap;gap:24px;margin-bottom:28px;font-size:14px;color
 .feature h3{font-size:clamp(24px,2.5vw,33px);line-height:1.12;margin:0}
 .feature .meta{margin-top:auto}
 .feature canvas{height:84px}
-.pair{display:grid;grid-template-columns:minmax(140px,1fr) 1fr 1fr;gap:12px;align-items:center;border-top:1px solid var(--rule);padding:12px 0}.pair h3{margin:0;font-size:21px}.pair a{display:block;padding:5px 0}.pair a:hover{text-decoration:underline}.pair small{display:block;color:var(--muted);font-size:12px}
+.pair{display:grid;grid-template-columns:minmax(140px,1fr) 1fr 1fr;gap:12px;align-items:center;border-top:1px solid var(--rule);padding:12px 0}.pair h3{margin:0;font-size:21px}.pair a{display:grid;grid-template-columns:minmax(0,1fr) minmax(50px,100px);align-items:center;gap:6px;padding:5px 0}.pair a:hover{text-decoration:underline}.pair small{display:block;color:var(--muted);font-size:12px}
+@media(max-width:720px){.pair a{grid-template-columns:minmax(0,1fr)}.pair canvas{max-width:100px}}
 @media(max-width:540px){.pair{grid-template-columns:1.1fr 1fr 1fr;gap:6px}.pair h3{font-size:17px}.section:has(#clavier-title){flex-wrap:wrap}}
 </style>
 <main>
@@ -98,10 +99,15 @@ for (const [index, pair] of clavierPairs.entries()) {
         const detail = document.createElement('small');
         const isFugue = piece === fugue;
         link.href = playerLink(piece);
-        link.textContent = isFugue ? 'Fugue' : 'Prelude';
-        link.setAttribute('aria-label', link.textContent + ' in ' + piece.key + ', BWV ' + piece.bwv);
+        const label = document.createElement('span');
+        label.textContent = isFugue ? 'Fugue' : 'Prelude';
+        link.setAttribute('aria-label', label.textContent + ' in ' + piece.key + ', BWV ' + piece.bwv);
         detail.textContent = (isFugue ? new Set(voiceGroups(piece)).size + ' voices · ' : '') + durationText(piece);
-        link.append(detail);
+        label.append(detail);
+        const canvas = document.createElement('canvas');
+        canvas.setAttribute('aria-hidden', 'true');
+        link.append(label, canvas);
+        portraits.push([canvas, piece]);
         row.append(link);
     }
     document.querySelector('#clavier').append(row);
