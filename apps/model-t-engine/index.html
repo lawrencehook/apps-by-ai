@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model T engine · Mechanical studies</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#273632;background:#eeeae0;font:16px/1.5 "Instrument Sans",system-ui,sans-serif}main{max-width:1320px;margin:auto;padding:20px clamp(15px,4vw,58px) 40px}a{color:inherit;text-underline-offset:4px}nav,footer,figcaption{font-size:14px;color:#52615a}header{display:flex;align-items:end;justify-content:space-between;gap:24px;margin:20px 0}h1,h2{font:normal 28px Georgia,serif;margin:0}h1{font-size:clamp(42px,6vw,76px);letter-spacing:-.065em;line-height:1}header p{max-width:440px;margin:0}.stage{background:#17262b;border-radius:5px;position:relative;color:#d8e2db;overflow:hidden}.stage canvas{display:block;width:100%;height:clamp(350px,38vw,515px);touch-action:none;cursor:grab}.bar,.edge,.transport,.views{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.edge{position:absolute;top:14px;left:18px;right:18px;justify-content:space-between;pointer-events:none}.edge button{pointer-events:auto;color:#f3f0e4;background:#273a3d;border-color:#53635d}.hint{position:absolute;bottom:12px;left:18px;font-size:12px;color:#b5c4bf;pointer-events:none}button,select{border:1px solid #8f9b92;color:inherit;background:#f6f3ea;border-radius:3px;font:inherit;padding:6px 10px;cursor:pointer}button[aria-pressed=true],#play{background:#28433d;color:#fff}button:focus-visible,canvas:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #db965b;outline-offset:-2px}.transport{padding:15px 0;border-bottom:1px solid #adb5a9}.transport input{flex:1;min-width:110px;accent-color:#975e37}output,.mono{font:13px ui-monospace,monospace}output{min-width:4em}.details{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;margin:24px 0}.details p{margin:8px 0 12px}.row{width:100%;display:grid;grid-template-columns:2em 1fr 1fr 1fr 1fr;align-items:center;gap:2px;margin:4px 0;text-align:center}.row span{padding:3px 0;font-size:12px;background:#dfdfd4;border-bottom:2px solid transparent}.row span.current{background:#f4cfa6;border-color:#ab652b}.row strong{font:14px ui-monospace,monospace}.plate{margin:0}.plate img{display:block;width:100%;max-height:205px;object-fit:contain;background:#e2dfd7}.views{margin:9px 0;font-size:14px}footer{border-top:1px solid #aab3a7;padding-top:12px}.bar{gap:7px}.edge .mono{letter-spacing:.1em}.transport label{font-size:14px}@media(max-width:680px){header{display:block}header p{margin-top:12px}.details{grid-template-columns:1fr;gap:20px}.stage canvas{height:330px}.transport{gap:7px}.edge{left:10px;right:10px}.edge .mono{font-size:10px}.bar{gap:4px}.bar button{font-size:12px}.hint{font-size:10px}}
+</style>
+<main><nav><a href="../../index.html">← Apps</a></nav>
+<header><h1>Model T engine</h1><p>Four pistons share a crankshaft. Two turns of that shaft drive one turn of the camshaft and one complete firing cycle.</p></header>
+<section class="stage"><canvas id="view" tabindex="0" aria-label="Engine assembly. Drag or use arrow keys to orbit; scroll to zoom."></canvas><div class="edge"><span class="mono">FORD · INLINE FOUR</span><div class="bar"><button id="gearView">Timing gears</button><button id="reset">Assembly view</button></div></div><span class="hint" id="hint">Drag to orbit · Scroll to zoom</span></section>
+<div class="transport"><button id="play">Run cycle</button><label for="angle">Crank angle</label><input id="angle" type="range" min="0" max="720" value="76" step="1"><output id="degrees" for="angle"></output><label>Pace <select id="speed"><option value="45">Slow</option><option value="120" selected>Study</option><option value="300">Fast</option></select></label></div>
+<div class="views"><label><input id="sleeves" type="checkbox" checked> Sectioned bores</label><label><input id="valves" type="checkbox" checked> Valve train</label><label>Inspect <select id="focus"><option value="-1">All cylinders</option><option value="0">Cylinder 1</option><option value="1">Cylinder 2</option><option value="2">Cylinder 3</option><option value="3">Cylinder 4</option></select></label></div>
+<div class="details"><section><h2>Firing cycle</h2><p>The cylinders fire in the order 1, 2, 4, 3. Pistons 1 and 4 rise together; their valves determine which cylinder compresses a fresh charge and which expels exhaust.</p><div id="chart"></div><p id="readout" class="mono"></p></section>
+<figure class="plate"><a href="ford-cut-3.jpg"><img src="ford-cut-3.jpg" alt="Ford's 1919 cylinder assembly drawing, showing the valves above the camshaft and the two timing gears at the front."></a><figcaption>Ford owner’s manual, 1919 · Cylinder assembly, cut 3.</figcaption></figure></div>
+<footer>This kinematic study follows Ford’s side-valve layout and firing order. Part profiles and clearances are illustrative. Valve events use idealized stroke boundaries; the manual gives the actual opening and closing settings. <a href="https://www.gutenberg.org/ebooks/46206">Ford Motor Company, 1919 manual</a></footer></main>
+<script src="../../libs/three-0.128.0/three.min.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), rad=Math.PI/180, tau=2*Math.PI;
+const firing=[0,180,540,360], stages=['Power','Exhaust','Intake','Compression'];
+const state={angle:76,running:false,focus:-1};
+let scene,camera,renderer,crank,cam,material,systems=[],allSleeves=[],allValves=[],frame=0,previousTime=0;
+let yaw=.56,pitch=.30,zoom=1,targetX=0,targetY=1.05;
+const radius=.48, rodLength=1.45, pitchRadius=.40, camY=.72, camZ=.96;
+const xs=[2.10,.70,-.70,-2.10];
+function metal(color,metalness=.6){return new THREE.MeshStandardMaterial({color,metalness,roughness:.38,side:THREE.DoubleSide});}
+function group(parent,x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);return g;}
+function part(parent,geometry,mat,x=0,y=0,z=0){const m=new THREE.Mesh(geometry,mat);m.position.set(x,y,z);parent.add(m);return m;}
+function cyl(parent,r,h,mat,x,y,z,axis='y',segments=36){
+    const m=part(parent,new THREE.CylinderGeometry(r,r,h,segments),mat,x,y,z);
+    if(axis==='x')m.rotation.z=-Math.PI/2;
+    if(axis==='z')m.rotation.x=Math.PI/2;
+    return m;
+}
+function box(parent,w,h,d,mat,x,y,z){return part(parent,new THREE.BoxGeometry(w,h,d),mat,x,y,z);}
+function ring(parent,r,t,mat,x,y,z,axis='x'){
+    const m=part(parent,new THREE.TorusGeometry(r,t,8,54),mat,x,y,z);
+    if(axis==='x')m.rotation.y=Math.PI/2;
+    if(axis==='y')m.rotation.x=Math.PI/2;
+    return m;
+}
+function bolt(parent,x,y,z,axis){return cyl(parent,.055,.075,material.bronze,x,y,z,axis,6);}
+// Profiles are drawn in the shaft's radial plane and extruded along its axis.
+function profile(parent,points,width,mat){
+    const shape=new THREE.Shape(points.map(([y,z])=>new THREE.Vector2(-z,y)));
+    const geom=new THREE.ExtrudeGeometry(shape,{depth:width,bevelEnabled:false});
+    geom.translate(0,0,-width/2);geom.rotateY(Math.PI/2);
+    return part(parent,geom,mat);
+}
+function gear(parent,teeth,r,offset){
+    const g=group(parent,3.02);g.rotation.x=offset;
+    const points=[];
+    // An annular toothed rim leaves the spokes visible through the web.
+    const shape=new THREE.Shape();
+    for(let i=0;i<teeth;i++)for(const [f,dr] of [[0,-.028],[.16,-.028],[.31,.026],[.58,.026],[.74,-.028]]){
+        const a=tau*(i+f)/teeth;points.push([Math.cos(a)*(r+dr),Math.sin(a)*(r+dr)]);
+    }
+    points.forEach(([y,z],i)=>shape[i?'lineTo':'moveTo'](-z,y));shape.closePath();
+    const hole=new THREE.Path();hole.absarc(0,0,r*.73,0,tau,true);shape.holes.push(hole);
+    const geom=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geom.translate(0,0,-.07);geom.rotateY(Math.PI/2);
+    part(g,geom,material.brass);
+    for(let i=0;i<3;i++){const spoke=box(g,.11,r*1.57,.09,material.bronze,0,0,0);spoke.rotation.x=i*Math.PI/3;}
+    cyl(g,r*.28,.23,material.bronze,0,0,0,'x');
+    bolt(g,.13,r*.14,0,'x');
+}
+function makeCylinder(index){
+    const x=xs[index],g=group(scene,x);
+    const piston=group(g);
+    cyl(piston,.435,.52,material.steel,0,.01,0);
+    for(const h of [.10,.16,.22])ring(piston,.433,.014,material.dark,0,h,0,'y');
+    cyl(piston,.108,.90,material.bronze,0,0,0,'x');
+    const rod=group(g);
+    // I-section shank with a flange on either side of a slender central web.
+    box(rod,.095,rodLength,.085,material.iron,0,rodLength/2,0);
+    for(const z of [-.065,.065])box(rod,.145,rodLength,.04,material.steel,0,rodLength/2,z);
+    cyl(rod,.21,.235,material.iron,0,0,0,'x');cyl(rod,.118,.25,material.bronze,0,rodLength,0,'x');
+    for(const z of [-.14,.14])bolt(rod,.13,0,z,'x');
+    const sleeve=group(g,0,1.73);allSleeves.push(sleeve);
+    part(sleeve,new THREE.CylinderGeometry(.48,.48,1.48,48,1,true,Math.PI*.55,Math.PI*.91),material.jacket);
+    for(const y of [-.74,.74]){
+        const lip=part(sleeve,new THREE.TorusGeometry(.48,.024,7,40,Math.PI*.91),material.bronze,0,y,0);
+        lip.rotation.set(Math.PI/2,0,-.46*Math.PI);
+    }
+    const poppets=[];
+    for(let j=0;j<2;j++){
+        const offset=(j-.5)*.43;
+        const assembly=group(g,offset,0,camZ);allValves.push(assembly);
+        const follower=group(assembly), spring=group(assembly,0,1.73);
+        cyl(follower,.105,.09,material.iron,0,camY+.19,0);
+        cyl(follower,.035,1.52,material.steel,0,camY+.99,0);
+        cyl(follower,.15,.052,j?material.bronze:material.steel,0,2.49,0);
+        cyl(follower,.11,.04,material.bronze,0,1.73,0);
+        cyl(assembly,.095,.12,material.iron,0,2.13,0);
+        const helix=Array.from({length:85},(_,k)=>{const t=k/84;return new THREE.Vector3(.088*Math.cos(t*tau*7),.36*t,.088*Math.sin(t*tau*7));});
+        part(spring,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helix),84,.014,5,false),material.steel);
+        const lobe=group(cam,x+offset);allValves.push(lobe);
+        const peak=firing[index]+(j?270:450);
+        lobe.rotation.x=peak*rad/2;
+        const points=Array.from({length:96},(_,k)=>{const a=k*tau/96,d=Math.min(a,tau-a);const r=.15+(d<Math.PI/4?.11*Math.cos(2*d)**2:0);return [r*Math.cos(a),r*Math.sin(a)];});
+        profile(lobe,points,.16,material.bronze);
+        poppets.push({follower,spring});
+    }
+    return {g,piston,rod,poppets};
+}
+function build(){
+    renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.82;
+    scene=new THREE.Scene();scene.background=new THREE.Color(0x17262b);
+    camera=new THREE.OrthographicCamera(-4,4,3,-3,.1,60);
+    material={steel:metal(0xaab5b4,.41),iron:metal(0x566462,.45),brass:metal(0xc49457,.40),bronze:metal(0xa27c48,.43),dark:metal(0x313c39,.35),jacket:metal(0x466e68,.34)};
+    scene.add(new THREE.HemisphereLight(0xf4f7f2,0x65757b,1.15));
+    for(const [x,y,z,intensity] of [[3,6,4,1.4],[-3,3,-4,1.15],[1,-2,2,.38]]){
+        const light=new THREE.DirectionalLight(0xffedce,intensity);light.position.set(x,y,z);scene.add(light);
+    }
+    // Open bearing frame leaves the moving throws visible from the side.
+    const frameMetal=metal(0x2b403b,.32);
+    for(const z of [-.62,.62])box(scene,6.04,.15,.15,frameMetal,0,-.66,z);
+    for(const x of [-2.8,-1.4,1.4,2.8]){
+        box(scene,.19,.16,1.45,frameMetal,x,-.64,0);
+        box(scene,.19,.47,.29,frameMetal,x,-.36,0);
+        ring(scene,.20,.058,material.iron,x,0,0);
+        for(const z of [-.59,.59])bolt(scene,x,-.54,z,'y');
+    }
+    for(const x of [-2.83,0,2.83]){
+        box(scene,.12,1.22,.13,frameMetal,x,.01,.73);
+        box(scene,.12,.12,.32,frameMetal,x,.62,.84);
+        ring(scene,.13,.041,material.iron,x,camY,camZ);
+    }
+    crank=group(scene);cam=group(scene,0,camY,camZ);
+    cyl(cam,.10,6.23,material.steel,.02,0,0,'x');allValves.push(cam);
+    for(let i=0;i<4;i++){
+        const throwGroup=group(crank,xs[i]);throwGroup.rotation.x=firing[i]*rad;
+        cyl(throwGroup,.14,.46,material.steel,0,radius,0,'x');
+        for(const sign of [-1,1]){
+            const web=group(throwGroup,sign*.24);
+            profile(web,[[-.38,-.19],[-.16,-.27],[.48,-.16],[.64,-.06],[.64,.06],[.48,.16],[-.16,.27],[-.38,.19]],.14,material.iron);
+        }
+    }
+    // Main journals join adjacent webs and leave each connecting rod free to swing.
+    for(const x of [-2.89,-1.4,0,1.4,2.89])cyl(crank,.17,Math.abs(x)>2?.99:.81,material.steel,x,0,0,'x');
+    const wheel=group(crank,-3.09);
+    ring(wheel,.83,.095,material.iron,0,0,0);cyl(wheel,.23,.30,material.steel,0,0,0,'x');
+    for(let i=0;i<4;i++){const s=box(wheel,.10,1.62,.084,material.iron,0,0,0);s.rotation.x=i*Math.PI/4;}
+    const lineAngle=Math.atan2(camZ,camY);
+    gear(crank,24,pitchRadius,lineAngle-.44*tau/24);
+    gear(cam,48,2*pitchRadius,lineAngle+Math.PI-.94*tau/48);
+    systems=xs.map((_,i)=>makeCylinder(i));
+}
+function update(){
+    const angle=state.angle, a=angle*rad;
+    if(crank){crank.rotation.x=a;cam.rotation.x=-a/2;}
+    $('degrees').value=Math.round(angle)+'°';
+    for(let i=0;i<4;i++){
+        const phase=(angle-firing[i]+720)%720,stage=Math.floor(phase/180);
+        const cells=$('chart').children[i].querySelectorAll('span');
+        cells.forEach((cell,k)=>cell.classList.toggle('current',k===stage));
+        if(i===(state.focus<0?0:state.focus))$('readout').textContent='Cylinder '+(i+1)+' · '+stages[stage]+' · Cam rotation '+Math.round(angle/2)+'°';
+        if(!crank)continue;
+        const s=systems[i],theta=phase*rad, py=radius*Math.cos(theta),pz=radius*Math.sin(theta);
+        const height=py+Math.sqrt(rodLength**2-pz**2);
+        s.piston.position.y=height;
+        s.rod.position.set(0,py,pz);s.rod.rotation.x=Math.atan2(-pz,height-py);
+        s.poppets.forEach(({follower,spring},j)=>{
+            const open=j?stage===1:stage===2, lift=open?.11*Math.sin((phase%180)*rad)**2:0;
+            follower.position.y=lift;spring.position.y=1.73+lift;spring.scale.y=1-lift/.36;
+        });
+    }
+    draw();
+}
+function draw(){
+    if(!camera)return;
+    const c=$('view'),w=c.clientWidth,h=c.clientHeight,aspect=w/h;
+    const span=Math.max(3.9,8.6/aspect)/zoom;
+    camera.left=-span*aspect/2;camera.right=-camera.left;camera.top=span/2;camera.bottom=-span/2;
+    const z=state.focus<0?0:.3;
+    camera.position.set(targetX+12*Math.sin(yaw)*Math.cos(pitch),targetY+12*Math.sin(pitch),z+12*Math.cos(yaw)*Math.cos(pitch));
+    camera.lookAt(targetX,targetY,z);camera.updateProjectionMatrix();renderer.render(scene,camera);
+}
+function resize(){if(camera)renderer.setSize($('view').clientWidth,$('view').clientHeight,false);draw();}
+for(let i=0;i<4;i++){
+    const row=document.createElement('div');row.className='row';
+    const n=document.createElement('strong');n.textContent=i+1;row.append(n);
+    for(const stroke of stages){const cell=document.createElement('span');cell.textContent=stroke;row.append(cell);}
+    $('chart').append(row);
+}
+try{build();}catch(error){$('hint').textContent='3D view unavailable. The cycle chart and original drawing are available below.';}
+function stop(){state.running=false;cancelAnimationFrame(frame);$('play').textContent='Run cycle';}
+function animate(time){
+    if(!state.running)return;
+    state.angle=(state.angle+Math.min((time-previousTime)/1000,.1)*Number($('speed').value))%720;
+    previousTime=time;$('angle').value=Math.round(state.angle);update();frame=requestAnimationFrame(animate);
+}
+$('play').onclick=()=>{if(state.running){stop();return;}state.running=true;previousTime=performance.now();$('play').textContent='Pause';frame=requestAnimationFrame(animate);};
+$('angle').oninput=()=>{stop();state.angle=Number($('angle').value);update();};
+$('sleeves').onchange=()=>{allSleeves.forEach(x=>x.visible=$('sleeves').checked);draw();};
+$('valves').onchange=()=>{allValves.forEach(x=>x.visible=$('valves').checked);draw();};
+function focus(index){state.focus=index;$('focus').value=index;targetX=index<0?0:xs[index];targetY=1.05;zoom=index<0?1:1.55;update();}
+$('focus').onchange=()=>focus(Number($('focus').value));
+$('gearView').onclick=()=>{focus(-1);yaw=1.32;pitch=.14;targetX=2.64;targetY=.57;zoom=2.1;draw();};
+$('reset').onclick=()=>{yaw=.56;pitch=.30;focus(-1);};
+function orbit(dx,dy){yaw+=dx;pitch=Math.max(-1.43,Math.min(1.43,pitch+dy));draw();}
+let pointer=null;
+$('view').onpointerdown=e=>{pointer=[e.clientX,e.clientY];$('view').setPointerCapture(e.pointerId);};
+$('view').onpointermove=e=>{if(pointer){orbit((pointer[0]-e.clientX)*.01,(e.clientY-pointer[1])*.012);pointer=[e.clientX,e.clientY];}};
+$('view').onlostpointercapture=()=>{pointer=null;};
+$('view').onwheel=e=>{e.preventDefault();zoom=Math.max(.7,Math.min(3.5,zoom*Math.exp(-e.deltaY*.0015)));draw();};
+$('view').onkeydown=e=>{const d={ArrowLeft:[-.1,0],ArrowRight:[.1,0],ArrowUp:[0,.1],ArrowDown:[0,-.1]}[e.key];if(d){e.preventDefault();orbit(...d);}};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});window.addEventListener('resize',resize);resize();update();
+</script></html>

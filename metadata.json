@@ -1,5 +1,18 @@
 [
     {
+        "id": "model-t-engine",
+        "title": "Model T Engine",
+        "description": "Turn a four-cylinder engine through its firing cycle and inspect its crankshaft, pistons, valves, and timing gears beside Ford’s 1919 drawing.",
+        "path": "apps/model-t-engine/index.html",
+        "emoji": "⚙️",
+        "previewGradient": "linear-gradient(135deg, #24383b, #a78959)",
+        "dateCreated": "2026-11-18",
+        "category": "Engineering",
+        "tags": ["mechanics", "3d", "engineering"],
+        "link": "https://www.gutenberg.org/ebooks/46206",
+        "completeness": 4
+    },
+    {
         "id": "wigley-hull",
         "title": "Wigley Hull",
         "description": "Rotate an eight-metre towing model and cut transverse sections through its parabolic hull.",
