@@ -7,12 +7,18 @@
 :root{color-scheme:dark;--bg:#101615;--panel:#18201e;--ink:#eeeadd;--quiet:#b9c1b9;--line:#39443f;--gold:#ead08e}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:28px clamp(16px,5vw,60px) 48px}a{color:var(--quiet);text-underline-offset:4px}h1,h2,h3{font:normal 1em Georgia,serif;margin:0}h1{font-size:clamp(48px,8vw,88px);letter-spacing:-.055em;margin:25px 0 16px;line-height:1.05}h2{font-size:clamp(26px,4vw,38px);line-height:1.15}h3{font-size:22px}p{color:var(--quiet)}header{border-bottom:1px solid var(--line);padding-bottom:22px}header p{max-width:590px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.8fr);gap:clamp(20px,4vw,48px);margin-top:24px}button,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid #67746d;border-radius:3px;padding:7px 11px}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}label,.meta,footer{font-size:14px;color:var(--quiet)}.controls,.bells{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.controls{margin:14px 0}.primary{background:var(--gold);color:var(--bg);border-color:var(--gold);min-width:6em}.bells button{border-radius:50%;width:39px;height:39px;padding:0}.bells button[aria-pressed=true]{background:var(--gold);color:var(--bg)}.controls label{display:flex;align-items:center;gap:6px}.paper{margin:18px 0;background:#e8e3d4;color:#26342f;border-radius:3px;overflow:hidden}.caption{display:flex;justify-content:space-between;gap:12px;padding:12px 16px 3px;text-transform:uppercase;font:11px/1.4 ui-monospace,monospace;letter-spacing:.1em}svg{display:block;width:100%;height:auto}aside section{padding:0 0 18px;border-bottom:1px solid var(--line);margin:0 0 18px}aside p{font-size:14px;margin:8px 0 12px}#seek{width:100%;accent-color:var(--gold)}#feedback{min-height:1.6em;margin:8px 0}.digits{font:26px ui-monospace,monospace;letter-spacing:.16em}footer{margin-top:24px;line-height:1.8}#method{max-width:100%}.readout{display:flex;justify-content:space-between;align-items:center;margin:6px 0}label[for=method]{display:block;margin-bottom:4px}
 @media(max-width:680px){.layout{grid-template-columns:1fr;gap:10px}main{padding-top:16px}.paper{margin:10px 0}header{padding-bottom:16px}h1{margin-top:18px}}
+header p{max-width:72ch}header p+p{margin-top:10px}.reading{font-size:14px;margin:10px 0;color:var(--quiet)}
 </style>
 <main>
 <nav><a href="../index.html">← Music catalog</a></nav>
-<header><h1>Change ringing</h1><p>Each bell sounds once per row. Read across to hear the order of strikes, or follow a bell down the page to see how it changes place.</p></header>
+<header>
+<h1>Change ringing</h1>
+<p>In an English bell tower, each ringer takes a rope and controls one swinging bell. The band begins by sounding the bells from highest to lowest, an order called <i>rounds</i>. Each bell keeps its pitch. By adjusting the timing of a swing, two neighboring ringers can exchange places in the next round of strikes.</p>
+<p>This practice probably began in England in the late sixteenth or early seventeenth century. By 1668, ringers could learn the patterns from a book. <cite>Tintinnalogia</cite>, published in London that year, set out how four ringers could sound all 24 possible orders and come back to rounds. The first study below plays the sequence printed in that book. <a href="https://cccbr.org.uk/the-history-of-ringing/">History of ringing</a> · <a href="https://www.gutenberg.org/files/18567/18567-h/18567-h.htm">Read the 1668 text</a></p>
+</header>
 <div class="layout"><section aria-label="Ringing diagram">
 <label for="method">Method</label><select id="method"><option>Plain changes on four bells</option><option>Plain Bob Minor</option></select>
+<p class="reading">Each row gives one strike per bell, read from left to right. Follow a numbered bell down the diagram to see when it takes its turn.</p>
 <div class="paper"><div class="caption"><span>Change</span><span>Order of striking →</span></div><svg id="diagram" viewBox="0 0 460 390" role="img" aria-label="Bell paths through successive rows"></svg></div>
 <div class="readout"><label for="seek" id="rowLabel">Change</label><output class="digits" id="digits"></output></div>
 <input id="seek" type="range" min="0" value="0" step="1" aria-labelledby="rowLabel">
@@ -21,7 +27,7 @@
 <section><h2 id="title"></h2><p class="meta" id="summary"></p><p id="description"></p><a id="source">Source edition</a></section>
 <section><h3>Follow a bell</h3><p>Bell 1 is the treble, the highest bell. Select a bell to hear its pitch and trace its path.</p><div class="bells" id="bells"></div></section>
 <section><h3>Ring one part</h3><p>Turn on practice, then press Play. Ring your bell as the highlight reaches its number.</p><label><input id="practice" type="checkbox"> Play the other bells only</label><div class="controls"><button id="strike" disabled>Strike bell 1</button><small>Space bar</small></div><p id="feedback" role="status"></p></section>
-</aside></div><footer>Bell tones synthesized for this study. The opening and closing rows are rounds, with the bells ordered from highest to lowest.</footer>
+</aside></div><footer>The diagram follows the recorded striking orders. Bell tones are synthesized for this study.</footer>
 </main>
 <script>
 'use strict';
@@ -44,8 +50,8 @@ function plainBob() {
     return rows;
 }
 const methods = [
-    {rows:historical, title:'Plain changes on four bells', info:'Tintinnalogia · London, 1668', description:'The first four-bell example in the book gives all 24 orders. Watch the treble travel from first place to last. At either end it stays for a second strike while two other bells exchange places.', url:'https://www.gutenberg.org/files/18567/18567-h/18567-h.htm', source:'Read Tintinnalogia'},
-    {rows:plainBob(), title:'Plain Bob Minor', info:'Six bells · Five leads · 60 changes', description:'Each lead runs through twelve changes. At the last change the first two places hold while the other pairs cross. After five leads all six bells return to rounds.', url:'https://framework.cccbr.org.uk/edition3/classification.html', source:'Place notation · Central Council'}
+    {rows:historical, title:'Plain changes on four bells', info:'Tintinnalogia · London, 1668', description:'The book numbers the bells from 1 (highest) to 4 (lowest). Its opening rows read 1234, 2134, 2314. The highest bell moves one place later each time. When it reaches the end, it stays there for another row while a different pair exchanges places.', url:'https://www.gutenberg.org/files/18567/18567-h/18567-h.htm', source:'Read Tintinnalogia'},
+    {rows:plainBob(), title:'Plain Bob Minor', info:'Six bells · Five leads · 60 changes', description:'Minor is the ringers’ term for six bells. Here the player generates the rows from place notation, a shorthand for which positions stay fixed at each change. One block of twelve changes is called a lead. Repeating the block five times brings the bells back to rounds.', url:'https://framework.cccbr.org.uk/edition3/classification.html', source:'Place notation · Central Council'}
 ];
 const pitches = [440,392,349.23,329.63,293.66,261.63];
 const svgNS = 'http://www.w3.org/2000/svg';
