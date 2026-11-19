@@ -8,6 +8,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:28px clamp(16px,5vw,60px) 48px}a{color:var(--quiet);text-underline-offset:4px}h1,h2,h3{font:normal 1em Georgia,serif;margin:0}h1{font-size:clamp(48px,8vw,88px);letter-spacing:-.055em;margin:25px 0 16px;line-height:1.05}h2{font-size:clamp(26px,4vw,38px);line-height:1.15}h3{font-size:22px}p{color:var(--quiet)}header{border-bottom:1px solid var(--line);padding-bottom:22px}header p{max-width:590px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.8fr);gap:clamp(20px,4vw,48px);margin-top:24px}button,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid #67746d;border-radius:3px;padding:7px 11px}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}label,.meta,footer{font-size:14px;color:var(--quiet)}.controls,.bells{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.controls{margin:14px 0}.primary{background:var(--gold);color:var(--bg);border-color:var(--gold);min-width:6em}.bells button{border-radius:50%;width:39px;height:39px;padding:0}.bells button[aria-pressed=true]{background:var(--gold);color:var(--bg)}.controls label{display:flex;align-items:center;gap:6px}.paper{margin:18px 0;background:#e8e3d4;color:#26342f;border-radius:3px;overflow:hidden}.caption{display:flex;justify-content:space-between;gap:12px;padding:12px 16px 3px;text-transform:uppercase;font:11px/1.4 ui-monospace,monospace;letter-spacing:.1em}svg{display:block;width:100%;height:auto}aside section{padding:0 0 18px;border-bottom:1px solid var(--line);margin:0 0 18px}aside p{font-size:14px;margin:8px 0 12px}#seek{width:100%;accent-color:var(--gold)}#feedback{min-height:1.6em;margin:8px 0}.digits{font:26px ui-monospace,monospace;letter-spacing:.16em}footer{margin-top:24px;line-height:1.8}#method{max-width:100%}.readout{display:flex;justify-content:space-between;align-items:center;margin:6px 0}label[for=method]{display:block;margin-bottom:4px}
 @media(max-width:680px){.layout{grid-template-columns:1fr;gap:10px}main{padding-top:16px}.paper{margin:10px 0}header{padding-bottom:16px}h1{margin-top:18px}}
 header p{max-width:72ch}header p+p{margin-top:10px}.reading{font-size:14px;margin:10px 0;color:var(--quiet)}
+.tower{margin:14px 0;background:#e8e3d4;border-radius:3px;color:#26342f;overflow:hidden}.tower figcaption{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 14px 0;font:18px Georgia,serif}.tower figcaption span{font:11px ui-monospace,monospace;color:#526059}.tower svg{max-height:305px}
 </style>
 <main>
 <nav><a href="../index.html">← Music catalog</a></nav>
@@ -18,11 +19,12 @@ header p{max-width:72ch}header p+p{margin-top:10px}.reading{font-size:14px;margi
 </header>
 <div class="layout"><section aria-label="Ringing diagram">
 <label for="method">Method</label><select id="method"><option>Plain changes on four bells</option><option>Plain Bob Minor</option></select>
-<p class="reading">Each row gives one strike per bell, read from left to right. Follow a numbered bell down the diagram to see when it takes its turn.</p>
-<div class="paper"><div class="caption"><span>Change</span><span>Order of striking →</span></div><svg id="diagram" viewBox="0 0 460 390" role="img" aria-label="Bell paths through successive rows"></svg></div>
+<figure class="tower"><figcaption>Ringing chamber and belfry <span>Sectional view</span></figcaption><svg id="tower" role="img" aria-label="Numbered ringers, their ropes, and the bells above them"></svg></figure>
 <div class="readout"><label for="seek" id="rowLabel">Change</label><output class="digits" id="digits"></output></div>
 <input id="seek" type="range" min="0" value="0" step="1" aria-labelledby="rowLabel">
 <div class="controls"><button class="primary" id="play">Play</button><button id="previous" aria-label="Previous row">←</button><button id="next" aria-label="Next row">→</button><label>Pace <select id="pace"><option value=".42">Slow</option><option value=".30" selected>Steady</option><option value=".21">Brisk</option></select></label></div>
+<p class="reading">Each row gives one strike per bell, read from left to right. Follow a numbered bell down the diagram to see when it takes its turn.</p>
+<div class="paper"><div class="caption"><span>Change</span><span>Order of striking →</span></div><svg id="diagram" viewBox="0 0 460 390" role="img" aria-label="Bell paths through successive rows"></svg></div>
 </section><aside>
 <section><h2 id="title"></h2><p class="meta" id="summary"></p><p id="description"></p><a id="source">Source edition</a></section>
 <section><h3>Follow a bell</h3><p>Bell 1 is the treble, the highest bell. Select a bell to hear its pitch and trace its path.</p><div class="bells" id="bells"></div></section>
@@ -57,6 +59,7 @@ const pitches = [440,392,349.23,329.63,293.66,261.63];
 const svgNS = 'http://www.w3.org/2000/svg';
 let rows, row = 0, bell = 1, column = -1;
 let audio, master, running = false, timer, events = [], scheduled = 0, shown = 0;
+let motionIndex = 0, manualFrame = 0;
 let pendingPlay = 0, resumeAt = null;
 const sounded = new Set();
 async function enableAudio() {
@@ -85,6 +88,7 @@ function tone(number, time) {
     }
 }
 function stop() {
+    cancelAnimationFrame(manualFrame);
     resumeAt = null;
     pendingPlay++;
     clearInterval(timer);
@@ -98,6 +102,80 @@ function svg(name, attrs, content) {
     for (const [key,value] of Object.entries(attrs)) node.setAttribute(key,value);
     if (content !== undefined) node.textContent = content;
     return node;
+}
+// A diagram of full-circle ringing. At rest each bell is mouth-up near balance.
+let stations = [];
+const quietMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function buildTower() {
+    const tower = el('tower'), count = rows[0].length, width = count*88+16;
+    tower.setAttribute('viewBox','0 0 '+width+' 224');
+    tower.replaceChildren();
+    tower.append(svg('path',{d:'M4 10H'+(width-4)+' M4 84H'+(width-4)+' M4 90H'+(width-4)+' M4 197H'+(width-4),stroke:'#8c9080',fill:'none'}));
+    stations = [...rows[0]].map((digit,i)=>{
+        const group = svg('g',{transform:'translate('+(8+44+88*i)+' 0)'});
+        group.innerHTML = `
+          <path d="M-34 83V50L-9 18H10L33 46V83 M-34 75L-14 51 M32 74L14 51" fill="none" stroke="#a3a494" stroke-width="2"/>
+          <g class="wheel" stroke="#4f5549" stroke-linejoin="round">
+            <circle r="29" fill="none" stroke-width="2"/><path d="M-29 0H29 M0-29V29 M-20-20L20 20 M20-20L-20 20" fill="none"/>
+            <path d="M-6 -5Q-11 -4 -11 5Q-12 15 -18 20Q0 24 18 20Q12 15 11 5Q11 -4 6 -5Z" fill="#bfa36d" stroke-width="1.7"/>
+            <path d="M-17 18Q0 22 17 18" fill="none"/><g class="clapper"><path d="M0 0V21" stroke-width="2"/><circle cy="21" r="3" fill="#54574a"/></g>
+          </g>
+          <circle cy="47" r="2.5" fill="#414d42"/>
+          <path class="rope" fill="none" stroke="#726345" stroke-width="1.5"/>
+          <path class="grip" stroke="#9a593d" stroke-width="4" stroke-linecap="round"/>
+          <path d="M-6 156L-8 176L-11 195H-4L2 174L5 195H12L8 169L6 155Z" fill="#4d5751"/>
+          <path d="M-7 132Q0 128 6 133L9 159Q1 163 -9 159Z" fill="#858d7a" stroke="#48564b"/>
+          <path d="M-3 128V134L2 135L4 127" fill="#bca58b"/>
+          <path d="M-6 119Q-6 112 1 112Q8 112 8 119L10 122L7 123Q7 130 1 130Q-5 129 -6 119Z" fill="#c6af91" stroke="#55594d"/>
+          <path d="M-6 122Q-11 112 -2 109Q6 107 9 115L1 116L-4 123Z" fill="#545b50"/>
+          <path class="arm" fill="none" stroke="#445348" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle class="hand" r="3" fill="#c6af91" stroke="#635f50"/>
+          <circle class="badge" cy="210" r="9"/><text y="214" text-anchor="middle" font-family="monospace" font-size="12"></text>`;
+        group.querySelector('text').textContent=digit;
+        tower.append(group);
+        return Object.fromEntries(['wheel','clapper','rope','grip','arm','hand','badge','text'].map(key=>[key,group.querySelector(key==='text'?'text':'.'+key)]));
+    });
+    resetTower();
+}
+function resetTower() {
+    for (const station of stations) {
+        station.rest = row%2 ? -165 : 165;
+        station.swing = null;
+    }
+    paintTower(0);
+}
+function swingDuration() {
+    return Math.min(.72,Number(el('pace').value)*2.5);
+}
+function swingBell(number,time,backstroke) {
+    const station=stations[number-1];
+    station.swing={time,duration:swingDuration(),from:backstroke?-165:165};
+}
+function paintTower(now) {
+    stations.forEach((station,i)=>{
+        const swing=station.swing;
+        const active=swing && now>=swing.time-.12 && now<swing.time+.18;
+        let angle=station.rest, pull=0, tilt=0;
+        if (swing) {
+            // The bell passes mouth-down before sounding near the end of its swing.
+            const phase=Math.max(0,Math.min(1,(now-swing.time)/swing.duration+.77));
+            const eased=(1-Math.cos(phase*Math.PI))/2;
+            angle=swing.from*(1-2*eased);
+            pull=Math.sin(Math.PI*phase)**2;
+            tilt=Math.sign(swing.from)*24*Math.sin(phase*2*Math.PI);
+            if (phase===1) {station.rest=-swing.from; station.swing=null;}
+        }
+        if (quietMotion.matches) {angle=165;pull=0;tilt=0;}
+        const handY=112+pull*34;
+        station.wheel.setAttribute('transform','translate(0 47) rotate('+angle+')');
+        station.clapper.setAttribute('transform','rotate('+tilt+')');
+        station.rope.setAttribute('d','M29 47V'+(handY+9)+'q0 13 -5 6');
+        station.grip.setAttribute('d','M29 '+(handY-6)+'v12');
+        station.arm.setAttribute('d','M4 136L'+(15+pull*2)+' '+(130+pull*18)+'L29 '+handY);
+        station.hand.setAttribute('cx',29);station.hand.setAttribute('cy',handY);
+        station.badge.setAttribute('fill',active?'#244338':i+1===bell?'#e3be74':'#d3d2c2');
+        station.text.setAttribute('fill',active?'white':'#273a31');
+    });
 }
 function draw() {
     const diagram = el('diagram'), count = rows[0].length;
@@ -125,10 +203,15 @@ function draw() {
     el('next').disabled = row===rows.length-1;
 }
 function jump(target) {
-    stop(); row = Number(target); el('feedback').textContent = ''; draw();
+    stop(); row = Number(target); resetTower(); el('feedback').textContent = ''; draw();
 }
 function tick() {
     const now = audio.currentTime;
+    while (motionIndex < events.length && events[motionIndex].time <= now+.77*swingDuration()) {
+        const next = events[motionIndex++];
+        if (!el('practice').checked || next.bell !== bell) swingBell(next.bell,next.time,next.row%2);
+    }
+    paintTower(now);
     while (scheduled < events.length && events[scheduled].time <= now+.10) {
         const event = events[scheduled++];
         if (!el('practice').checked || event.bell !== bell) tone(event.bell,Math.max(now,event.time));
@@ -146,16 +229,16 @@ function tick() {
 async function start() {
     if (running) {
         const next = events[shown];
-        stop(); resumeAt = next; draw(); return;
+        stop(); resumeAt = next; resetTower(); draw(); return;
     }
     const request = ++pendingPlay;
     try { await enableAudio(); } catch { el('feedback').textContent='Audio is unavailable in this browser.'; return; }
     if (request !== pendingPlay) return;
     if (resumeAt) row = resumeAt.row;
     else if (row === rows.length-1) row = 0;
-    events = []; shown = scheduled = 0;
+    events = []; shown = scheduled = motionIndex = 0;
     const step = Number(el('pace').value);
-    let time = audio.currentTime+.12;
+    let time = audio.currentTime+.56;
     for (let i=row;i<rows.length;i++) {
         [...rows[i]].forEach((digit,j)=>{
             if (resumeAt && i===resumeAt.row && j<resumeAt.column) return;
@@ -181,19 +264,28 @@ function setup() {
         button.onclick=async ()=>{
             jump(row); bell=Number(digit);
             for(const b of el('bells').children) b.setAttribute('aria-pressed',b===button);
-            el('strike').textContent='Strike bell '+bell; draw();
+            el('strike').textContent='Strike bell '+bell; resetTower(); draw();
             try {await enableAudio(); tone(bell,audio.currentTime);} catch {el('feedback').textContent='Audio unavailable.';}
         };
         el('bells').append(button);
     }
-    el('strike').textContent='Strike bell 1'; draw();
+    buildTower(); el('strike').textContent='Strike bell 1'; draw();
 }
 async function strike() {
     if (!el('practice').checked) return;
     try {await enableAudio();} catch {el('feedback').textContent='Audio unavailable.';return;}
     const now=audio.currentTime;
     tone(bell,now);
-    if (!running) return;
+    swingBell(bell,now,stations[bell-1].rest<0);
+    if (!running) {
+        cancelAnimationFrame(manualFrame);
+        function finishPull() {
+            paintTower(audio.currentTime);
+            if (!running && stations[bell-1].swing) manualFrame=requestAnimationFrame(finishPull);
+        }
+        finishPull();
+        return;
+    }
     const step=Number(el('pace').value);
     const target=events.find(event=>event.bell===bell && Math.abs(event.time-now)<step*.52);
     if (!target) {el('feedback').textContent='Between strikes';return;}
