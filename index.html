@@ -94,106 +94,39 @@
             padding: 0 24px 16px;
         }
 
-        .tags-header {
+        .filter-controls {
             display: flex;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-
-        .tags-toggle {
-            background: none;
-            border: none;
-            color: #555;
-            font-size: 0.75rem;
-            cursor: pointer;
-            display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 4px;
-        }
-
-        .tags-toggle:hover {
-            color: #888;
-        }
-
-        .tags-toggle .arrow {
-            transition: transform 0.2s;
-        }
-
-        .tags-toggle.collapsed .arrow {
-            transform: rotate(-90deg);
-        }
-
-        .tag-filters.collapsed {
-            display: none;
-        }
-
-        .category-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
             justify-content: center;
-            margin-bottom: 12px;
+            gap: 8px 16px;
+            margin-bottom: 10px;
         }
 
-        .category-filter {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 6px 14px;
-            border-radius: 20px;
+        .filter-controls label {
             color: #aaa;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            min-width: 90px;
-            text-align: center;
+            font-size: .85rem;
         }
 
-        .category-filter:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+        .filter-controls select, #activeTags button {
+            background: #242424;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #ddd;
+            padding: 5px 8px;
+            font: inherit;
         }
 
-        .category-filter.active {
-            background: rgba(78, 205, 196, 0.25);
-            border-color: rgba(78, 205, 196, 0.5);
-            color: #4ecdc4;
-        }
-
-        .tag-filters {
+        #activeTags {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
             justify-content: center;
-            min-height: 52px;
-            align-content: flex-start;
+            gap: 6px;
         }
 
-        .tag-filter {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 3px 8px;
-            border-radius: 3px;
-            color: #666;
-            font-size: 0.7rem;
+        #activeTags button {
             cursor: pointer;
-            transition: color 0.15s, opacity 0.15s;
-            min-width: 70px;
-            text-align: center;
-        }
-
-        .tag-filter:hover:not(.unavailable) {
-            color: #888;
-        }
-
-        .tag-filter.active {
-            background: rgba(78, 205, 196, 0.15);
-            border-color: rgba(78, 205, 196, 0.3);
-            color: #4ecdc4;
-        }
-
-        .tag-filter.unavailable {
-            opacity: 0.25;
-            cursor: default;
+            font-size: .8rem;
         }
 
         .results-count {
@@ -272,20 +205,8 @@
         }
 
         .card-category {
-            background: rgba(78, 205, 196, 0.15);
-            padding: 2px 8px;
-            border-radius: 3px;
-            color: #4ecdc4;
-            font-size: 0.7rem;
-            font-weight: 500;
-        }
-
-        .tag {
-            background: rgba(255, 255, 255, 0.06);
-            padding: 2px 6px;
-            border-radius: 3px;
-            color: #666;
-            font-size: 0.65rem;
+            color: #aaa;
+            font-size: .75rem;
         }
 
         .card-rating {
@@ -357,13 +278,11 @@
     <nav aria-label="Site sections" style="max-width:1200px;margin:0 auto;padding:0 24px 20px;display:flex;gap:24px;font-size:14px;"><a href="index.html" aria-current="page" style="color:#e0e0e0;">Apps</a><a href="games/index.html" style="color:#e0e0e0;">Games</a><a href="notes/index.html" style="color:#e0e0e0;">Notes</a><a href="music/index.html" style="color:#e0e0e0;">Music</a></nav>
 
     <div class="filters">
-        <div class="category-filters" id="categoryFilters"></div>
-        <div class="tags-header">
-            <button class="tags-toggle collapsed" id="tagsToggle">
-                <span class="arrow">▼</span> Tags
-            </button>
+        <div class="filter-controls">
+            <label>Category <select id="category"><option value="">All categories</option></select></label>
+            <label>Tag <select id="tag"><option value="">Choose a tag</option></select></label>
         </div>
-        <div class="tag-filters collapsed" id="tagFilters"></div>
+        <div id="activeTags" aria-label="Selected tags"></div>
         <div class="results-count" id="resultsCount"></div>
     </div>
 
@@ -407,10 +326,7 @@
                 document.getElementById('search').value = searchQuery;
             }
 
-            if (params.get('tags_open') === 'true') {
-                document.getElementById('tagsToggle').classList.remove('collapsed');
-                document.getElementById('tagFilters').classList.remove('collapsed');
-            }
+
         }
 
         // Update URL with current filters
@@ -427,10 +343,6 @@
 
             if (searchQuery) {
                 params.set('q', searchQuery);
-            }
-
-            if (!document.getElementById('tagFilters').classList.contains('collapsed')) {
-                params.set('tags_open', 'true');
             }
 
             const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
@@ -461,9 +373,9 @@
                 allTags = Array.from(tagSet).sort();
 
                 loadFromURL();
-                renderCategoryFilters();
-                renderTagFilters();
-                applyActiveStates();
+                const category = document.getElementById('category');
+                allCategories.forEach(name => category.add(new Option(name, name)));
+                category.value = selectedCategory || '';
                 filterAndRender();
             } catch (error) {
                 console.error('Failed to load metadata:', error);
@@ -475,71 +387,18 @@
             }
         }
 
-        function applyActiveStates() {
-            // Apply active state to category
-            if (selectedCategory) {
-                const catBtn = document.querySelector(`.category-filter[data-category="${CSS.escape(selectedCategory)}"]`);
-                if (catBtn) catBtn.classList.add('active');
-            }
+        document.getElementById('category').addEventListener('change', event => {
+            selectedCategory = event.target.value || null;
+            selectedTags.clear();
+            filterAndRender();
+            updateURL();
+        });
 
-            // Apply active state to tags
-            selectedTags.forEach(tag => {
-                const tagBtn = document.querySelector(`.tag-filter[data-tag="${CSS.escape(tag)}"]`);
-                if (tagBtn) tagBtn.classList.add('active');
-            });
-        }
-
-        function renderCategoryFilters() {
-            const container = document.getElementById('categoryFilters');
-            container.innerHTML = allCategories.map(cat => `
-                <button class="category-filter" data-category="${esc(cat)}">${esc(cat)}</button>
-            `).join('');
-
-            container.addEventListener('click', e => {
-                if (e.target.classList.contains('category-filter')) {
-                    const cat = e.target.dataset.category;
-
-                    // Remove active from all
-                    container.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
-
-                    if (selectedCategory === cat) {
-                        selectedCategory = null;
-                    } else {
-                        selectedCategory = cat;
-                        e.target.classList.add('active');
-                    }
-
-                    // Reset tag selection
-                    selectedTags.clear();
-                    document.querySelectorAll('.tag-filter').forEach(btn => btn.classList.remove('active'));
-
-                    filterAndRender();
-                    updateURL();
-                }
-            });
-        }
-
-        function renderTagFilters() {
-            const container = document.getElementById('tagFilters');
-            container.innerHTML = allTags.map(tag => `
-                <button class="tag-filter" data-tag="${esc(tag)}">${esc(tag)}</button>
-            `).join('');
-
-            container.addEventListener('click', e => {
-                if (e.target.classList.contains('tag-filter') && !e.target.classList.contains('unavailable')) {
-                    const tag = e.target.dataset.tag;
-                    if (selectedTags.has(tag)) {
-                        selectedTags.delete(tag);
-                        e.target.classList.remove('active');
-                    } else {
-                        selectedTags.add(tag);
-                        e.target.classList.add('active');
-                    }
-                    filterAndRender();
-                    updateURL();
-                }
-            });
-        }
+        document.getElementById('tag').addEventListener('change', event => {
+            if (event.target.value) selectedTags.add(event.target.value);
+            filterAndRender();
+            updateURL();
+        });
 
         function filterAndRender() {
             let filtered = allApps;
@@ -567,20 +426,28 @@
                 );
             }
 
-            // Get available tags from final filtered results
-            const availableTags = new Set();
-            filtered.forEach(app => app.tags.forEach(tag => availableTags.add(tag)));
+            const available = new Set(filtered.flatMap(app => app.tags));
+            const tag = document.getElementById('tag');
+            tag.replaceChildren(new Option('Choose a tag', ''));
+            for (const name of allTags) {
+                if (available.has(name) && !selectedTags.has(name)) tag.add(new Option(name, name));
+            }
+            tag.disabled = tag.options.length === 1;
 
-            // Update tag filter availability (gray out unavailable tags)
-            const tagContainer = document.getElementById('tagFilters');
-            tagContainer.querySelectorAll('.tag-filter').forEach(btn => {
-                const tag = btn.dataset.tag;
-                if (availableTags.has(tag) || selectedTags.has(tag)) {
-                    btn.classList.remove('unavailable');
-                } else {
-                    btn.classList.add('unavailable');
-                }
-            });
+            const activeTags = document.getElementById('activeTags');
+            activeTags.replaceChildren();
+            for (const name of selectedTags) {
+                const button = document.createElement('button');
+                button.textContent = name + ' ×';
+                button.setAttribute('aria-label', 'Remove tag ' + name);
+                button.onclick = () => {
+                    selectedTags.delete(name);
+                    filterAndRender();
+                    updateURL();
+                    document.getElementById('tag').focus();
+                };
+                activeTags.append(button);
+            }
 
             renderApps(filtered);
 
@@ -618,7 +485,6 @@
                         <p class="card-description">${esc(app.description)}</p>
                         <div class="card-meta">
                             ${app.category ? `<span class="card-category">${esc(app.category)}</span>` : ''}
-                            ${app.tags.slice(0, 2).map(tag => `<span class="tag">${esc(tag)}</span>`).join('')}
                             ${[1, 2, 3, 4, 5].includes(app.completeness) ? `<span class="card-rating" title="Completeness: ${app.completeness}/5"><span class="filled">${'★'.repeat(app.completeness)}</span>${'★'.repeat(5 - app.completeness)}</span>` : ''}
                         </div>
                     </div>
@@ -640,15 +506,6 @@
         document.getElementById('search').addEventListener('input', e => {
             searchQuery = e.target.value;
             filterAndRender();
-            updateURL();
-        });
-
-        // Tags toggle
-        document.getElementById('tagsToggle').addEventListener('click', () => {
-            const toggle = document.getElementById('tagsToggle');
-            const tags = document.getElementById('tagFilters');
-            toggle.classList.toggle('collapsed');
-            tags.classList.toggle('collapsed');
             updateURL();
         });
 
