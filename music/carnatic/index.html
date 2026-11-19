@@ -24,11 +24,9 @@ nav a span { display:block; font:1.12rem/1.4 Georgia,serif }
 nav a small { font-size:.78rem; color:#bcc6bc }
 dl { display:grid; grid-template-columns:auto 1fr; gap:.4rem 1.3rem; margin:1.2rem 0 }
 dt { align-self:center } dd { margin:0 }
-.links,.audio { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem }
-.audio { border-top:1px solid #41504a; padding-top:1rem }
-button { background:#dfcc96; color:#192222; border:0; border-radius:.2rem; padding:.65rem 1rem; font:inherit; font-weight:600; cursor:pointer }
-a:focus-visible,button:focus-visible { outline:2px solid #f2dba4; outline-offset:3px }
-iframe { width:100%; border:0; aspect-ratio:16/9; display:block; margin-top:.75rem }
+.links { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem }
+#phrase span {display:inline-block;padding:.05rem .22rem;border-bottom:2px solid transparent} #phrase .current {color:#f9e2ab;border-color:currentColor;background:#273630} audio {width:100%;display:block;margin:.8rem 0}
+a:focus-visible,audio:focus-visible { outline:2px solid #f2dba4; outline-offset:3px }
 footer { max-width:46rem; color:#c4cbc2; margin-top:1.8rem } footer h2 { font-size:1.45rem }
 @media(max-width:650px) { .layout { grid-template-columns:1fr } nav { display:grid; grid-template-columns:1fr 1fr } }
 </style></head>
@@ -46,12 +44,16 @@ footer { max-width:46rem; color:#c4cbc2; margin-top:1.8rem } footer h2 { font-si
 <p class="eyebrow" id="element"></p><h2 id="title"></h2>
 <dl><dt>Temple town</dt><dd id="town"></dd><dt>Rāga</dt><dd id="raga"></dd><dt>Tāḷa in score</dt><dd id="tala"></dd></dl>
 <p class="links"><a id="words">Lyrics</a><a id="score">Notation</a></p>
-<div class="audio"><button type="button" id="play">Play recording</button><a id="listen">Open on YouTube</a></div>
-<p id="credit"></p><div id="player"></div>
+<h3>Opening phrase</h3>
+<div id="phrase" aria-label="Opening notes in solfa"></div>
+<audio id="excerpt" controls preload="metadata" aria-label="Opening phrase on piano"></audio>
+<p>A plain piano reading of the opening notes. Timing is approximate. The vocal performance below includes the rāga’s slides and ornaments.</p>
+<p><a id="listen">Full vocal performance on YouTube</a><br><small id="credit"></small></p>
 </section>
 </div>
 <footer><h2>Sources</h2>
 <p>Subbarāma Dīkṣitar published the <i>Saṅgīta Sampradāya Pradarśini</i> in 1904. P. P. Narayanaswami’s 2023 Malayalam edition gathers 221 compositions by Muttusvāmi Dīkṣitar from that work. The notes above the syllables and the marks around them describe melodic movement. The catalogue gives the rhythmic cycle (tāḷa) printed at the head of each score. <a href="https://guruguha.org/wp-content/uploads/2023/11/md_ssp_mal.pdf#page=29">Five-element group in the edition</a></p>
+<p>The local excerpts follow the first line of each linked score. Piano samples by Alexander Holm. <a href="../bach-data/piano-credits.txt">Sample credits and license</a></p>
 <p>The performance is D. K. Jayaraman’s <i>Panchalinga Kshetra Krithis</i>, on the Carnatic Classical channel. Each selection begins at the track time listed by the publisher. <a href="https://www.youtube.com/watch?v=oFOsg7ClO8E">Full recording</a></p>
 </footer>
 </main>
@@ -77,6 +79,8 @@ const entries = works.map(work => {
   byId('catalog').append(link);
   return link;
 });
+const phrases = {"earth": [["Sa", 1], ["Dha", 1], ["Ni", 2], ["Dha", 1], ["Pa", 1], ["Dha", 1], ["Ni", 1], ["Dha", 2], ["Pa", 3], ["Dha", 1], ["Pa", 1], ["Ma", 1], ["Pa", 1], ["Ma", 1], ["Ga", 1], ["Ri", 1], ["Sa", 2]], "water": [["Ga", 2], ["Pa", 1], ["Ma", 1], ["Pa", 1], ["Dha", 3], ["Pa", 1], ["Ga", 1], ["Ri", 1], ["Ma", 1], ["Ga", 1], ["Ri", 2], ["Sa", 2]], "fire": [["Ri", 1], ["Ri", 1], ["Ga", 1], ["Ma", 1], ["Pa", 1], ["Ma", 1], ["Pa", 1], ["Pa", 2], ["Ni", 1], ["Dha", 1], ["Ni", 1], ["Sa", 2], ["Ri", 1], ["Ni", 1], ["Sa", 1], ["Dha", 1], ["Dha", 1], ["Ni", 1], ["Pa", 2]], "air": [["Ri", 2], ["Ga", 2], ["Ma", 1], ["Pa", 1], ["Ga", 1], ["Ma", 1], ["Pa", 2], ["Ma", 1], ["Ga", 1], ["Ri", 1], ["Sa", 2]], "space": [["Ni", 1], ["Pa", 3], ["Sa", 2], ["Sa", 2], ["Ma", 1], ["Ga", 2], ["Ri", 1], ["Ga", 1], ["Ri", 2]]};
+const audio = byId("excerpt");
 let active;
 function selectWork() {
   active = works.find(work => work.id === location.hash.slice(1)) || works[0];
@@ -92,25 +96,27 @@ function selectWork() {
   byId('listen').href = 'https://www.youtube.com/watch?v=' + video + '&t=' + active.time + 's';
   const time = Math.floor(active.time / 60) + ':' + String(active.time % 60).padStart(2,'0');
   byId('credit').textContent = 'D. K. Jayaraman · album position ' + time;
-  byId('player').replaceChildren();
-  byId('play').textContent = 'Play recording';
+  audio.pause();
+  audio.src = active.id + '.wav';
+  audio.load();
+  byId('phrase').replaceChildren(...phrases[active.id].map(([syllable]) => {
+    const note = document.createElement('span');
+    note.textContent = syllable;
+    return note;
+  }));
 }
-byId('play').addEventListener('click', () => {
-  const container = byId('player');
-  if (container.firstChild) {
-    container.replaceChildren();
-    byId('play').textContent = 'Play recording';
-    return;
-  }
-  const frame = document.createElement('iframe');
-  frame.title = active.title + ' performed by D. K. Jayaraman';
-  const next = works[works.indexOf(active) + 1];
-  frame.src = 'https://www.youtube-nocookie.com/embed/' + video + '?autoplay=1&start=' + active.time + (next ? '&end=' + next.time : '');
-  frame.allow = 'autoplay; encrypted-media; fullscreen';
-  frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  container.append(frame);
-  byId('play').textContent = 'Close player';
-});
+function highlight() {
+  const position = audio.currentTime / .28;
+  let start = 0;
+  phrases[active.id].forEach(([,length], index) => {
+    byId('phrase').children[index].classList.toggle('current', !audio.ended && position >= start && position < start + length);
+    start += length;
+  });
+}
+audio.addEventListener('timeupdate',highlight);
+audio.addEventListener('seeked',highlight);
+audio.addEventListener('ended',highlight);
+window.addEventListener('pagehide',() => audio.pause());
 window.addEventListener('hashchange',selectWork);
 selectWork();
 </script></body></html>

@@ -18,44 +18,13 @@ for (let n = 1; n <= 7; n++) {
   shape(byId('wires'), 'line', {x1:92, x2:bridge, y1:stringY(n), y2:stringY(n), stroke:'#cfbd9e', 'stroke-width':2.6 - n * 0.19});
 }
 
-let audio;
-let timers = [];
-let run = 0;
-let playing = false;
-let voices = new Set();
+const audio = new Audio();
+const volume = byId('volume');
+audio.volume = Number(volume.value);
+volume.oninput = () => { audio.volume = Number(volume.value); };
+let frame;
+let request = 0;
 const normal = 'The first two signs specify the plucks. The next two call for a short rest and three repetitions of the pair.';
-
-function pluck(stopped) {
-  // A short, filtered noise burst recirculates in a delay line tuned to D3.
-  const pitch = 146.832;
-  const delay = audio.createDelay();
-  const filter = audio.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = stopped ? 2300 : 3700;
-  filter.Q.value = 0.4;
-  delay.delayTime.value = 1 / pitch - 0.0001;
-  const feedback = audio.createGain();
-  feedback.gain.value = stopped ? 0.974 : 0.983;
-  const output = audio.createGain();
-  output.gain.value = 0.45;
-  delay.connect(filter).connect(feedback).connect(delay);
-  filter.connect(output).connect(audio.destination);
-  const size = Math.ceil(audio.sampleRate / pitch);
-  const buf = audio.createBuffer(1, size, audio.sampleRate);
-  const samples = buf.getChannelData(0);
-  for (let i = 0; i < size; i++) samples[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / size);
-  const burst = audio.createBufferSource();
-  burst.buffer = buf;
-  burst.connect(delay);
-  burst.start();
-  const nodes = [burst, delay, filter, feedback, output];
-  const release = () => {
-    nodes.forEach(n => n.disconnect());
-    voices.delete(release);
-  };
-  voices.add(release);
-  setTimeout(release, 2300);
-}
 
 function show(which) {
   const stopped = which === 2;
@@ -70,47 +39,52 @@ function show(which) {
     shape(indicator,'circle',{cx:end,cy:y,r:7,fill:'#b7decb'});
   }
   byId('status').textContent = stopped ? '2 · Press string four at hui nine with the left thumb. Hook the string inward with the right middle finger.' : '1 · Leave string seven open. Pluck outward with the right index finger.';
-  pluck(stopped);
+
 }
 
 function stop() {
-  run++;
-  playing = false;
-  timers.forEach(clearTimeout);
-  timers = [];
-  voices.forEach(release => release());
+  request++;
+  audio.pause();
+  cancelAnimationFrame(frame);
   byId('sequence').textContent = 'Play opening';
   byId('indicator').replaceChildren();
   byId('status').textContent = normal;
 }
 
-async function play(sequence) {
-  const wasPlaying = playing;
+const opening = [[0,1],[0.65,2],[1.22,0],[2,1],[2.5,2],[3,1],[3.5,2],[4,1],[4.5,2]];
+async function play(gesture) {
+  const toggle = !gesture && byId('sequence').textContent === 'Stop';
   stop();
-  if (!sequence && wasPlaying) return;
-  const current = run;
+  if (toggle) return;
+  const pending = request;
+  audio.src = ['opening.wav','seventh.wav','damped.wav'][gesture];
+  if (!gesture) byId('sequence').textContent = 'Stop';
   try {
-    audio ??= new AudioContext();
-    await audio.resume();
+    await audio.play();
   } catch {
-    byId('status').textContent = 'Audio is unavailable in this browser.';
+    if (pending === request) {
+      stop();
+      byId('status').textContent = 'Audio playback is unavailable.';
+    }
     return;
   }
-  if (current !== run) return;
-  if (sequence) {
-    show(sequence);
-    return;
+  if (pending !== request) return;
+  if (gesture) { show(gesture); return; }
+  let index = -1;
+  function sync() {
+    while (index+1 < opening.length && opening[index+1][0] <= audio.currentTime) {
+      const sign = opening[++index][1];
+      if (sign) show(sign);
+      else {
+        byId('status').textContent = 'Short rest.';
+        byId('indicator').replaceChildren();
+      }
+    }
+    frame = requestAnimationFrame(sync);
   }
-  playing = true;
-  byId('sequence').textContent = 'Stop';
-  const beats = [0, 650, 2000, 2500, 3000, 3500, 4000, 4500];
-  beats.forEach((ms, i) => timers.push(setTimeout(() => show(1 + i % 2), ms)));
-  timers.push(setTimeout(() => {
-    byId('status').textContent = 'Short rest.';
-    byId('indicator').replaceChildren();
-  }, 1220));
-  timers.push(setTimeout(stop, 6200));
+  sync();
 }
+audio.addEventListener('ended',stop);
 
 byId('sequence').addEventListener('click', () => play(0));
 byId('first').addEventListener('click', () => play(1));
