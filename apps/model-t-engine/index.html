@@ -9,21 +9,27 @@
 <main><nav><a href="../../index.html">← Apps</a></nav>
 <header><h1>Model T engine</h1><p>A spark ignites the compressed mixture above each piston. The expanding gases drive the piston down. The crankshaft turns the camshaft at half speed to open the valves at the right strokes.</p></header>
 <div class="workbench"><section class="stage"><canvas id="view" tabindex="0" aria-label="Engine assembly. Drag or use arrow keys to orbit; scroll to zoom."></canvas><div class="edge"><span class="mono">FORD · INLINE FOUR</span><div class="bar"><button id="gearView">Timing gears</button><button id="reset">Assembly view</button></div></div><span class="ignition" id="ignition"></span><span class="hint" id="hint">Drag to orbit · Scroll to zoom</span></section>
-<aside class="cam-panel"><h2>Cam and valve</h2><label class="mono" id="camCylinder" for="camType">Cylinder 1</label> <select id="camType"><option value="1">Exhaust valve</option><option value="0">Intake valve</option></select>
-<svg viewBox="0 0 260 202" role="img" aria-label="End view of the rotating cam, rising tappet, valve spring and valve opening">
-<g fill="none" stroke="#8c968a"><path d="M33 39h26m34 0h27M50 66h52"/></g>
+<aside class="cam-panel"><h2>Valve and piston section</h2><label class="mono" id="camCylinder" for="camType">Cylinder 1</label> <select id="camType"><option value="1">Exhaust valve</option><option value="0">Intake valve</option></select>
+<svg viewBox="0 -12 259 252" role="img" aria-label="Linked section showing the piston and rod, crank and cam gears, valve and cylinder passage">
+<g id="sectionGears" stroke="#919b90" fill="#ced2c4"></g>
+<path d="M65 5H205V122M65 5Q48 5 48 16V39H58M92 39H120V122M8 49H53L61 39M8 62H72V49" fill="none" stroke="#687a71" stroke-width="4"/>
+<path id="passageFlow" fill="none" stroke-width="3" stroke-dasharray="5 4"/>
+<path id="diagramRod" fill="none" stroke="#75857c" stroke-width="7" stroke-linecap="round"/>
+<g id="sectionPiston"><rect x="123" width="79" height="17" rx="2" fill="#91a39a" stroke="#475953"/><path d="M124 4H201M124 8H201" stroke="#52635b"/></g>
+<path id="crankArm" stroke="#5c6b61" stroke-width="8" stroke-linecap="round"/>
+<path d="M50 66h52" stroke="#8c968a"/>
 <g id="camFollower" fill="#516d64" stroke="#354a43"><path d="M56 35h40l-6 4H62Z"/><path d="M74 39h4v77h-4z"/><path d="M66 114h20l-10 5z"/></g>
 <path id="coil" fill="none" stroke="#68756a" stroke-width="2"/>
-<g id="camLobe"><path id="camOutline" fill="#c29a61" stroke="#645641" stroke-width="2"/><circle cy="-22" r="3" fill="#f9e6bd"/></g><circle cx="76" cy="150" r="8" fill="#475953"/>
-<g fill="#3b4e46" font-family="system-ui,sans-serif" font-size="13"><text x="136" y="41" id="seatLabel">Valve seated</text><text x="136" y="80">Return spring</text><text x="136" y="115">Tappet</text><text x="136" y="153">Cam lobe</text></g>
-<g stroke="#98a092"><path d="M101 38h28M92 77h37M89 113h40M111 150h18"/></g></svg>
-<p>The raised nose of the cam pushes the tappet up, lifting the valve off its seat. As the nose turns away, the spring closes the valve.</p>
+<g id="camLobe"><path id="camOutline" fill="#c29a61" stroke="#645641" stroke-width="2"/><circle cy="-22" r="3" fill="#f9e6bd"/></g><circle cx="76" cy="150" r="6" fill="#475953"/>
+<g fill="#34453c" font-family="system-ui,sans-serif" font-size="12"><text x="4" y="32" id="seatLabel"></text><text x="162" y="0" text-anchor="middle">Chamber</text><text x="211" y="78">Piston</text><text x="4" y="115">Tappet</text><text x="49" y="201">Cam lobe</text><text x="17" y="232">Cam gear</text><text x="148" y="232">Crank gear</text></g>
+</svg>
+<p id="sectionNote"></p><p>The piston turns the crank through its connecting rod. The small crank gear drives the larger cam gear. The cam lifts the valve, opening a passage beside the piston.</p>
 <div class="cam-actions"><button id="sparkStep">Show ignition</button><button id="liftStep">Show full lift</button></div></aside></div>
 <div class="transport"><button id="play">Run cycle</button><label for="angle">Crank angle</label><input id="angle" type="range" min="0" max="720" value="76" step="1"><output id="degrees" for="angle"></output><label>Pace <select id="speed"><option value="45">Slow</option><option value="120" selected>Study</option><option value="300">Fast</option></select></label></div>
 <div class="views"><label><input id="sleeves" type="checkbox" checked> Sectioned bores</label><label><input id="valves" type="checkbox" checked> Valve train</label><label>Inspect <select id="focus"><option value="-1">All cylinders</option><option value="0">Cylinder 1</option><option value="1">Cylinder 2</option><option value="2">Cylinder 3</option><option value="3">Cylinder 4</option></select></label></div>
 <div class="details"><section><h2>Firing cycle</h2><p>The cylinders fire in the order 1, 2, 4, 3. Pistons 1 and 4 rise together; their valves determine which cylinder compresses a fresh charge and which expels exhaust.</p><div id="chart"></div><p id="readout" class="mono"></p></section>
 <figure class="plate"><a href="ford-cut-3.jpg"><img src="ford-cut-3.jpg" alt="Ford's 1919 cylinder assembly drawing, showing the valves above the camshaft and the two timing gears at the front."></a><figcaption>Ford owner’s manual, 1919 · Cylinder assembly, cut 3.</figcaption></figure></div>
-<footer>This kinematic study follows Ford’s side-valve layout and firing order. Part profiles and clearances are illustrative. Valve events use idealized stroke boundaries; the manual gives the actual opening and closing settings. <a href="https://www.gutenberg.org/ebooks/46206">Ford Motor Company, 1919 manual</a></footer></main>
+<footer>This kinematic study follows Ford’s side-valve layout and firing order. Part profiles and clearances are illustrative. The section and flow markers trace the shared chamber and ports schematically. Valve events use idealized stroke boundaries; the manual gives the actual opening and closing settings. <a href="https://www.gutenberg.org/ebooks/46206">Ford Motor Company, 1919 manual</a></footer></main>
 <script src="../../libs/three-0.128.0/three.min.js"></script>
 <script>
 'use strict';
@@ -84,6 +90,18 @@ const lobePoints=Array.from({length:128},(_,k)=>{
     const angle=k*tau/128,r=camRadius(angle);return [r*Math.cos(angle),r*Math.sin(angle)];
 });
 $('camOutline').setAttribute('d',lobePoints.map(([up,side],i)=>(i?'L':'M')+(side*206)+' '+(-up*206)).join(' ')+'Z');
+// End projection of the two meshing timing gears, behind the selected cylinder.
+const gearDistance=Math.hypot(88,37);
+const gearDirection=Math.atan2(37,88);
+const diagramGears=[48,24].map((teeth,index)=>{
+    const r=gearDistance*(index?1:2)/3,points=[];
+    for(let tooth=0;tooth<teeth;tooth++)for(const [f,dr] of [[0,-1],[.25,1.3],[.55,1.3],[.8,-1]]){
+        const a=tau*(tooth+f)/teeth;
+        points.push((r+dr)*Math.cos(a)+','+(r+dr)*Math.sin(a));
+    }
+    const gear=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    gear.setAttribute('points',points.join(' '));$('sectionGears').append(gear);return gear;
+});
 function showValve(index,phase){
     const exhaust=$('camType').value==='1', lift=camLift(phase,exhaust)*206;
     $('camCylinder').textContent='Cylinder '+(index+1);
@@ -92,7 +110,24 @@ function showValve(index,phase){
     const points=['M76 66'];
     for(let k=0;k<15;k++)points.push('L'+(k%2?85:67)+' '+(66+(38-lift)*k/14));
     points.push('L76 '+(105-lift));$('coil').setAttribute('d',points.join(' '));
-    $('seatLabel').textContent=lift>.01?'Valve open':'Valve seated';
+    $('seatLabel').textContent=lift>.01?'Open':'Seated';
+    const angle=phase*rad,pinX=164+24*Math.sin(angle),pinY=187-24*Math.cos(angle);
+    const wrist=pinY-Math.sqrt((50*rodLength)**2-(pinX-164)**2);
+    $('sectionPiston').setAttribute('transform','translate(0 '+(wrist-12)+')');
+    $('diagramRod').setAttribute('d','M164 '+wrist+'L'+pinX+' '+pinY);
+    $('crankArm').setAttribute('d','M164 187L'+pinX+' '+pinY);
+    diagramGears[0].setAttribute('transform','translate(76 150) rotate('+(gearDirection/rad-.4*360/48-state.angle/2)+')');
+    diagramGears[1].setAttribute('transform','translate(164 187) rotate('+(gearDirection/rad+180-.9*360/24+state.angle)+')');
+    const flow=$('passageFlow');
+    flow.setAttribute('visibility',lift>.01?'visible':'hidden');
+    const gap=39-lift/2;
+    flow.setAttribute('d','M8 55H54Q62 55 65 45L65 '+gap+'H97Q109 18 124 18H150Q159 18 159 '+Math.min(wrist-18,44));
+    flow.setAttribute('stroke',exhaust?'#bd5b36':'#008b91');
+    flow.setAttribute('stroke-dashoffset',(exhaust?1:-1)*phase*.55);
+    const notes=['Both valves are seated. Expanding gas pushes the piston down.','The piston rises and sends spent gas out through the open exhaust valve.','The piston descends and draws fresh mixture through the open intake valve.','Both valves are seated. The rising piston compresses the trapped mixture.'];
+    const stroke=Math.floor(phase/180);
+    const otherValve=(stroke===1 && !exhaust) || (stroke===2 && exhaust);
+    $('sectionNote').textContent=notes[stroke]+(otherValve?' The valve shown here stays seated.':'');
 }
 function makeCylinder(index){
     const x=xs[index],g=group(scene,x);
@@ -112,6 +147,11 @@ function makeCylinder(index){
         const lip=part(sleeve,new THREE.TorusGeometry(.48,.024,7,40,Math.PI*.91),material.bronze,0,y,0);
         lip.rotation.set(Math.PI/2,0,-.46*Math.PI);
     }
+    // The side valves share a shallow combustion chamber over the bore.
+    // Show its back wall and roof edge, leaving the viewing face open.
+    const chamber=group(g);allSleeves.push(chamber);
+    box(chamber,.045,.27,1.4,material.jacket,-.42,2.53,.46);
+    box(chamber,.32,.04,1.4,material.jacket,-.28,2.68,.46);
     const poppets=[];
     for(let j=0;j<2;j++){
         const offset=(j-.5)*.43;
@@ -128,7 +168,15 @@ function makeCylinder(index){
         const peak=firing[index]+(j?270:450);
         lobe.rotation.x=peak*rad/2;
         profile(lobe,lobePoints,.16,material.bronze);
-        poppets.push({follower,spring});
+        ring(assembly,.145,.019,material.iron,0,2.46,0,'y');
+        const port=group(assembly);
+        const elbow=new THREE.CatmullRomCurve3([new THREE.Vector3(0,2.46,0),new THREE.Vector3(0,2.34,0),new THREE.Vector3(0,2.29,.17),new THREE.Vector3(0,2.29,.48)]);
+        part(port,new THREE.TubeGeometry(elbow,18,.115,16,false),new THREE.MeshStandardMaterial({color:0x71948b,transparent:true,opacity:.25,depthWrite:false}));
+        ring(port,.115,.016,material.iron,0,2.29,.48,'z');
+        const flow=group(assembly);
+        const dye=new THREE.MeshBasicMaterial({color:j?0xff8857:0x56dfda});
+        const markers=Array.from({length:5},()=>part(flow,new THREE.SphereGeometry(.031,8,6),dye));
+        poppets.push({follower,spring,flow,markers});
     }
     const gas=cyl(g,.427,1,new THREE.MeshBasicMaterial({color:0xff9235,transparent:true,opacity:.52,depthWrite:false}),0,0,0);
     const spark=group(g,.09,2.42,.12);
@@ -209,8 +257,18 @@ function update(){
             s.gas.material.opacity=.74-.48*progress;
         }
         s.rod.position.set(0,py,pz);s.rod.rotation.x=Math.atan2(-pz,height-py);
-        s.poppets.forEach(({follower,spring},j)=>{
+        s.poppets.forEach(({follower,spring,flow,markers},j)=>{
             const lift=camLift(phase,j);
+            flow.visible=lift>.002;
+            if(flow.visible){
+                const gap=2.46+lift/2;
+                const points=[[2.29,.48],[2.29,.14],[2.35,.04],[gap,-.08],[gap,-.17],[2.60,-.20],[2.60,-.45],[2.55,-.80],[crown+.04,-.86]];
+                markers.forEach((marker,k)=>{
+                    const t=((phase/60+k/markers.length)%1);
+                    const at=(j?1-t:t)*(points.length-1),n=Math.min(points.length-2,Math.floor(at)),f=at-n;
+                    marker.position.set(0,points[n][0]*(1-f)+points[n+1][0]*f,points[n][1]*(1-f)+points[n+1][1]*f);
+                });
+            }
             follower.position.y=lift;spring.position.y=1.73+lift;spring.scale.y=1-lift/.36;
         });
     }
