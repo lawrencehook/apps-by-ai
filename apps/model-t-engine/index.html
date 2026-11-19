@@ -3,10 +3,22 @@
 <title>Model T engine · Mechanical studies</title>
 <style>
 *{box-sizing:border-box}body{margin:0;color:#273632;background:#eeeae0;font:16px/1.5 "Instrument Sans",system-ui,sans-serif}main{max-width:1320px;margin:auto;padding:20px clamp(15px,4vw,58px) 40px}a{color:inherit;text-underline-offset:4px}nav,footer,figcaption{font-size:14px;color:#52615a}header{display:flex;align-items:end;justify-content:space-between;gap:24px;margin:20px 0}h1,h2{font:normal 28px Georgia,serif;margin:0}h1{font-size:clamp(42px,6vw,76px);letter-spacing:-.065em;line-height:1}header p{max-width:440px;margin:0}.stage{background:#17262b;border-radius:5px;position:relative;color:#d8e2db;overflow:hidden}.stage canvas{display:block;width:100%;height:clamp(350px,38vw,515px);touch-action:none;cursor:grab}.bar,.edge,.transport,.views{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.edge{position:absolute;top:14px;left:18px;right:18px;justify-content:space-between;pointer-events:none}.edge button{pointer-events:auto;color:#f3f0e4;background:#273a3d;border-color:#53635d}.hint{position:absolute;bottom:12px;left:18px;font-size:12px;color:#b5c4bf;pointer-events:none}button,select{border:1px solid #8f9b92;color:inherit;background:#f6f3ea;border-radius:3px;font:inherit;padding:6px 10px;cursor:pointer}button[aria-pressed=true],#play{background:#28433d;color:#fff}button:focus-visible,canvas:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #db965b;outline-offset:-2px}.transport{padding:15px 0;border-bottom:1px solid #adb5a9}.transport input{flex:1;min-width:110px;accent-color:#975e37}output,.mono{font:13px ui-monospace,monospace}output{min-width:4em}.details{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;margin:24px 0}.details p{margin:8px 0 12px}.row{width:100%;display:grid;grid-template-columns:2em 1fr 1fr 1fr 1fr;align-items:center;gap:2px;margin:4px 0;text-align:center}.row span{padding:3px 0;font-size:12px;background:#dfdfd4;border-bottom:2px solid transparent}.row span.current{background:#f4cfa6;border-color:#ab652b}.row strong{font:14px ui-monospace,monospace}.plate{margin:0}.plate img{display:block;width:100%;max-height:205px;object-fit:contain;background:#e2dfd7}.views{margin:9px 0;font-size:14px}footer{border-top:1px solid #aab3a7;padding-top:12px}.bar{gap:7px}.edge .mono{letter-spacing:.1em}.transport label{font-size:14px}@media(max-width:680px){header{display:block}header p{margin-top:12px}.details{grid-template-columns:1fr;gap:20px}.stage canvas{height:330px}.transport{gap:7px}.edge{left:10px;right:10px}.edge .mono{font-size:10px}.bar{gap:4px}.bar button{font-size:12px}.hint{font-size:10px}}
+.workbench{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(235px,1fr);gap:12px}.cam-panel{background:#e1e1d4;border:1px solid #adb5a9;border-radius:5px;padding:15px}.cam-panel h2{font-size:23px}.cam-panel svg{display:block;width:100%;height:220px}.cam-panel p{font-size:14px;margin:8px 0}.cam-panel select{font-size:14px}.stage .ignition{position:absolute;left:18px;bottom:34px;color:#ffe1a1;background:#253133;padding:3px 8px;border-left:3px solid #efa456;font-size:13px}.cam-actions{display:flex;gap:6px;flex-wrap:wrap}.cam-actions button{font-size:13px}
+@media(max-width:760px){.workbench{display:contents}.cam-panel{margin-top:12px}.cam-panel svg{height:170px}main{display:flex;flex-direction:column}.transport{order:1}.views{order:2}.cam-panel{order:3}.details{order:4}footer{order:5}}
 </style>
 <main><nav><a href="../../index.html">← Apps</a></nav>
-<header><h1>Model T engine</h1><p>Four pistons share a crankshaft. Two turns of that shaft drive one turn of the camshaft and one complete firing cycle.</p></header>
-<section class="stage"><canvas id="view" tabindex="0" aria-label="Engine assembly. Drag or use arrow keys to orbit; scroll to zoom."></canvas><div class="edge"><span class="mono">FORD · INLINE FOUR</span><div class="bar"><button id="gearView">Timing gears</button><button id="reset">Assembly view</button></div></div><span class="hint" id="hint">Drag to orbit · Scroll to zoom</span></section>
+<header><h1>Model T engine</h1><p>A spark ignites the compressed mixture above each piston. The expanding gases drive the piston down. The crankshaft turns the camshaft at half speed to open the valves at the right strokes.</p></header>
+<div class="workbench"><section class="stage"><canvas id="view" tabindex="0" aria-label="Engine assembly. Drag or use arrow keys to orbit; scroll to zoom."></canvas><div class="edge"><span class="mono">FORD · INLINE FOUR</span><div class="bar"><button id="gearView">Timing gears</button><button id="reset">Assembly view</button></div></div><span class="ignition" id="ignition"></span><span class="hint" id="hint">Drag to orbit · Scroll to zoom</span></section>
+<aside class="cam-panel"><h2>Cam and valve</h2><label class="mono" id="camCylinder" for="camType">Cylinder 1</label> <select id="camType"><option value="1">Exhaust valve</option><option value="0">Intake valve</option></select>
+<svg viewBox="0 0 260 202" role="img" aria-label="End view of the rotating cam, rising tappet, valve spring and valve opening">
+<g fill="none" stroke="#8c968a"><path d="M33 39h26m34 0h27M50 66h52"/></g>
+<g id="camFollower" fill="#516d64" stroke="#354a43"><path d="M56 35h40l-6 4H62Z"/><path d="M74 39h4v77h-4z"/><path d="M66 114h20l-10 5z"/></g>
+<path id="coil" fill="none" stroke="#68756a" stroke-width="2"/>
+<g id="camLobe"><path id="camOutline" fill="#c29a61" stroke="#645641" stroke-width="2"/><circle cy="-22" r="3" fill="#f9e6bd"/></g><circle cx="76" cy="150" r="8" fill="#475953"/>
+<g fill="#3b4e46" font-family="system-ui,sans-serif" font-size="13"><text x="136" y="41" id="seatLabel">Valve seated</text><text x="136" y="80">Return spring</text><text x="136" y="115">Tappet</text><text x="136" y="153">Cam lobe</text></g>
+<g stroke="#98a092"><path d="M101 38h28M92 77h37M89 113h40M111 150h18"/></g></svg>
+<p>The raised nose of the cam pushes the tappet up, lifting the valve off its seat. As the nose turns away, the spring closes the valve.</p>
+<div class="cam-actions"><button id="sparkStep">Show ignition</button><button id="liftStep">Show full lift</button></div></aside></div>
 <div class="transport"><button id="play">Run cycle</button><label for="angle">Crank angle</label><input id="angle" type="range" min="0" max="720" value="76" step="1"><output id="degrees" for="angle"></output><label>Pace <select id="speed"><option value="45">Slow</option><option value="120" selected>Study</option><option value="300">Fast</option></select></label></div>
 <div class="views"><label><input id="sleeves" type="checkbox" checked> Sectioned bores</label><label><input id="valves" type="checkbox" checked> Valve train</label><label>Inspect <select id="focus"><option value="-1">All cylinders</option><option value="0">Cylinder 1</option><option value="1">Cylinder 2</option><option value="2">Cylinder 3</option><option value="3">Cylinder 4</option></select></label></div>
 <div class="details"><section><h2>Firing cycle</h2><p>The cylinders fire in the order 1, 2, 4, 3. Pistons 1 and 4 rise together; their valves determine which cylinder compresses a fresh charge and which expels exhaust.</p><div id="chart"></div><p id="readout" class="mono"></p></section>
@@ -62,6 +74,26 @@ function gear(parent,teeth,r,offset){
     cyl(g,r*.28,.23,material.bronze,0,0,0,'x');
     bolt(g,.13,r*.14,0,'x');
 }
+function camRadius(angle){
+    const distance=Math.acos(Math.max(-1,Math.min(1,Math.cos(angle))));
+    return .15+(distance<Math.PI/4?.11*Math.cos(2*distance)**2:0);
+}
+function camAngle(phase,exhaust){return ((exhaust?270:450)-phase)*rad/2;}
+function camLift(phase,exhaust){return camRadius(camAngle(phase,exhaust))-.15;}
+const lobePoints=Array.from({length:128},(_,k)=>{
+    const angle=k*tau/128,r=camRadius(angle);return [r*Math.cos(angle),r*Math.sin(angle)];
+});
+$('camOutline').setAttribute('d',lobePoints.map(([up,side],i)=>(i?'L':'M')+(side*206)+' '+(-up*206)).join(' ')+'Z');
+function showValve(index,phase){
+    const exhaust=$('camType').value==='1', lift=camLift(phase,exhaust)*206;
+    $('camCylinder').textContent='Cylinder '+(index+1);
+    $('camLobe').setAttribute('transform','translate(76 150) rotate('+camAngle(phase,exhaust)/rad+')');
+    $('camFollower').setAttribute('transform','translate(0 '+(-lift)+')');
+    const points=['M76 66'];
+    for(let k=0;k<15;k++)points.push('L'+(k%2?85:67)+' '+(66+(38-lift)*k/14));
+    points.push('L76 '+(105-lift));$('coil').setAttribute('d',points.join(' '));
+    $('seatLabel').textContent=lift>.01?'Valve open':'Valve seated';
+}
 function makeCylinder(index){
     const x=xs[index],g=group(scene,x);
     const piston=group(g);
@@ -95,11 +127,18 @@ function makeCylinder(index){
         const lobe=group(cam,x+offset);allValves.push(lobe);
         const peak=firing[index]+(j?270:450);
         lobe.rotation.x=peak*rad/2;
-        const points=Array.from({length:96},(_,k)=>{const a=k*tau/96,d=Math.min(a,tau-a);const r=.15+(d<Math.PI/4?.11*Math.cos(2*d)**2:0);return [r*Math.cos(a),r*Math.sin(a)];});
-        profile(lobe,points,.16,material.bronze);
+        profile(lobe,lobePoints,.16,material.bronze);
         poppets.push({follower,spring});
     }
-    return {g,piston,rod,poppets};
+    const gas=cyl(g,.427,1,new THREE.MeshBasicMaterial({color:0xff9235,transparent:true,opacity:.52,depthWrite:false}),0,0,0);
+    const spark=group(g,.09,2.42,.12);
+    const sparkMaterial=new THREE.MeshBasicMaterial({color:0xfff5cd});
+    for(const [dx,tilt] of [[0,0],[-.05,.62],[.05,-.62]]){
+        const arc=box(spark,.018,.15,.018,sparkMaterial,dx,-.035,0);arc.rotation.z=tilt;
+    }
+    cyl(g,.045,.15,material.steel,.09,2.53,.12);
+    cyl(g,.065,.055,material.iron,.09,2.59,.12,'y',6);
+    return {g,piston,rod,poppets,gas,spark};
 }
 function build(){
     renderer=new THREE.WebGLRenderer({canvas:$('view'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -153,14 +192,25 @@ function update(){
         const phase=(angle-firing[i]+720)%720,stage=Math.floor(phase/180);
         const cells=$('chart').children[i].querySelectorAll('span');
         cells.forEach((cell,k)=>cell.classList.toggle('current',k===stage));
+        if(i===(state.focus<0?0:state.focus))showValve(i,phase);
+        if(stage===0)$('ignition').textContent='Cylinder '+(i+1)+(phase<18?' · Ignition spark':' · Expanding combustion gases');
         if(i===(state.focus<0?0:state.focus))$('readout').textContent='Cylinder '+(i+1)+' · '+stages[stage]+' · Cam rotation '+Math.round(angle/2)+'°';
         if(!crank)continue;
         const s=systems[i],theta=phase*rad, py=radius*Math.cos(theta),pz=radius*Math.sin(theta);
         const height=py+Math.sqrt(rodLength**2-pz**2);
         s.piston.position.y=height;
+        const crown=height+.27,head=2.46;
+        s.spark.visible=phase<18;
+        s.gas.visible=stage===0;
+        if(s.gas.visible){
+            s.gas.scale.y=head-crown;s.gas.position.y=(head+crown)/2;
+            const progress=phase/180;
+            s.gas.material.color.setHSL(.115-.08*progress,.95,.59-.22*progress);
+            s.gas.material.opacity=.74-.48*progress;
+        }
         s.rod.position.set(0,py,pz);s.rod.rotation.x=Math.atan2(-pz,height-py);
         s.poppets.forEach(({follower,spring},j)=>{
-            const open=j?stage===1:stage===2, lift=open?.11*Math.sin((phase%180)*rad)**2:0;
+            const lift=camLift(phase,j);
             follower.position.y=lift;spring.position.y=1.73+lift;spring.scale.y=1-lift/.36;
         });
     }
@@ -197,6 +247,14 @@ function focus(index){state.focus=index;$('focus').value=index;targetX=index<0?0
 $('focus').onchange=()=>focus(Number($('focus').value));
 $('gearView').onclick=()=>{focus(-1);yaw=1.32;pitch=.14;targetX=2.64;targetY=.57;zoom=2.1;draw();};
 $('reset').onclick=()=>{yaw=.56;pitch=.30;focus(-1);};
+function inspectEvent(offset){
+    stop();
+    state.angle=(firing[Math.max(0,state.focus)]+offset)%720;
+    $('angle').value=state.angle;update();
+}
+$('camType').onchange=update;
+$('sparkStep').onclick=()=>inspectEvent(0);
+$('liftStep').onclick=()=>inspectEvent($('camType').value==='1'?270:450);
 function orbit(dx,dy){yaw+=dx;pitch=Math.max(-1.43,Math.min(1.43,pitch+dy));draw();}
 let pointer=null;
 $('view').onpointerdown=e=>{pointer=[e.clientX,e.clientY];$('view').setPointerCapture(e.pointerId);};
