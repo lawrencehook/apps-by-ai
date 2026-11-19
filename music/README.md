@@ -5,7 +5,7 @@ The [music catalog](index.html) includes five collections. Each uses the notatio
 | Collection | Scope and playback |
 | --- | --- |
 | [Guqin](guqin/index.html) | All 64 titles in Zhu Quan’s 1425 handbook, with a facsimile and a playable demonstration of the opening gestures of entry 44. |
-| [Korean jeongganbo](jeongganbo/index.html) | Three columns of *Cheongsanbyeolgok* transcribed from an early Joseon woodblock score. The cursor follows the melody on the facsimile. |
+| [Korean jeongganbo](jeongganbo/index.html) | Seven columns of *Cheongsanbyeolgok* with a cursor on the historical facsimile. Four further Jeonggan editions pair local piano and janggu playback with synchronized grid notation. Original editable scores and instrument credits ship with the player. |
 | [Carnatic kṛtis](carnatic/index.html) | Dīkṣitar’s five-element group, with lyrics and notation in the external Malayalam edition and timestamped performances by D. K. Jayaraman. All five entries include offline piano readings of the opening notes. The full vocal recordings and edition require internet access. |
 | [Ottoman saz semâîsi](ottoman/index.html) | 39 complete timed transcriptions across 29 makams, playable offline with section navigation and 64 pages of locally bundled sheet music. The SymbTr-derived scores carry the source collection’s CC BY-NC-SA 4.0 license. |
 

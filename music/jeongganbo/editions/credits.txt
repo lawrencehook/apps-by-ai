@@ -1,0 +1,28 @@
+Jeongganbo digital editions
+
+The four original YAML scores and TteoiJeonggan font come from Tteoieonire's
+Jeonggan editor, revision 4fd735aac3aa9f86923a188fa018adf2e0cf3a0d.
+https://github.com/Tteoieonire/Jeonggan/tree/4fd735aac3aa9f86923a188fa018adf2e0cf3a0d
+
+The score transcriptions and their adaptation in scores.js are distributed
+under GPL-3.0 (GPL-3.0.txt). The YAML files here are the original editable
+editions. The local audio readings use the editor's interpretation of
+relative notes, tempo, rests and ornaments. Instrument choice, balance
+and dynamics are editorial.
+
+Melody: Alexander Holm's Salamander Grand Piano, CC BY 3.0. Pitched,
+mixed and rendered from the samples used by this site's Bach collection.
+https://github.com/Tonejs/audio/tree/master/salamander
+https://creativecommons.org/licenses/by/3.0/
+
+Janggu strokes: National Gugak Center, Korean Traditional Music Digital
+Sound Library. Six sampled strokes as processed by Tteoieonire, mixed
+according to each edition’s drum cycle. Korea Open Government License
+Type 1 (attribution).
+https://github.com/Tteoieonire/Jeonggan/tree/4fd735aac3aa9f86923a188fa018adf2e0cf3a0d/assets
+https://www.kogl.or.kr/info/license.do
+
+TteoiJeonggan font: Tteoieonire, based on Naver NanumSquareRound Bold
+and the CNS11643 Chinese Standard Interchange Code Full Character Set.
+Redistributed unchanged under the SIL Open Font License 1.1 (OFL.txt).
+https://github.com/Tteoieonire/Jeonggan#출처-및-사용-허가-조건
