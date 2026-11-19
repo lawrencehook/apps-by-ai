@@ -1,5 +1,19 @@
 [
     {
+        "id": "pid-tuner",
+        "title": "PID Tuner",
+        "description": "Tune the three gains of a PID controller and watch a drone hold its height: overshoot, wobble, a lasting offset, or a clean settle. Live charts show what each term contributes.",
+        "path": "apps/pid-tuner/index.html",
+        "emoji": "🚁",
+        "previewGradient": "linear-gradient(135deg, #ffa94d 0%, #b197fc 100%)",
+        "dateCreated": "2026-11-17",
+        "model": "Claude Fable 5.2",
+        "category": "Robotics",
+        "tags": ["robotics", "control", "pid", "simulation", "interactive"],
+        "link": "https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller",
+        "completeness": 4
+    },
+    {
         "id": "inverse-kinematics",
         "title": "Inverse Kinematics",
         "description": "Drag a target and watch a robot arm work out the joint angles to reach it. Compare three solvers: FABRIK, cyclic coordinate descent, and Jacobian transpose.",

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PID Tuner - AI Showcase</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+        canvas { display: block; touch-action: none; cursor: ns-resize; }
+        .controls {
+            position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.85);
+            padding: 20px; border-radius: 8px; color: #fff; font-size: 14px;
+            width: 260px; max-height: calc(100vh - 40px); overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .controls h1 { font-size: 1.3rem; margin-bottom: 8px; }
+        .controls p { color: #888; margin-bottom: 14px; line-height: 1.4; font-size: 13px; }
+        button {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 7px 11px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; margin-right: 4px; margin-bottom: 6px;
+        }
+        button:hover { background: rgba(255,255,255,0.2); }
+        .control-group { margin-bottom: 10px; }
+        .control-group label { display: block; margin-bottom: 4px; color: #888; font-size: 12px; }
+        .control-group input[type="range"] { width: 100%; }
+        .kp { color: #ffa94d; } .ki { color: #69db7c; } .kd { color: #b197fc; }
+        .check { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .check label { color: #ccc; font-size: 13px; }
+        .section { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
+        .readout {
+            font-family: ui-monospace, monospace; font-size: 12px; color: #9ad; white-space: pre;
+            border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 8px; line-height: 1.6;
+        }
+        .back-link {
+            position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none;
+            font-size: 14px; padding: 8px 14px; background: rgba(0,0,0,0.85);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-link:hover { color: #fff; }
+        .error { color: #f88; padding: 40px; font-size: 16px; }
+        @media (max-width: 700px) {
+            .controls { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 42vh; padding: 14px; }
+            .controls p { display: none; }
+            .back-link { top: 10px; right: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h1>PID Tuner</h1>
+        <p>A drone holds its height with one rule: thrust = P + I + D. Drag the red line to set a target height, then tune the three gains.</p>
+        <div class="control-group">
+            <label for="kp"><span class="kp">P</span> proportional, pushes toward the target: <span id="kpLabel">20</span></label>
+            <input type="range" id="kp" min="0" max="80" step="0.5" value="20">
+        </div>
+        <div class="control-group">
+            <label for="ki"><span class="ki">I</span> integral, removes a lasting offset: <span id="kiLabel">12</span></label>
+            <input type="range" id="ki" min="0" max="60" step="0.5" value="12">
+        </div>
+        <div class="control-group">
+            <label for="kd"><span class="kd">D</span> derivative, brakes fast motion: <span id="kdLabel">9</span></label>
+            <input type="range" id="kd" min="0" max="30" step="0.5" value="9">
+        </div>
+        <div class="section">Try</div>
+        <button data-preset="p">P only</button>
+        <button data-preset="pd">PD</button>
+        <button data-preset="pid">PID</button>
+        <button data-preset="wild">Unstable</button>
+        <div class="section">Disturb</div>
+        <button id="gust">Gust</button>
+        <button id="reset">Reset</button>
+        <div class="check">
+            <input type="checkbox" id="wind">
+            <label for="wind">Steady downdraft</label>
+        </div>
+        <div class="check">
+            <input type="checkbox" id="antiWindup" checked>
+            <label for="antiWindup">Anti-windup (pause I at max thrust)</label>
+        </div>
+        <div class="readout" id="readout"></div>
+    </div>
+    <a href="../../index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext && canvas.getContext('2d');
+
+        // Plant: a 1 kg drone on a vertical rail. Thrust can only push up, and only so hard.
+        const GRAVITY = 9.81, MAX_THRUST = 25, DRAG = 0.4, DOWNDRAFT = 4, Y_MAX = 10;
+        const SIM_DT = 1 / 240, HISTORY_SECONDS = 12, SAMPLE_DT = 1 / 60;
+        const PRESETS = {
+            p: [8, 0, 0],       // bounces, and hangs below the target: gravity needs a standing error to fight it
+            pd: [20, 0, 9],     // calm, but still hangs below the target
+            pid: [20, 12, 9],   // I slowly winds up the thrust that cancels gravity
+            wild: [60, 40, 0]   // too eager, nothing braking it
+        };
+
+        let width = 0, height = 0;
+        let kp = 20, ki = 12, kd = 9, wind = false, antiWindup = true;
+        let y, v, integral, setpoint, time, terms, history, sampleClock, step;
+        let dragging = false;
+
+        function resetSim() {
+            y = 2; v = 0; integral = 0; setpoint = 6; time = 0; sampleClock = 0;
+            terms = { p: 0, i: 0, d: 0, u: 0, saturated: false };
+            history = [];
+            markStep();
+        }
+
+        // A new target: remember where we started so overshoot and settling time can be measured.
+        function markStep() {
+            step = { from: y, to: setpoint, t0: time, peak: 0, lastOutside: time, settledAt: null };
+        }
+
+        function simulate(dt) {
+            const error = setpoint - y;
+            const p = kp * error;
+            const d = -kd * v;                  // derivative of the measurement, so moving the target doesn't kick
+            integral += error * dt;
+            let raw = p + ki * integral + d;
+            let u = Math.min(MAX_THRUST, Math.max(0, raw));
+            const saturated = u !== raw;
+            // Anti-windup: while thrust is pinned and the error would push it further, don't accumulate.
+            if (antiWindup && saturated && Math.sign(error) === Math.sign(raw - u)) {
+                integral -= error * dt;
+                raw = p + ki * integral + d;
+                u = Math.min(MAX_THRUST, Math.max(0, raw));
+            }
+            const accel = u - GRAVITY - DRAG * v - (wind ? DOWNDRAFT : 0);
+            v += accel * dt;
+            y += v * dt;
+            if (y < 0) { y = 0; if (v < 0) v = 0; }
+            if (y > Y_MAX + 1) { y = Y_MAX + 1; if (v > 0) v = 0; }
+            time += dt;
+            terms = { p, i: ki * integral, d, u, saturated };
+
+            // step-response bookkeeping
+            const size = Math.abs(step.to - step.from);
+            if (size > 0.01) {
+                const dir = Math.sign(step.to - step.from);
+                step.peak = Math.max(step.peak, (y - step.to) * dir);
+                const band = Math.max(0.05, 0.02 * size);
+                if (Math.abs(setpoint - y) > band) { step.lastOutside = time; step.settledAt = null; }
+                else if (step.settledAt === null && time - step.lastOutside > 1) step.settledAt = step.lastOutside - step.t0;
+            }
+
+            sampleClock += dt;
+            if (sampleClock >= SAMPLE_DT) {
+                sampleClock -= SAMPLE_DT;
+                history.push({ t: time, y, sp: setpoint, p, i: terms.i, d, u });
+                while (history.length && history[0].t < time - HISTORY_SECONDS) history.shift();
+            }
+        }
+
+        // Screen regions are derived from the window each frame, so a resize keeps all state.
+        function layout() {
+            const narrow = width <= 700;
+            const left = narrow ? 10 : 300, top = narrow ? 56 : 64;   // clear of the Back link
+            const right = width - (narrow ? 10 : 20);
+            const bottom = narrow ? height * 0.56 : height - 20;
+            const sceneW = Math.max(90, Math.min(260, (right - left) * 0.3));
+            const chartsX = left + sceneW + (narrow ? 34 : 50);
+            const chartH = (bottom - top - 30) / 2;
+            return {
+                scene: { x: left, y: top, w: sceneW, h: bottom - top },
+                pos: { x: chartsX, y: top, w: Math.max(40, right - chartsX), h: chartH },
+                out: { x: chartsX, y: top + chartH + 30, w: Math.max(40, right - chartsX), h: chartH }
+            };
+        }
+
+        function sceneY(r, value) { return r.y + r.h - 24 - (value / Y_MAX) * (r.h - 60); }
+
+        function drawScene(r) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(r.x, r.y, r.w, r.h);
+            const cx = r.x + r.w / 2;
+            // rail and ground
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.beginPath(); ctx.moveTo(cx, sceneY(r, Y_MAX)); ctx.lineTo(cx, sceneY(r, 0)); ctx.stroke();
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.fillRect(r.x, sceneY(r, 0) + 8, r.w, 3);
+            // target line
+            const ty = sceneY(r, setpoint);
+            ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+            ctx.beginPath(); ctx.moveTo(r.x + 6, ty); ctx.lineTo(r.x + r.w - 6, ty); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#ff6b6b'; ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'left';
+            ctx.fillText('target ' + setpoint.toFixed(1) + ' m', r.x + 8, r.y + 16);   // fixed spot, so the drone never covers it
+            // drone
+            const dy = sceneY(r, y), half = Math.min(34, r.w * 0.28);
+            const flame = (terms.u / MAX_THRUST) * 34;
+            ctx.fillStyle = terms.saturated ? 'rgba(255,120,80,0.8)' : 'rgba(255,200,90,0.7)';
+            for (const sx of [-half, half]) {
+                ctx.beginPath();
+                ctx.moveTo(cx + sx - 5, dy + 5); ctx.lineTo(cx + sx + 5, dy + 5); ctx.lineTo(cx + sx, dy + 5 + flame);
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#cfd8e3'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(cx - half, dy); ctx.lineTo(cx + half, dy); ctx.stroke();
+            ctx.lineWidth = 2;
+            for (const sx of [-half, half]) {
+                ctx.beginPath(); ctx.moveTo(cx + sx - 11, dy - 6); ctx.lineTo(cx + sx + 11, dy - 6); ctx.stroke();
+            }
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath(); ctx.arc(cx, dy, 7, 0, Math.PI * 2); ctx.fill();
+            if (wind) {
+                ctx.fillStyle = 'rgba(150,190,255,0.7)'; ctx.textAlign = 'center';
+                ctx.fillText('↓ downdraft ↓', cx, r.y + 34);
+            }
+        }
+
+        function drawChart(r, title, lo, hi, series) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+            ctx.strokeRect(r.x, r.y, r.w, r.h);
+            ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'left';
+            const toY = (val) => r.y + r.h - ((Math.min(hi, Math.max(lo, val)) - lo) / (hi - lo)) * r.h;
+            const toX = (t) => r.x + r.w - ((time - t) / HISTORY_SECONDS) * r.w;
+            // gridlines at lo, 0 (if inside) and hi
+            ctx.fillStyle = '#555';
+            for (const g of [lo, hi].concat(lo < 0 && hi > 0 ? [0] : [])) {
+                ctx.strokeStyle = g === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)';
+                ctx.beginPath(); ctx.moveTo(r.x, toY(g)); ctx.lineTo(r.x + r.w, toY(g)); ctx.stroke();
+                ctx.textAlign = 'right';
+                ctx.fillText(String(g), r.x - 5, toY(g) + (g === hi ? 10 : g === lo ? -2 : 4));
+            }
+            for (const s of series) {
+                if (history.length < 2) break;
+                ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 1.5;
+                ctx.setLineDash(s.dash || []);
+                ctx.beginPath();
+                for (let k = 0; k < history.length; k++) {
+                    const px = toX(history[k].t), py = toY(history[k][s.key]);
+                    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            // title and legend
+            ctx.textAlign = 'left'; ctx.fillStyle = '#888';
+            ctx.fillText(title, r.x + 8, r.y + 15);
+            let lx = r.x + 8 + ctx.measureText(title).width + 14;
+            for (const s of series) {
+                ctx.fillStyle = s.color;
+                ctx.fillText(s.label, lx, r.y + 15);
+                lx += ctx.measureText(s.label).width + 12;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            const L = layout();
+            drawScene(L.scene);
+            drawChart(L.pos, 'height (m)', 0, Y_MAX, [
+                { key: 'sp', color: '#ff6b6b', label: 'target', dash: [5, 4] },
+                { key: 'y', color: '#4ecdc4', label: 'drone', width: 2 }
+            ]);
+            drawChart(L.out, 'thrust (N)', -MAX_THRUST, MAX_THRUST, [
+                { key: 'p', color: '#ffa94d', label: 'P' },
+                { key: 'i', color: '#69db7c', label: 'I' },
+                { key: 'd', color: '#b197fc', label: 'D' },
+                { key: 'u', color: '#ffffff', label: 'total (0 to ' + MAX_THRUST + ')', width: 2 }
+            ]);
+        }
+
+        const readout = document.getElementById('readout');
+        function updateReadout() {
+            const size = Math.abs(step.to - step.from);
+            let overshoot = '-', settle = '-';
+            if (!dragging && size > 0.01) {
+                overshoot = (100 * step.peak / size).toFixed(0) + ' %';
+                settle = step.settledAt === null ? 'not yet' : step.settledAt.toFixed(1) + ' s';
+            }
+            // average error over the last second
+            let sum = 0, count = 0;
+            for (let k = history.length - 1; k >= 0 && history[k].t > time - 1; k--) { sum += history[k].sp - history[k].y; count++; }
+            const offset = count ? (sum / count).toFixed(2) + ' m' : '-';
+            readout.textContent =
+                'overshoot    ' + overshoot + '\n' +
+                'settled in   ' + settle + '\n' +
+                'offset now   ' + offset + '\n' +
+                'thrust       ' + terms.u.toFixed(1) + ' N' + (terms.saturated ? ' (limit)' : '');
+        }
+
+        let raf = null, lastTime = null, backlog = 0;
+        function frame(now) {
+            const elapsed = lastTime === null ? 0 : Math.min(0.1, (now - lastTime) / 1000);
+            lastTime = now;
+            backlog += elapsed;
+            while (backlog >= SIM_DT) { simulate(SIM_DT); backlog -= SIM_DT; }
+            draw();
+            updateReadout();
+            raf = requestAnimationFrame(frame);
+        }
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function setTargetFromPointer(e) {
+            const r = layout().scene;
+            const rect = canvas.getBoundingClientRect();
+            const span = r.h - 60;
+            if (span <= 0) return;
+            const value = (r.y + r.h - 24 - (e.clientY - rect.top)) / span * Y_MAX;
+            setpoint = Math.min(Y_MAX, Math.max(0.5, value));
+        }
+
+        function bindGain(id, set) {
+            const input = document.getElementById(id), label = document.getElementById(id + 'Label');
+            const apply = () => {
+                const value = Math.max(0, parseFloat(input.value) || 0);
+                set(value);
+                label.textContent = value;
+            };
+            input.addEventListener('input', apply);
+            return (value) => { input.value = value; apply(); };
+        }
+
+        function init() {
+            if (!ctx) {
+                const msg = document.createElement('div');
+                msg.className = 'error';
+                msg.textContent = 'This browser does not support the canvas element.';
+                document.body.insertBefore(msg, canvas);
+                return;
+            }
+            const setKp = bindGain('kp', (x) => { kp = x; });
+            const setKi = bindGain('ki', (x) => { ki = x; });
+            const setKd = bindGain('kd', (x) => { kd = x; });
+
+            document.querySelectorAll('button[data-preset]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const gains = PRESETS[button.dataset.preset];
+                    if (!gains) return;
+                    setKp(gains[0]); setKi(gains[1]); setKd(gains[2]);
+                    // start a fresh step so the presets can be compared like for like
+                    integral = 0;
+                    setpoint = setpoint > 5 ? 3 : 7;
+                    markStep();
+                });
+            });
+            document.getElementById('gust').addEventListener('click', () => { v -= 5; });
+            document.getElementById('reset').addEventListener('click', resetSim);
+            document.getElementById('wind').addEventListener('change', (e) => { wind = e.target.checked; });
+            document.getElementById('antiWindup').addEventListener('change', (e) => { antiWindup = e.target.checked; });
+
+            canvas.addEventListener('pointerdown', (e) => {
+                dragging = true;
+                try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
+                setTargetFromPointer(e);
+            });
+            canvas.addEventListener('pointermove', (e) => { if (dragging) setTargetFromPointer(e); });
+            const end = () => { if (dragging) { dragging = false; markStep(); } };
+            canvas.addEventListener('pointerup', end);
+            canvas.addEventListener('pointercancel', end);
+
+            window.addEventListener('resize', resize);
+            resetSim();
+            resize();
+            if (raf !== null) cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(frame);
+        }
+
+        init();
+    </script>
+</body>
+</html>
